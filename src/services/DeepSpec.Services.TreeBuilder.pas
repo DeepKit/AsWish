@@ -30,12 +30,14 @@ type
     FFunctionNodes: TList<TSpecNode>;
     FModuleNodes: TList<TSpecNode>;
     FViewNodes: TList<TSpecNode>;
+    FDataNodes: TList<TSpecNode>;
     FEvidenceList: TList<TSpecEvidence>;
     FProjectRootPath: string;
     function MakeSlug(const ATitle: string): string;
     function GetTopLevelDir(const APath: string): string;
     function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
     procedure EnhanceFromDelphi(AScan: TDeepSpecScanService);
+    procedure BuildDataTreeFromDelphi(AScan: TDeepSpecScanService);
   public
     constructor Create;
     destructor Destroy; override;
@@ -44,6 +46,7 @@ type
     property FunctionNodes: TList<TSpecNode> read FFunctionNodes;
     property ModuleNodes: TList<TSpecNode> read FModuleNodes;
     property ViewNodes: TList<TSpecNode> read FViewNodes;
+    property DataNodes: TList<TSpecNode> read FDataNodes;
     property EvidenceList: TList<TSpecEvidence> read FEvidenceList;
   end;
 
@@ -63,6 +66,7 @@ begin
   FFunctionNodes := TList<TSpecNode>.Create;
   FModuleNodes := TList<TSpecNode>.Create;
   FViewNodes := TList<TSpecNode>.Create;
+  FDataNodes := TList<TSpecNode>.Create;
   FEvidenceList := TList<TSpecEvidence>.Create;
 end;
 
@@ -71,6 +75,7 @@ begin
   FFunctionNodes.Free;
   FModuleNodes.Free;
   FViewNodes.Free;
+  FDataNodes.Free;
   FEvidenceList.Free;
   inherited;
 end;
@@ -147,6 +152,7 @@ begin
   FFunctionNodes.Clear;
   FModuleNodes.Clear;
   FViewNodes.Clear;
+  FDataNodes.Clear;
   FEvidenceList.Clear;
   FProjectRootPath := AProjectRootPath;
 
@@ -300,6 +306,9 @@ begin
 
   // ============ Delphi-specific enhancement ============
   EnhanceFromDelphi(AScan);
+
+  // ============ Data Tree: from Delphi published fields ============
+  BuildDataTreeFromDelphi(AScan);
 end;
 
 procedure TDeepSpecTreeBuilder.EnhanceFromDelphi(AScan: TDeepSpecScanService);
@@ -472,6 +481,153 @@ begin
     end;
   finally
     LDfmParser.Free;
+  end;
+end;
+
+procedure TDeepSpecTreeBuilder.BuildDataTreeFromDelphi(AScan: TDeepSpecScanService);
+var
+  LPasParser: TPasParser;
+  LEntitySlugs: TDictionary<string, Boolean>;
+begin
+  var LHasDelphi := False;
+  for var LFile in AScan.GetFilesByCategory(fcCode) do
+    if LFile.EndsWith('.pas') or LFile.EndsWith('.dpr') then
+    begin
+      LHasDelphi := True;
+      Break;
+    end;
+  if not LHasDelphi then Exit;
+
+  LEntitySlugs := TDictionary<string, Boolean>.Create;
+  LPasParser := TPasParser.Create;
+  try
+    var LCount := 0;
+    for var LFile in AScan.GetFilesByCategory(fcCode) do
+    begin
+      if LCount >= 30 then Break;
+      if not (LFile.EndsWith('.pas') or LFile.EndsWith('.dpr')) then Continue;
+
+      var LFullPath := TPath.Combine(FProjectRootPath, LFile.Replace('/', '\'));
+      if not TFile.Exists(LFullPath) then Continue;
+
+      var LInfo := LPasParser.ParseFile(LFullPath);
+      if LInfo = nil then Continue;
+      try
+        // For each class, create an entity node and scan published fields
+        for var LItem in LInfo.Items do
+        begin
+          if LItem.Kind <> pikClass then Continue;
+
+          var LEntitySlug := MakeSlug(LItem.Name);
+          if LEntitySlugs.ContainsKey(LEntitySlug) then Continue;
+          LEntitySlugs.Add(LEntitySlug, True);
+
+          var LEntityId := 'data-entity-' + LEntitySlug;
+          var LEntityNode := TSpecNode.MakeNew(LEntityId, ttData,
+            LItem.Name, 'entity');
+          LEntityNode.Summary := 'Data entity from class ' + LItem.Name +
+            ' in ' + LFile;
+          LEntityNode.Status := nsCandidate;
+          LEntityNode.Confidence := clMedium;
+          LEntityNode.SourceLayer := slParsedFromA;
+
+          var LEv := MakeEvidenceForFile(LFile);
+          FEvidenceList.Add(LEv);
+          var LRef: TSourceRef;
+          LRef.RefId := LEv.Id;
+          LRef.Relevance := 'primary';
+          LEntityNode.SourceRefs := [LRef];
+
+          // Scan published fields from source file
+          var LFieldList: TList<string>;
+          LFieldList := TList<string>.Create;
+          try
+            var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
+            var LInPublished := False;
+            var LFieldCount := 0;
+            for var LI := 0 to High(LLines) do
+            begin
+              var LLine := LLines[LI].Trim;
+              if LLine = '' then Continue;
+
+              // Detect section boundaries
+              if LLine.StartsWith('published') then
+              begin
+                LInPublished := True;
+                Continue;
+              end;
+              if LLine.StartsWith('private') or LLine.StartsWith('protected') or
+                 LLine.StartsWith('public') or LLine.StartsWith('strict private') or
+                 LLine.StartsWith('strict protected') then
+              begin
+                LInPublished := False;
+                Continue;
+              end;
+              if LLine.StartsWith('end;') then
+              begin
+                LInPublished := False;
+                Continue;
+              end;
+
+              if not LInPublished then Continue;
+              if LFieldCount >= 50 then Break;
+
+              // Match field declarations: Name: Type;
+              var LColonPos := LLine.IndexOf(':');
+              if LColonPos < 0 then Continue;
+              var LName := LLine.Substring(0, LColonPos).Trim;
+              if LName = '' then Continue;
+              // Skip property declarations, we want field declarations
+              if LName.StartsWith('property ') then Continue;
+              if LName.StartsWith('function ') then Continue;
+              if LName.StartsWith('procedure ') then Continue;
+              if LName.StartsWith('constructor ') then Continue;
+              if LName.StartsWith('destructor ') then Continue;
+              if LName.StartsWith('class ') then Continue;
+
+              var LTypeRaw := LLine.Substring(LColonPos + 1);
+              var LSemiPos := LTypeRaw.IndexOf(';');
+              if LSemiPos >= 0 then
+                LTypeRaw := LTypeRaw.Substring(0, LSemiPos);
+              LTypeRaw := LTypeRaw.Trim;
+
+              var LFieldSlug := MakeSlug(LName);
+              var LFieldId := 'data-field-' + LEntitySlug + '-' + LFieldSlug;
+
+              var LFieldNode := TSpecNode.MakeNew(LFieldId, ttData,
+                LName, 'field');
+              LFieldNode.ParentId := LEntityId;
+              LFieldNode.DataType := LTypeRaw;
+              LFieldNode.Summary := LName + ': ' + LTypeRaw;
+              LFieldNode.Status := nsCandidate;
+              LFieldNode.Confidence := clMedium;
+              LFieldNode.SourceLayer := slParsedFromA;
+              LFieldNode.SourceRefs := [LRef];
+              LFieldNode.ContentHash := TSpecHash.NodeContentHash(LFieldNode);
+              LFieldNode.RelationHash := TSpecHash.NodeRelationHash(LFieldNode);
+              FDataNodes.Add(LFieldNode);
+              LFieldList.Add(LFieldId);
+              Inc(LFieldCount);
+            end;
+
+            LEntityNode.Children := LFieldList.ToArray;
+          finally
+            LFieldList.Free;
+          end;
+
+          LEntityNode.ContentHash := TSpecHash.NodeContentHash(LEntityNode);
+          LEntityNode.RelationHash := TSpecHash.NodeRelationHash(LEntityNode);
+          FDataNodes.Add(LEntityNode);
+        end;
+
+        Inc(LCount);
+      finally
+        LInfo.Free;
+      end;
+    end;
+  finally
+    LPasParser.Free;
+    LEntitySlugs.Free;
   end;
 end;
 

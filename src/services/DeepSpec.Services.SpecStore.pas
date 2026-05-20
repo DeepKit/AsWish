@@ -177,6 +177,7 @@ begin
     LSb.AppendLine('  function_tree: "trees/function-tree.yaml"');
     LSb.AppendLine('  module_tree: "trees/module-tree.yaml"');
     LSb.AppendLine('  view_tree: "trees/view-tree.yaml"');
+    LSb.AppendLine('  data_tree: "trees/data-tree.yaml"');
     LSb.AppendLine('');
     LSb.AppendLine('relations: "relations/requirement-relations.yaml"');
     LSb.AppendLine('evidence: "evidence/source-evidence.yaml"');
@@ -205,6 +206,7 @@ begin
   WriteYamlFile('trees/function-tree.yaml', Format(LTemplate, ['function']));
   WriteYamlFile('trees/module-tree.yaml', Format(LTemplate, ['module']));
   WriteYamlFile('trees/view-tree.yaml', Format(LTemplate, ['view']));
+  WriteYamlFile('trees/data-tree.yaml', Format(LTemplate, ['data']));
 
   WriteYamlFile('relations/requirement-relations.yaml',
     'version: "1.0"' + sLineBreak +

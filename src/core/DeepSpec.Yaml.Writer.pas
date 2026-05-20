@@ -58,7 +58,8 @@ type
 implementation
 
 uses
-  System.DateUtils;
+  System.DateUtils,
+  System.StrUtils;
 
 constructor TYamlWriter.Create;
 begin
@@ -116,7 +117,7 @@ end;
 
 procedure TYamlWriter.WriteBoolKV(const AKey: string; AValue: Boolean);
 begin
-  FBuilder.AppendLine(Pad + AKey + ': ' + if AValue then 'true' else 'false');
+  FBuilder.AppendLine(Pad + AKey + ': ' + IfThen(AValue, 'true', 'false'));
 end;
 
 procedure TYamlWriter.WriteStringList(const AKey: string; const AValues: TArray<string>);
@@ -233,9 +234,9 @@ begin
   if ANode.SourceEntity <> '' then
     WriteQuotedKV('source_entity', ANode.SourceEntity);
   if ANode.TargetEntity <> '' then
-    WriteQuotedKVtarget_entity', ANode.TargetEntity);
+    WriteQuotedKV('target_entity', ANode.TargetEntity);
   if ANode.Cardinality <> '' then
-    WriteScalarKV('cardinality', A.Cardinality);
+    WriteScalarKV('cardinality', ANode.Cardinality);
   if ANode.Cascade <> '' then
     WriteQuotedKV('cascade', ANode.Cascade);
   WriteStringList('valid_states', ANode.ValidStates);

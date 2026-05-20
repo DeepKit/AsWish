@@ -228,7 +228,7 @@ type
     class function DataKindToStr(AValue: TDataKind): string; static;
     class function DataKindFromStr(const AValue: string;
       ADefault: TDataKind = dkEntity): TDataKind; static;
-    function RiskLevelToStr(AValue: TRiskLevel): string; static;
+    class function RiskLevelToStr(AValue: TRiskLevel): string; static;
     class function RiskLevelFromStr(const AValue: string;
       ADefault: TRiskLevel = rlMedium): TRiskLevel; static;
   end;
@@ -460,7 +460,7 @@ begin
   if LLower = 'entity' then Result := dkEntity
   else if LLower = 'field' then Result := dkField
   else if LLower = 'relation' then Result := dkRelation
-  else if LLower 'state' then Result := dkState
+  else if LLower = 'state' then Result := dkState
   else if LLower = 'migration' then Result := dkMigration
   else if LLower = 'constraint' then Result := dkConstraint
   else Result := ADefault;
@@ -472,7 +472,7 @@ begin
     rlLow:      Result := 'low';
     rlMedium:   Result := 'medium';
     rlHigh:     Result := 'high';
-    rlCritical Result := 'critical';
+    rlCritical: Result := 'critical';
   end;
 end;
 

@@ -108,6 +108,15 @@ begin
     end;
   ACommands.RegisterCommand(LCmd);
 
+  LCmd := TShellCommand.Make('deepspec.data.render', 'Render Data Tree');
+  LCmd.Category := 'View';
+  LCmd.RiskLevel := rlLow;
+  LCmd.Handler := procedure
+    begin
+      LForm.Controller.RenderAll;
+    end;
+  ACommands.RegisterCommand(LCmd);
+
   LCmd := TShellCommand.Make('deepspec.llm.setup', 'Setup LLM (ModelScope)');
   LCmd.Category := 'Tools';
   LCmd.RiskLevel := rlLow;

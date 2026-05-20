@@ -156,6 +156,8 @@ begin
     FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
     FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
     FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
+    if FTreeBuilder.DataNodes.Count > 0 then
+      FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
     FStatus.Info('DeepSpec.Render',
       'Re-rendered HTML to ' + FProjectService.DeepSpecPath + '\html\');
   except
@@ -166,7 +168,7 @@ end;
 
 procedure TDeepSpecController.RefreshFromYaml;
 var
-  LFunc, LModule, LView: TList<TSpecNode>;
+  LFunc, LModule, LView, LData: TList<TSpecNode>;
 begin
   if not FProjectService.IsOpen then
   begin
@@ -177,20 +179,29 @@ begin
   LFunc := nil;
   LModule := nil;
   LView := nil;
+  LData := nil;
   try
     try
       LFunc := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
       LModule := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
       LView := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
+      if TFile.Exists(TPath.Combine(FProjectService.DeepSpecPath, 'trees\data-tree.yaml')) then
+        LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
 
       FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles);
       FRender.RenderTree('function-tree', 'Function Tree', LFunc);
       FRender.RenderTree('module-tree', 'Module Tree', LModule);
       FRender.RenderTree('view-tree', 'View Tree', LView);
+      if (LData <> nil) and (LData.Count > 0) then
+        FRender.RenderTree('data-tree', 'Data Tree', LData);
 
-      FStatus.Info('DeepSpec.Render',
-        Format('Refreshed HTML from YAML: %d func / %d module / %d view nodes.',
-          [LFunc.Count, LModule.Count, LView.Count]));
+      var LMsg := Format('Refreshed HTML from YAML: %d func / %d module / %d view',
+        [LFunc.Count, LModule.Count, LView.Count]);
+      if LData <> nil then
+        LMsg := LMsg + Format(' / %d data nodes.', [LData.Count])
+      else
+        LMsg := LMsg + '.';
+      FStatus.Info('DeepSpec.Render', LMsg);
     except
       on E: Exception do
         FStatus.LogError('DeepSpec.Render', 'RefreshFromYaml failed: ' + E.Message,
@@ -200,6 +211,7 @@ begin
     LFunc.Free;
     LModule.Free;
     LView.Free;
+    LData.Free;
   end;
 end;
 
@@ -387,6 +399,9 @@ begin
       FTreeBuilder.ModuleNodes);
     FSpecStore.WriteTreeFile('trees/view-tree.yaml', ttView,
       FTreeBuilder.ViewNodes);
+    if FTreeBuilder.DataNodes.Count > 0 then
+      FSpecStore.WriteTreeFile('trees/data-tree.yaml', ttData,
+        FTreeBuilder.DataNodes);
     FSpecStore.WriteEvidenceFile('evidence/source-evidence.yaml',
       FTreeBuilder.EvidenceList);
 
@@ -396,6 +411,8 @@ begin
     FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
     FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
     FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
+    if FTreeBuilder.DataNodes.Count > 0 then
+      FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
 
     // Generate prompts for LLM workflow
     FPrompts.WriteContextPack(FScanService, FProjectService.ProjectName, LType);

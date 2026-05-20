@@ -168,6 +168,7 @@ begin
     LSb.AppendLine('  <li><a href="function-tree.html">Function Tree</a></li>');
     LSb.AppendLine('  <li><a href="module-tree.html">Module Tree</a></li>');
     LSb.AppendLine('  <li><a href="view-tree.html">View Tree</a></li>');
+    LSb.AppendLine('  <li><a href="data-tree.html">Data Tree</a></li>');
     LSb.AppendLine('</ul>');
     LSb.Append(PageFooter);
 
@@ -237,6 +238,22 @@ var
     if LNode.Summary <> '' then
       LSb.AppendLine('<div class="node-summary">' + HtmlEscape(LNode.Summary) + '</div>');
 
+    // Data-tree specific badges
+    if LNode.Tree = ttData then
+    begin
+      if LNode.DataType <> '' then
+        LSb.AppendLine('<div class="node-data-type"><span class="badge badge-data-type">' +
+          HtmlEscape(LNode.DataType) + '</span></div>');
+      if LNode.HasRiskScore then
+        LSb.AppendLine('<div class="node-risk"><span class="badge badge-risk-' +
+          DeepSpec.Models.TSpecEnums.RiskLevelToStr(LNode.RiskScore) + '">' +
+          'risk: ' + HtmlEscape(DeepSpec.Models.TSpecEnums.RiskLevelToStr(LNode.RiskScore)) +
+          '</span></div>');
+      if LNode.Persistence <> '' then
+        LSb.AppendLine('<div class="node-persistence"><span class="badge badge-persistence">' +
+          HtmlEscape(LNode.Persistence) + '</span></div>');
+    end;
+
     if Length(LNode.AcceptanceCriteria) > 0 then
     begin
       LSb.AppendLine('<details class="node-criteria"><summary>Acceptance Criteria</summary><ul>');
@@ -284,6 +301,12 @@ begin
     LSb.AppendLine('  .badge-conf-medium { background: #fff3cd; color: #856404; }');
     LSb.AppendLine('  .badge-conf-high { background: #d4edda; color: #155724; }');
     LSb.AppendLine('  .badge-source { background: #cce5ff; color: #004085; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-data-type { background: #e2d9f3; color: #4a2d8a; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-risk-low { background: #d4edda; color: #155724; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-risk-medium { background: #fff3cd; color: #856404; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-risk-high { background: #f8d7da; color: #721c24; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-risk-critical { background: #721c24; color: #fff; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-persistence { background: #d1ecf1; color: #0c5460; font-size: 0.8em; }');
     LSb.AppendLine('  details summary { cursor: pointer; color: #4a90e2; padding: 0.3em 0.4em; }');
     LSb.AppendLine('  .decision-toolbar { margin-left: 0.5em; }');
     LSb.AppendLine('  .decision-toolbar button { font-size: 0.8em; margin-left: 0.25em;');
