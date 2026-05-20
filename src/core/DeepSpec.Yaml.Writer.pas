@@ -198,6 +198,8 @@ begin
     if ANode.Summary <> '' then
       WriteQuotedKV('summary', ANode.Summary);
     WriteScalarKV('status', TSpecEnums.NodeStatusToStr(ANode.Status));
+    WriteScalarKV('gen_status', TSpecEnums.GenStatusToStr(ANode.GenStatus));
+    WriteScalarKV('review_status', TSpecEnums.ReviewStatusToStr(ANode.ReviewStatus));
     WriteScalarKV('confidence', TSpecEnums.ConfidenceToStr(ANode.Confidence));
     WriteScalarKV('source_layer', TSpecEnums.SourceLayerToStr(ANode.SourceLayer));
     WriteSourceRefs('source_refs', ANode.SourceRefs);

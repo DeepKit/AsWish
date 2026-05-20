@@ -215,6 +215,12 @@ var
     LSb.Append('<span class="node-title">' + HtmlEscape(LNode.Title) + '</span> ');
     LSb.Append('<span class="node-kind">' + HtmlEscape(LNode.Kind) + '</span> ');
     LSb.Append(StatusBadge(LStatus));
+    LSb.Append(' <span class="badge badge-gen-' +
+      DeepSpec.Models.TSpecEnums.GenStatusToStr(LNode.GenStatus) + '">gen:' +
+      HtmlEscape(DeepSpec.Models.TSpecEnums.GenStatusToStr(LNode.GenStatus)) + '</span>');
+    LSb.Append(' <span class="badge badge-review-' +
+      DeepSpec.Models.TSpecEnums.ReviewStatusToStr(LNode.ReviewStatus) + '">rev:' +
+      HtmlEscape(DeepSpec.Models.TSpecEnums.ReviewStatusToStr(LNode.ReviewStatus)) + '</span>');
     LSb.Append(' ');
     LSb.Append(ConfidenceBadge(DeepSpec.Models.TSpecEnums.ConfidenceToStr(LNode.Confidence)));
     LSb.Append(' ');
@@ -301,6 +307,14 @@ begin
     LSb.AppendLine('  .badge-conf-medium { background: #fff3cd; color: #856404; }');
     LSb.AppendLine('  .badge-conf-high { background: #d4edda; color: #155724; }');
     LSb.AppendLine('  .badge-source { background: #cce5ff; color: #004085; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-gen-draft { background: #e2e3e5; color: #383d41; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-gen-generated { background: #cce5ff; color: #004085; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-gen-confirmed { background: #d4edda; color: #155724; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-gen-skipped { background: #d6d8db; color: #6c757d; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-review-unreviewed { background: #e2e3e5; color: #383d41; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-review-accepted { background: #d4edda; color: #155724; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-review-rejected { background: #f8d7da; color: #721c24; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-review-deferred { background: #fff3cd; color: #856404; font-size: 0.75em; }');
     LSb.AppendLine('  .badge-data-type { background: #e2d9f3; color: #4a2d8a; font-size: 0.8em; }');
     LSb.AppendLine('  .badge-risk-low { background: #d4edda; color: #155724; font-size: 0.8em; }');
     LSb.AppendLine('  .badge-risk-medium { background: #fff3cd; color: #856404; font-size: 0.8em; }');

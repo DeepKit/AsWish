@@ -38,6 +38,7 @@ type
     function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
     procedure EnhanceFromDelphi(AScan: TDeepSpecScanService);
     procedure BuildDataTreeFromDelphi(AScan: TDeepSpecScanService);
+    procedure SetGenStatusGenerated(ANodes: TList<TSpecNode>);
   public
     constructor Create;
     destructor Destroy; override;
@@ -309,6 +310,22 @@ begin
 
   // ============ Data Tree: from Delphi published fields ============
   BuildDataTreeFromDelphi(AScan);
+
+  // ============ Set gen_status = generated for all scan-built nodes ============
+  SetGenStatusGenerated(FFunctionNodes);
+  SetGenStatusGenerated(FModuleNodes);
+  SetGenStatusGenerated(FViewNodes);
+  SetGenStatusGenerated(FDataNodes);
+end;
+
+procedure TDeepSpecTreeBuilder.SetGenStatusGenerated(ANodes: TList<TSpecNode>);
+begin
+  for var I := 0 to ANodes.Count - 1 do
+  begin
+    var LNode := ANodes[I];
+    LNode.GenStatus := gsGenerated;
+    ANodes[I] := LNode;
+  end;
 end;
 
 procedure TDeepSpecTreeBuilder.EnhanceFromDelphi(AScan: TDeepSpecScanService);

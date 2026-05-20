@@ -19,6 +19,10 @@ type
 
   TNodeStatus = (nsCandidate, nsConfirmed, nsUncertain, nsRejected, nsSuperseded);
 
+  TGenStatus = (gsDraft, gsGenerated, gsConfirmed, gsSkipped);
+
+  TReviewStatus = (rsUnreviewed, rsAccepted, rsRejected, rsDeferred);
+
   TConfidenceLevel = (clLow, clMedium, clHigh);
 
   TSourceLayer = (slParsedFromA, slHumanDecision, slAiInferred, slGeneratedSummary);
@@ -87,6 +91,8 @@ type
     Revision: Integer;
     Summary: string;
     Status: TNodeStatus;
+    GenStatus: TGenStatus;
+    ReviewStatus: TReviewStatus;
     Confidence: TConfidenceLevel;
     SourceLayer: TSourceLayer;
     SourceRefs: TSourceRefArray;
@@ -231,6 +237,12 @@ type
     class function RiskLevelToStr(AValue: TRiskLevel): string; static;
     class function RiskLevelFromStr(const AValue: string;
       ADefault: TRiskLevel = rlMedium): TRiskLevel; static;
+    class function GenStatusToStr(AValue: TGenStatus): string; static;
+    class function GenStatusFromStr(const AValue: string;
+      ADefault: TGenStatus = gsDraft): TGenStatus; static;
+    class function ReviewStatusToStr(AValue: TReviewStatus): string; static;
+    class function ReviewStatusFromStr(const AValue: string;
+      ADefault: TReviewStatus = rsUnreviewed): TReviewStatus; static;
   end;
 
 implementation
@@ -249,6 +261,8 @@ begin
   Result.Title := ATitle;
   Result.Kind := AKind;
   Result.Status := nsCandidate;
+  Result.GenStatus := gsDraft;
+  Result.ReviewStatus := rsUnreviewed;
   Result.Confidence := clMedium;
   Result.SourceLayer := slAiInferred;
   Result.Revision := 1;
@@ -484,6 +498,48 @@ begin
   else if LLower = 'medium' then Result := rlMedium
   else if LLower = 'high' then Result := rlHigh
   else if LLower = 'critical' then Result := rlCritical
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.GenStatusToStr(AValue: TGenStatus): string;
+begin
+  case AValue of
+    gsDraft:     Result := 'draft';
+    gsGenerated: Result := 'generated';
+    gsConfirmed: Result := 'confirmed';
+    gsSkipped:   Result := 'skipped';
+  end;
+end;
+
+class function TSpecEnums.GenStatusFromStr(const AValue: string;
+  ADefault: TGenStatus): TGenStatus;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'draft' then Result := gsDraft
+  else if LLower = 'generated' then Result := gsGenerated
+  else if LLower = 'confirmed' then Result := gsConfirmed
+  else if LLower = 'skipped' then Result := gsSkipped
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.ReviewStatusToStr(AValue: TReviewStatus): string;
+begin
+  case AValue of
+    rsUnreviewed: Result := 'unreviewed';
+    rsAccepted:   Result := 'accepted';
+    rsRejected:   Result := 'rejected';
+    rsDeferred:   Result := 'deferred';
+  end;
+end;
+
+class function TSpecEnums.ReviewStatusFromStr(const AValue: string;
+  ADefault: TReviewStatus): TReviewStatus;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'unreviewed' then Result := rsUnreviewed
+  else if LLower = 'accepted' then Result := rsAccepted
+  else if LLower = 'rejected' then Result := rsRejected
+  else if LLower = 'deferred' then Result := rsDeferred
   else Result := ADefault;
 end;
 

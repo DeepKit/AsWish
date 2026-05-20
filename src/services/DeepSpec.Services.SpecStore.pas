@@ -340,6 +340,8 @@ begin
         LNode.Revision := LItem.GetInteger('revision', 0);
         LNode.Summary := LItem.GetString('summary', '');
         LNode.Status := TSpecEnums.NodeStatusFromStr(LItem.GetString('status', ''));
+        LNode.GenStatus := TSpecEnums.GenStatusFromStr(LItem.GetString('gen_status', ''));
+        LNode.ReviewStatus := TSpecEnums.ReviewStatusFromStr(LItem.GetString('review_status', ''));
         LNode.Confidence := TSpecEnums.ConfidenceFromStr(LItem.GetString('confidence', ''));
         LNode.SourceLayer := TSpecEnums.SourceLayerFromStr(
           LItem.GetString('source_layer', ''));
