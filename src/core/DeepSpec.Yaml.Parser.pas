@@ -539,8 +539,8 @@ begin
   // Empty value: check next line for nested map or sequence
   if LTrimmed = '' then
   begin
-    // Look at next non-blank line
-    var LNextPos := FPos + 1;
+    // Look at next non-blank line (FPos already points to the line after key:)
+    var LNextPos := FPos;
     while (LNextPos < Length(FLines)) and IsBlankOrComment(FLines[LNextPos]) do
       Inc(LNextPos);
 
