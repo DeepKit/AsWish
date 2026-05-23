@@ -48,7 +48,7 @@ begin
         if LForm.Recent <> nil then
           LForm.Recent.AddRecentProject(LDir, LDir,
             ExtractFileName(ExcludeTrailingPathDelimiter(LDir)), '');
-        LForm.RebuildStructureTree;
+        // RebuildStructureTree is triggered by HandleScanEvent via sekProjectOpened
       end;
     end;
   ACommands.RegisterCommand(LCmd);
