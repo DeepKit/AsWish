@@ -53,10 +53,11 @@ uses
   System.StrUtils;
 
 const
-  IGNORED_DIRS: array[0..14] of string = (
+  IGNORED_DIRS: array[0..15] of string = (
     'node_modules', '.git', '.svn', '.hg', '__pycache__',
     '.pytest_cache', 'build', 'bin', 'dist', 'out',
-    'target', 'debug', 'release', '__history', '.next'
+    'target', 'debug', 'release', '__history', '.next',
+    '.deepspec'
   );
 
   AI_RULES_FILES: array[0..4] of string = (

@@ -12,10 +12,12 @@ interface
 uses
   System.SysUtils,
   System.Classes,
+  System.Generics.Collections,
   Vcl.Forms,
   Vcl.ComCtrls,
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
+  Vcl.Graphics,
   Vcl.Controls,
   Vcl.FileCtrl,
   Vcl.Buttons,
@@ -31,7 +33,9 @@ uses
   DeepSpec.Services.TreeBuilder,
   DeepSpec.Services.Prompts,
   DeepSpec.Services.Decisions,
-  DeepSpec.Services.LLM;
+  DeepSpec.Services.LLM,
+  DeepSpec.Services.Settings,
+  DeepSpec.Models;
 
 type
   TDeepSpecMainForm = class(TDeepMainForm)
@@ -45,6 +49,7 @@ type
     FPrompts: TDeepSpecPromptService;
     FDecisions: TDeepSpecDecisionsService;
     FLLMService: TDeepSpecLLMService;
+    FSettings: TDeepSpecSettingsService;
     FLLMOwned: TObject;
     // UI: Left panel tabs
     FLeftPages: TPageControl;
@@ -61,6 +66,13 @@ type
     FFuncTree: TTreeView;
     FModuleTree: TTreeView;
     FViewTree: TTreeView;
+    // Lower panel memos
+    FScanLogMemo: TMemo;
+    FDocsMemo: TMemo;
+    FScanEventToken: string;
+    procedure HandleScanEvent(const AEvent: TDeepShellEvent);
+    procedure PopulateTreeFromSpec(ATree: TTreeView; ANodes: TList<TSpecNode>);
+    procedure PopulateDocsPanel;
   private
     procedure BuildLeftPanelUI;
     procedure PopulateMruCombo;
@@ -92,6 +104,7 @@ uses
   DeepSpec.Providers,
   DeepBase.LLM,
   DeepBase.VCL.DeepShell.Localization,
+  DeepBase.VCL.DeepShell.ToolWindow,
   DeepBase.AutoFix.ErrorRecorder,
   DeepBase.AutoFix.ScenarioRunner,
   DeepBase.AutoFix.HealthSignal;
@@ -110,6 +123,7 @@ begin
   FTreeBuilder := TDeepSpecTreeBuilder.Create;
   FPrompts := TDeepSpecPromptService.Create;
   FDecisions := TDeepSpecDecisionsService.Create;
+  FSettings := TDeepSpecSettingsService.Create;
 
   try
     var LDeepBaseLLM := TDeepBaseLLM.Create(nil);
@@ -145,10 +159,11 @@ begin
   Services.RegisterService('deepspec.prompts', FPrompts);
   Services.RegisterService('deepspec.decisions', FDecisions);
   Services.RegisterService('deepspec.llm', FLLMService);
+  Services.RegisterService('deepspec.settings', FSettings);
 
   FController := TDeepSpecController.Create(
     FProjectService, FScanService, FSpecStore, FRender, FTreeBuilder,
-    FPrompts, FDecisions, FLLMService,
+    FPrompts, FDecisions, FLLMService, FSettings,
     Status, Context, EventBus);
 end;
 
@@ -161,7 +176,8 @@ end;
 procedure TDeepSpecMainForm.RegisterProviders;
 begin
   inherited;
-  DeepSpec.Providers.RegisterAllProviders(Self, FProjectService);
+  DeepSpec.Providers.RegisterAllProviders(Self, FProjectService,
+    FScanService, FTreeBuilder);
 end;
 
 procedure TDeepSpecMainForm.AfterShellShown;
@@ -309,6 +325,37 @@ begin
 
   // MRU
   PopulateMruCombo;
+
+  // --- Left Lower panel: scan log ---
+  if StructureWindow.Lower <> nil then
+  begin
+    FScanLogMemo := TMemo.Create(StructureWindow);
+    FScanLogMemo.Parent := StructureWindow.Lower;
+    FScanLogMemo.Align := alClient;
+    FScanLogMemo.ReadOnly := True;
+    FScanLogMemo.ScrollBars := ssVertical;
+    FScanLogMemo.Font.Size := 8;
+    FScanLogMemo.Color := clBtnFace;
+    FScanLogMemo.Lines.Add('(scan log)');
+  end;
+
+  // --- Right Lower panel: docs list ---
+  if InspectorWindow.Lower <> nil then
+  begin
+    FDocsMemo := TMemo.Create(InspectorWindow);
+    FDocsMemo.Parent := InspectorWindow.Lower;
+    FDocsMemo.Align := alClient;
+    FDocsMemo.ReadOnly := True;
+    FDocsMemo.ScrollBars := ssVertical;
+    FDocsMemo.Font.Size := 8;
+    FDocsMemo.Color := clBtnFace;
+    FDocsMemo.Lines.Add('(docs summary)');
+  end;
+
+  // Subscribe to scan-complete events
+  if EventBus <> nil then
+    FScanEventToken := EventBus.Subscribe(sekProjectOpened,
+      HandleScanEvent);
 end;
 
 procedure TDeepSpecMainForm.PopulateMruCombo;
@@ -337,9 +384,8 @@ begin
       // Path may not be navigable in shell tree
     end;
     FController.OpenAndScan(LPath);
-    RebuildStructureTree;
     FBtnVisualize.Enabled := False;
-    Status.Info('DeepSpec', 'Project opened: ' + LPath);
+    // Note: RebuildStructureTree + tree refresh handled by HandleScanEvent
   end;
 end;
 
@@ -384,13 +430,17 @@ begin
     PopulateMruCombo;
   end;
 
-  RebuildStructureTree;
   FBtnVisualize.Enabled := False;
-  Status.Info('DeepSpec', 'Project opened: ' + LPath);
+  // Note: RebuildStructureTree + tree refresh handled by HandleScanEvent
 end;
 
 procedure TDeepSpecMainForm.ShutdownShell;
 begin
+  if (FScanEventToken <> '') and (EventBus <> nil) then
+  begin
+    EventBus.Unsubscribe(FScanEventToken);
+    FScanEventToken := '';
+  end;
   FreeAndNil(FController);
   inherited;
 end;
@@ -398,6 +448,83 @@ end;
 function TDeepSpecMainForm.LLMInstance: TObject;
 begin
   Result := FLLMOwned;
+end;
+
+procedure TDeepSpecMainForm.HandleScanEvent(const AEvent: TDeepShellEvent);
+begin
+  // Scan completed — refresh all panels
+  RebuildStructureTree;
+  PopulateTreeFromSpec(FFuncTree, FTreeBuilder.FunctionNodes);
+  PopulateTreeFromSpec(FModuleTree, FTreeBuilder.ModuleNodes);
+  PopulateTreeFromSpec(FViewTree, FTreeBuilder.ViewNodes);
+  PopulateDocsPanel;
+
+  // Auto-open HTML index in main view
+  if FController.IsProjectOpen then
+  begin
+    var LHtmlPath := TPath.Combine(
+      FProjectService.DeepSpecPath, 'html\index.html');
+    if TFile.Exists(LHtmlPath) then
+    begin
+      var LRef := TShellObjectRef.Make('index-html', 'html', '',
+        LHtmlPath);
+      OpenView(LRef);
+    end;
+  end;
+end;
+
+procedure TDeepSpecMainForm.PopulateTreeFromSpec(ATree: TTreeView;
+  ANodes: TList<TSpecNode>);
+
+  procedure AddNodes(const AParentId: string; AParentNode: TTreeNode);
+  var
+    LNode: TTreeNode;
+    I: Integer;
+  begin
+    for I := 0 to ANodes.Count - 1 do
+    begin
+      if ANodes[I].ParentId = AParentId then
+      begin
+        LNode := ATree.Items.AddChild(AParentNode, ANodes[I].Title);
+        LNode.Data := Pointer(I);
+        AddNodes(ANodes[I].Id, LNode);
+      end;
+    end;
+  end;
+
+begin
+  if (ATree = nil) or (ANodes = nil) then Exit;
+  ATree.Items.BeginUpdate;
+  try
+    ATree.Items.Clear;
+    AddNodes('', nil);
+    ATree.FullExpand;
+  finally
+    ATree.Items.EndUpdate;
+  end;
+end;
+
+procedure TDeepSpecMainForm.PopulateDocsPanel;
+var
+  LDocs: TArray<string>;
+begin
+  if FDocsMemo = nil then Exit;
+  FDocsMemo.Lines.BeginUpdate;
+  try
+    FDocsMemo.Lines.Clear;
+    if FController = nil then Exit;
+    LDocs := FController.DocsFiles;
+    if Length(LDocs) = 0 then
+    begin
+      FDocsMemo.Lines.Add('(no docs found)');
+      Exit;
+    end;
+    FDocsMemo.Lines.Add(Format('Documents (%d):', [Length(LDocs)]));
+    for var LDoc in LDocs do
+      FDocsMemo.Lines.Add('  ' + ExtractFileName(LDoc));
+  finally
+    FDocsMemo.Lines.EndUpdate;
+  end;
 end;
 
 end.
