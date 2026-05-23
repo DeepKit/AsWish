@@ -21,7 +21,8 @@ uses
   DeepSpec.Services.TreeBuilder,
   DeepSpec.Services.Prompts,
   DeepSpec.Services.Decisions,
-  DeepSpec.Services.LLM;
+  DeepSpec.Services.LLM,
+  DeepSpec.Services.Settings;
 
 type
   TDeepSpecController = class
@@ -34,9 +35,13 @@ type
     FPrompts: TDeepSpecPromptService;
     FDecisions: TDeepSpecDecisionsService;
     FLLM: TDeepSpecLLMService;
+    FSettings: TDeepSpecSettingsService;
     FStatus: IShellStatusManager;
     FContext: IShellContextManager;
     FBus: IShellEventBus;
+    FDocsFiles: TArray<string>;
+    procedure ScanDocsFirst;
+    procedure WriteDocsSummary;
   public
     constructor Create(
       AProjectService: TDeepSpecProjectService;
@@ -47,6 +52,7 @@ type
       APrompts: TDeepSpecPromptService;
       ADecisions: TDeepSpecDecisionsService;
       ALLM: TDeepSpecLLMService;
+      ASettings: TDeepSpecSettingsService;
       const AStatus: IShellStatusManager;
       const AContext: IShellContextManager;
       const ABus: IShellEventBus);
@@ -64,6 +70,8 @@ type
     property TreeBuilder: TDeepSpecTreeBuilder read FTreeBuilder;
     property Decisions: TDeepSpecDecisionsService read FDecisions;
     property LLM: TDeepSpecLLMService read FLLM;
+    property Settings: TDeepSpecSettingsService read FSettings;
+    property DocsFiles: TArray<string> read FDocsFiles;
   end;
 
 implementation
@@ -82,6 +90,7 @@ constructor TDeepSpecController.Create(
   APrompts: TDeepSpecPromptService;
   ADecisions: TDeepSpecDecisionsService;
   ALLM: TDeepSpecLLMService;
+  ASettings: TDeepSpecSettingsService;
   const AStatus: IShellStatusManager;
   const AContext: IShellContextManager;
   const ABus: IShellEventBus);
@@ -95,6 +104,7 @@ begin
   FPrompts := APrompts;
   FDecisions := ADecisions;
   FLLM := ALLM;
+  FSettings := ASettings;
   FStatus := AStatus;
   FContext := AContext;
   FBus := ABus;
@@ -113,6 +123,9 @@ begin
   FProjectService.OpenProject(APath);
   FContext.SetProject(FProjectService.ProjectName, APath);
 
+  // Initialize settings (docs path)
+  FSettings.Initialize(APath);
+
   // Initialize spec store, render, prompts, and decisions services
   FSpecStore.Initialize(APath);
   FRender.Initialize(FProjectService.DeepSpecPath);
@@ -120,7 +133,7 @@ begin
   FDecisions.Initialize(FProjectService.DeepSpecPath);
   FDecisions.Load;
 
-  // Run scan
+  // Run scan (includes docs-first reading)
   RunScan;
 end;
 
@@ -326,6 +339,86 @@ begin
     end).Start;
 end;
 
+procedure TDeepSpecController.ScanDocsFirst;
+var
+  LDocsPath: string;
+  LDocFiles: TArray<string>;
+begin
+  LDocsPath := FSettings.DocsFullPath;
+  if not TDirectory.Exists(LDocsPath) then
+  begin
+    FStatus.Info('DeepSpec.Docs', 'No docs directory found at ' + LDocsPath);
+    FDocsFiles := nil;
+    Exit;
+  end;
+
+  FStatus.Progress('scan', 'DeepSpec.Docs', 5, 'Reading docs from ' + LDocsPath);
+
+  LDocFiles := TDirectory.GetFiles(LDocsPath, '*.md',
+    TSearchOption.soAllDirectories);
+  var LMoreDocs := TDirectory.GetFiles(LDocsPath, '*.txt',
+    TSearchOption.soAllDirectories);
+
+  var LList := TList<string>.Create;
+  try
+    for var Lf in LDocFiles do
+      LList.Add(Lf);
+    for var Lf in LMoreDocs do
+      LList.Add(Lf);
+    FDocsFiles := LList.ToArray;
+  finally
+    LList.Free;
+  end;
+
+  FStatus.Progress('scan', 'DeepSpec.Docs', 15,
+    Format('Found %d document(s) in docs/', [Length(FDocsFiles)]));
+
+  for var I := 0 to High(FDocsFiles) do
+    FStatus.Info('DeepSpec.Docs', '  ' + ExtractFileName(FDocsFiles[I]));
+end;
+
+procedure TDeepSpecController.WriteDocsSummary;
+var
+  LSb: TStringBuilder;
+  LOutPath: string;
+begin
+  if Length(FDocsFiles) = 0 then Exit;
+
+  LSb := TStringBuilder.Create;
+  try
+    LSb.AppendLine('version: "1.0"');
+    LSb.AppendLine('docs_path: "' + FSettings.DocsFullPath.Replace('\', '/') + '"');
+    LSb.AppendLine('count: ' + Length(FDocsFiles).ToString);
+    LSb.AppendLine('files:');
+
+    for var LFile in FDocsFiles do
+    begin
+      var LRelPath := LFile.Substring(Length(FSettings.DocsFullPath) + 1);
+      LSb.AppendLine('  - path: "' + LRelPath.Replace('\', '/') + '"');
+      LSb.AppendLine('    name: "' + ExtractFileName(LFile) + '"');
+
+      // Read first line as title hint
+      try
+        var LLines := TFile.ReadAllLines(LFile, TEncoding.UTF8);
+        if Length(LLines) > 0 then
+        begin
+          var LTitle := LLines[0].Trim;
+          if LTitle.StartsWith('#') then
+            LTitle := LTitle.Trim(['#']).Trim;
+          LSb.AppendLine('    title: "' + LTitle + '"');
+        end;
+      except
+        LSb.AppendLine('    title: ""');
+      end;
+    end;
+
+    LOutPath := TPath.Combine(FProjectService.DeepSpecPath, 'docs-summary.yaml');
+    TFile.WriteAllText(LOutPath, LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
+  end;
+end;
+
 procedure TDeepSpecController.RunScan;
 begin
   if not FProjectService.IsOpen then
@@ -338,16 +431,19 @@ begin
   FStatus.TaskStart('scan', 'DeepSpec.Scan', 'Scanning ' + LPath);
 
   try
-    // Scan files
-    FScanService.ScanDirectory(LPath);
-    FStatus.Progress('scan', 'DeepSpec.Scan', 50, 'Classified ' +
-      FScanService.TotalFiles.ToString + ' files');
+    // Step 1: Read docs directory first
+    ScanDocsFirst;
 
-    // Detect project type
+    // Step 2: Full project scan
+    FStatus.Progress('scan', 'DeepSpec.Scan', 30, 'Scanning project files...');
+    FScanService.ScanDirectory(LPath);
+    FStatus.Progress('scan', 'DeepSpec.Scan', 40,
+      'Classified ' + FScanService.TotalFiles.ToString + ' files');
+
+    // Step 3: Detect project type
     var LType := 'unknown';
     if FScanService.CategoryCount(fcCode) > 0 then
     begin
-      // Check for Delphi
       var LCodeFiles := FScanService.GetFilesByCategory(fcCode);
       for var LFile in LCodeFiles do
         if LFile.EndsWith('.pas') or LFile.EndsWith('.dpr') then
@@ -376,23 +472,30 @@ begin
         end;
     end;
     FProjectService.SetProjectType(LType);
+    FStatus.Progress('scan', 'DeepSpec.Scan', 50,
+      'Detected project type: ' + LType);
 
-    // Create .deepspec directory
+    // Step 4: Write .deepspec structure
     FSpecStore.CreateDirectoryStructure;
-    FStatus.Progress('scan', 'DeepSpec.Scan', 70, 'Writing .deepspec');
-
-    // Write files
+    FStatus.Progress('scan', 'DeepSpec.Scan', 55, 'Writing .deepspec...');
     FSpecStore.WriteScanReport(FScanService);
     FSpecStore.WriteProjectSpec(FProjectService.ProjectName, LType, 0);
     FSpecStore.WriteEmptyTrees;
     FSpecStore.WriteGitIgnore;
 
-    // Build basic three trees from scan
+    // Write docs summary
+    WriteDocsSummary;
+
+    // Step 5: Build trees from scan
     FTreeBuilder.BuildFromScan(FScanService, FProjectService.ProjectName,
       FProjectService.ProjectPath);
-    FStatus.Progress('scan', 'DeepSpec.Scan', 80, 'Building trees');
+    FStatus.Progress('scan', 'DeepSpec.Scan', 70,
+      Format('Building trees (%d modules, %d views, %d data)',
+        [FTreeBuilder.ModuleNodes.Count,
+         FTreeBuilder.ViewNodes.Count,
+         FTreeBuilder.DataNodes.Count]));
 
-    // Write the populated trees
+    // Write populated trees
     FSpecStore.WriteTreeFile('trees/function-tree.yaml', ttFunction,
       FTreeBuilder.FunctionNodes);
     FSpecStore.WriteTreeFile('trees/module-tree.yaml', ttModule,
@@ -405,7 +508,8 @@ begin
     FSpecStore.WriteEvidenceFile('evidence/source-evidence.yaml',
       FTreeBuilder.EvidenceList);
 
-    // Render HTML
+    // Step 6: Render HTML
+    FStatus.Progress('scan', 'DeepSpec.Scan', 85, 'Rendering HTML...');
     FRender.RenderScanReport(FScanService, FProjectService.ProjectName, LType);
     FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles);
     FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
@@ -414,19 +518,21 @@ begin
     if FTreeBuilder.DataNodes.Count > 0 then
       FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
 
-    // Generate prompts for LLM workflow
+    // Step 7: Generate prompts
+    FStatus.Progress('scan', 'DeepSpec.Scan', 95, 'Generating LLM prompts...');
     FPrompts.WriteContextPack(FScanService, FProjectService.ProjectName, LType);
     FPrompts.WriteGenerationPrompt(FProjectService.ProjectName, LType);
 
     FStatus.Progress('scan', 'DeepSpec.Scan', 100, 'Done');
     FStatus.TaskFinish('scan',
-      Format('Scan complete: %d files (%d docs, %d code, %d ui, %d config, %d ai_rules)',
+      Format('Scan complete: %d files (%d docs, %d code, %d ui, %d config, %d ai_rules) | %d docs in docs/',
         [FScanService.TotalFiles,
          FScanService.CategoryCount(fcDocuments),
          FScanService.CategoryCount(fcCode),
          FScanService.CategoryCount(fcUI),
          FScanService.CategoryCount(fcConfig),
-         FScanService.CategoryCount(fcAiRules)]));
+         FScanService.CategoryCount(fcAiRules),
+         Length(FDocsFiles)]));
 
     // Notify UI to refresh
     var LEvent: TDeepShellEvent;

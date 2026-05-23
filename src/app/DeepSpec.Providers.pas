@@ -11,10 +11,14 @@ interface
 uses
   DeepBase.VCL.DeepShell.MainForm,
   DeepBase.VCL.DeepShell.Intf,
-  DeepSpec.Services.Project;
+  DeepSpec.Services.Project,
+  DeepSpec.Services.Scan,
+  DeepSpec.Services.TreeBuilder;
 
 procedure RegisterAllProviders(AForm: TDeepMainForm;
-  AProjectService: TDeepSpecProjectService);
+  AProjectService: TDeepSpecProjectService;
+  AScanService: TDeepSpecScanService;
+  ATreeBuilder: TDeepSpecTreeBuilder);
 
 implementation
 
@@ -24,18 +28,19 @@ uses
   DeepSpec.Providers.Inspector;
 
 type
-  /// <summary>
-  /// Helper to access protected registration methods from outside the class.
-  /// </summary>
   TDeepMainFormAccess = class(TDeepMainForm);
 
 procedure RegisterAllProviders(AForm: TDeepMainForm;
-  AProjectService: TDeepSpecProjectService);
+  AProjectService: TDeepSpecProjectService;
+  AScanService: TDeepSpecScanService;
+  ATreeBuilder: TDeepSpecTreeBuilder);
 begin
-  TDeepMainFormAccess(AForm).RegisterStructureProvider(TDeepSpecStructureProvider.Create);
+  TDeepMainFormAccess(AForm).RegisterStructureProvider(
+    TDeepSpecStructureProvider.Create(AScanService, ATreeBuilder));
   TDeepMainFormAccess(AForm).RegisterMainViewProvider(
     TDeepSpecMainViewProvider.Create(AProjectService));
-  TDeepMainFormAccess(AForm).RegisterInspectorProvider(TDeepSpecInspectorProvider.Create);
+  TDeepMainFormAccess(AForm).RegisterInspectorProvider(
+    TDeepSpecInspectorProvider.Create);
 end;
 
 end.
