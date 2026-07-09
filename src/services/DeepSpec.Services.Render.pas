@@ -273,6 +273,30 @@ begin
     if AHasDataTree then
       LSb.AppendLine('  <li><a href="data-tree.html">Data Tree</a></li>');
     LSb.AppendLine('</ul>');
+
+    // JS Bridge: forward export-optimization-prompt clicks to the WebView2 host.
+    // (Index page has no other data-action buttons, so a focused script suffices.
+    // Falls back to a visible alert when opened in a regular browser.)
+    LSb.AppendLine('<script>');
+    LSb.AppendLine('(function() {');
+    LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('  document.addEventListener("click", function(e) {');
+    LSb.AppendLine('    var t = e.target;');
+    LSb.AppendLine('    if (!(t instanceof HTMLElement)) return;');
+    LSb.AppendLine('    if (t.getAttribute("data-action") !== "export-optimization-prompt") return;');
+    LSb.AppendLine('    if (t.classList.contains("posted")) return;');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      try { window.chrome.webview.postMessage(JSON.stringify({action: "export-optimization-prompt"})); }');
+    LSb.AppendLine('      catch (err) { console.error("DeepSpec bridge:", err); return; }');
+    LSb.AppendLine('      t.classList.add("posted");');
+    LSb.AppendLine('      t.textContent = "✓ Prompt 已导出 (见 prompts/optimization-prompt.md)";');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("DeepSpec bridge unavailable. Open this page inside DeepSpec to export the prompt.");');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  });');
+    LSb.AppendLine('})();');
+    LSb.AppendLine('</script>');
+
     LSb.Append(PageFooter);
 
     TFile.WriteAllText(TPath.Combine(FBasePath, 'index.html'),
