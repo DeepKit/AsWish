@@ -22,7 +22,9 @@ uses
   DeepSpec.Services.Prompts,
   DeepSpec.Services.Decisions,
   DeepSpec.Services.LLM,
-  DeepSpec.Services.Settings;
+  DeepSpec.Services.Settings,
+  DeepSpec.Services.CandidateIngest,
+  DeepSpec.Models;
 
 type
   TDeepSpecController = class
@@ -42,6 +44,13 @@ type
     FDocsFiles: TArray<string>;
     procedure ScanDocsFirst;
     procedure WriteDocsSummary;
+    /// <summary>Defog one node by id (BUG-11 step 2): locate across the 4 trees,
+    ///  advance its FogState one step toward clear, persist the owning tree.
+    ///  Returns True if the node was found (and defogged if it had fog).</summary>
+    function DefogNodeById(const ANodeId: string): Boolean;
+    /// <summary>Read issues/doc-issues.yaml for rendering. Returns a caller-owned
+    ///  list (empty if no file / no project open). Never nil.</summary>
+    function LoadIssuesForRender: TList<TSpecIssue>;
   public
     constructor Create(
       AProjectService: TDeepSpecProjectService;
@@ -63,6 +72,10 @@ type
     procedure GenerateB;
     procedure RenderAll;
     procedure RefreshFromYaml;
+    /// <summary>Open an exploration ticket for a fog node (BUG-11 step 2):
+    ///  defogs the node one step, validates, persists to
+    ///  issues/doc-issues.yaml, and re-renders. No-op if no project open.</summary>
+    procedure CreateTicket(const ANodeId, ANodeTitle: string);
     procedure PromotePendingDecisions;
     function IsProjectOpen: Boolean;
     property ProjectService: TDeepSpecProjectService read FProjectService;
@@ -79,7 +92,8 @@ implementation
 uses
   System.IOUtils,
   DeepBase.VCL.DeepShell.Types,
-  DeepSpec.Models;
+  DeepSpec.Validation,
+  DeepSpec.Yaml.Writer;
 
 constructor TDeepSpecController.Create(
   AProjectService: TDeepSpecProjectService;
@@ -154,6 +168,156 @@ begin
     'Exported prompts to ' + FProjectService.DeepSpecPath + '\prompts\');
 end;
 
+function TDeepSpecController.LoadIssuesForRender: TList<TSpecIssue>;
+begin
+  Result := nil;
+  if FProjectService.IsOpen then
+    Result := FSpecStore.ReadIssuesFile('issues/doc-issues.yaml');
+  if Result = nil then
+    Result := TList<TSpecIssue>.Create;
+end;
+
+function TDeepSpecController.DefogNodeById(const ANodeId: string): Boolean;
+
+  // Search one tree; if the node is found and still has fog, advance its
+  // FogState one step, write the node back, persist the owning tree file.
+  // Returns True only when a defog actually happened.
+  function TryDefog(ANodes: TList<TSpecNode>;
+    const ARel: string; ATree: TTreeType): Boolean;
+  var
+    I: Integer;
+    LN: TSpecNode;
+  begin
+    Result := False;
+    if ANodes = nil then Exit;
+    for I := 0 to ANodes.Count - 1 do
+      if ANodes[I].Id = ANodeId then
+      begin
+        LN := ANodes[I];
+        if LN.HasFogState and (LN.FogState <> DeepSpec.Models.fsClear) then
+        begin
+          LN.FogState := DeepSpec.Models.TSpecEnums.DefogOneStep(LN.FogState);
+          LN.UpdatedAt := Now;
+          ANodes[I] := LN;
+          FSpecStore.WriteTreeFile(ARel, ATree, ANodes);
+          Result := True;
+        end;
+        Exit;
+      end;
+  end;
+
+begin
+  Result := False;
+  if not FProjectService.IsOpen then Exit;
+
+  // Node ids are unique across trees; the first hit wins. A node already at
+  // clear yields no defog, but the ticket was still created against it.
+  Result := TryDefog(FTreeBuilder.FunctionNodes, 'trees/function-tree.yaml', ttFunction)
+    or TryDefog(FTreeBuilder.ModuleNodes, 'trees/module-tree.yaml', ttModule)
+    or TryDefog(FTreeBuilder.ViewNodes, 'trees/view-tree.yaml', ttView)
+    or TryDefog(FTreeBuilder.DataNodes, 'trees/data-tree.yaml', ttData);
+end;
+
+procedure TDeepSpecController.CreateTicket(const ANodeId, ANodeTitle: string);
+var
+  LIssues: TList<TSpecIssue>;
+  LIssue: TSpecIssue;
+  LMaxNum, LN: Integer;
+  LId: string;
+  LWriter: TYamlWriter;
+  LReport: TValidationReport;
+  LFoundNode: TSpecNode;
+begin
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('DeepSpec', 'No project open — cannot create ticket');
+    Exit;
+  end;
+
+  // Locate the fog node (value copy). Empty Id => not found.
+  LFoundNode := FTreeBuilder.FindNodeById(ANodeId);
+  if LFoundNode.Id = '' then
+  begin
+    FStatus.LogError('DeepSpec', 'Cannot create ticket: node not found: ' + ANodeId, '');
+    Exit;
+  end;
+
+  // Build the ticket with research defaults (AFK-eligible exploration).
+  // id = issue-<next ordinal>, deduped against existing issues.
+  LIssues := FSpecStore.ReadIssuesFile('issues/doc-issues.yaml');
+  try
+    LMaxNum := 0;
+    for var LExisting in LIssues do
+    begin
+      var LRest := LExisting.Id;
+      if LRest.StartsWith('issue-', True) then
+        LRest := LRest.Substring('issue-'.Length);
+      if TryStrToInt(LRest, LN) and (LN > LMaxNum) then
+        LMaxNum := LN;
+    end;
+    LId := 'issue-' + (LMaxNum + 1).ToString;
+
+    LIssue := Default(TSpecIssue);
+    LIssue.Id := LId;
+    LIssue.Severity := DeepSpec.Models.isMedium;
+    LIssue.IssueType := DeepSpec.Models.itResearchTicket;
+    if ANodeTitle <> '' then
+      LIssue.Title := 'Research: ' + ANodeTitle
+    else
+      LIssue.Title := 'Research: ' + ANodeId;
+    LIssue.Description := 'Explore foggy requirement endpoint ' + ANodeId +
+      ' and converge its fog state toward clear.';
+    SetLength(LIssue.AffectedNodes, 1);
+    LIssue.AffectedNodes[0] := ANodeId;
+    LIssue.Status := DeepSpec.Models.issOpen;
+    LIssue.HasRequiresHuman := True;
+    LIssue.RequiresHuman := False; // research ticket is AFK-eligible by default
+    LIssue.CreatedAt := Now;
+    LIssue.UpdatedAt := Now;
+    LIssues.Add(LIssue);
+
+    // Validate the assembled YAML before persisting (BUG-11 step 1 layer).
+    LWriter := TYamlWriter.Create;
+    try
+      LWriter.WriteIssuesFile(LIssues);
+      var LYaml := LWriter.ToString;
+      var LValidator := TYamlValidator.Create;
+      try
+        LReport := LValidator.ValidateIssuesFile(LYaml);
+        if LReport.HasErrors then
+        begin
+          var LMsg := 'Ticket validation failed — not persisted: ';
+          for var LR in LReport.Errors do
+            if LR.Severity = vsError then
+              LMsg := LMsg + LR.Rule + ' ';
+          LMsg := TrimRight(LMsg);
+          FStatus.LogError('DeepSpec', LMsg,
+            TPath.Combine(FProjectService.DeepSpecPath, 'issues\doc-issues.yaml'));
+          Exit;
+        end;
+      finally
+        LValidator.Free;
+      end;
+
+      FSpecStore.WriteIssuesFile('issues/doc-issues.yaml', LIssues);
+    finally
+      LWriter.Free;
+    end;
+  finally
+    LIssues.Free;
+  end;
+
+  // Defog the node one step + persist the owning tree.
+  DefogNodeById(ANodeId);
+
+  // Re-render so the Fog Map and Open Tickets reflect the new state.
+  RenderAll;
+
+  FStatus.Info('DeepSpec',
+    'Created ticket ' + LId + ' for node ' + ANodeId +
+    ' (defogged one step). See issues/doc-issues.yaml.');
+end;
+
 procedure TDeepSpecController.RenderAll;
 begin
   if not FProjectService.IsOpen then
@@ -165,12 +329,35 @@ begin
   try
     FRender.RenderScanReport(FScanService, FProjectService.ProjectName,
       FProjectService.ProjectType);
-    FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles);
-    FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
-    FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
-    FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
-    if FTreeBuilder.DataNodes.Count > 0 then
-      FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
+    var LIssuesR := LoadIssuesForRender;
+    try
+      FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles,
+        FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR,
+        FTreeBuilder.DataNodes.Count > 0);
+      FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
+      FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
+      FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
+      if FTreeBuilder.DataNodes.Count > 0 then
+        FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
+      FRender.RenderProblemsPage(FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR);
+    finally
+      LIssuesR.Free;
+    end;
+
+    var LBundlePath := TPath.Combine(FProjectService.DeepSpecPath, 'bundles.yaml');
+    if TFile.Exists(LBundlePath) then
+    begin
+      var LBundles := FSpecStore.ReadBundlesFile(LBundlePath);
+      try
+        FRender.RenderBundlesPage(LBundles, FTreeBuilder.FunctionNodes,
+          FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes);
+      finally
+        LBundles.Free;
+      end;
+    end;
+
     FStatus.Info('DeepSpec.Render',
       'Re-rendered HTML to ' + FProjectService.DeepSpecPath + '\html\');
   except
@@ -201,12 +388,34 @@ begin
       if TFile.Exists(TPath.Combine(FProjectService.DeepSpecPath, 'trees\data-tree.yaml')) then
         LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
 
-      FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles);
-      FRender.RenderTree('function-tree', 'Function Tree', LFunc);
-      FRender.RenderTree('module-tree', 'Module Tree', LModule);
-      FRender.RenderTree('view-tree', 'View Tree', LView);
-      if (LData <> nil) and (LData.Count > 0) then
-        FRender.RenderTree('data-tree', 'Data Tree', LData);
+      // Reload path: data tree presence follows the loaded LData, not
+      // FTreeBuilder (which may be stale here). Mirrors the render guard below.
+      var LIssuesR := LoadIssuesForRender;
+      try
+        FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles,
+          LFunc, LModule, LView, LData, LIssuesR,
+          (LData <> nil) and (LData.Count > 0));
+        FRender.RenderTree('function-tree', 'Function Tree', LFunc);
+        FRender.RenderTree('module-tree', 'Module Tree', LModule);
+        FRender.RenderTree('view-tree', 'View Tree', LView);
+        if (LData <> nil) and (LData.Count > 0) then
+          FRender.RenderTree('data-tree', 'Data Tree', LData);
+        FRender.RenderProblemsPage(LFunc, LModule, LView, LData, LIssuesR);
+      finally
+        LIssuesR.Free;
+      end;
+
+      // Bundles page
+      var LBundlePath := TPath.Combine(FProjectService.DeepSpecPath, 'bundles.yaml');
+      if TFile.Exists(LBundlePath) then
+      begin
+        var LBundles := FSpecStore.ReadBundlesFile(LBundlePath);
+        try
+          FRender.RenderBundlesPage(LBundles, LFunc, LModule, LView, LData);
+        finally
+          LBundles.Free;
+        end;
+      end;
 
       var LMsg := Format('Refreshed HTML from YAML: %d func / %d module / %d view',
         [LFunc.Count, LModule.Count, LView.Count]);
@@ -231,6 +440,7 @@ end;
 procedure TDeepSpecController.PromotePendingDecisions;
 var
   LCount: Integer;
+  LTreeNames: TArray<string>;
 begin
   if not FProjectService.IsOpen then
   begin
@@ -241,10 +451,35 @@ begin
   try
     LCount := FDecisions.PromotePending;
     if LCount = 0 then
-      FStatus.Info('DeepSpec.Decisions', 'No pending decisions to promote.')
-    else
-      FStatus.Info('DeepSpec.Decisions',
-        Format('Promoted %d pending decision(s) to formal decisions.', [LCount]));
+    begin
+      FStatus.Info('DeepSpec.Decisions', 'No pending decisions to promote.');
+      Exit;
+    end;
+
+    FStatus.Info('DeepSpec.Decisions',
+      Format('Promoted %d pending decision(s) to formal decisions.', [LCount]));
+
+    // Apply state machine transitions to all trees
+    LTreeNames := TArray<string>.Create(
+      'trees/function-tree.yaml', 'trees/module-tree.yaml',
+      'trees/view-tree.yaml', 'trees/data-tree.yaml');
+
+    for var LTree in LTreeNames do
+    begin
+      if not TFile.Exists(TPath.Combine(FProjectService.DeepSpecPath, LTree)) then Continue;
+
+      // Read and write back transitions inline
+      var LNodes := FSpecStore.ReadTreeFile(LTree);
+      try
+        if LNodes <> nil then
+        begin
+          FDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
+          FSpecStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
+        end;
+      finally
+        LNodes.Free;
+      end;
+    end;
   except
     on E: Exception do
       FStatus.LogError('DeepSpec.Decisions',
@@ -272,6 +507,9 @@ begin
   FStatus.TaskStart('llm-gen', 'DeepSpec.LLM',
     'Calling LLM to generate B (this may take 10-60 seconds)...');
 
+  var LLLMRef := FLLM; // capture before thread
+  var LDeepSpecPath := FProjectService.DeepSpecPath;
+
   TThread.CreateAnonymousThread(
     procedure
     var
@@ -282,27 +520,28 @@ begin
       LCandidatePath: string;
     begin
       LStatus := FStatus; // capture
-      LCandidatePath := TPath.Combine(FProjectService.DeepSpecPath, 'llm\candidate-output.yaml');
-      LContextPath := TPath.Combine(FProjectService.DeepSpecPath, 'prompts\context-pack.md');
+      LCandidatePath := TPath.Combine(LDeepSpecPath, 'llm\candidate-output.yaml');
+      LContextPath := TPath.Combine(LDeepSpecPath, 'prompts\context-pack.md');
 
       try
         if TFile.Exists(LContextPath) then
           LPrompt := TFile.ReadAllText(LContextPath, TEncoding.UTF8)
         else
         begin
-          TThread.Queue(nil,
+          var LErrProc: TThreadProcedure :=
             procedure
             begin
               LStatus.LogError('DeepSpec.LLM',
                 'Context pack not found. Run scan first.', LContextPath);
               LStatus.TaskFinish('llm-gen', 'Failed: no context pack');
-            end);
+            end;
+          TThread.Synchronize(nil, LErrProc);
           Exit;
         end;
 
-        LResult := FLLM.Generate(LPrompt);
+        LResult := LLLMRef.Generate(LPrompt);
 
-        TThread.Queue(nil,
+        var LQueueProc: TThreadProcedure :=
           procedure
           begin
             // Ensure llm directory exists
@@ -313,27 +552,75 @@ begin
             if LResult.Success then
             begin
               TFile.WriteAllText(LCandidatePath, LResult.Content, TEncoding.UTF8);
-              LStatus.TaskFinish('llm-gen',
-                Format('LLM done in %dms. Tokens in/out: %d/%d. Output: %s',
-                  [LResult.DurationMs, LResult.InputTokens, LResult.OutputTokens,
-                   LCandidatePath]));
+              // BUG-8 close the loop: ingest candidate through the strongly-
+              // typed sandbox, merge into live trees, persist, and re-render.
+              // All on the UI thread (we are inside TThread.Queue). Failure
+              // here must not unwind the already-written candidate — log and
+              // let the user RefreshFromYaml manually as a fallback.
+              try
+                var LCand := TDeepSpecCandidateIngest.Create(FSpecStore);
+                try
+                  var LIngest := LCand.Ingest(LResult.Content,
+                    FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+                    FTreeBuilder.ViewNodes);
+                  try
+                    var LStats := LCand.MergeInto(LIngest.Accepted,
+                      FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+                      FTreeBuilder.ViewNodes);
+
+                    // Persist the merged trees so disk matches memory and a
+                    // later RefreshFromYaml / next session sees the same state.
+                    FSpecStore.WriteTreeFile('trees/function-tree.yaml',
+                      ttFunction, FTreeBuilder.FunctionNodes);
+                    FSpecStore.WriteTreeFile('trees/module-tree.yaml',
+                      ttModule, FTreeBuilder.ModuleNodes);
+                    FSpecStore.WriteTreeFile('trees/view-tree.yaml',
+                      ttView, FTreeBuilder.ViewNodes);
+
+                    // Fog convergence + re-render from the updated memory trees.
+                    RenderAll;
+
+                    LStatus.TaskFinish('llm-gen',
+                      Format('LLM done %dms (in/out %d/%d). Ingested %d nodes: %d merged, %d added, %d fog cleared; rejected %d, %d warnings.',
+                        [LResult.DurationMs, LResult.InputTokens,
+                         LResult.OutputTokens, LIngest.Accepted.Count,
+                         LStats.Merged, LStats.Added, LStats.FogCleared,
+                         LIngest.Rejected, LIngest.Warnings.Count]));
+                  finally
+                    LIngest.FreeOwned;
+                  end;
+                finally
+                  LCand.Free;
+                end;
+              except
+                on E: Exception do
+                begin
+                  LStatus.LogError('DeepSpec.Candidate',
+                    'Candidate ingest/merge failed: ' + E.Message, E.ClassName);
+                  LStatus.TaskFinish('llm-gen',
+                    Format('LLM done %dms but ingest failed: %s (candidate saved at %s)',
+                      [LResult.DurationMs, E.Message, LCandidatePath]));
+                end;
+              end;
             end
             else
             begin
               LStatus.LogError('DeepSpec.LLM', 'LLM call failed', LResult.ErrorMessage);
               LStatus.TaskFinish('llm-gen', 'Failed: ' + LResult.ErrorMessage);
             end;
-          end);
+          end;
+        TThread.Queue(nil, LQueueProc);
       except
         on E: Exception do
         begin
           var LMsg := E.Message;
-          TThread.Queue(nil,
+          var LExProc: TThreadProcedure :=
             procedure
             begin
               LStatus.LogError('DeepSpec.LLM', 'LLM exception', LMsg);
               LStatus.TaskFinish('llm-gen', 'Failed: ' + LMsg);
-            end);
+            end;
+          TThread.Queue(nil, LExProc);
         end;
       end;
     end).Start;
@@ -393,7 +680,9 @@ begin
 
     for var LFile in FDocsFiles do
     begin
-      var LRelPath := LFile.Substring(Length(FSettings.DocsFullPath) + 1);
+      var LRoot := FSettings.DocsFullPath;
+      if not LFile.StartsWith(LRoot, True) then Continue;
+      var LRelPath := LFile.Substring(Length(LRoot) + 1);
       LSb.AppendLine('  - path: "' + LRelPath.Replace('\', '/') + '"');
       LSb.AppendLine('    name: "' + ExtractFileName(LFile) + '"');
 
@@ -511,12 +800,35 @@ begin
     // Step 6: Render HTML
     FStatus.Progress('scan', 'DeepSpec.Scan', 85, 'Rendering HTML...');
     FRender.RenderScanReport(FScanService, FProjectService.ProjectName, LType);
-    FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles);
-    FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
-    FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
-    FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
-    if FTreeBuilder.DataNodes.Count > 0 then
-      FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
+    var LIssuesR := LoadIssuesForRender;
+    try
+      FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles,
+        FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR,
+        FTreeBuilder.DataNodes.Count > 0);
+      FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
+      FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
+      FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
+      if FTreeBuilder.DataNodes.Count > 0 then
+        FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
+      FRender.RenderProblemsPage(FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR);
+    finally
+      LIssuesR.Free;
+    end;
+
+    // Bundles page
+    var LBundlePath := TPath.Combine(FProjectService.DeepSpecPath, 'bundles.yaml');
+    if TFile.Exists(LBundlePath) then
+    begin
+      var LBundles := FSpecStore.ReadBundlesFile(LBundlePath);
+      try
+        FRender.RenderBundlesPage(LBundles, FTreeBuilder.FunctionNodes,
+          FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes);
+      finally
+        LBundles.Free;
+      end;
+    end;
 
     // Step 7: Generate prompts
     FStatus.Progress('scan', 'DeepSpec.Scan', 95, 'Generating LLM prompts...');

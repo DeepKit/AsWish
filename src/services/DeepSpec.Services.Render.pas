@@ -46,7 +46,8 @@ type
     procedure RenderScanReport(AScan: TDeepSpecScanService;
       const AProjectName, AProjectType: string);
     procedure RenderIndex(const AProjectName: string; ATotalFiles: Integer;
-      AHasDataTree: Boolean = True);
+      AFunc, AModule, AView, AData: TList<TSpecNode>;
+      AIssues: TList<TSpecIssue>; AHasDataTree: Boolean = True);
     procedure RenderTree(const ATreeName, ATreeTitle: string;
       ANodes: System.Generics.Collections.TList<DeepSpec.Models.TSpecNode>);
     procedure RenderProblemsPage(
@@ -69,7 +70,8 @@ implementation
 uses
   System.IOUtils,
   System.DateUtils,
-  System.StrUtils;
+  System.StrUtils,
+  System.Generics.Defaults;
 
 procedure TDeepSpecRenderService.Initialize(const ADeepSpecPath: string);
 begin
@@ -182,15 +184,81 @@ begin
 end;
 
 procedure TDeepSpecRenderService.RenderIndex(const AProjectName: string;
-  ATotalFiles: Integer; AHasDataTree: Boolean);
+  ATotalFiles: Integer; AFunc, AModule, AView, AData: TList<TSpecNode>;
+  AIssues: TList<TSpecIssue>; AHasDataTree: Boolean);
 var
   LSb: TStringBuilder;
+  LM: THealthMetrics;
+  LConflicts: Integer;
+  LHighShown, LIdx: Integer;
+  LI: TSpecIssue;
+  LSorted: TList<TSpecIssue>;
+  LCovStr, LConfStr: string;
 begin
   LSb := TStringBuilder.Create;
+  LSorted := nil;
   try
     LSb.Append(PageHeader('Index'));
     LSb.AppendLine('<h1>DeepSpec: ' + HtmlEscape(AProjectName) + '</h1>');
-    LSb.AppendLine('<p>Welcome to your project specification.</p>');
+    LSb.AppendLine('<p>项目规格健康度看板（BUG-9）。</p>');
+
+    // --- §2.3.1 文档健康度（4 stat 卡片）---
+    LM := ComputeHealthMetrics(AFunc, AModule, AView, AData, AIssues);
+    LConflicts := CountCrossTreeConflicts(AFunc, AModule, AView, AData);
+    LCovStr := FormatFloat('0.0', LM.CoveragePct);
+    LConfStr := FormatFloat('0', LM.AvgConfidence * 100.0);
+
+    LSb.AppendLine('<h2>文档健康度</h2>');
+    LSb.AppendLine('<div class="stat"><strong>' + LCovStr + '%</strong>覆盖率' +
+      '<small style="display:block;color:#6c757d;">已确认节点占比。文档够不够 AI 开发用。</small></div>');
+    LSb.AppendLine('<div class="stat"><strong>' + LConfStr + '%</strong>平均置信度' +
+      '<small style="display:block;color:#6c757d;">low=30 / medium=70 / high=100</small></div>');
+    LSb.AppendLine('<div class="stat"><strong>' + LM.DecisionBacklog.ToString +
+      '</strong>决策积压<small style="display:block;color:#6c757d;">未决 issue 数（status=open）</small></div>');
+    LSb.AppendLine('<div class="stat"><strong>' + LM.FogCount.ToString +
+      '</strong>雾区数<small style="display:block;color:#6c757d;">处于迷雾中的节点（fog≠clear）</small></div>');
+
+    // --- §2.3.2 高风险问题（top 5）---
+    LSb.AppendLine('<h2>高风险问题</h2>');
+    LSorted := TList<TSpecIssue>.Create;
+    if AIssues <> nil then
+      for LI in AIssues do
+        if (LI.Status = issOpen) and ((LI.Severity = isCritical) or (LI.Severity = isHigh)) then
+          LSorted.Add(LI);
+    // sort by severity asc (critical=0 < high=1) so most severe first
+    LSorted.Sort(TComparer<TSpecIssue>.Construct(
+      function(const A, B: TSpecIssue): Integer
+      begin
+        Result := Ord(A.Severity) - Ord(B.Severity);
+      end));
+    LHighShown := 0;
+    LSb.AppendLine('<ul style="padding-left: 0;">');
+    for LIdx := 0 to LSorted.Count - 1 do
+    begin
+      if LHighShown >= 5 then Break;
+      LI := LSorted[LIdx];
+      Inc(LHighShown);
+      LSb.AppendLine('<li class="problem"><span class="badge badge-conf-low">' +
+        HtmlEscape(TSpecEnums.IssueSeverityToStr(LI.Severity)) + '</span> ' +
+        '<a href="problems.html">' + HtmlEscape(LI.Title) + '</a>' +
+        ' <code>' + HtmlEscape(LI.Id) + '</code></li>');
+    end;
+    LSb.AppendLine('</ul>');
+    if LHighShown = 0 then
+      LSb.AppendLine('<p><em>当前无高风险未决问题。</em></p>');
+
+    // --- §2.3.3 冲突摘要 ---
+    LSb.AppendLine('<h2>冲突摘要</h2>');
+    LSb.AppendLine('<p>跨树断引用：' + LConflicts.ToString + ' 处。' +
+      ' <a href="problems.html">查看详情</a></p>');
+
+    // --- §2.3.4 优化 Prompt 入口 ---
+    LSb.AppendLine('<h2>优化 Prompt</h2>');
+    LSb.AppendLine('<p>依据当前健康度导出一段优化 Prompt，拷给原 AI 工具优化底层文件（旁路工具原则）。</p>');
+    LSb.AppendLine('<button class="btn-ticket" data-action="export-optimization-prompt">' +
+      '导出优化 Prompt</button>');
+
+    // --- 原有页面列表 ---
     LSb.AppendLine('<h2>Pages</h2>');
     LSb.AppendLine('<ul>');
     LSb.AppendLine('  <li><a href="scan-report.html">Scan Report</a> (' +
@@ -211,6 +279,7 @@ begin
       LSb.ToString, TEncoding.UTF8);
   finally
     LSb.Free;
+    if LSorted <> nil then LSorted.Free;
   end;
 end;
 
@@ -726,6 +795,10 @@ begin
 
     // Cross-tree consistency: detect broken cross-tree references
     LSb.AppendLine('<h2>Cross-Tree Consistency</h2>');
+    // 总数复用共享 helper（DRY，与 index.html 看板一致）
+    LSb.AppendLine('<p>跨树断引用共 ' +
+      CountCrossTreeConflicts(AFuncNodes, AModuleNodes, AViewNodes, ADataNodes).ToString +
+      ' 处：</p>');
     LAllIds := TDictionary<string, Boolean>.Create;
     try
       if AFuncNodes <> nil then for var LN in AFuncNodes do LAllIds.AddOrSetValue(LN.Id, True);
