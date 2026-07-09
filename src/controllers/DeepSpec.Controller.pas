@@ -76,6 +76,10 @@ type
     ///  defogs the node one step, validates, persists to
     ///  issues/doc-issues.yaml, and re-renders. No-op if no project open.</summary>
     procedure CreateTicket(const ANodeId, ANodeTitle: string);
+    /// <summary>BUG-9 §2.3.4: compute health metrics from the 4 trees + open
+    ///  issues, write an optimization prompt (Markdown) into prompts\, and
+    ///  report via status. No-op if no project open.</summary>
+    procedure ExportOptimizationPrompt;
     procedure PromotePendingDecisions;
     function IsProjectOpen: Boolean;
     property ProjectService: TDeepSpecProjectService read FProjectService;
@@ -316,6 +320,81 @@ begin
   FStatus.Info('DeepSpec',
     'Created ticket ' + LId + ' for node ' + ANodeId +
     ' (defogged one step). See issues/doc-issues.yaml.');
+end;
+
+procedure TDeepSpecController.ExportOptimizationPrompt;
+var
+  LIssues: TList<TSpecIssue>;
+  LM: THealthMetrics;
+  LConflicts: Integer;
+  LDir, LPath: string;
+  LSb: TStringBuilder;
+begin
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('DeepSpec', 'No project open — cannot export prompt');
+    Exit;
+  end;
+
+  // Compute metrics from the in-memory trees + persisted issues (same sources
+  // as the index dashboard), so the prompt and the dashboard agree.
+  LIssues := LoadIssuesForRender;
+  LSb := TStringBuilder.Create;
+  try
+    LM := TDeepSpecRenderService.ComputeHealthMetrics(FTreeBuilder.FunctionNodes,
+      FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes,
+      FTreeBuilder.DataNodes, LIssues);
+    LConflicts := TDeepSpecRenderService.CountCrossTreeConflicts(FTreeBuilder.FunctionNodes,
+      FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes,
+      FTreeBuilder.DataNodes);
+
+    LSb.AppendLine('# DeepSpec 文档优化 Prompt');
+    LSb.AppendLine;
+    LSb.AppendLine('> 旁路工具原则：DeepSpec 只做诊断，不改源代码。把本 Prompt 拷给原 AI 开发工具，优化底层规格文件。');
+    LSb.AppendLine;
+    LSb.AppendLine('## 当前健康度快照');
+    LSb.AppendLine('- 覆盖率（已确认节点占比）：' + FormatFloat('0.0', LM.CoveragePct) + '%');
+    LSb.AppendLine('- 平均置信度：' + FormatFloat('0', LM.AvgConfidence * 100.0) + '%');
+    LSb.AppendLine('- 决策积压（未决 issue 数）：' + LM.DecisionBacklog.ToString);
+    LSb.AppendLine('- 雾区数：' + LM.FogCount.ToString);
+    LSb.AppendLine('- 高风险未决 issue 数：' + LM.HighRiskOpen.ToString);
+    LSb.AppendLine('- 跨树断引用：' + LConflicts.ToString + ' 处');
+    LSb.AppendLine;
+    LSb.AppendLine('## 优化目标');
+    if LM.DecisionBacklog > 0 then
+      LSb.AppendLine('- 处理积压决策：逐个 issue 给出结论并 close。当前积压 ' +
+        LM.DecisionBacklog.ToString + ' 个。');
+    if LM.FogCount > 0 then
+      LSb.AppendLine('- 探索雾区：对 ' + LM.FogCount.ToString +
+        ' 个迷雾节点补一个 research_ticket / prototype，把信息从迷雾拉到迷雾→清晰。');
+    if LM.HighRiskOpen > 0 then
+      LSb.AppendLine('- 优先处理 ' + LM.HighRiskOpen.ToString +
+        ' 个高风险/critical issue（见 problems.html）。');
+    if LConflicts > 0 then
+      LSb.AppendLine('- 修复 ' + LConflicts.ToString +
+        ' 处跨树断引用（模块树/视图树引用了不存在的节点）。');
+    if LM.CoveragePct < 70.0 then
+      LSb.AppendLine('- 提升覆盖率：当前仅 ' + FormatFloat('0.0', LM.CoveragePct) +
+        '%，目标 ≥70%。补充已有节点的确认证据。');
+    LSb.AppendLine;
+    LSb.AppendLine('## 要求');
+    LSb.AppendLine('1. 只改 .deepspec/ 下的规格文件（tree/issues/docs），不改源代码。');
+    LSb.AppendLine('2. 每次改动后给出 diff 摘要，便于 DeepSpec 重新扫描对照。');
+    LSb.AppendLine('3. 优先级：高风险 issue > 断引用 > 雾区 > 覆盖率/置信度。');
+
+    LDir := TPath.Combine(FProjectService.DeepSpecPath, 'prompts');
+    TDirectory.CreateDirectory(LDir);
+    LPath := TPath.Combine(LDir, 'optimization-prompt.md');
+    TFile.WriteAllText(LPath, LSb.ToString, TEncoding.UTF8);
+
+    FStatus.Info('DeepSpec',
+      'Exported optimization prompt to ' + LPath +
+      ' (coverage=' + FormatFloat('0.0', LM.CoveragePct) +
+      '% backlog=' + LM.DecisionBacklog.ToString + ')');
+  finally
+    LIssues.Free;
+    LSb.Free;
+  end;
 end;
 
 procedure TDeepSpecController.RenderAll;

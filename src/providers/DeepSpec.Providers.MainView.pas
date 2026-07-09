@@ -32,6 +32,17 @@ uses
   DeepSpec.Services.Project;
 
 type
+  /// <summary>JS Bridge callback for creating an exploration ticket from a
+  /// fog node (BUG-11 step 2). The host (Controller.CreateTicket) defogs the
+  /// node one step, validates, and persists the ticket.</summary>
+  TCreateTicketProc = reference to procedure(
+    const ANodeId, ANodeTitle: string);
+
+  /// <summary>JS Bridge callback for exporting an optimization prompt
+  /// from the index dashboard (BUG-9 §2.3.4). No args — the host
+  /// (Controller.ExportOptimizationPrompt) computes metrics + writes file.</summary>
+  TExportOptPromptProc = reference to procedure;
+
   /// <summary>
   /// Holds a target URL and navigates the browser when it becomes ready.
   /// Also handles incoming postMessage events from the page (JS Bridge).
@@ -41,6 +52,8 @@ type
   private
     FTargetUrl: string;
     FProjectService: TDeepSpecProjectService;
+    FOnCreateTicket: TCreateTicketProc;
+    FOnExportOptPrompt: TExportOptPromptProc;
     procedure HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
     procedure HandleWebMessage(Sender: TCustomEdgeBrowser;
       Args: TWebMessageReceivedEventArgs);
@@ -48,15 +61,21 @@ type
     function YamlEscape(const S: string): string;
   public
     constructor CreateFor(AOwner: TComponent; const ATargetUrl: string;
-      AProjectService: TDeepSpecProjectService);
+      AProjectService: TDeepSpecProjectService;
+      AOnCreateTicket: TCreateTicketProc;
+      AOnExportOptPrompt: TExportOptPromptProc);
   end;
 
   TDeepSpecMainViewProvider = class(TInterfacedObject, IShellMainViewProvider)
   private
     FProjectService: TDeepSpecProjectService;
+    FOnCreateTicket: TCreateTicketProc;
+    FOnExportOptPrompt: TExportOptPromptProc;
     function GetIndexHtmlPath: string;
   public
-    constructor Create(AProjectService: TDeepSpecProjectService);
+    constructor Create(AProjectService: TDeepSpecProjectService;
+      AOnCreateTicket: TCreateTicketProc;
+      AOnExportOptPrompt: TExportOptPromptProc);
     function ProviderId: string;
     function CanOpen(const ARef: TShellObjectRef): Boolean;
     function GetViewForObject(const ARef: TShellObjectRef): TShellViewInfo;
@@ -75,11 +94,15 @@ uses
 { TBrowserNavigator }
 
 constructor TBrowserNavigator.CreateFor(AOwner: TComponent;
-  const ATargetUrl: string; AProjectService: TDeepSpecProjectService);
+  const ATargetUrl: string; AProjectService: TDeepSpecProjectService;
+  AOnCreateTicket: TCreateTicketProc;
+  AOnExportOptPrompt: TExportOptPromptProc);
 begin
   inherited Create(AOwner);
   FTargetUrl := ATargetUrl;
   FProjectService := AProjectService;
+  FOnCreateTicket := AOnCreateTicket;
+  FOnExportOptPrompt := AOnExportOptPrompt;
 end;
 
 procedure TBrowserNavigator.HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
@@ -126,7 +149,19 @@ begin
     LNodeTitle := LObj.GetValue<string>('node_title', '');
 
     if (LAction = 'node-confirm') or (LAction = 'node-reject') then
-      AppendPendingDecision(LAction, LNodeId, LNodeTitle);
+      AppendPendingDecision(LAction, LNodeId, LNodeTitle)
+    else if LAction = 'ticket-create' then
+    begin
+      // BUG-11 step 2: open an exploration ticket for the fog node.
+      if Assigned(FOnCreateTicket) then
+        FOnCreateTicket(LNodeId, LNodeTitle);
+    end
+    else if LAction = 'export-optimization-prompt' then
+    begin
+      // BUG-9 §2.3.4: host computes health metrics + writes a prompt file.
+      if Assigned(FOnExportOptPrompt) then
+        FOnExportOptPrompt;
+    end;
   finally
     LJson.Free;
   end;
@@ -171,10 +206,13 @@ end;
 
 { TDeepSpecMainViewProvider }
 
-constructor TDeepSpecMainViewProvider.Create(AProjectService: TDeepSpecProjectService);
+constructor TDeepSpecMainViewProvider.Create(AProjectService: TDeepSpecProjectService;
+  AOnCreateTicket: TCreateTicketProc; AOnExportOptPrompt: TExportOptPromptProc);
 begin
   inherited Create;
   FProjectService := AProjectService;
+  FOnCreateTicket := AOnCreateTicket;
+  FOnExportOptPrompt := AOnExportOptPrompt;
 end;
 
 function TDeepSpecMainViewProvider.ProviderId: string;
@@ -222,7 +260,8 @@ begin
       LUrl := 'about:blank';
 
     // Navigator gets owned by the browser, freed automatically.
-    LNavigator := TBrowserNavigator.CreateFor(LBrowser, LUrl, FProjectService);
+    LNavigator := TBrowserNavigator.CreateFor(LBrowser, LUrl, FProjectService,
+      FOnCreateTicket, FOnExportOptPrompt);
     LBrowser.OnCreateWebViewCompleted := LNavigator.HandleCreated;
     LBrowser.OnWebMessageReceived := LNavigator.HandleWebMessage;
 

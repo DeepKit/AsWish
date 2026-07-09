@@ -13,16 +13,19 @@ uses
   DeepBase.VCL.DeepShell.Intf,
   DeepSpec.Services.Project,
   DeepSpec.Services.Scan,
-  DeepSpec.Services.TreeBuilder;
+  DeepSpec.Services.TreeBuilder,
+  DeepSpec.Controller;
 
 procedure RegisterAllProviders(AForm: TDeepMainForm;
   AProjectService: TDeepSpecProjectService;
   AScanService: TDeepSpecScanService;
-  ATreeBuilder: TDeepSpecTreeBuilder);
+  ATreeBuilder: TDeepSpecTreeBuilder;
+  AController: TDeepSpecController);
 
 implementation
 
 uses
+  DeepSpec.Models,
   DeepSpec.Providers.Structure,
   DeepSpec.Providers.MainView,
   DeepSpec.Providers.Inspector;
@@ -33,14 +36,30 @@ type
 procedure RegisterAllProviders(AForm: TDeepMainForm;
   AProjectService: TDeepSpecProjectService;
   AScanService: TDeepSpecScanService;
-  ATreeBuilder: TDeepSpecTreeBuilder);
+  ATreeBuilder: TDeepSpecTreeBuilder;
+  AController: TDeepSpecController);
 begin
   TDeepMainFormAccess(AForm).RegisterStructureProvider(
     TDeepSpecStructureProvider.Create(AScanService, ATreeBuilder));
   TDeepMainFormAccess(AForm).RegisterMainViewProvider(
-    TDeepSpecMainViewProvider.Create(AProjectService));
+    TDeepSpecMainViewProvider.Create(AProjectService,
+      // BUG-11 step 2: JS Bridge ticket-create → Controller.CreateTicket
+      // (defog one step + validate + persist + re-render).
+      procedure(const ANodeId, ANodeTitle: string)
+      begin
+        AController.CreateTicket(ANodeId, ANodeTitle);
+      end,
+      // BUG-9 §2.3.4: JS Bridge export-optimization-prompt → Controller.
+      procedure
+      begin
+        AController.ExportOptimizationPrompt;
+      end));
   TDeepMainFormAccess(AForm).RegisterInspectorProvider(
-    TDeepSpecInspectorProvider.Create);
+    TDeepSpecInspectorProvider.Create(
+      function(const ANodeId: string): TSpecNode
+      begin
+        Result := ATreeBuilder.FindNodeById(ANodeId);
+      end));
 end;
 
 end.
