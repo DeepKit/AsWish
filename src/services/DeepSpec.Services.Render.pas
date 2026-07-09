@@ -17,6 +17,18 @@ uses
   DeepSpec.Models;
 
 type
+  /// <summary>Health metrics for the index dashboard (BUG-9 §2.2).
+  /// Pure computation over node lists (+ optional issues).</summary>
+  THealthMetrics = record
+    TotalNodes: Integer;
+    ConfirmedNodes: Integer;   // GenStatus = gsConfirmed
+    CoveragePct: Double;       // ConfirmedNodes / TotalNodes * 100 (0 if none)
+    AvgConfidence: Double;     // low=0.3 / medium=0.7 / high=1.0, mean
+    DecisionBacklog: Integer;  // issues with Status = issOpen
+    FogCount: Integer;         // nodes with HasFogState and FogState <> fsClear
+    HighRiskOpen: Integer;     // issues Status=issOpen and Severity in (isCritical,isHigh)
+  end;
+
   TDeepSpecRenderService = class(TInterfacedObject)
   private
     FBasePath: string;
@@ -26,20 +38,38 @@ type
     function StatusBadge(const AStatus: string): string;
     function ConfidenceBadge(const AConf: string): string;
     function SourceLayerBadge(const ALayer: string): string;
+    // CSS slug for a fog state: underscores -> hyphens (bugfix.md BUG-12),
+    // so badge-fog-unknown-unknowns matches the hyphen style of badge-fog-misty.
+    function FogStateCssClass(AFog: DeepSpec.Models.TFogState): string;
   public
     procedure Initialize(const ADeepSpecPath: string);
     procedure RenderScanReport(AScan: TDeepSpecScanService;
       const AProjectName, AProjectType: string);
-    procedure RenderIndex(const AProjectName: string; ATotalFiles: Integer);
+    procedure RenderIndex(const AProjectName: string; ATotalFiles: Integer;
+      AHasDataTree: Boolean = True);
     procedure RenderTree(const ATreeName, ATreeTitle: string;
       ANodes: System.Generics.Collections.TList<DeepSpec.Models.TSpecNode>);
+    procedure RenderProblemsPage(
+      AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>;
+      AIssues: TList<TSpecIssue>);
+    procedure RenderBundlesPage(
+      ABundles: TList<TSemanticBundle>;
+      AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>);
+    /// <summary>Compute health metrics over 4 trees (+ optional issues).
+    /// nil lists are treated as empty. Pure — no IO.</summary>
+    class function ComputeHealthMetrics(AFunc, AModule, AView, AData: TList<TSpecNode>;
+      AIssues: TList<TSpecIssue> = nil): THealthMetrics; static;
+    /// <summary>Count broken cross-tree references (orphan refs).
+    /// Shared by RenderIndex summary and RenderProblemsPage detail.</summary>
+    class function CountCrossTreeConflicts(AFunc, AModule, AView, AData: TList<TSpecNode>): Integer; static;
   end;
 
 implementation
 
 uses
   System.IOUtils,
-  System.DateUtils;
+  System.DateUtils,
+  System.StrUtils;
 
 procedure TDeepSpecRenderService.Initialize(const ADeepSpecPath: string);
 begin
@@ -152,7 +182,7 @@ begin
 end;
 
 procedure TDeepSpecRenderService.RenderIndex(const AProjectName: string;
-  ATotalFiles: Integer);
+  ATotalFiles: Integer; AHasDataTree: Boolean);
 var
   LSb: TStringBuilder;
 begin
@@ -165,10 +195,15 @@ begin
     LSb.AppendLine('<ul>');
     LSb.AppendLine('  <li><a href="scan-report.html">Scan Report</a> (' +
       ATotalFiles.ToString + ' files)</li>');
+    LSb.AppendLine('  <li><a href="problems.html">Problems</a></li>');
+    LSb.AppendLine('  <li><a href="bundles.html">Bundles</a></li>');
     LSb.AppendLine('  <li><a href="function-tree.html">Function Tree</a></li>');
     LSb.AppendLine('  <li><a href="module-tree.html">Module Tree</a></li>');
     LSb.AppendLine('  <li><a href="view-tree.html">View Tree</a></li>');
-    LSb.AppendLine('  <li><a href="data-tree.html">Data Tree</a></li>');
+    // Only link data-tree.html when it was actually rendered; otherwise the
+    // link 404s on non-Delphi projects (bugfix.md BUG-10).
+    if AHasDataTree then
+      LSb.AppendLine('  <li><a href="data-tree.html">Data Tree</a></li>');
     LSb.AppendLine('</ul>');
     LSb.Append(PageFooter);
 
@@ -194,6 +229,14 @@ end;
 function TDeepSpecRenderService.SourceLayerBadge(const ALayer: string): string;
 begin
   Result := '<span class="badge badge-source">' + HtmlEscape(ALayer) + '</span>';
+end;
+
+function TDeepSpecRenderService.FogStateCssClass(
+  AFog: DeepSpec.Models.TFogState): string;
+begin
+  // FogStateToStr returns YAML-style 'unknown_unknowns'; CSS class slugs use
+  // hyphens to match badge-fog-misty / badge-fog-foggy.
+  Result := DeepSpec.Models.TSpecEnums.FogStateToStr(AFog).Replace('_', '-');
 end;
 
 procedure TDeepSpecRenderService.RenderTree(const ATreeName, ATreeTitle: string;
@@ -225,6 +268,15 @@ var
     LSb.Append(ConfidenceBadge(DeepSpec.Models.TSpecEnums.ConfidenceToStr(LNode.Confidence)));
     LSb.Append(' ');
     LSb.Append(SourceLayerBadge(DeepSpec.Models.TSpecEnums.SourceLayerToStr(LNode.SourceLayer)));
+
+    // Fog badge (only when fog_state is explicitly set and not clear)
+    if LNode.HasFogState and (LNode.FogState <> DeepSpec.Models.fsClear) then
+    begin
+      var LFog := DeepSpec.Models.TSpecEnums.FogStateToStr(LNode.FogState);
+      LSb.Append(' <span class="badge badge-fog-' + FogStateCssClass(LNode.FogState) +
+        '" title="Requirement endpoint is in the fog">fog: ' +
+        HtmlEscape(LFog) + '</span>');
+    end;
 
     // Decision buttons for candidate nodes (JS Bridge writes back via WebView2 postMessage)
     if LStatus = 'candidate' then
@@ -268,6 +320,68 @@ var
       LSb.AppendLine('</ul></details>');
     end;
 
+    // Trust signals (collapsible)
+    if (Length(LNode.SourceRefs) > 0) or (Length(LNode.DecisionRefs) > 0) or
+      (Length(LNode.RelatedFunctions) > 0) or (Length(LNode.RelatedModules) > 0) or
+      (Length(LNode.RelatedViews) > 0) or (Length(LNode.RelatedData) > 0) then
+    begin
+      LSb.AppendLine('<details class="trust-signals"><summary>Trust Signals</summary>');
+      LSb.AppendLine('<div class="trust-signal-body">');
+
+      // Evidence sources
+      if Length(LNode.SourceRefs) > 0 then
+      begin
+        LSb.AppendLine('<div class="trust-section"><strong>Evidence:</strong>');
+        for var LRef in LNode.SourceRefs do
+        begin
+          LSb.Append('<span class="trust-item trust-ref">');
+          LSb.Append(HtmlEscape(LRef.RefId));
+          if LRef.Relevance <> '' then
+            LSb.Append(' <span class="trust-relevance">' + HtmlEscape(LRef.Relevance) + '</span>');
+          LSb.AppendLine('</span>');
+        end;
+        LSb.AppendLine('</div>');
+      end;
+
+      // Cross-tree references
+      var LHasCross := False;
+      if Length(LNode.RelatedFunctions) > 0 then begin LHasCross := True;
+        LSb.AppendLine('<div class="trust-section"><strong>Functions:</strong>');
+        for var LRef in LNode.RelatedFunctions do
+          LSb.Append('<span class="trust-item trust-func">' + HtmlEscape(LRef) + '</span>');
+        LSb.AppendLine('</div>');
+      end;
+      if Length(LNode.RelatedModules) > 0 then begin
+        LSb.AppendLine('<div class="trust-section"><strong>Modules:</strong>');
+        for var LRef in LNode.RelatedModules do
+          LSb.Append('<span class="trust-item trust-mod">' + HtmlEscape(LRef) + '</span>');
+        LSb.AppendLine('</div>');
+      end;
+      if Length(LNode.RelatedViews) > 0 then begin
+        LSb.AppendLine('<div class="trust-section"><strong>Views:</strong>');
+        for var LRef in LNode.RelatedViews do
+          LSb.Append('<span class="trust-item trust-view">' + HtmlEscape(LRef) + '</span>');
+        LSb.AppendLine('</div>');
+      end;
+      if Length(LNode.RelatedData) > 0 then begin
+        LSb.AppendLine('<div class="trust-section"><strong>Data:</strong>');
+        for var LRef in LNode.RelatedData do
+          LSb.Append('<span class="trust-item trust-data">' + HtmlEscape(LRef) + '</span>');
+        LSb.AppendLine('</div>');
+      end;
+
+      // Decision history
+      if Length(LNode.DecisionRefs) > 0 then
+      begin
+        LSb.AppendLine('<div class="trust-section"><strong>Decisions:</strong>');
+        for var LRef in LNode.DecisionRefs do
+          LSb.Append('<span class="trust-item trust-dec">' + HtmlEscape(LRef) + '</span>');
+        LSb.AppendLine('</div>');
+      end;
+
+      LSb.AppendLine('</div></details>');
+    end;
+
     if Length(LNode.Children) > 0 then
     begin
       LSb.AppendLine('<ul class="node-children">');
@@ -306,6 +420,9 @@ begin
     LSb.AppendLine('  .badge-conf-low { background: #f8d7da; color: #721c24; }');
     LSb.AppendLine('  .badge-conf-medium { background: #fff3cd; color: #856404; }');
     LSb.AppendLine('  .badge-conf-high { background: #d4edda; color: #155724; }');
+    LSb.AppendLine('  .badge-fog-misty { background: #fff3cd; color: #856404; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-fog-foggy { background: #ffe0b2; color: #e65100; font-size: 0.75em; }');
+    LSb.AppendLine('  .badge-fog-unknown-unknowns { background: #455a64; color: #fff; font-size: 0.75em; }');
     LSb.AppendLine('  .badge-source { background: #cce5ff; color: #004085; font-size: 0.8em; }');
     LSb.AppendLine('  .badge-gen-draft { background: #e2e3e5; color: #383d41; font-size: 0.75em; }');
     LSb.AppendLine('  .badge-gen-generated { background: #cce5ff; color: #004085; font-size: 0.75em; }');
@@ -331,6 +448,20 @@ begin
     LSb.AppendLine('  .decision-toolbar .btn-reject { color: #721c24; border-color: #f5c6cb; }');
     LSb.AppendLine('  .decision-toolbar .btn-reject:hover { background: #f8d7da; }');
     LSb.AppendLine('  .decision-toolbar button.posted { opacity: 0.5; cursor: default; }');
+    LSb.AppendLine('  .trust-signals summary { cursor: pointer; color: #6c757d; font-size: 0.85em;');
+    LSb.AppendLine('    padding: 0.2em 0.4em; border-top: 1px solid #dee2e6; margin-top: 0.3em; }');
+    LSb.AppendLine('  .trust-signal-body { padding: 0.4em; font-size: 0.9em; }');
+    LSb.AppendLine('  .trust-section { margin: 0.3em 0; }');
+    LSb.AppendLine('  .trust-section strong { color: #495057; font-size: 0.85em; }');
+    LSb.AppendLine('  .trust-item { display: inline-block; margin: 0.1em 0.3em;');
+    LSb.AppendLine('    padding: 0.1em 0.4em; border-radius: 3px; font-size: 0.85em; }');
+    LSb.AppendLine('  .trust-ref { background: #d1ecf1; color: #0c5460; }');
+    LSb.AppendLine('  .trust-func { background: #d4edda; color: #155724; }');
+    LSb.AppendLine('  .trust-mod { background: #cce5ff; color: #004085; }');
+    LSb.AppendLine('  .trust-view { background: #fff3cd; color: #856404; }');
+    LSb.AppendLine('  .trust-data { background: #e2d9f3; color: #4a2d8a; }');
+    LSb.AppendLine('  .trust-dec { background: #f5d0e8; color: #8b4572; }');
+    LSb.AppendLine('  .trust-relevance { color: #6c757d; font-size: 0.9em; }');
     LSb.AppendLine('</style>');
 
     LSb.AppendLine('<h1>' + HtmlEscape(ATreeTitle) + '</h1>');
@@ -383,6 +514,551 @@ begin
   finally
     LSb.Free;
     LNodeMap.Free;
+  end;
+end;
+
+procedure TDeepSpecRenderService.RenderProblemsPage(
+  AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>;
+  AIssues: TList<TSpecIssue>);
+var
+  LSb: TStringBuilder;
+  LAllIds: TDictionary<string, Boolean>;
+
+  procedure ScanNodes(const ATreeLabel: string; ANodes: TList<TSpecNode>);
+  begin
+    if ANodes = nil then Exit;
+    for var LNode in ANodes do
+    begin
+      // Low confidence
+      if LNode.Confidence = clLow then
+        LSb.AppendLine('<li class="problem problem-low-confidence">' +
+          '<span class="badge badge-conf-low">low confidence</span> ' +
+          HtmlEscape(LNode.Title) +
+          ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
+          ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
+          '</li>');
+
+      // No evidence (no source_refs and not generated/confirmed)
+      if (Length(LNode.SourceRefs) = 0)
+        and (LNode.GenStatus in [gsDraft, gsGenerated])
+        and (LNode.SourceLayer = slAiInferred) then
+        LSb.AppendLine('<li class="problem problem-no-evidence">' +
+          '<span class="badge badge-prob-no-evidence">no evidence</span> ' +
+          HtmlEscape(LNode.Title) +
+          ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
+          ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
+          '</li>');
+
+      // Candidate/unreviewed node (needs human review)
+      if (LNode.Status = nsCandidate) and (LNode.ReviewStatus = rsUnreviewed) then
+        LSb.AppendLine('<li class="problem problem-unreviewed">' +
+          '<span class="badge badge-prob-unreviewed">unreviewed</span> ' +
+          HtmlEscape(LNode.Title) +
+          ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
+          ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
+          '</li>');
+
+      // Uncertain node
+      if LNode.Status = nsUncertain then
+        LSb.AppendLine('<li class="problem problem-uncertain">' +
+          '<span class="badge badge-uncertain">uncertain</span> ' +
+          HtmlEscape(LNode.Title) +
+          ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
+          ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
+          '</li>');
+
+      // Fog: node whose requirement endpoint is in the fog (foggy or unknown_unknowns)
+      if LNode.HasFogState and (LNode.FogState in [
+        DeepSpec.Models.fsFoggy, DeepSpec.Models.fsUnknownUnknowns]) then
+      begin
+        var LFog := DeepSpec.Models.TSpecEnums.FogStateToStr(LNode.FogState);
+        LSb.AppendLine('<li class="problem problem-fog">' +
+          '<span class="badge badge-fog-' + FogStateCssClass(LNode.FogState) + '">fog: ' + HtmlEscape(LFog) + '</span> ' +
+          HtmlEscape(LNode.Title) +
+          ' <a href="#fog-map" class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</a>' +
+          ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
+          '</li>');
+      end;
+
+      // Orphan: has parent_id but parent not found in any tree
+      if LNode.ParentId <> '' then
+      begin
+        var LFound := False;
+        for var LN in AFuncNodes do
+          if LN.Id = LNode.ParentId then begin LFound := True; Break; end;
+        if not LFound then
+          for var LN in AModuleNodes do
+            if LN.Id = LNode.ParentId then begin LFound := True; Break; end;
+        if not LFound then
+          for var LN in AViewNodes do
+            if LN.Id = LNode.ParentId then begin LFound := True; Break; end;
+        if not LFound then
+          for var LN in ADataNodes do
+            if LN.Id = LNode.ParentId then begin LFound := True; Break; end;
+        if not LFound then
+          LSb.AppendLine('<li class="problem problem-orphan">' +
+            '<span class="badge badge-prob-orphan">orphan</span> ' +
+            HtmlEscape(LNode.Title) +
+            ' — parent <code>' + HtmlEscape(LNode.ParentId) + '</code> not found' +
+            ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
+            '</li>');
+      end;
+    end;
+  end;
+
+  procedure CheckNodeRefs(const ATreeLabel: string; ANodes: TList<TSpecNode>);
+  begin
+    if ANodes = nil then Exit;
+    for var LN in ANodes do
+    begin
+      for var LRef in LN.RelatedFunctions do
+        if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
+          LSb.AppendLine('<li class="problem problem-orphan">' +
+            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            HtmlEscape(LN.Title) + ' '#8594' func <code>' + HtmlEscape(LRef) + '</code> (not found)' +
+            ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
+      for var LRef in LN.RelatedModules do
+        if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
+          LSb.AppendLine('<li class="problem problem-orphan">' +
+            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            HtmlEscape(LN.Title) + ' '#8594' mod <code>' + HtmlEscape(LRef) + '</code> (not found)' +
+            ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
+      for var LRef in LN.RelatedViews do
+        if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
+          LSb.AppendLine('<li class="problem problem-orphan">' +
+            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            HtmlEscape(LN.Title) + ' '#8594' view <code>' + HtmlEscape(LRef) + '</code> (not found)' +
+            ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
+      for var LRef in LN.RelatedData do
+        if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
+          LSb.AppendLine('<li class="problem problem-orphan">' +
+            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            HtmlEscape(LN.Title) + ' '#8594' data <code>' + HtmlEscape(LRef) + '</code> (not found)' +
+            ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
+    end;
+  end;
+
+  // Emit nodes whose fog_state equals AFogTarget into the current Fog Map group.
+  // Captures LSb, LFoundAny, LHasFog from the enclosing scope.
+  procedure EmitFogNodes(const ALabel: string; ANodes: TList<TSpecNode>;
+    AFogTarget: DeepSpec.Models.TFogState; var LFoundAny, LHasFogOut: Boolean);
+  begin
+    if ANodes = nil then Exit;
+    for var LN in ANodes do
+      if LN.HasFogState and (LN.FogState = AFogTarget) then
+      begin
+        LFoundAny := True;
+        LHasFogOut := True;
+        LSb.AppendLine('<div class="fog-node">' +
+          '<span class="problem-tree">(' + HtmlEscape(ALabel) + ')</span> ' +
+          HtmlEscape(LN.Title) + ' <code>' + HtmlEscape(LN.Id) + '</code>' +
+          ' <button class="btn-ticket" data-action="ticket-create"' +
+          ' data-node-id="' + HtmlEscape(LN.Id) + '"' +
+          ' data-node-title="' + HtmlEscape(LN.Title) + '">＋ ticket</button></div>');
+      end;
+  end;
+
+begin
+  LSb := TStringBuilder.Create;
+  LAllIds := nil;
+  try
+    LSb.Append(PageHeader('Problems'));
+
+    LSb.AppendLine('<style>');
+    LSb.AppendLine('  .problem { list-style: none; padding: 0.4em 0.6em; margin: 0.3em 0;' +
+      ' border-radius: 4px; border-left: 3px solid #dc3545; background: #fff5f5; }');
+    LSb.AppendLine('  .problem-low-confidence { border-left-color: #ffc107; background: #fffdf5; }');
+    LSb.AppendLine('  .problem-no-evidence { border-left-color: #17a2b8; background: #f5fdff; }');
+    LSb.AppendLine('  .problem-unreviewed { border-left-color: #6c757d; background: #f8f9fa; }');
+    LSb.AppendLine('  .problem-uncertain { border-left-color: #dc3545; background: #fff5f5; }');
+    LSb.AppendLine('  .problem-orphan { border-left-color: #e83e8c; background: #fdf5ff; }');
+    LSb.AppendLine('  .problem-fog { border-left-color: #e65100; background: #fff8f0; }');
+    LSb.AppendLine('  .problem-tree { color: #6c757d; font-size: 0.85em; }');
+    LSb.AppendLine('  .problem code { font-size: 0.85em; color: #495057; }');
+    LSb.AppendLine('  .badge-prob-no-evidence { background: #d1ecf1; color: #0c5460; }');
+    LSb.AppendLine('  .badge-prob-unreviewed { background: #e2e3e5; color: #383d41; }');
+    LSb.AppendLine('  .badge-prob-orphan { background: #f5d0e8; color: #8b4572; }');
+    LSb.AppendLine('  .badge-fog-misty { background: #fff3cd; color: #856404; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-fog-foggy { background: #ffe0b2; color: #e65100; font-size: 0.8em; }');
+    LSb.AppendLine('  .badge-fog-unknown-unknowns { background: #455a64; color: #fff; font-size: 0.8em; }');
+    LSb.AppendLine('  .fog-group { margin: 0.5em 0; }');
+    LSb.AppendLine('  .fog-group-title { font-weight: 600; color: #495057; margin-bottom: 0.3em; }');
+    LSb.AppendLine('  .fog-node { padding: 0.3em 0.6em; margin: 0.2em 0; border-radius: 3px; background: #f8f9fa; }');
+    LSb.AppendLine('  .ticket { padding: 0.4em 0.6em; margin: 0.3em 0; border-radius: 4px;' +
+      ' border-left: 3px solid #4a90e2; background: #f0f4f8; }');
+    LSb.AppendLine('  .ticket code { font-size: 0.85em; color: #495057; }');
+    LSb.AppendLine('  .btn-ticket { font-size: 0.8em; margin-left: 0.5em; cursor: pointer;' +
+      ' background: #e3f2fd; border: 1px solid #90caf9; color: #1565c0; border-radius: 3px; }');
+    LSb.AppendLine('  .btn-ticket:hover { background: #bbdefb; }');
+    LSb.AppendLine('  .ticket-meta { color: #6c757d; font-size: 0.85em; margin-left: 0.5em; }');
+    LSb.AppendLine('  .prob-section { margin-top: 1.5em; }');
+    LSb.AppendLine('  .prob-summary { display: inline-block; margin: 0.5em 1em 0.5em 0;' +
+      ' padding: 0.5em 1em; background: #f0f4f8; border-left: 3px solid #4a90e2; }');
+    LSb.AppendLine('  .prob-summary strong { display: block; font-size: 1.5em; color: #4a90e2; }');
+    LSb.AppendLine('</style>');
+
+    LSb.AppendLine('<h1>Problems</h1>');
+    LSb.AppendLine('<p><a href="index.html">'#$2190' Back to index</a></p>');
+
+    // Summary
+    LSb.AppendLine('<h2>Summary</h2>');
+    var LFC: Integer := 0; if AFuncNodes <> nil then LFC := AFuncNodes.Count;
+    var LMC: Integer := 0; if AModuleNodes <> nil then LMC := AModuleNodes.Count;
+    var LVC: Integer := 0; if AViewNodes <> nil then LVC := AViewNodes.Count;
+    var LDC: Integer := 0; if ADataNodes <> nil then LDC := ADataNodes.Count;
+    LSb.AppendLine('<div class="prob-summary"><strong>' + LFC.ToString +
+      '</strong>Function nodes</div>');
+    LSb.AppendLine('<div class="prob-summary"><strong>' + LMC.ToString +
+      '</strong>Module nodes</div>');
+    LSb.AppendLine('<div class="prob-summary"><strong>' + LVC.ToString +
+      '</strong>View nodes</div>');
+    LSb.AppendLine('<div class="prob-summary"><strong>' + LDC.ToString +
+      '</strong>Data nodes</div>');
+
+    // Problem list
+    LSb.AppendLine('<h2>Issues</h2>');
+    LSb.AppendLine('<ul style="padding-left: 0;">');
+    ScanNodes('Function', AFuncNodes);
+    ScanNodes('Module', AModuleNodes);
+    ScanNodes('View', AViewNodes);
+    ScanNodes('Data', ADataNodes);
+    LSb.AppendLine('</ul>');
+
+    // Cross-tree consistency: detect broken cross-tree references
+    LSb.AppendLine('<h2>Cross-Tree Consistency</h2>');
+    LAllIds := TDictionary<string, Boolean>.Create;
+    try
+      if AFuncNodes <> nil then for var LN in AFuncNodes do LAllIds.AddOrSetValue(LN.Id, True);
+      if AModuleNodes <> nil then for var LN in AModuleNodes do LAllIds.AddOrSetValue(LN.Id, True);
+      if AViewNodes <> nil then for var LN in AViewNodes do LAllIds.AddOrSetValue(LN.Id, True);
+      if ADataNodes <> nil then for var LN in ADataNodes do LAllIds.AddOrSetValue(LN.Id, True);
+
+      LSb.AppendLine('<ul style="padding-left: 0;">');
+      CheckNodeRefs('Function', AFuncNodes);
+      CheckNodeRefs('Module', AModuleNodes);
+      CheckNodeRefs('View', AViewNodes);
+      CheckNodeRefs('Data', ADataNodes);
+      LSb.AppendLine('</ul>');
+    finally
+      LAllIds.Free;
+      LAllIds := nil;
+    end;
+
+    // Fog Map: nodes grouped by fog_state (the growing/shrinking map of foggy endpoints)
+    LSb.AppendLine('<h2 id="fog-map">Fog Map</h2>');
+    LSb.AppendLine('<p>Requirement endpoints still in the fog. Converges one-way: ' +
+      '<code>unknown_unknowns</code> '#8594' <code>foggy</code> '#8594' ' +
+      '<code>misty</code> '#8594' <code>clear</code>. ' +
+      'Resolve each via an open exploration ticket.</p>');
+
+    var LHasFog := False;
+    for var LState in [DeepSpec.Models.fsUnknownUnknowns,
+                       DeepSpec.Models.fsFoggy,
+                       DeepSpec.Models.fsMisty] do
+    begin
+      var LStateStr := DeepSpec.Models.TSpecEnums.FogStateToStr(LState);
+      var LFoundAny := False;
+      LSb.AppendLine('<div class="fog-group">');
+      LSb.AppendLine('<div class="fog-group-title"><span class="badge badge-fog-' +
+        FogStateCssClass(LState) + '">fog: ' + HtmlEscape(LStateStr) + '</span></div>');
+
+      EmitFogNodes('Function', AFuncNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes('Module', AModuleNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes('View', AViewNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes('Data', ADataNodes, LState, LFoundAny, LHasFog);
+
+      LSb.AppendLine('</div>');
+    end;
+
+    if not LHasFog then
+      LSb.AppendLine('<p><em>No nodes in the fog. All requirement endpoints are clear.</em></p>');
+
+    // Open Tickets: exploration tickets persisted in issues/doc-issues.yaml.
+    // Only open tickets of the four exploration types are shown here.
+    LSb.AppendLine('<h2 id="open-tickets">Open Tickets</h2>');
+    var LTicketCount := 0;
+    if AIssues <> nil then
+    begin
+      for var LI in AIssues do
+      begin
+        if LI.Status <> DeepSpec.Models.issOpen then Continue;
+        if not (LI.IssueType in [DeepSpec.Models.itResearchTicket,
+                                 DeepSpec.Models.itPrototypeTicket,
+                                 DeepSpec.Models.itGrillingTicket,
+                                 DeepSpec.Models.itFogUnknown]) then Continue;
+        Inc(LTicketCount);
+        var LTypeStr := DeepSpec.Models.TSpecEnums.IssueTypeToStr(LI.IssueType);
+        var LSevStr := DeepSpec.Models.TSpecEnums.IssueSeverityToStr(LI.Severity);
+        LSb.AppendLine('<div class="ticket">' +
+          '<span class="badge">' + HtmlEscape(LTypeStr) + '</span> ' +
+          '<span class="badge">' + HtmlEscape(LSevStr) + '</span> ' +
+          HtmlEscape(LI.Title) +
+          ' <code>' + HtmlEscape(LI.Id) + '</code>');
+        if Length(LI.AffectedNodes) > 0 then
+        begin
+          LSb.Append(' <span class="ticket-meta">affects: ');
+          for var J := 0 to High(LI.AffectedNodes) do
+          begin
+            if J > 0 then LSb.Append(', ');
+            LSb.Append('<code>' + HtmlEscape(LI.AffectedNodes[J]) + '</code>');
+          end;
+          LSb.AppendLine('</span>');
+        end
+        else
+          LSb.AppendLine('');
+        if LI.HasRequiresHuman then
+        begin
+          var LHumanity := 'AFK';
+          if LI.RequiresHuman then LHumanity := 'HITL';
+          LSb.AppendLine(' <span class="ticket-meta">' + LHumanity + '</span>');
+        end;
+        LSb.AppendLine('</div>');
+      end;
+    end;
+    if LTicketCount = 0 then
+      LSb.AppendLine('<p><em>No open exploration tickets. Open one from a fog node above.</em></p>');
+
+    // JS Bridge: forward ticket-create button clicks to the WebView2 host.
+    // Mirrors the tree-page handler. Ticket buttons are NOT greyed-out after a
+    // click (a node may open multiple tickets), so the handler skips the
+    // .posted swap for data-action="ticket-create".
+    LSb.AppendLine('<script>');
+    LSb.AppendLine('(function() {');
+    LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('  document.addEventListener("click", function(e) {');
+    LSb.AppendLine('    var t = e.target;');
+    LSb.AppendLine('    if (!(t instanceof HTMLElement)) return;');
+    LSb.AppendLine('    var action = t.getAttribute("data-action");');
+    LSb.AppendLine('    if (!action) return;');
+    LSb.AppendLine('    if (t.classList.contains("posted")) return;');
+    LSb.AppendLine('    var msg = {');
+    LSb.AppendLine('      action: action,');
+    LSb.AppendLine('      node_id: t.getAttribute("data-node-id") || "",');
+    LSb.AppendLine('      node_title: t.getAttribute("data-node-title") || ""');
+    LSb.AppendLine('    };');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      try { window.chrome.webview.postMessage(JSON.stringify(msg)); }');
+    LSb.AppendLine('      catch (err) { console.error("DeepSpec bridge:", err); return; }');
+    LSb.AppendLine('      // Ticket buttons stay re-clickable; only decision buttons grey out.');
+    LSb.AppendLine('      if (action !== "ticket-create") {');
+    LSb.AppendLine('        t.classList.add("posted");');
+    LSb.AppendLine('        t.textContent = (action === "node-confirm" ? "'#$2713' posted" : "'#$2715' posted");');
+    LSb.AppendLine('      }');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("DeepSpec bridge unavailable. Open this page inside DeepSpec to create tickets.");');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  });');
+    LSb.AppendLine('})();');
+    LSb.AppendLine('</script>');
+
+    LSb.Append(PageFooter);
+
+    TFile.WriteAllText(TPath.Combine(FBasePath, 'problems.html'),
+      LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
+  end;
+end;
+
+procedure TDeepSpecRenderService.RenderBundlesPage(
+  ABundles: TList<TSemanticBundle>;
+  AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>);
+var
+  LSb: TStringBuilder;
+  LAllNodes: TDictionary<string, TSpecNode>;
+begin
+  LAllNodes := TDictionary<string, TSpecNode>.Create;
+  LSb := TStringBuilder.Create;
+  try
+    // Build node lookup
+    if AFuncNodes <> nil then for var N in AFuncNodes do LAllNodes.AddOrSetValue(N.Id, N);
+    if AModuleNodes <> nil then for var N in AModuleNodes do LAllNodes.AddOrSetValue(N.Id, N);
+    if AViewNodes <> nil then for var N in AViewNodes do LAllNodes.AddOrSetValue(N.Id, N);
+    if ADataNodes <> nil then for var N in ADataNodes do LAllNodes.AddOrSetValue(N.Id, N);
+
+    LSb.Append(PageHeader('Semantic Bundles'));
+
+    LSb.AppendLine('<style>');
+    LSb.AppendLine('  .bundle { margin: 1em 0; padding: 0.8em; border: 1px solid #dee2e6; border-radius: 6px; }');
+    LSb.AppendLine('  .bundle-title { font-size: 1.1em; font-weight: 600; margin-bottom: 0.3em; }');
+    LSb.AppendLine('  .bundle-desc { color: #6c757d; font-size: 0.9em; margin-bottom: 0.5em; }');
+    LSb.AppendLine('  .bundle-nodes { list-style: none; padding-left: 0; }');
+    LSb.AppendLine('  .bundle-node { padding: 0.3em 0.5em; margin: 0.2em 0; border-radius: 3px; background: #f8f9fa; }');
+    LSb.AppendLine('  .bundle-actions { margin-top: 0.5em; }');
+    LSb.AppendLine('  .bundle-actions button { margin-right: 0.5em; padding: 0.3em 0.8em; cursor: pointer; }');
+    LSb.AppendLine('  .btn-accept-all { background: #d4edda; border-color: #c3e6cb; color: #155724; }');
+    LSb.AppendLine('  .btn-reject-all { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }');
+    LSb.AppendLine('</style>');
+
+    LSb.AppendLine('<h1>Semantic Bundles</h1>');
+    LSb.AppendLine('<p><a href="index.html">'#$2190' Back to index</a></p>');
+
+    if (ABundles = nil) or (ABundles.Count = 0) then
+      LSb.AppendLine('<p><em>No bundles defined. Bundles group related nodes for batch review.</em></p>')
+    else
+    begin
+      for var I := 0 to ABundles.Count - 1 do
+      begin
+        var LB := ABundles[I];
+        LSb.AppendLine('<div class="bundle">');
+        LSb.AppendLine('<div class="bundle-title">' + HtmlEscape(LB.Title) + '</div>');
+        if LB.Description <> '' then
+          LSb.AppendLine('<div class="bundle-desc">' + HtmlEscape(LB.Description) + '</div>');
+        LSb.AppendLine('<ul class="bundle-nodes">');
+
+        for var NId in LB.NodeIds do
+        begin
+          var LNode: TSpecNode;
+          if LAllNodes.TryGetValue(NId, LNode) then
+            LSb.AppendLine('<li class="bundle-node">' +
+              StatusBadge(DeepSpec.Models.TSpecEnums.NodeStatusToStr(LNode.Status)) + ' ' +
+              ConfidenceBadge(DeepSpec.Models.TSpecEnums.ConfidenceToStr(LNode.Confidence)) + ' ' +
+              HtmlEscape(LNode.Title) +
+              ' <code>' + HtmlEscape(NId) + '</code></li>')
+          else
+            LSb.AppendLine('<li class="bundle-node" style="color:#dc3545;">' +
+              HtmlEscape(NId) + ' (not found)</li>');
+        end;
+
+        LSb.AppendLine('</ul>');
+        LSb.AppendLine('<div class="bundle-actions">');
+        LSb.AppendLine('<button class="btn-accept-all" data-action="bundle-accept" data-bundle-id="' +
+          HtmlEscape(LB.Id) + '">Accept All</button>');
+        LSb.AppendLine('<button class="btn-reject-all" data-action="bundle-reject" data-bundle-id="' +
+          HtmlEscape(LB.Id) + '">Reject All</button>');
+        LSb.AppendLine('</div>');
+        LSb.AppendLine('</div>');
+      end;
+    end;
+
+    // JS Bridge for bundle actions
+    LSb.AppendLine('<script>');
+    LSb.AppendLine('(function() {');
+    LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('  document.addEventListener("click", function(e) {');
+    LSb.AppendLine('    var t = e.target;');
+    LSb.AppendLine('    if (!(t instanceof HTMLElement)) return;');
+    LSb.AppendLine('    var action = t.getAttribute("data-action");');
+    LSb.AppendLine('    if (!action) return;');
+    LSb.AppendLine('    var bundleId = t.getAttribute("data-bundle-id") || "";');
+    LSb.AppendLine('    var msg = {');
+    LSb.AppendLine('      action: action,');
+    LSb.AppendLine('      bundle_id: bundleId');
+    LSb.AppendLine('    };');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      try { window.chrome.webview.postMessage(JSON.stringify(msg)); }');
+    LSb.AppendLine('      catch (err) { console.error("DeepSpec bridge:", err); return; }');
+    LSb.AppendLine('      t.textContent = "posted"; t.disabled = true;');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("DeepSpec bridge unavailable.");');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  });');
+    LSb.AppendLine('})();');
+    LSb.AppendLine('</script>');
+
+    LSb.Append(PageFooter);
+
+    TFile.WriteAllText(TPath.Combine(FBasePath, 'bundles.html'),
+      LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
+    LAllNodes.Free;
+  end;
+end;
+
+class function TDeepSpecRenderService.ComputeHealthMetrics(AFunc, AModule, AView,
+  AData: TList<TSpecNode>; AIssues: TList<TSpecIssue>): THealthMetrics;
+var
+  LConfSum: Double;
+  LCount: Integer;
+  LI: TSpecIssue;
+
+  procedure Scan(ANodes: TList<TSpecNode>);
+  var
+    LN2: TSpecNode;
+    LCV: Double;
+  begin
+    if ANodes = nil then Exit;
+    for LN2 in ANodes do
+    begin
+      Inc(Result.TotalNodes);
+      case LN2.Confidence of
+        clLow:    LCV := 0.3;
+        clMedium: LCV := 0.7;
+        clHigh:   LCV := 1.0;
+      else
+        LCV := 0.7;
+      end;
+      LConfSum := LConfSum + LCV;
+      Inc(LCount);
+      if LN2.GenStatus = gsConfirmed then
+        Inc(Result.ConfirmedNodes);
+      if LN2.HasFogState and (LN2.FogState <> fsClear) then
+        Inc(Result.FogCount);
+    end;
+  end;
+
+begin
+  Result := Default(THealthMetrics);
+  LConfSum := 0; LCount := 0;
+  Scan(AFunc);
+  Scan(AModule);
+  Scan(AView);
+  Scan(AData);
+  if LCount > 0 then
+    Result.AvgConfidence := LConfSum / LCount;
+  if Result.TotalNodes > 0 then
+    Result.CoveragePct := (Result.ConfirmedNodes / Result.TotalNodes) * 100.0;
+  if AIssues <> nil then
+    for LI in AIssues do
+    begin
+      if LI.Status = issOpen then
+      begin
+        Inc(Result.DecisionBacklog);
+        if (LI.Severity = isCritical) or (LI.Severity = isHigh) then
+          Inc(Result.HighRiskOpen);
+      end;
+    end;
+end;
+
+class function TDeepSpecRenderService.CountCrossTreeConflicts(AFunc, AModule,
+  AView, AData: TList<TSpecNode>): Integer;
+var
+  LAllIds: TDictionary<string, Boolean>;
+
+  procedure ScanRefs(ANodes: TList<TSpecNode>);
+  var
+    LN: TSpecNode;
+    LRef: string;
+  begin
+    if ANodes = nil then Exit;
+    for LN in ANodes do
+    begin
+      for LRef in LN.RelatedModules do
+        if not LAllIds.ContainsKey(LRef) then Inc(Result);
+      for LRef in LN.RelatedViews do
+        if not LAllIds.ContainsKey(LRef) then Inc(Result);
+      for LRef in LN.RelatedData do
+        if not LAllIds.ContainsKey(LRef) then Inc(Result);
+    end;
+  end;
+
+var
+  LN: TSpecNode;
+begin
+  Result := 0;
+  LAllIds := TDictionary<string, Boolean>.Create;
+  try
+    if AFunc   <> nil then for LN in AFunc   do LAllIds.AddOrSetValue(LN.Id, True);
+    if AModule <> nil then for LN in AModule do LAllIds.AddOrSetValue(LN.Id, True);
+    if AView   <> nil then for LN in AView   do LAllIds.AddOrSetValue(LN.Id, True);
+    if AData   <> nil then for LN in AData   do LAllIds.AddOrSetValue(LN.Id, True);
+    ScanRefs(AFunc);
+    ScanRefs(AModule);
+    ScanRefs(AView);
+    ScanRefs(AData);
+  finally
+    LAllIds.Free;
   end;
 end;
 
