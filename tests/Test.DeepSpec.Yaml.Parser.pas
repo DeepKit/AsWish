@@ -76,6 +76,9 @@ type
 
     [Test]
     procedure SourceRefsRoundTrip;
+
+    [Test]
+    procedure OldFormat_NoGenStatus_Defaults;
   end;
 
 implementation
@@ -471,6 +474,36 @@ begin
           end;
         end;
       end;
+    finally
+      N.Free;
+    end;
+  finally
+    P.Free;
+  end;
+end;
+
+procedure TYamlParserTests.OldFormat_NoGenStatus_Defaults;
+var
+  P: TYamlParser;
+  N, Seq, Item: TYamlNode;
+begin
+  P := TYamlParser.Create;
+  try
+    N := P.Parse(
+      'nodes:' + #10 +
+      '  - id: func-old' + #10 +
+      '    title: Legacy' + #10 +
+      '    status: confirmed');
+    try
+      Seq := N.GetSeq('nodes');
+      Assert.IsNotNull(Seq);
+      Assert.IsTrue(Seq.SeqCount >= 1);
+      Item := Seq.SeqItem(0);
+      Assert.AreEqual('func-old', Item.GetString('id', ''));
+      Assert.AreEqual('confirmed', Item.GetString('status', ''));
+      // Old format has no gen_status/review_status keys
+      Assert.IsFalse(Item.Has('gen_status'), 'Old format should not have gen_status');
+      Assert.IsFalse(Item.Has('review_status'), 'Old format should not have review_status');
     finally
       N.Free;
     end;

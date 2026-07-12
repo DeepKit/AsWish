@@ -112,26 +112,57 @@ uses
 { TDeepSpecMainForm }
 
 procedure TDeepSpecMainForm.InitializeShell;
+
+  procedure CleanupCreatedServices;
+  begin
+    FreeAndNil(FProjectService);
+    FreeAndNil(FScanService);
+    FreeAndNil(FSpecStore);
+    FreeAndNil(FRender);
+    FreeAndNil(FTreeBuilder);
+    FreeAndNil(FPrompts);
+    FreeAndNil(FDecisions);
+    FreeAndNil(FSettings);
+    FreeAndNil(FLLMService);
+    FreeAndNil(FLLMOwned);
+  end;
+
 begin
   inherited;
   Caption := 'DeepSpec';
 
-  FProjectService := TDeepSpecProjectService.Create;
-  FScanService := TDeepSpecScanService.Create;
-  FSpecStore := TDeepSpecStoreService.Create;
-  FRender := TDeepSpecRenderService.Create;
-  FTreeBuilder := TDeepSpecTreeBuilder.Create;
-  FPrompts := TDeepSpecPromptService.Create;
-  FDecisions := TDeepSpecDecisionsService.Create;
-  FSettings := TDeepSpecSettingsService.Create;
+  FProjectService := nil;
+  FScanService := nil;
+  FSpecStore := nil;
+  FRender := nil;
+  FTreeBuilder := nil;
+  FPrompts := nil;
+  FDecisions := nil;
+  FSettings := nil;
+  FLLMService := nil;
+  FLLMOwned := nil;
 
   try
-    var LDeepBaseLLM := TDeepBaseLLM.Create(nil);
-    FLLMOwned := LDeepBaseLLM;
-    FLLMService := TDeepSpecLLMService.Create(LDeepBaseLLM, True);
+    FProjectService := TDeepSpecProjectService.Create;
+    FScanService := TDeepSpecScanService.Create;
+    FSpecStore := TDeepSpecStoreService.Create;
+    FRender := TDeepSpecRenderService.Create;
+    FTreeBuilder := TDeepSpecTreeBuilder.Create;
+    FPrompts := TDeepSpecPromptService.Create;
+    FDecisions := TDeepSpecDecisionsService.Create;
+    FSettings := TDeepSpecSettingsService.Create;
+
+    try
+      var LDeepBaseLLM := TDeepBaseLLM.Create(nil);
+      FLLMOwned := LDeepBaseLLM;
+      FLLMService := TDeepSpecLLMService.Create(LDeepBaseLLM, True);
+    except
+      FLLMService := TDeepSpecLLMService.Create(nil, False);
+      FLLMOwned := nil;
+    end;
   except
-    FLLMService := TDeepSpecLLMService.Create(nil, False);
-    FLLMOwned := nil;
+    CleanupCreatedServices;
+    raise;
   end;
 end;
 
@@ -177,7 +208,7 @@ procedure TDeepSpecMainForm.RegisterProviders;
 begin
   inherited;
   DeepSpec.Providers.RegisterAllProviders(Self, FProjectService,
-    FScanService, FTreeBuilder);
+    FScanService, FTreeBuilder, FController);
 end;
 
 procedure TDeepSpecMainForm.AfterShellShown;

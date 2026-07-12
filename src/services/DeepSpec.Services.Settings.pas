@@ -18,7 +18,6 @@ type
     FProjectPath: string;
     FCustomDocsPath: string;
     procedure LoadFromStore;
-    procedure SaveToStore;
   public
     procedure Initialize(const AProjectPath: string);
     function DocsFullPath: string;
@@ -47,11 +46,6 @@ end;
 procedure TDeepSpecSettingsService.LoadFromStore;
 begin
   FCustomDocsPath := '';
-end;
-
-procedure TDeepSpecSettingsService.SaveToStore;
-begin
-  // Future: write to IShellSettingsStore when available
 end;
 
 function TDeepSpecSettingsService.DocsFullPath: string;

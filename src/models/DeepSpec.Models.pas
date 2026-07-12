@@ -48,7 +48,14 @@ type
 
   TIssueType = (itMissingRequirement, itConflict, itAmbiguity, itStaleDoc,
     itNoSource, itLowConfidence, itParseWarning, itParseError,
-    itOrphanNode, itCoverageGap);
+    itOrphanNode, itCoverageGap, itResearchTicket, itPrototypeTicket,
+    itGrillingTicket, itFogUnknown);
+
+  /// <summary>
+  /// How clear a node's requirement endpoint is. Converges one-way:
+  /// unknown_unknowns -> foggy -> misty -> clear. See protocol §Fog.
+  /// </summary>
+  TFogState = (fsClear, fsMisty, fsFoggy, fsUnknownUnknowns);
 
   TIssueStatus = (issOpen, issResolved, issWontfix, issDeferred);
 
@@ -94,6 +101,8 @@ type
     GenStatus: TGenStatus;
     ReviewStatus: TReviewStatus;
     Confidence: TConfidenceLevel;
+    FogState: TFogState;
+    HasFogState: Boolean;
     SourceLayer: TSourceLayer;
     SourceRefs: TSourceRefArray;
     DecisionRefs: TArray<string>;
@@ -131,6 +140,15 @@ type
   end;
 
   TSpecNodeList = TList<TSpecNode>;
+
+  TSemanticBundle = record
+    Id: string;
+    Title: string;
+    Description: string;
+    NodeIds: TArray<string>;
+    CreatedAt: TDateTime;
+    UpdatedAt: TDateTime;
+  end;
 
   TSpecRelation = record
     Id: string;
@@ -173,6 +191,11 @@ type
     SuggestedAction: string;
     SuggestedPrompt: string;
     Status: TIssueStatus;
+    /// <summary>HITL/AFK attribute for exploration tickets (BUG-11).
+    /// research_ticket may be AFK (False); prototype_ticket/grilling_ticket
+    /// default to HITL (True). Optional — persisted only when set.</summary>
+    RequiresHuman: Boolean;
+    HasRequiresHuman: Boolean;
     ResolvedBy: string;
     CreatedAt: TDateTime;
     UpdatedAt: TDateTime;
@@ -217,6 +240,7 @@ type
     class function RelationTypeToStr(AValue: TRelationType): string; static;
     class function IssueSeverityToStr(AValue: TIssueSeverity): string; static;
     class function IssueTypeToStr(AValue: TIssueType): string; static;
+    class function FogStateToStr(AValue: TFogState): string; static;
     class function IssueStatusToStr(AValue: TIssueStatus): string; static;
     class function DecisionTypeToStr(AValue: TDecisionType): string; static;
     class function DecisionStatusToStr(AValue: TDecisionStatus): string; static;
@@ -229,6 +253,14 @@ type
       ADefault: TNodeStatus = nsCandidate): TNodeStatus; static;
     class function ConfidenceFromStr(const AValue: string;
       ADefault: TConfidenceLevel = clMedium): TConfidenceLevel; static;
+    class function FogStateFromStr(const AValue: string;
+      ADefault: TFogState = fsClear): TFogState; static;
+    class function IssueTypeFromStr(const AValue: string;
+      ADefault: TIssueType = itMissingRequirement): TIssueType; static;
+    class function IssueSeverityFromStr(const AValue: string;
+      ADefault: TIssueSeverity = isMedium): TIssueSeverity; static;
+    class function IssueStatusFromStr(const AValue: string;
+      ADefault: TIssueStatus = issOpen): TIssueStatus; static;
     class function SourceLayerFromStr(const AValue: string;
       ADefault: TSourceLayer = slAiInferred): TSourceLayer; static;
     class function DataKindToStr(AValue: TDataKind): string; static;
@@ -243,6 +275,24 @@ type
     class function ReviewStatusToStr(AValue: TReviewStatus): string; static;
     class function ReviewStatusFromStr(const AValue: string;
       ADefault: TReviewStatus = rsUnreviewed): TReviewStatus; static;
+
+    /// <summary>Validate GenStatus transition. Returns True if allowed.</summary>
+    class function CanTransitionGen(AFrom, ATo: TGenStatus): Boolean; static;
+    /// <summary>Validate ReviewStatus transition. Returns True if allowed.</summary>
+    class function CanTransitionReview(AFrom, ATo: TReviewStatus): Boolean; static;
+    /// <summary>Attempt GenStatus transition. Returns error message or ''.</summary>
+    class function TryTransitionGen(var ACurrent: TGenStatus; ATo: TGenStatus;
+      out AError: string): Boolean; static;
+    /// <summary>Attempt ReviewStatus transition. Returns error message or ''.</summary>
+    class function TryTransitionReview(var ACurrent: TReviewStatus; ATo: TReviewStatus;
+      out AError: string): Boolean; static;
+    /// <summary>Validate FogState convergence. Returns True if allowed.
+    ///  Converges one-way: unknown_unknowns -> foggy -> misty -> clear.</summary>
+    class function CanTransitionFog(AFrom, ATo: TFogState): Boolean; static;
+    /// <summary>Advance fog one step toward clear (BUG-11 step 2 defog helper).
+    ///  unknown_unknowns -> foggy -> misty -> clear. clear is terminal: returns
+    ///  clear. Uses the same ordinal semantics as CanTransitionFog.</summary>
+    class function DefogOneStep(AFog: TFogState): TFogState; static;
   end;
 
 implementation
@@ -264,6 +314,8 @@ begin
   Result.GenStatus := gsDraft;
   Result.ReviewStatus := rsUnreviewed;
   Result.Confidence := clMedium;
+  Result.FogState := fsClear;
+  Result.HasFogState := False;
   Result.SourceLayer := slAiInferred;
   Result.Revision := 1;
   Result.CreatedAt := Now;
@@ -352,6 +404,20 @@ begin
     itParseError:         Result := 'parse_error';
     itOrphanNode:         Result := 'orphan_node';
     itCoverageGap:        Result := 'coverage_gap';
+    itResearchTicket:     Result := 'research_ticket';
+    itPrototypeTicket:    Result := 'prototype_ticket';
+    itGrillingTicket:     Result := 'grilling_ticket';
+    itFogUnknown:         Result := 'fog_unknown';
+  end;
+end;
+
+class function TSpecEnums.FogStateToStr(AValue: TFogState): string;
+begin
+  case AValue of
+    fsClear:           Result := 'clear';
+    fsMisty:           Result := 'misty';
+    fsFoggy:           Result := 'foggy';
+    fsUnknownUnknowns: Result := 'unknown_unknowns';
   end;
 end;
 
@@ -440,6 +506,61 @@ begin
   if LLower = 'low' then Result := clLow
   else if LLower = 'medium' then Result := clMedium
   else if LLower = 'high' then Result := clHigh
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.FogStateFromStr(const AValue: string;
+  ADefault: TFogState): TFogState;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'clear' then Result := fsClear
+  else if LLower = 'misty' then Result := fsMisty
+  else if LLower = 'foggy' then Result := fsFoggy
+  else if LLower = 'unknown_unknowns' then Result := fsUnknownUnknowns
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.IssueTypeFromStr(const AValue: string;
+  ADefault: TIssueType): TIssueType;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'missing_requirement' then Result := itMissingRequirement
+  else if LLower = 'conflict' then Result := itConflict
+  else if LLower = 'ambiguity' then Result := itAmbiguity
+  else if LLower = 'stale_doc' then Result := itStaleDoc
+  else if LLower = 'no_source' then Result := itNoSource
+  else if LLower = 'low_confidence' then Result := itLowConfidence
+  else if LLower = 'parse_warning' then Result := itParseWarning
+  else if LLower = 'parse_error' then Result := itParseError
+  else if LLower = 'orphan_node' then Result := itOrphanNode
+  else if LLower = 'coverage_gap' then Result := itCoverageGap
+  else if LLower = 'research_ticket' then Result := itResearchTicket
+  else if LLower = 'prototype_ticket' then Result := itPrototypeTicket
+  else if LLower = 'grilling_ticket' then Result := itGrillingTicket
+  else if LLower = 'fog_unknown' then Result := itFogUnknown
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.IssueSeverityFromStr(const AValue: string;
+  ADefault: TIssueSeverity): TIssueSeverity;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'critical' then Result := isCritical
+  else if LLower = 'high' then Result := isHigh
+  else if LLower = 'medium' then Result := isMedium
+  else if LLower = 'low' then Result := isLow
+  else if LLower = 'info' then Result := isInfo
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.IssueStatusFromStr(const AValue: string;
+  ADefault: TIssueStatus): TIssueStatus;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'open' then Result := issOpen
+  else if LLower = 'resolved' then Result := issResolved
+  else if LLower = 'wontfix' then Result := issWontfix
+  else if LLower = 'deferred' then Result := issDeferred
   else Result := ADefault;
 end;
 
@@ -541,6 +662,102 @@ begin
   else if LLower = 'rejected' then Result := rsRejected
   else if LLower = 'deferred' then Result := rsDeferred
   else Result := ADefault;
+end;
+
+class function TSpecEnums.CanTransitionGen(AFrom, ATo: TGenStatus): Boolean;
+begin
+  // GenStatus state machine:
+  //   draft → generated → confirmed
+  //   draft → skipped
+  //   generated → skipped
+  //   confirmed is terminal
+  //   skipped is terminal
+  //   Any → same (no-op)
+  if AFrom = ATo then Exit(True);
+  case AFrom of
+    gsDraft:     Result := ATo in [gsGenerated, gsSkipped];
+    gsGenerated: Result := ATo in [gsConfirmed, gsSkipped];
+    gsConfirmed: Result := False; // terminal
+    gsSkipped:   Result := False; // terminal
+  else
+    Result := False;
+  end;
+end;
+
+class function TSpecEnums.CanTransitionReview(AFrom, ATo: TReviewStatus): Boolean;
+begin
+  // ReviewStatus state machine:
+  //   unreviewed → accepted / rejected / deferred
+  //   deferred → accepted / rejected
+  //   accepted is terminal
+  //   rejected is terminal
+  //   Any → same (no-op)
+  if AFrom = ATo then Exit(True);
+  case AFrom of
+    rsUnreviewed: Result := ATo in [rsAccepted, rsRejected, rsDeferred];
+    rsDeferred:   Result := ATo in [rsAccepted, rsRejected];
+    rsAccepted:   Result := False; // terminal
+    rsRejected:   Result := False; // terminal
+  else
+    Result := False;
+  end;
+end;
+
+class function TSpecEnums.TryTransitionGen(var ACurrent: TGenStatus;
+  ATo: TGenStatus; out AError: string): Boolean;
+begin
+  if CanTransitionGen(ACurrent, ATo) then
+  begin
+    ACurrent := ATo;
+    AError := '';
+    Result := True;
+  end
+  else
+  begin
+    AError := Format('Invalid GenStatus transition: %s -> %s',
+      [GenStatusToStr(ACurrent), GenStatusToStr(ATo)]);
+    Result := False;
+  end;
+end;
+
+class function TSpecEnums.TryTransitionReview(var ACurrent: TReviewStatus;
+  ATo: TReviewStatus; out AError: string): Boolean;
+begin
+  if CanTransitionReview(ACurrent, ATo) then
+  begin
+    ACurrent := ATo;
+    AError := '';
+    Result := True;
+  end
+  else
+  begin
+    AError := Format('Invalid ReviewStatus transition: %s -> %s',
+      [ReviewStatusToStr(ACurrent), ReviewStatusToStr(ATo)]);
+    Result := False;
+  end;
+end;
+
+class function TSpecEnums.CanTransitionFog(AFrom, ATo: TFogState): Boolean;
+begin
+  // Fog state machine: one-way convergence toward clear.
+  //   unknown_unknowns -> foggy -> misty -> clear
+  //   clear is terminal
+  //   Any -> same (no-op)
+  // Enum ordinals align with the convergence direction (clear=0 .. unknown_unknowns=3),
+  // so a legal step moves to a lower-or-equal ordinal.
+  if AFrom = ATo then Exit(True);
+  Result := Ord(ATo) < Ord(AFrom);
+end;
+
+class function TSpecEnums.DefogOneStep(AFog: TFogState): TFogState;
+begin
+  // Advance fog exactly one step toward clear (BUG-11 step 2).
+  //   unknown_unknowns -> foggy -> misty -> clear
+  //   clear is terminal: stays clear.
+  // Ordinal = convergence distance from clear; one step lowers the ordinal by 1,
+  // clamped so we never overshoot clear.
+  if AFog <= fsClear then Exit(fsClear);
+  Result := TFogState(Ord(AFog) - 1);
 end;
 
 end.

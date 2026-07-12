@@ -14,7 +14,8 @@ interface
 
 uses
   System.SysUtils,
-  DeepBase.LLM;
+  DeepBase.LLM,
+  DeepBase.LLM.Types;
 
 type
   TDeepSpecLLMConfigHelper = class

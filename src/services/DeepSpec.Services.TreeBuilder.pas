@@ -33,9 +33,11 @@ type
     FDataNodes: TList<TSpecNode>;
     FEvidenceList: TList<TSpecEvidence>;
     FProjectRootPath: string;
+    FUsedIds: TDictionary<string, Integer>;
     function MakeSlug(const ATitle: string): string;
     function GetTopLevelDir(const APath: string): string;
     function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
+    function UniqueId(const ABaseId: string): string;
     procedure EnhanceFromDelphi(AScan: TDeepSpecScanService);
     procedure BuildDataTreeFromDelphi(AScan: TDeepSpecScanService);
     procedure SetGenStatusGenerated(ANodes: TList<TSpecNode>);
@@ -44,6 +46,7 @@ type
     destructor Destroy; override;
     procedure BuildFromScan(AScan: TDeepSpecScanService;
       const AProjectName, AProjectRootPath: string);
+    function FindNodeById(const ANodeId: string): TSpecNode;
     property FunctionNodes: TList<TSpecNode> read FFunctionNodes;
     property ModuleNodes: TList<TSpecNode> read FModuleNodes;
     property ViewNodes: TList<TSpecNode> read FViewNodes;
@@ -69,6 +72,7 @@ begin
   FViewNodes := TList<TSpecNode>.Create;
   FDataNodes := TList<TSpecNode>.Create;
   FEvidenceList := TList<TSpecEvidence>.Create;
+  FUsedIds := TDictionary<string, Integer>.Create;
 end;
 
 destructor TDeepSpecTreeBuilder.Destroy;
@@ -78,6 +82,7 @@ begin
   FViewNodes.Free;
   FDataNodes.Free;
   FEvidenceList.Free;
+  FUsedIds.Free;
   inherited;
 end;
 
@@ -130,6 +135,23 @@ begin
     Result := '';
 end;
 
+function TDeepSpecTreeBuilder.UniqueId(const ABaseId: string): string;
+var
+  LExisting: Integer;
+begin
+  if not FUsedIds.TryGetValue(ABaseId, LExisting) then
+  begin
+    Result := ABaseId;
+    FUsedIds.Add(ABaseId, 0);
+  end
+  else
+  begin
+    var LCount := LExisting + 1;
+    FUsedIds[ABaseId] := LCount;
+    Result := ABaseId + '-' + IntToStr(LCount);
+  end;
+end;
+
 function TDeepSpecTreeBuilder.MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
 begin
   Result := Default(TSpecEvidence);
@@ -145,6 +167,19 @@ begin
   Result.IsStale := False;
 end;
 
+function TDeepSpecTreeBuilder.FindNodeById(const ANodeId: string): TSpecNode;
+begin
+  Result := Default(TSpecNode);
+  for var I := 0 to FFunctionNodes.Count - 1 do
+    if FFunctionNodes[I].Id = ANodeId then Exit(FFunctionNodes[I]);
+  for var I := 0 to FModuleNodes.Count - 1 do
+    if FModuleNodes[I].Id = ANodeId then Exit(FModuleNodes[I]);
+  for var I := 0 to FViewNodes.Count - 1 do
+    if FViewNodes[I].Id = ANodeId then Exit(FViewNodes[I]);
+  for var I := 0 to FDataNodes.Count - 1 do
+    if FDataNodes[I].Id = ANodeId then Exit(FDataNodes[I]);
+end;
+
 procedure TDeepSpecTreeBuilder.BuildFromScan(AScan: TDeepSpecScanService;
   const AProjectName, AProjectRootPath: string);
 var
@@ -155,6 +190,7 @@ begin
   FViewNodes.Clear;
   FDataNodes.Clear;
   FEvidenceList.Clear;
+  FUsedIds.Clear;
   FProjectRootPath := AProjectRootPath;
 
   // ============ Function Tree: stub root + doc-derived placeholders ============
@@ -167,6 +203,11 @@ begin
   LFuncRoot.Status := nsCandidate;
   LFuncRoot.Confidence := clLow;
   LFuncRoot.SourceLayer := slAiInferred;
+  // Mark the function root as deepest fog: it is a stub awaiting LLM generation,
+  // so the project starts inside the fog and converges to clear as the LLM
+  // fills in semantic content. Without this the Fog Map is empty on first scan.
+  LFuncRoot.FogState := fsUnknownUnknowns;
+  LFuncRoot.HasFogState := True;
   LFuncRoot.ContentHash := TSpecHash.NodeContentHash(LFuncRoot);
   LFuncRoot.RelationHash := TSpecHash.NodeRelationHash(LFuncRoot);
   FFunctionNodes.Add(LFuncRoot);
@@ -196,7 +237,7 @@ begin
       for var LDir in LDirs.Keys do
       begin
         var LDirSlug := MakeSlug(LDir);
-        var LDirId := 'mod-' + LDirSlug;
+        var LDirId := UniqueId('mod-' + LDirSlug);
         LChildren.Add(LDirId);
 
         var LDirNode := TSpecNode.MakeNew(LDirId, ttModule, LDir, 'package');
@@ -261,7 +302,7 @@ begin
         var LFile := LUIFiles[I];
         var LFileName := TPath.GetFileNameWithoutExtension(LFile);
         var LSlug := MakeSlug(LFileName);
-        var LId := 'view-' + LSlug;
+        var LId := UniqueId('view-' + LSlug);
 
         // Determine view kind by extension
         var LExt := LowerCase(TPath.GetExtension(LFile));
@@ -358,7 +399,7 @@ begin
         if LInfo.UnitName = '' then Continue;
 
         var LUnitSlug := MakeSlug(LInfo.UnitName);
-        var LUnitId := 'mod-unit-' + LUnitSlug;
+        var LUnitId := UniqueId('mod-unit-' + LUnitSlug);
 
         var LUnitNode := TSpecNode.MakeNew(LUnitId, ttModule, LInfo.UnitName, 'unit');
         LUnitNode.Summary := 'Pascal unit declared in ' + LFile;
@@ -384,7 +425,7 @@ begin
             var LItemKindStr: string;
             if LItem.Kind = pikInterface then LItemKindStr := 'interface' else LItemKindStr := 'class';
             var LItemSlug := MakeSlug(LItem.Name);
-            var LItemId := 'mod-' + LItemKindStr + '-' + LItemSlug;
+            var LItemId := UniqueId('mod-' + LItemKindStr + '-' + LItemSlug);
 
             var LItemNode := TSpecNode.MakeNew(LItemId, ttModule, LItem.Name, LItemKindStr);
             LItemNode.ParentId := LUnitId;
@@ -436,7 +477,7 @@ begin
         if LDfm.Name = '' then Continue;
 
         var LFormSlug := MakeSlug(LDfm.Name);
-        var LFormId := 'view-form-' + LFormSlug;
+        var LFormId := UniqueId('view-form-' + LFormSlug);
 
         var LFormNode := TSpecNode.MakeNew(LFormId, ttView, LDfm.Name, 'window');
         if LDfm.Caption <> '' then
@@ -465,7 +506,7 @@ begin
             if LCtrlCount >= 30 then Break;
             if LCtrl.Name = '' then Continue;
             var LCtrlSlug := MakeSlug(LCtrl.Name);
-            var LCtrlId := 'view-ctrl-' + LCtrlSlug;
+            var LCtrlId := UniqueId('view-ctrl-' + LCtrlSlug);
 
             var LCtrlNode := TSpecNode.MakeNew(LCtrlId, ttView, LCtrl.Name, 'control');
             LCtrlNode.ParentId := LFormId;
@@ -539,7 +580,7 @@ begin
           if LEntitySlugs.ContainsKey(LEntitySlug) then Continue;
           LEntitySlugs.Add(LEntitySlug, True);
 
-          var LEntityId := 'data-entity-' + LEntitySlug;
+          var LEntityId := UniqueId('data-entity-' + LEntitySlug);
           var LEntityNode := TSpecNode.MakeNew(LEntityId, ttData,
             LItem.Name, 'entity');
           LEntityNode.Summary := 'Data entity from class ' + LItem.Name +
@@ -609,7 +650,7 @@ begin
               LTypeRaw := LTypeRaw.Trim;
 
               var LFieldSlug := MakeSlug(LName);
-              var LFieldId := 'data-field-' + LEntitySlug + '-' + LFieldSlug;
+              var LFieldId := UniqueId('data-field-' + LEntitySlug + '-' + LFieldSlug);
 
               var LFieldNode := TSpecNode.MakeNew(LFieldId, ttData,
                 LName, 'field');
