@@ -1,0 +1,59 @@
+name: build
+
+# DeepSpec CI — self-hosted Windows runner with Delphi BDS 37.0.
+# Why self-hosted: BDS is commercial software, cannot run on GitHub public
+# runners. This runner lives on the same machine that has DeepBase source
+# at D:\_Progs\02Business\DeepBase, so the ..\DeepBase\ relative search paths
+# in _build.bat resolve naturally.
+#
+# Workflow reuses the two parameterized build scripts (BDS / DEEPBASE_HOME
+# env-overridable) rather than re-declaring compiler flags, so CI and local
+# builds stay in lockstep.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}   # allow manual trigger from Actions tab
+
+# Prevent concurrent runs on the same ref from racing on a single runner:
+# a new push cancels the in-flight run for that ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: self-hosted
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build main program (DeepSpec.exe)
+        env:
+          BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
+          DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
+        run: _build.bat
+
+      - name: Build tests (DeepSpec.Tests.exe)
+        env:
+          BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
+          DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
+        working-directory: tests
+        run: _build_tests.bat
+
+      - name: Run tests
+        working-directory: tests
+        run: DeepSpec.Tests.exe
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dunitx-results
+          path: tests/dunitx-results.xml
+          if-no-files-found: warn
