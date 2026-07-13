@@ -37,18 +37,18 @@ jobs:
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
-        run: _build.bat
+        run: call _build.bat
 
       - name: Build tests (DeepSpec.Tests.exe)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
         working-directory: tests
-        run: _build_tests.bat
+        run: call _build_tests.bat
 
       - name: Run tests
         working-directory: tests
-        run: DeepSpec.Tests.exe
+        run: .\DeepSpec.Tests.exe
 
       - name: Upload test report
         if: always()
