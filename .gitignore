@@ -48,3 +48,8 @@ Plugins/
 
 __pycache__/
 *.pyc
+
+# CLI/test build logs (regenerable)
+cli/cli_build.txt
+tests/test_build.txt
+tests/test_run.txt
