@@ -306,3 +306,33 @@
 - **范围边界**：HTML 审阅页（index/trees/problems/bundles）仍为英文，属后续 P2；
   CLI `generate` 只导出提示词（LLM 调用在 GUI Generate B）。
 - **来源**：本会话 2026-08-06/07 用户实跑反馈 + CLI 自测。
+
+## #19 — 2026-08-07：GUI 行为 mock 测试闭环（113/113）+ 三个真实缺陷
+
+> 用户要求把 GUI 操作全部 mock 化测试（Visualize 扫描+日志、看板数字、ticket 退雾、
+> bundles 按钮、重启后决策保留）。新 fixture `Test.DeepSpec.Controller`：mock 三个
+> DeepShell 接口（IShellStatusManager/IShellContextManager/IShellEventBus），真实服务
+> 全链路驱动 Controller。过程中暴露并修复 3 个真实缺陷。
+
+- **缺陷 1（显示乱码，最严重）**：`Render.pas`/`Controller.pas` 等 18 个源文件内的中文字符串
+  在 dcc64 按 ANSI(GBK) 读取下被错误解码——**生成的所有 HTML 页（看板/树/问题）中文全是
+  乱码**（如"文档健康度"变 GBK 双重编码垃圾）。修复：给含非 ASCII 字符的源文件加
+  **UTF-8 BOM**（编译器原生识别；`{$CODEPAGE UTF8}` 指令在 dcc64 37.0 报 E1030 无效）。
+  验证：CLI render 后 index.html 正确含"文档健康度/高风险问题/冲突摘要/优化 Prompt"。
+- **缺陷 2（空树崩溃）**：`Controller.ApplyAllTreeTransitions` 对 `nodes: []` 的空树
+  （无 UI 文件的后端项目 → view-tree 空）执行 `LNodes[0].Tree` → "List index out of
+  bounds" —— Promote 决策 / bundles 操作在纯后端项目上必崩。修复：空树跳过。
+- **缺陷 3（界面不刷新）**：bundle 决策走"读盘→迁移→写盘"，但内存树（FTreeBuilder）
+  不更新——RenderAll 渲染旧状态，用户点 Accept All 界面无变化。修复：新增
+  `ReloadInMemoryTrees`（迁移后从盘回灌内存），ApplyBundleDecisions 与
+  PromotePendingDecisions 均调用。
+- **测试**：`Test.DeepSpec.Controller.pas` 8 例——扫描全量（文件/树/HTML/事件）、看板
+  HTML、`ComputeHealthMetrics` 纯函数数字（TotalNodes/Confirmed/CoveragePct/
+  AvgConfidence/FogCount/Backlog/HighRisk）、ticket 退雾落盘（unknown_unknowns→foggy +
+  research_ticket + AFK）、bundle accept/reject 全树迁移、**重启后决策保留**（#18 回归：
+  type+target_nodes round-trip）。113/113 全绿。
+- **验证**：主程序 47989 lines 0 error；97→113 测试；SPW H1-H3 全 PASS。
+- **范围边界**：MainForm 的 VCL 控件层（HandleScanEvent 写 memo/树控件）不在单测范围
+  （数据层已由 Controller 测试覆盖）；JS Bridge 消息解析（HandleWebMessage）为静态
+  H3 门禁覆盖。
+- **来源**：本会话 2026-08-07 用户要求 GUI 行为 mock 化。

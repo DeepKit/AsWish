@@ -1,3 +1,4 @@
+﻿
 { ============================================================================
   DeepSpec.Controller
 
@@ -48,6 +49,10 @@ type
     ///  disk: read tree → ApplyNodeStatusTransitions → write back.
     ///  Shared by PromotePendingDecisions and ApplyBundleDecisions.</summary>
     procedure ApplyAllTreeTransitions;
+    /// <summary>Reload the in-memory builder trees from disk after a
+    ///  disk-first transition pass (ApplyAllTreeTransitions), so
+    ///  RenderAll and FindNodeById see the new state.</summary>
+    procedure ReloadInMemoryTrees;
     /// <summary>Defog one node by id (BUG-11 step 2): locate across the 4 trees,
     ///  advance its FogState one step toward clear, persist the owning tree.
     ///  Returns True if the node was found (and defogged if it had fog).</summary>
@@ -550,10 +555,36 @@ begin
 
     // Apply state machine transitions to all trees
     ApplyAllTreeTransitions;
+    ReloadInMemoryTrees;
   except
     on E: Exception do
       FStatus.LogError('DeepSpec.Decisions',
         'Promote failed: ' + E.Message, E.ClassName);
+  end;
+end;
+
+procedure TDeepSpecController.ReloadInMemoryTrees;
+var
+  LFunc, LModule, LView, LData: TList<TSpecNode>;
+begin
+  LFunc := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
+  LModule := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
+  LView := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
+  LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
+  try
+    FTreeBuilder.FunctionNodes.Clear;
+    FTreeBuilder.FunctionNodes.AddRange(LFunc);
+    FTreeBuilder.ModuleNodes.Clear;
+    FTreeBuilder.ModuleNodes.AddRange(LModule);
+    FTreeBuilder.ViewNodes.Clear;
+    FTreeBuilder.ViewNodes.AddRange(LView);
+    FTreeBuilder.DataNodes.Clear;
+    FTreeBuilder.DataNodes.AddRange(LData);
+  finally
+    LData.Free;
+    LView.Free;
+    LModule.Free;
+    LFunc.Free;
   end;
 end;
 
@@ -574,6 +605,10 @@ begin
     try
       if LNodes <> nil then
       begin
+        if LNodes.Count = 0 then
+          // Empty tree (e.g. no view nodes in a backend-only project):
+          // nothing to transition, nothing to write back.
+          Continue;
         FDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
         FSpecStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
       end;
@@ -635,6 +670,9 @@ begin
         FDecisions.RejectDecision(LDecId);
 
       ApplyAllTreeTransitions;
+      // Disk-first pass leaves the in-memory builder trees stale; reload
+      // them so RenderAll / FindNodeById reflect the new state.
+      ReloadInMemoryTrees;
       RenderAll;
 
       FStatus.Info('DeepSpec',

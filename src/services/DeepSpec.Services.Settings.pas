@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   DeepSpec.Services.Settings
 
   Project-level settings: docs directory path, scan preferences.

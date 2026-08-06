@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   DeepSpec.Services.Context
 
   Pluggable context assembly pipeline with token budget trimming.
