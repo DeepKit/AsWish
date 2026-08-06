@@ -260,3 +260,49 @@
 - **范围边界**：**数字签名（signtool）仍待证书**——需用户提供/购买代码签名证书后执行；
   `Decisions` 四处 TryTransition 失败诊断保留 `OutputDebugString`（幂等批处理边缘路径，见 #15）。
 - **来源**：本会话 2026-08-06，SPW 发布审计 P1 项收尾。
+
+## #17 — 2026-08-06/07：i18n 自动切换 + CLI 落地 + 原子写崩溃 + Visualize 死按钮（第二批）
+
+> 用户实跑反馈："Visualize 无反应、日志只有 (scan log)"；要求：集成 DeepBase i18n 自动
+> 检测 Windows 语言（当前中文）；直接实现 CLI 并自行测试。CLI 自测意外抓到 bugfix #5
+> 的隐藏崩溃路径（首次扫描永远走 Move 分支，重扫才暴露）。
+
+- **现象**：①Visualize 按钮在已含 `.deepspec` 的目录上被禁用（点了没反应），且扫描日志
+  memo 从不更新（永远显示占位 "(scan log)"）；②界面不随 Windows 语言自动切换；③CLI 自测
+  `scan` 在已有 `.deepspec` 的项目上抛 `EInOutArgumentException: Path is empty`。
+- **根因**：
+  1. `MainForm.DoShellTreeChange` 仅对"无 .deepspec"的目录启用按钮；`HandleScanEvent`
+     从不写 `FScanLogMemo`；扫描后按钮永久禁用。
+  2. i18n：DeepShell 自带 zh 文本表（`RegisterDefaultShellTexts`）**全库无调用点**；
+     DeepSpec 只注册了 6 个键；locale 检测结果（如 `zh-Hans-CN`）与已注册的 `zh-CN`
+     桶不匹配时全部回落英文；DeepBase.Manager.CurrentLanguage 未同步。
+  3. **原子写崩溃（bugfix #5 隐藏缺陷）**：`TFile.Replace(..., '')` 的 RTL 实现会对备份名
+     执行 `TPath.DoGetFullPath('')` → "Path is empty" 异常。首次扫描目标文件不存在走
+     `TFile.Move` 分支从未触发；**任何重扫/覆盖已有文件都崩**。CLI 在已存在 `.deepspec`
+     的样例上自测立即复现。
+- **修复**：
+  1. **`SpecStore.AtomicWriteTextFile`**：改用 `Winapi.ReplaceFileW`（备份参数传 nil，
+     原子语义不变，`REPLACEFILE_WRITE_THROUGH | REPLACEFILE_IGNORE_MERGE_ERRORS`），
+     失败回退 delete+move。**GUI 重扫项目的崩溃从此消除**（#15 引入原子写共享后，
+     Decisions.Save / AppendPendingDecision 也一并受益）。
+  2. **新单元 `DeepSpec.Localization.pas`**：`DeepSpecDetectLocale`（`DetectSystemLocale`
+     归一化：zh-Hans*/zh-CN/zh-SG → zh-CN；zh-Hant*/zh-TW/zh-HK → zh-TW；其余 en-US）；
+     `DeepSpecApplyLocale`（注册 DeepSpec 21 键 × zh-CN/zh-TW 全表 + DeepShell 默认表，
+     `SetLocale` 自动切换，并镜像 `DeepBase.Manager.CurrentLanguage`）。
+  3. **`MainForm.pas`**：`RegisterServices` 改调 `DeepSpecApplyLocale`（原 6 键内联删除）；
+     `DoShellTreeChange` 任何有效目录都启用按钮；`HandleScanEvent` 写实时扫描日志
+     （文件数/类别统计/树节点数/类型）并重启用按钮；启动状态消息走 `ShellText`。
+  4. **`Commands.pas`**：9 个命令标题 + LLM 设置对话框全部走 `ShellText`。
+  5. **CLI（Phase 5 B-P0 落地）**：新 `cli/DeepSpec.CLI.dpr` + `_build_cli.bat`，
+     复用 src/ 服务（无 DeepShell 依赖）：`init / scan / generate / validate / render`；
+     validate 错误时 exit 1。CI workflow 增加 CLI 构建步骤。
+- **踩坑**：Delphi 源文件按 ANSI(GBK) 读取——`.pas` 内**禁止**跨行字符串隐式拼接和行尾
+  中文注释（UTF-8 字节在 GBK 解码下破坏 tokenizer，E2052/E2066）；`#$XXXX` 转义后
+  不能再跟多余 `'`（会开启未终止字符串）。全部改为单行 + 纯 ASCII 注释。
+- **验证**：主程序 47893 lines 0 error；测试 97/97；CLI 自测闭环——fresh 项目
+  init→scan→re-scan（修复前必崩）→validate(0 error, exit 0)→坏节点注入
+  (1 error, exit 1)→重扫修复→generate→render 6 个 HTML；SPW 重跑 H1-H3 全 PASS
+  （H1 门禁正则修复属性链误报：最长存在前缀解析），H4 14 条均为 by-design。
+- **范围边界**：HTML 审阅页（index/trees/problems/bundles）仍为英文，属后续 P2；
+  CLI `generate` 只导出提示词（LLM 调用在 GUI Generate B）。
+- **来源**：本会话 2026-08-06/07 用户实跑反馈 + CLI 自测。

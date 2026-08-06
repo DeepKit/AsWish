@@ -39,6 +39,13 @@ jobs:
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
         run: .\_build.bat
 
+      - name: Build CLI (DeepSpec.CLI.exe)
+        env:
+          BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
+          DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
+        working-directory: cli
+        run: .\_build_cli.bat
+
       - name: Build tests (DeepSpec.Tests.exe)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0

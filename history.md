@@ -30,6 +30,31 @@
 
 ---
 
+## 2026-08-06/07 第二批：i18n + CLI + 原子写崩溃 + Visualize（bugfix.md #17）
+
+### i18n 集成（DeepBase 框架）
+- [x] 新单元 `DeepSpec.Localization.pas`：`DeepSpecDetectLocale`（DetectSystemLocale 归一化 zh-CN/zh-TW/en-US）+ `DeepSpecApplyLocale`（21 键 × 2 中文表 + DeepShell 默认表注册、SetLocale 自动切换、Manager.CurrentLanguage 镜像）
+- [x] 启动自动检测 Windows 语言并切换（RegisterServices 调 DeepSpecApplyLocale）；9 个命令 + LLM 设置对话框 + 状态消息全走 ShellText
+- [x] 踩坑归档：.pas 内禁跨行字符串拼接/行尾中文注释（GBK 解码破坏 tokenizer）；#$ 转义后禁多余 `'`
+
+### CLI 落地（Phase 5 B-P0）
+- [x] `cli/DeepSpec.CLI.dpr` + `_build_cli.bat`：init / scan / generate / validate / render（复用 src/ 服务，无 GUI 依赖）；validate 错误 exit 1
+- [x] 自测闭环：fresh 项目 init→scan→re-scan→validate→坏节点注入(exit 1)→重扫修复→generate→render 6 HTML
+- [x] CI workflow 增加 CLI 构建步骤
+
+### 原子写崩溃（CLI 自测抓到 bugfix #5 隐藏缺陷）
+- [x] `TFile.Replace(..., '')` RTL 对备份名执行 `TPath.DoGetFullPath('')` → "Path is empty"；首次扫描走 Move 分支从未暴露，**重扫/覆盖必崩**
+- [x] `AtomicWriteTextFile` 改 `Winapi.ReplaceFileW`（backup=nil）+ 失败回退 delete+move——GUI 重扫项目从此不再崩
+
+### Visualize 修复
+- [x] 按钮启用条件放宽（任何有效目录）；扫描后不再永久禁用；`FScanLogMemo` 实时写入扫描统计（原为死占位 "(scan log)"）
+
+### 验证
+- [x] 主程序 47893 lines 0 error；测试 97/97；SPW H1-H3 全 PASS（H1 门禁正则改最长前缀解析，修属性链误报）；H4 14 条 by-design
+- [ ] **待用户**：GUI 实跑（Visualize 重扫 + 界面中文 + 看板/ticket/bundles）
+
+---
+
 ## 2026-08-06 BUG-7 收尾（bugfix.md #16）
 
 - [x] `DeepSpec.dpr:69-71`：`InitializeEx` 失败 `OutputDebugString` → `ShowMessage` 弹窗（含影响范围说明，仍继续运行）

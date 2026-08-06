@@ -102,6 +102,7 @@ uses
   Winapi.Windows,
   DeepSpec.Commands,
   DeepSpec.Providers,
+  DeepSpec.Localization,
   DeepBase.LLM,
   DeepBase.VCL.DeepShell.Localization,
   DeepBase.VCL.DeepShell.ToolWindow,
@@ -170,17 +171,11 @@ procedure TDeepSpecMainForm.RegisterServices;
 begin
   inherited;
 
-  // Register Chinese translations via framework localization
+  // Detect the Windows UI language at startup and auto-switch the shell
+  // localization service to it (DeepSpec + DeepShell zh-CN/zh-TW tables).
   var LLocSvc := Localization as TShellDefaultLocalizationService;
   if LLocSvc <> nil then
-  begin
-    LLocSvc.RegisterText('zh-CN', 'deepspec.tab.dirs', #$76EE#$5F55);           // 目录
-    LLocSvc.RegisterText('zh-CN', 'deepspec.tab.func', #$529F#$80FD#$6811);     // 功能树
-    LLocSvc.RegisterText('zh-CN', 'deepspec.tab.module', #$6A21#$5757#$6811);   // 模块树
-    LLocSvc.RegisterText('zh-CN', 'deepspec.tab.view', #$754C#$9762#$6811);     // 界面树
-    LLocSvc.RegisterText('zh-CN', 'deepspec.btn.visualize', #$53EF#$89C6#$5316);// 可视化
-    LLocSvc.RegisterText('zh-CN', 'deepspec.mru.hint', #$6700#$8FD1#$9879#$76EE'...');// 最近项目...
-  end;
+    DeepSpecApplyLocale(LLocSvc);
 
   Services.RegisterService('deepspec.project', FProjectService);
   Services.RegisterService('deepspec.scan', FScanService);
@@ -271,7 +266,8 @@ begin
     TAutoFixScenarioRunner.Run;
   end
   else
-    Status.Info('DeepSpec', 'DeepSpec ready. Open a project folder to begin.');
+    Status.Info('DeepSpec', ShellText('deepspec.status.ready',
+      'DeepSpec ready. Open a project folder to begin.'));
 end;
 
 procedure TDeepSpecMainForm.BuildLeftPanelUI;
@@ -441,8 +437,11 @@ procedure TDeepSpecMainForm.DoShellTreeChange(Sender: TObject; Node: TTreeNode);
 begin
   if (Node = nil) or (FShellTree = nil) then Exit;
   var LPath := FShellTree.Path;
-  FBtnVisualize.Enabled := TDirectory.Exists(LPath) and
-    not TDirectory.Exists(TPath.Combine(LPath, '.deepspec'));
+  // Enable whenever a real folder is selected — re-scanning an existing
+  // DeepSpec project is allowed (spec files are snapshotted before
+  // overwrite). Previously the button stayed disabled for folders that
+  // already had a .deepspec, which read as "clicking does nothing".
+  FBtnVisualize.Enabled := TDirectory.Exists(LPath);
 end;
 
 procedure TDeepSpecMainForm.DoBtnVisualizeClick(Sender: TObject);
@@ -494,6 +493,40 @@ begin
   PopulateTreeFromSpec(FModuleTree, FTreeBuilder.ModuleNodes);
   PopulateTreeFromSpec(FViewTree, FTreeBuilder.ViewNodes);
   PopulateDocsPanel;
+
+  // Live scan log (was a dead "(scan log)" placeholder — never updated).
+  if FScanLogMemo <> nil then
+  begin
+    FScanLogMemo.Lines.BeginUpdate;
+    try
+      FScanLogMemo.Lines.Clear;
+      if FController.IsProjectOpen then
+      begin
+        FScanLogMemo.Lines.Add('Project: ' + FProjectService.ProjectPath);
+        FScanLogMemo.Lines.Add(Format(
+          'Scan: %d files (docs %d, code %d, ui %d, config %d, ai_rules %d)',
+          [FScanService.TotalFiles,
+           FScanService.CategoryCount(fcDocuments),
+           FScanService.CategoryCount(fcCode),
+           FScanService.CategoryCount(fcUI),
+           FScanService.CategoryCount(fcConfig),
+           FScanService.CategoryCount(fcAiRules)]));
+        FScanLogMemo.Lines.Add(Format(
+          'Trees: function %d / module %d / view %d / data %d',
+          [FTreeBuilder.FunctionNodes.Count, FTreeBuilder.ModuleNodes.Count,
+           FTreeBuilder.ViewNodes.Count, FTreeBuilder.DataNodes.Count]));
+        FScanLogMemo.Lines.Add('Type: ' + FProjectService.ProjectType);
+      end
+      else
+        FScanLogMemo.Lines.Add('(no project)');
+    finally
+      FScanLogMemo.Lines.EndUpdate;
+    end;
+  end;
+
+  // Re-enable Visualize so the project can be re-scanned (it was
+  // disabled forever after the first scan before).
+  FBtnVisualize.Enabled := True;
 
   // Auto-open HTML index in main view
   if FController.IsProjectOpen then

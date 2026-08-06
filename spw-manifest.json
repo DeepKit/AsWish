@@ -6,6 +6,7 @@
   "subject_files": [
     "DeepSpec.dpr",
     "src/app/DeepSpec.Commands.pas",
+    "src/app/DeepSpec.Localization.pas",
     "src/app/DeepSpec.MainForm.pas",
     "src/app/DeepSpec.Providers.pas",
     "src/app/DeepSpec.Services.pas",
@@ -31,7 +32,8 @@
     "src/services/DeepSpec.Services.Scan.pas",
     "src/services/DeepSpec.Services.Settings.pas",
     "src/services/DeepSpec.Services.SpecStore.pas",
-    "src/services/DeepSpec.Services.TreeBuilder.pas"
+    "src/services/DeepSpec.Services.TreeBuilder.pas",
+    "cli/DeepSpec.CLI.dpr"
   ],
   "observer_files": [
     "src/app/DeepSpec.MainForm.pas",

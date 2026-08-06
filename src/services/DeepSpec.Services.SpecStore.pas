@@ -88,6 +88,7 @@ implementation
 uses
   System.IOUtils,
   System.DateUtils,
+  Winapi.Windows,
   DeepSpec.Yaml.Writer;
 
 constructor TDeepSpecStoreService.Create;
@@ -132,9 +133,22 @@ begin
   TFile.WriteAllText(LTempPath, AContent, TEncoding.UTF8);
 
   if TFile.Exists(AFullPath) then
-    // Replace(destination, source, backup='', ignoreMetadataErrors=True).
-    // Atomic on NTFS: source replaces destination in one step.
-    TFile.Replace(AFullPath, LTempPath, '', True)
+  begin
+    // Atomic replace on NTFS via ReplaceFileW with NO backup (nil).
+    // NOTE: TFile.Replace(..., '') is broken here — the RTL runs
+    // TPath.DoGetFullPath('') on the backup name and raises
+    // EInOutArgumentException "Path is empty". First scans always took
+    // the TFile.Move branch, so re-scans of an existing project crashed
+    // (observed headless via DeepSpec.CLI scan; GUI re-scan hit the same).
+    if not Winapi.Windows.ReplaceFile(PChar(AFullPath), PChar(LTempPath),
+      nil, REPLACEFILE_WRITE_THROUGH or REPLACEFILE_IGNORE_MERGE_ERRORS,
+      nil, nil) then
+    begin
+      // Rare fallback: replace not permitted — delete + move.
+      TFile.Delete(AFullPath);
+      TFile.Move(LTempPath, AFullPath);
+    end;
+  end
   else
     TFile.Move(LTempPath, AFullPath);
 end;
