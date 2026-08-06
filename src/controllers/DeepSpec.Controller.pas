@@ -44,6 +44,10 @@ type
     FDocsFiles: TArray<string>;
     procedure ScanDocsFirst;
     procedure WriteDocsSummary;
+    /// <summary>Apply accepted/rejected formal decisions to every tree on
+    ///  disk: read tree → ApplyNodeStatusTransitions → write back.
+    ///  Shared by PromotePendingDecisions and ApplyBundleDecisions.</summary>
+    procedure ApplyAllTreeTransitions;
     /// <summary>Defog one node by id (BUG-11 step 2): locate across the 4 trees,
     ///  advance its FogState one step toward clear, persist the owning tree.
     ///  Returns True if the node was found (and defogged if it had fog).</summary>
@@ -80,6 +84,12 @@ type
     ///  issues, write an optimization prompt (Markdown) into prompts\, and
     ///  report via status. No-op if no project open.</summary>
     procedure ExportOptimizationPrompt;
+    /// <summary>Batch bundle review from bundles.html (Accept All /
+    ///  Reject All): find the bundle, record one formal human decision over
+    ///  all anchored nodes, apply state transitions to every tree, and
+    ///  re-render. AAction is 'bundle-accept' or 'bundle-reject'.
+    ///  No-op if no project open.</summary>
+    procedure ApplyBundleDecisions(const AAction, ABundleId: string);
     procedure PromotePendingDecisions;
     function IsProjectOpen: Boolean;
     property ProjectService: TDeepSpecProjectService read FProjectService;
@@ -95,6 +105,7 @@ implementation
 
 uses
   System.IOUtils,
+  System.StrUtils,
   DeepBase.VCL.DeepShell.Types,
   DeepSpec.Validation,
   DeepSpec.Yaml.Writer;
@@ -519,7 +530,6 @@ end;
 procedure TDeepSpecController.PromotePendingDecisions;
 var
   LCount: Integer;
-  LTreeNames: TArray<string>;
 begin
   if not FProjectService.IsOpen then
   begin
@@ -539,30 +549,105 @@ begin
       Format('Promoted %d pending decision(s) to formal decisions.', [LCount]));
 
     // Apply state machine transitions to all trees
-    LTreeNames := TArray<string>.Create(
-      'trees/function-tree.yaml', 'trees/module-tree.yaml',
-      'trees/view-tree.yaml', 'trees/data-tree.yaml');
-
-    for var LTree in LTreeNames do
-    begin
-      if not TFile.Exists(TPath.Combine(FProjectService.DeepSpecPath, LTree)) then Continue;
-
-      // Read and write back transitions inline
-      var LNodes := FSpecStore.ReadTreeFile(LTree);
-      try
-        if LNodes <> nil then
-        begin
-          FDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
-          FSpecStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
-        end;
-      finally
-        LNodes.Free;
-      end;
-    end;
+    ApplyAllTreeTransitions;
   except
     on E: Exception do
       FStatus.LogError('DeepSpec.Decisions',
         'Promote failed: ' + E.Message, E.ClassName);
+  end;
+end;
+
+procedure TDeepSpecController.ApplyAllTreeTransitions;
+var
+  LTreeNames: TArray<string>;
+begin
+  LTreeNames := TArray<string>.Create(
+    'trees/function-tree.yaml', 'trees/module-tree.yaml',
+    'trees/view-tree.yaml', 'trees/data-tree.yaml');
+
+  for var LTree in LTreeNames do
+  begin
+    if not TFile.Exists(TPath.Combine(FProjectService.DeepSpecPath, LTree)) then Continue;
+
+    // Read and write back transitions inline
+    var LNodes := FSpecStore.ReadTreeFile(LTree);
+    try
+      if LNodes <> nil then
+      begin
+        FDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
+        FSpecStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
+      end;
+    finally
+      LNodes.Free;
+    end;
+  end;
+end;
+
+procedure TDeepSpecController.ApplyBundleDecisions(
+  const AAction, ABundleId: string);
+var
+  LBundles: TList<TSemanticBundle>;
+  LFound: Boolean;
+  LDecisionType: TDecisionType;
+  LDecId: string;
+begin
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('DeepSpec', 'No project open — cannot review bundles');
+    Exit;
+  end;
+
+  if (AAction <> 'bundle-accept') and (AAction <> 'bundle-reject') then
+  begin
+    FStatus.LogError('DeepSpec', 'Unknown bundle action: ' + AAction, '');
+    Exit;
+  end;
+
+  LBundles := FSpecStore.ReadBundlesFile('bundles.yaml');
+  try
+    LFound := False;
+    for var LB in LBundles do
+    begin
+      if LB.Id <> ABundleId then Continue;
+      LFound := True;
+      if Length(LB.NodeIds) = 0 then
+      begin
+        FStatus.LogError('DeepSpec', 'Bundle has no anchored nodes: ' + ABundleId, '');
+        Exit;
+      end;
+
+      if AAction = 'bundle-accept' then
+        LDecisionType := dtConfirm
+      else
+        LDecisionType := dtReject;
+
+      // One formal human decision covering every anchored node; status set
+      // immediately so ApplyAllTreeTransitions sees it (same flow as
+      // PromotePendingDecisions for node-confirm/node-reject).
+      LDecId := FDecisions.AddDecision(LDecisionType,
+        (IfThen(AAction = 'bundle-accept', 'Accept bundle: ',
+          'Reject bundle: ') + LB.Title),
+        AAction + ' (bundle: ' + ABundleId + ')',
+        'Recorded via WebView2 JS Bridge (batch review)', LB.NodeIds);
+      if AAction = 'bundle-accept' then
+        FDecisions.AcceptDecision(LDecId)
+      else
+        FDecisions.RejectDecision(LDecId);
+
+      ApplyAllTreeTransitions;
+      RenderAll;
+
+      FStatus.Info('DeepSpec',
+        Format('%s bundle %s (%d nodes): %s',
+          [IfThen(AAction = 'bundle-accept', 'Accepted', 'Rejected'),
+           ABundleId, Length(LB.NodeIds), LDecId]));
+      Break;
+    end;
+
+    if not LFound then
+      FStatus.LogError('DeepSpec', 'Bundle not found: ' + ABundleId, '');
+  finally
+    LBundles.Free;
   end;
 end;
 

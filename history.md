@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-08-06 SPW 发布审计 + 修复（bugfix.md #15）
+
+### SPW 审计（首次为 DeepSpec 建立门禁）
+- [x] 新建 `spw-manifest.json`（delphi_gui 画像，H1-H4 确定性门禁 + 3 条项目 H4 旁路模式 + GLM/StepFun 异构观察）
+- [x] H1 resource-locks：DeepBase 依赖就位、src 引用全部可解析；**确认 BUG-6b 未修**（非 submodule 非 vendored）
+- [x] H2 compile-build：主程序 47369 lines 0 error；H2 unit-tests：97/97
+- [x] H3 encoding-guard / runtime-autofix：PASS（27 文件 UTF-8 干净；AutoFix 链完整）
+- [x] **H3 deep-ui-test FAIL → 新缺陷**：bundles 页 Accept/Reject All 死按钮（`bundle-accept`/`bundle-reject` 无主机处理器，bugfix #14 同类）
+- [x] H4 bypass 扫描 13 命中 → 分类：真实缺陷 5 项 + by-design 命中
+- [x] H5 在线观察：GLM-5.2 身份校验通过但 schema 越权（`protected_asset_note` 未知字段）整份无效；StepFun 502 漏产 → `degraded`（网关侧，非项目缺陷）
+
+### 修复（bugfix.md #15，6 个 src 文件）
+- [x] `MainView.pas`：`TBundleActionProc` 第三闭包 + `HandleWebMessage` 分发 `bundle-*`（解析 `bundle_id`）
+- [x] `Providers.pas`：`RegisterAllProviders` 第三闭包 → `AController.ApplyBundleDecisions`
+- [x] `Controller.pas`：抽 `ApplyAllTreeTransitions` 共用；新增 `ApplyBundleDecisions`（一条正式人类决策覆盖全部锚点节点 → 全树迁移 → RenderAll）
+- [x] `Decisions.pas`：`ApplyNodeStatusTransitions` 两变体守卫修复——**dsRejected 决策现在生效**（Reject All / node-reject 语义修复）
+- [x] `SpecStore.pas`：public static `AtomicWriteTextFile`（bugfix #5 逻辑提升共享）；`Decisions.Save` 与 `AppendPendingDecision` 改走原子写
+- [x] `MainForm.pas`：AutoFix 'open-project' 硬编码 `D:\_Progs\02Business\DeepSpec` → `DEEPSPEC_AUTOFIX_PROJECT` 环境变量
+- [x] 主程序 47514 lines 0 error；测试 97/97 无回归；SPW 重跑 `H3.deep-ui-test → PASS`、`H4.HARDCODED_ABS_PATH → 0 命中`
+
+### 发布判定（审计后）
+- [ ] **不可发布**：BUG-6b（DeepBase 不入库，换机无法编译）+ BUG-7（dpr 静默初始化失败/未签名/VerInfo 空，boundary.json 禁改 *.dpr，需用户会话）+ 完整 GUI 实跑验证待用户确认
+- [x] 待修清单更新至 `tasks.md`；H4 剩余命中已分类为 by-design（HTML 审阅面/导出物/原子写 .tmp）
+
+---
+
 ## 2026-07-08 Fog 探索模型落地 + 编译修复 + 发布就绪度评估
 
 ### 质量加固（P0 续）

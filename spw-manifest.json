@@ -1,0 +1,165 @@
+{
+  "schema": "spw/run-manifest/v1",
+  "workspace": "D:/_Progs/02Business/DeepSpec",
+  "project_profile": "delphi_gui",
+  "risk_lane": "standard",
+  "subject_files": [
+    "DeepSpec.dpr",
+    "src/app/DeepSpec.Commands.pas",
+    "src/app/DeepSpec.MainForm.pas",
+    "src/app/DeepSpec.Providers.pas",
+    "src/app/DeepSpec.Services.pas",
+    "src/controllers/DeepSpec.Controller.pas",
+    "src/core/DeepSpec.Delphi.DfmParser.pas",
+    "src/core/DeepSpec.Delphi.PasParser.pas",
+    "src/core/DeepSpec.Hash.pas",
+    "src/core/DeepSpec.Validation.pas",
+    "src/core/DeepSpec.Yaml.Parser.pas",
+    "src/core/DeepSpec.Yaml.Writer.pas",
+    "src/models/DeepSpec.Models.pas",
+    "src/providers/DeepSpec.Providers.Inspector.pas",
+    "src/providers/DeepSpec.Providers.MainView.pas",
+    "src/providers/DeepSpec.Providers.Structure.pas",
+    "src/services/DeepSpec.Services.CandidateIngest.pas",
+    "src/services/DeepSpec.Services.Context.pas",
+    "src/services/DeepSpec.Services.Decisions.pas",
+    "src/services/DeepSpec.Services.LLM.pas",
+    "src/services/DeepSpec.Services.LLMConfig.pas",
+    "src/services/DeepSpec.Services.Project.pas",
+    "src/services/DeepSpec.Services.Prompts.pas",
+    "src/services/DeepSpec.Services.Render.pas",
+    "src/services/DeepSpec.Services.Scan.pas",
+    "src/services/DeepSpec.Services.Settings.pas",
+    "src/services/DeepSpec.Services.SpecStore.pas",
+    "src/services/DeepSpec.Services.TreeBuilder.pas"
+  ],
+  "observer_files": [
+    "src/app/DeepSpec.MainForm.pas",
+    "src/controllers/DeepSpec.Controller.pas",
+    "src/providers/DeepSpec.Providers.MainView.pas",
+    "src/services/DeepSpec.Services.Render.pas",
+    "src/services/DeepSpec.Services.CandidateIngest.pas",
+    "src/services/DeepSpec.Services.SpecStore.pas",
+    "src/core/DeepSpec.Validation.pas"
+  ],
+  "resource_locks": [
+    {
+      "id": "deepbase-source-tree",
+      "canonical_path": "D:/_Progs/02Business/DeepBase",
+      "version": "external absolute path (BUG-6b open: not submodule, not vendored)",
+      "sha256": "external-tree"
+    }
+  ],
+  "runtime_contract": {
+    "logger": {
+      "standard_logger": "DeepBase.Manager.DeepBase.Logger",
+      "forbid_bare_console_output": true
+    },
+    "deepbase": {
+      "integration_level": "L3"
+    },
+    "code_retrieval": "explicit-resource-then-codebase-memory"
+  },
+  "flash_policy": {
+    "staging_only": true,
+    "allow_commit": false,
+    "allow_production_access": false,
+    "max_retry": 1
+  },
+  "gates": [
+    {
+      "gate_id": "H1.resource-locks",
+      "required": true,
+      "claims": ["controlled_entry_only"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_resource_locks.py"],
+      "timeout": 120
+    },
+    {
+      "gate_id": "H2.compile-build",
+      "required": true,
+      "claims": [],
+      "command": ["cmd", "/c", "_build.bat && cd tests && _build_tests.bat"],
+      "timeout": 900
+    },
+    {
+      "gate_id": "H2.unit-tests",
+      "required": true,
+      "claims": [
+        "active_detail_trigger",
+        "state_machine_check",
+        "required_fields_on_activation"
+      ],
+      "command": ["cmd", "/c", "cd tests && DeepSpec.Tests.exe"],
+      "timeout": 300
+    },
+    {
+      "gate_id": "H3.encoding-guard",
+      "required": true,
+      "claims": ["counterfactual_1", "counterfactual_2"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_encoding.py"],
+      "timeout": 120
+    },
+    {
+      "gate_id": "H3.runtime-autofix",
+      "required": true,
+      "claims": ["counterfactual_3", "counterfactual_4", "counterfactual_5"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_autofix.py"],
+      "timeout": 120
+    },
+    {
+      "gate_id": "H3.deep-ui-test",
+      "required": true,
+      "claims": ["counterfactual_6", "counterfactual_7", "counterfactual_8"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_ui_bridge.py"],
+      "timeout": 120
+    }
+  ],
+  "claim_evidence": {
+    "controlled_entry_only": [
+      "tests/Test.DeepSpec.CandidateIngest.pas (sandbox rejects bad-prefix/hanging-parent/source-layer spoof)",
+      "src/services/DeepSpec.Services.CandidateIngest.pas::Ingest"
+    ],
+    "active_detail_trigger": [
+      "tests/Test.DeepSpec.Validation.pas::TValidationIssuesTests (empty affected_nodes rejected)"
+    ],
+    "state_machine_check": [
+      "tests/Test.DeepSpec.Models.pas (CanTransitionFog/CanTransitionGen/CanTransitionReview 13 cases)"
+    ],
+    "required_fields_on_activation": [
+      "tests/Test.DeepSpec.Validation.pas (INV-2/4/5/6: parent ref, gen/review status, cycles, hashes)"
+    ],
+    "counterfactual_1": ["gate_encoding.py: undecodable/NUL source files must fail"],
+    "counterfactual_2": ["gate_encoding.py: mixed line endings must fail"],
+    "counterfactual_3": ["gate_autofix.py: dpr must install InstallAIErrorHandler/AutoFix.Install/TAutoFixVclHook.Install"],
+    "counterfactual_4": ["gate_autofix.py: AutoFix scenario registration must exist in MainForm"],
+    "counterfactual_5": ["gate_autofix.py: boundary.json must be valid JSON with allowed/blocked paths"],
+    "counterfactual_6": ["gate_ui_bridge.py: every rendered data-action must have a host handler (dead-button class)"],
+    "counterfactual_7": ["gate_ui_bridge.py: orphan host handlers reported"],
+    "counterfactual_8": ["gate_ui_bridge.py: bridge dispatch audit deterministic on Render.pas + MainView.pas"]
+  },
+  "h4_patterns": [
+    {
+      "id": "H4.DIRECT_DISK_WRITE",
+      "pattern": "TFile\\.(WriteAllText|WriteAllBytes|WriteAllLines|AppendAllText)",
+      "severity": "high",
+      "rationale": "Direct TFile writes bypass SpecStore atomic-write + snapshot backup path (bugfix #5); pending-decisions and bundles.html are written raw."
+    },
+    {
+      "id": "H4.SILENT_INIT_FAILURE",
+      "pattern": "OutputDebugString",
+      "severity": "high",
+      "rationale": "BUG-7: failure paths report only to debugger, invisible to users (InitializeEx + decisions transition failures)."
+    },
+    {
+      "id": "H4.HARDCODED_ABS_PATH",
+      "pattern": "D:\\\\_Progs",
+      "severity": "medium",
+      "rationale": "Absolute machine path baked into production code (MainForm AutoFix open-project scenario)."
+    }
+  ],
+  "observer_models": [
+    "qoder-GLM-5.2",
+    "stepfun-step-3.7-flash"
+  ],
+  "min_observer_families": 2
+}

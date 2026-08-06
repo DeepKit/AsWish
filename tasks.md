@@ -11,13 +11,14 @@
 ## 当前：发布前阻断项（P0/P1）
 
 > 2026-07-08 发布就绪度评估（3 专家）综合分 3.3/10，结论：当前为 0.1.0 原型，不可对外发布。
-> 已修缺陷见 `bugfix.md` #1~#14（BUG-4/5/6a/8/9/10/12/13/14 完成 + BUG-11 第1步数据层+校验 + 第2步 ticket 双入口 + 第3步健康度看板）。待修：BUG-7、BUG-6b/6c。
+> 已修缺陷见 `bugfix.md` #1~#15（BUG-4/5/6a/8/9/10/12/13/14 完成 + BUG-11 第1步数据层+校验 + 第2步 ticket 双入口 + 第3步健康度看板 + 2026-08-06 SPW 审计 #15：bundle 死按钮 + 拒绝态决策不生效 + 原子写旁路 + AutoFix 硬编码路径）。待修：BUG-7、BUG-6b。
 > 路线图依据：wayfinder 文章对照分析 → `docs/wayfinder-对DeepSpec的启发.md`。
+> 2026-08-06 SPW 发布审计：编译 0 error + 97/97 测试 + H1/H2/H3 门禁 PASS（除 BUG-7 外）；H4 仅剩 by-design 命中与 dpr 项。不可发布主因：BUG-6b（DeepBase 不入库）+ BUG-7 + 运行时验证缺口。
 
 ### P0：发布阻断（必须修复）
 
-- [ ] **BUG-6b**：DeepBase 作 git submodule 或 vendor DCU（需用户决策：涉及仓库结构变更，DeepBase 须先有独立 git 仓库）
-- [ ] **BUG-6c**：加 `.github/workflows/build.yml` CI（需自托管 runner：BDS 商业软件无法用 GitHub 公共镜像）
+- [ ] **BUG-6b**：DeepBase 作 git submodule 或 vendor DCU（需用户决策：涉及仓库结构变更，DeepBase 须先有独立 git 仓库）——SPW H1 门禁确认：非 submodule 非 vendored，换机 clone 无法编译
+- [x] **BUG-6c**：加 `.github/workflows/build.yml` CI（需自托管 runner：BDS 商业软件无法用 GitHub 公共镜像）——**已闭环**：2026-07-13 最后运行 green（自托管 runner，cmd shell 修复后）
 
 ### P1：发布前应修（三合一主线：雾→ticket→看板）
 
@@ -29,12 +30,13 @@
 - [x] **BUG-11 第 2 步（ticket 创建双入口）**：`RenderProblemsPage` +AIssues 参数 + Fog Map 节点旁 `ticket-create` 按钮 + 挂 ticket 区（复用就绪的 `.ticket` CSS）；`MainView.HandleWebMessage` +`ticket-create` 分支；`MainForm` VCL 菜单/对话框兜底入口；`Controller.CreateTicket` 退雾一步 + 落盘前 `ValidateIssuesFile` + 重渲染。**已修（bugfix #13）**，测试 93/93。
 - [x] **BUG-9（健康度看板）**：`RenderIndex` 重构 — 文档健康度（覆盖率/置信度/决策积压/雾区数 4 卡片）+ 高风险问题 + 冲突摘要 + 优化 Prompt 入口（`export-optimization-prompt` JS Bridge 贯通 MainView→Providers→Controller）；`Controller.RenderAll` 加载 issues 传入；`ComputeHealthMetrics`/`CountCrossTreeConflicts` 静态方法；`Controller.ExportOptimizationPrompt` 写 `prompts/optimization-prompt.md`。**已修（bugfix #14 + Task 3）**，测试 97/97。兑现定位文档 §7-9。
 - [x] **端到端验证（静态）**：因 GUI/WebView2 无法在 AI 会话内 headless 实跑，改为静态验证——编译 0 error + 测试 97/97 + 逐文件审查 RenderIndex 输出 HTML（4 卡片 + 导出按钮 + 专用 JS Bridge 脚本就绪）。**过程中发现并修复 bugfix #14**（index 页漏 JS Bridge）。完整 runtime 验证（开 research_ticket 看数字变化）仍待用户在 GUI 中实跑确认。
-- [ ] **BUG-7**：`DeepBase.InitializeEx` 失败改弹窗提示（替代静默 `OutputDebugString`）；exe 签名 + 补 `VerInfo_Keys` 的 CompanyName/LegalCopyright
+- [x] **2026-08-06 SPW 审计修复（bugfix #15）**：bundles 页 Accept/Reject All 死按钮（H3.deep-ui-test 门禁实证）→ `MainView` 第三闭包 + `Controller.ApplyBundleDecisions` 贯通；拒绝态决策不生效（`ApplyNodeStatusTransitions` 仅应用 dsAccepted）→ 两变体守卫修复；`Decisions.Save`/`AppendPendingDecision` 裸 TFile 写 → `SpecStore.AtomicWriteTextFile` 共享原子写；AutoFix 'open-project' 硬编码路径 → `DEEPSPEC_AUTOFIX_PROJECT` 环境变量。主程序 47514 lines 0 error；97/97 无回归；SPW 重跑 H3.deep-ui-test PASS。**完整 GUI 实跑验证（bundles 按钮 + 看板 + ticket 闭环）仍待用户确认**。
+- [ ] **BUG-7**：`DeepBase.InitializeEx` 失败改弹窗提示（替代静默 `OutputDebugString`）；exe 签名 + 补 `VerInfo_Keys` 的 CompanyName/LegalCopyright——*.dpr/工程文件在 `boundary.json` 禁改范围内，需用户会话
 
 ### P2：质量改善
 
 - [ ] 关键路径补单测：TreeBuilder / Render / Decisions / Context / SpecStore 写回路径
-- [ ] README 加"安装/首次配置 LLM/选目录"章节；移除 `MainForm:260` 的 `TAutoFixScenarioRunner` 硬编码路径
+- [x] README 加"安装/首次配置 LLM/选目录"章节；移除 `MainForm:260` 的 `TAutoFixScenarioRunner` 硬编码路径——**硬编码路径已移除（bugfix #15）**，README 章节仍待补
 - [ ] Inno Setup 安装包 + WebView2 Runtime 依赖声明
 
 ---

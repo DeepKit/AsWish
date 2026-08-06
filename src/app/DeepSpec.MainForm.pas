@@ -255,10 +255,15 @@ begin
   TAutoFixHealthSignal.Emit;
   if TAutoFixErrorRecorder.Active then
   begin
-    TAutoFixScenarioRunner.RegisterScenario('open-project', procedure
-    begin
-      FController.OpenAndScan('D:\_Progs\02Business\DeepSpec');
-    end);
+    // Crash-recovery scenarios. The project to re-open comes from the
+    // DEEPSPEC_AUTOFIX_PROJECT env var (no machine-specific path in code);
+    // 'scan' refreshes the already-open project.
+    var LAutoFixProject := GetEnvironmentVariable('DEEPSPEC_AUTOFIX_PROJECT');
+    if LAutoFixProject <> '' then
+      TAutoFixScenarioRunner.RegisterScenario('open-project', procedure
+      begin
+        FController.OpenAndScan(LAutoFixProject);
+      end);
     TAutoFixScenarioRunner.RegisterScenario('scan', procedure
     begin
       FController.RunScan;

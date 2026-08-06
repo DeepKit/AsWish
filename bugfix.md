@@ -196,3 +196,48 @@
 - **修复**：在 `RenderIndex` 的 `PageFooter` 前追加一段**专用 bridge 脚本**——只匹配 `data-action="export-optimization-prompt"`，发送 `{action:"export-optimization-prompt"}`，成功后把按钮文案改为"✓ Prompt 已导出"，`.posted` 防重复；无桥时 `alert` 兜底。未动其它页面的既有脚本（它们工作正常，`textContent` 重写硬编码了 ✓/✗ 字形，不适用本按钮）。
 - **验证**：主程序 0 error 编译干净；测试 97/97 不变（脚本为字符串字面量，无单测覆盖，靠编译 + 静态审查）。
 - **来源**：本会话 2026-07-09，BUG-9 端到端验证阶段静态审查 index 输出时发现。
+
+---
+
+## #15 — SPW 发布审计（2026-08-06）：死按钮 + 拒绝态决策不生效 + 原子写旁路
+
+> 触发：SPW 发布审计（`spw-manifest.json`，delphi_gui 画像）。H3.deep-ui-test 门禁
+> （渲染的 data-action 必须有主机处理器）确定性 FAIL：`bundle-accept`/`bundle-reject`
+> 渲染并发出 postMessage，但主机无分支。H4 旁路扫描另命中：`Decisions.Save`/
+> `AppendPendingDecision` 裸 TFile 写（绕过 bugfix #5 原子写）、AutoFix 场景硬编码
+> 绝对路径。代码审查进一步确认 `ApplyNodeStatusTransitions` 只应用 dsAccepted 决策，
+> Reject All 语义即使接线也不会生效（dtReject 分支不可达）。
+
+- **现象**：bundles.html 的 Accept All / Reject All 按钮点了没反应；`tasks.md` 却标 ✅。
+- **根因**：`MainView.HandleWebMessage` 只分发 node-confirm/node-reject/ticket-create/
+  export-optimization-prompt 四个 action，`bundle-*` 无分支（与 bugfix #14 同类：主机端
+  漏接线）；且 `Decisions.ApplyNodeStatusTransitions`（两变体）守卫 `Status <> dsAccepted
+  then Continue`，dsRejected 决策永不触发迁移。
+- **修复**（6 个 src 文件）：
+  1. **`Providers.MainView.pas`**：新增 `TBundleActionProc` 回调类型（AAction + ABundleId）；
+     `TBrowserNavigator`/`TDeepSpecMainViewProvider` 构造注入第三闭包；`HandleWebMessage`
+     解析 `bundle_id` 并分发 `bundle-accept`/`bundle-reject`。
+  2. **`Providers.pas`**：`RegisterAllProviders` 第三闭包 → `AController.ApplyBundleDecisions`。
+  3. **`Controller.pas`**：抽私有 `ApplyAllTreeTransitions`（读树→ApplyNodeStatusTransitions→
+     写回，供 Promote 与 bundle 共用）；新增 public `ApplyBundleDecisions(AAction, ABundleId)`：
+     读 bundles.yaml → 按 id 定位 → 一条正式人类决策（dtConfirm/dtReject，TargetNodes=全部
+     锚点节点）→ Accept/RejectDecision → 全树迁移 → RenderAll → 状态栏回报。impl uses 补
+     `System.StrUtils`（`IfThen` 字符串重载所在单元）。
+  4. **`Decisions.pas`**：两变体守卫改 `(Status <> dsAccepted) and (Status <> dsRejected)
+     then Continue`——拒绝态决策同样生效（Reject All / node-reject 语义修复）。
+  5. **`SpecStore.pas`**：新增 public static `AtomicWriteTextFile(AFullPath, AContent)`——
+     bugfix #5 的 .tmp + TFile.Replace 逻辑提升为共享入口；`WriteYamlFile` 委托之。
+  6. **`Decisions.Save`** 与 **`AppendPendingDecision`**（MainView）改走
+     `AtomicWriteTextFile`（后者为读-合并-原子替换，消除半截 append 风险）；
+     **`MainForm.pas`** AutoFix 'open-project' 场景的硬编码
+     `D:\_Progs\02Business\DeepSpec` 改为 `DEEPSPEC_AUTOFIX_PROJECT` 环境变量，为空不注册
+     该场景。
+- **验证**：主程序 47514 lines 0 error；测试 97/97 无回归；SPW 重跑
+  `H3.deep-ui-test → PASS`（6 个 data-action 全部有主机处理器）、
+  `H4.HARDCODED_ABS_PATH → 0 命中`、`H4.DIRECT_DISK_WRITE` 仅剩
+  审阅面/导出/原子写 tmp 的 by-design 命中。
+- **范围边界**：BUG-7 的 `DeepSpec.dpr:70`（InitializeEx 失败仅 OutputDebugString）与
+  exe 签名/VerInfo 属 *.dpr/工程文件（`boundary.json` 禁 AI 改），仍待用户会话；
+  `Decisions` 四处 TryTransition 失败诊断的 `OutputDebugString` 为批处理幂等 no-op
+  边缘路径，保留（真用户可见项是 dpr 的 InitializeEx）。
+- **来源**：本会话 2026-08-06 SPW 发布审计（H3/H4 门禁确定性发现）。

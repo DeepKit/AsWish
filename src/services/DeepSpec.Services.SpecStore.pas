@@ -73,6 +73,13 @@ type
     /// <summary>Read issues/doc-issues.yaml. Caller owns the returned list.</summary>
     function ReadIssuesFile(const ARelPath: string): TList<TSpecIssue>;
 
+    /// <summary>Atomic text-file write (bugfix.md BUG-5): write to a .tmp
+    /// sibling, then TFile.Replace (atomic on NTFS) or TFile.Move on first
+    /// write. Shared by SpecStore itself and by callers that must not bypass
+    /// the crash-safe path (Decisions.Save, JS Bridge pending-decisions).
+    /// Class method: works on any full path, no instance state needed.</summary>
+    class procedure AtomicWriteTextFile(const AFullPath, AContent: string); static;
+
     property BasePath: string read FBasePath;
   end;
 
@@ -111,16 +118,25 @@ begin
   var LDir := TPath.GetDirectoryName(LFullPath);
   if not TDirectory.Exists(LDir) then
     TDirectory.CreateDirectory(LDir);
+  AtomicWriteTextFile(LFullPath, AContent);
+end;
 
-  var LTempPath := LFullPath + '.tmp';
+class procedure TDeepSpecStoreService.AtomicWriteTextFile(
+  const AFullPath, AContent: string);
+begin
+  var LDir := TPath.GetDirectoryName(AFullPath);
+  if not TDirectory.Exists(LDir) then
+    TDirectory.CreateDirectory(LDir);
+
+  var LTempPath := AFullPath + '.tmp';
   TFile.WriteAllText(LTempPath, AContent, TEncoding.UTF8);
 
-  if TFile.Exists(LFullPath) then
+  if TFile.Exists(AFullPath) then
     // Replace(destination, source, backup='', ignoreMetadataErrors=True).
     // Atomic on NTFS: source replaces destination in one step.
-    TFile.Replace(LFullPath, LTempPath, '', True)
+    TFile.Replace(AFullPath, LTempPath, '', True)
   else
-    TFile.Move(LTempPath, LFullPath);
+    TFile.Move(LTempPath, AFullPath);
 end;
 
 procedure TDeepSpecStoreService.BackupTreeFileIfExisting(const ARelPath: string);

@@ -53,6 +53,12 @@ begin
       procedure
       begin
         AController.ExportOptimizationPrompt;
+      end,
+      // Bundle batch review: Accept All / Reject All on bundles.html →
+      // one formal decision + state transitions on all anchored nodes.
+      procedure(const AAction, ABundleId: string)
+      begin
+        AController.ApplyBundleDecisions(AAction, ABundleId);
       end));
   TDeepMainFormAccess(AForm).RegisterInspectorProvider(
     TDeepSpecInspectorProvider.Create(

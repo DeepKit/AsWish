@@ -69,7 +69,8 @@ uses
   System.IOUtils,
   System.DateUtils,
   DeepSpec.Yaml.Writer,
-  DeepSpec.Yaml.Parser;
+  DeepSpec.Yaml.Parser,
+  DeepSpec.Services.SpecStore;
 
 constructor TDeepSpecDecisionsService.Create;
 begin
@@ -166,8 +167,11 @@ begin
   LWriter := TYamlWriter.Create;
   try
     LWriter.WriteDecisionsFile(FDecisions);
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'requirement-decisions.yaml'),
-      LWriter.ToString, TEncoding.UTF8);
+    // Atomic write (bugfix.md BUG-5 path) — never bypass the crash-safe
+    // replace with a bare TFile.WriteAllText.
+    TDeepSpecStoreService.AtomicWriteTextFile(
+      TPath.Combine(FBasePath, 'requirement-decisions.yaml'),
+      LWriter.ToString);
   finally
     LWriter.Free;
   end;
@@ -331,10 +335,12 @@ begin
     begin
       var LNode := LNodes[I];
 
-      // Find accepted/rejected decisions targeting this node
+      // Find accepted/rejected decisions targeting this node (a rejected
+      // decision must also apply its transitions — Reject All on bundles
+      // and node-reject depend on this)
       for var LDec in FDecisions do
       begin
-        if LDec.Status <> dsAccepted then Continue;
+        if (LDec.Status <> dsAccepted) and (LDec.Status <> dsRejected) then Continue;
         var LTargetsNode := False;
         for var LT in LDec.TargetNodes do
           if LT = LNode.Id then begin LTargetsNode := True; Break; end;
@@ -392,7 +398,7 @@ begin
     var LNode := ANodes[I];
     for var LDec in FDecisions do
     begin
-      if LDec.Status <> dsAccepted then Continue;
+      if (LDec.Status <> dsAccepted) and (LDec.Status <> dsRejected) then Continue;
       var LTargetsNode := False;
       for var LT in LDec.TargetNodes do
         if LT = LNode.Id then begin LTargetsNode := True; Break; end;
