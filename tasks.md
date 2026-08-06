@@ -31,7 +31,8 @@
 - [x] **BUG-9（健康度看板）**：`RenderIndex` 重构 — 文档健康度（覆盖率/置信度/决策积压/雾区数 4 卡片）+ 高风险问题 + 冲突摘要 + 优化 Prompt 入口（`export-optimization-prompt` JS Bridge 贯通 MainView→Providers→Controller）；`Controller.RenderAll` 加载 issues 传入；`ComputeHealthMetrics`/`CountCrossTreeConflicts` 静态方法；`Controller.ExportOptimizationPrompt` 写 `prompts/optimization-prompt.md`。**已修（bugfix #14 + Task 3）**，测试 97/97。兑现定位文档 §7-9。
 - [x] **端到端验证（静态）**：因 GUI/WebView2 无法在 AI 会话内 headless 实跑，改为静态验证——编译 0 error + 测试 97/97 + 逐文件审查 RenderIndex 输出 HTML（4 卡片 + 导出按钮 + 专用 JS Bridge 脚本就绪）。**过程中发现并修复 bugfix #14**（index 页漏 JS Bridge）。完整 runtime 验证（开 research_ticket 看数字变化）仍待用户在 GUI 中实跑确认。
 - [x] **2026-08-06 SPW 审计修复（bugfix #15）**：bundles 页 Accept/Reject All 死按钮（H3.deep-ui-test 门禁实证）→ `MainView` 第三闭包 + `Controller.ApplyBundleDecisions` 贯通；拒绝态决策不生效（`ApplyNodeStatusTransitions` 仅应用 dsAccepted）→ 两变体守卫修复；`Decisions.Save`/`AppendPendingDecision` 裸 TFile 写 → `SpecStore.AtomicWriteTextFile` 共享原子写；AutoFix 'open-project' 硬编码路径 → `DEEPSPEC_AUTOFIX_PROJECT` 环境变量。主程序 47514 lines 0 error；97/97 无回归；SPW 重跑 H3.deep-ui-test PASS。**完整 GUI 实跑验证（bundles 按钮 + 看板 + ticket 闭环）仍待用户确认**。
-- [ ] **BUG-7**：`DeepBase.InitializeEx` 失败改弹窗提示（替代静默 `OutputDebugString`）；exe 签名 + 补 `VerInfo_Keys` 的 CompanyName/LegalCopyright——*.dpr/工程文件在 `boundary.json` 禁改范围内，需用户会话
+- [ ] **BUG-7**：~~`DeepBase.InitializeEx` 失败改弹窗提示（替代静默 `OutputDebugString`）；补 `VerInfo_Keys` 的 CompanyName/LegalCopyright~~——**已修（bugfix #16）**：dpr 改 `ShowMessage` 弹窗 + dproj VerInfo 补 DeepKit/©2026 + 生成 `DeepSpec.ico` 修复 msbuild 缺失图标（顺带补上一直缺失的 IDE 构建文件）；**剩余**：exe 数字签名需证书（signtool，待用户提供/购买证书）
+- [ ] **BUG-6b**：DeepBase 作 git submodule 或 vendor DCU（需用户决策：涉及仓库结构变更，DeepBase 须先有独立 git 仓库）——SPW H1 门禁确认：非 submodule 非 vendored，换机 clone 无法编译
 
 ### P2：质量改善
 

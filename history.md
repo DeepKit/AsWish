@@ -30,6 +30,16 @@
 
 ---
 
+## 2026-08-06 BUG-7 收尾（bugfix.md #16）
+
+- [x] `DeepSpec.dpr:69-71`：`InitializeEx` 失败 `OutputDebugString` → `ShowMessage` 弹窗（含影响范围说明，仍继续运行）
+- [x] `DeepSpec.dproj`：两处 `VerInfo_Keys` 补 `CompanyName=DeepKit` + `LegalCopyright=Copyright (c) 2026 DeepKit`；msbuild 重建 `DeepSpec.res`（IDE 版本资源随 dproj 更新）
+- [x] 新建 `DeepSpec.ico`（16/32/48 三尺寸）——修复 `Icon_MainIcon` 引用缺失文件导致的 msbuild 构建失败（该文件从未入库，顺带修复 IDE 构建缺口）
+- [x] 验证：msbuild 0 error；exe VerInfo 生效（DeepKit / ©2026）；图标提取 32x32 有效；97/97 测试无回归；SPW 重跑 H4 对 dpr:70 命中清除
+- [ ] **剩余**：exe 数字签名需证书（signtool）；GUI 实跑验证；BUG-6b 仓库结构决策
+
+---
+
 ## 2026-07-08 Fog 探索模型落地 + 编译修复 + 发布就绪度评估
 
 ### 质量加固（P0 续）

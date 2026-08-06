@@ -241,3 +241,22 @@
   `Decisions` 四处 TryTransition 失败诊断的 `OutputDebugString` 为批处理幂等 no-op
   边缘路径，保留（真用户可见项是 dpr 的 InitializeEx）。
 - **来源**：本会话 2026-08-06 SPW 发布审计（H3/H4 门禁确定性发现）。
+
+## #16 — BUG-7：InitializeEx 弹窗 + VerInfo + 缺失图标（2026-08-06 收尾）
+
+- **现象**：`DeepBase.InitializeEx` 失败仅 `OutputDebugString`，用户看不到；exe VerInfo 的
+  CompanyName/LegalCopyright 为空（SmartScreen 拦截风险）；msbuild 构建报
+  `unable to open file 'DeepSpec.ico': FileNotFound`——`Icon_MainIcon` 引用了一个
+  **从未入库**的图标文件，IDE/MSBuild 构建一直无法使用。
+- **修复**：
+  1. `DeepSpec.dpr:69-71`：`InitializeEx` 失败改 `ShowMessage` 弹窗（说明影响范围，仍继续运行）。
+  2. `DeepSpec.dproj`：两处 `VerInfo_Keys` 补 `CompanyName=DeepKit` +
+     `LegalCopyright=Copyright (c) 2026 DeepKit`。
+  3. 新建 `DeepSpec.ico`（16/32/48 三尺寸 BGRA 图标，脚本生成）——修复 msbuild 构建缺口；
+     用 msbuild 重建 `DeepSpec.res`（IDE 生成的版本资源随 dproj VerInfo 更新）。
+- **验证**：msbuild /t:Build 0 error；`bin\DeepSpec.exe` VerInfo 显示
+  CompanyName=DeepKit / LegalCopyright=©2026 DeepKit；exe 图标 ExtractAssociatedIcon 32x32 有效；
+  测试 97/97 无回归；SPW 重跑 H4.SILENT_INIT_FAILURE 对 `DeepSpec.dpr:70` 命中清除。
+- **范围边界**：**数字签名（signtool）仍待证书**——需用户提供/购买代码签名证书后执行；
+  `Decisions` 四处 TryTransition 失败诊断保留 `OutputDebugString`（幂等批处理边缘路径，见 #15）。
+- **来源**：本会话 2026-08-06，SPW 发布审计 P1 项收尾。
