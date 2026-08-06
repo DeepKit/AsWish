@@ -243,6 +243,8 @@ type
     class function FogStateToStr(AValue: TFogState): string; static;
     class function IssueStatusToStr(AValue: TIssueStatus): string; static;
     class function DecisionTypeToStr(AValue: TDecisionType): string; static;
+    class function DecisionTypeFromStr(const AValue: string;
+      ADefault: TDecisionType = dtConfirm): TDecisionType; static;
     class function DecisionStatusToStr(AValue: TDecisionStatus): string; static;
     class function DecidedByToStr(AValue: TDecidedBy): string; static;
     class function PriorityToStr(AValue: TPriorityLevel): string; static;
@@ -447,6 +449,25 @@ begin
     dtPermission:      Result := 'permission';
     dtRule:            Result := 'rule';
   end;
+end;
+
+class function TSpecEnums.DecisionTypeFromStr(const AValue: string;
+  ADefault: TDecisionType): TDecisionType;
+begin
+  Result := ADefault;
+  var LValue := LowerCase(AValue);
+  if LValue = 'confirm' then Result := dtConfirm
+  else if LValue = 'reject' then Result := dtReject
+  else if LValue = 'clarify' then Result := dtClarify
+  else if LValue = 'gap_fill' then Result := dtGapFill
+  else if LValue = 'resolve_conflict' then Result := dtResolveConflict
+  else if LValue = 'scope' then Result := dtScope
+  else if LValue = 'priority' then Result := dtPriority
+  else if LValue = 'terminology' then Result := dtTerminology
+  else if LValue = 'view_mapping' then Result := dtViewMapping
+  else if LValue = 'module_mapping' then Result := dtModuleMapping
+  else if LValue = 'permission' then Result := dtPermission
+  else if LValue = 'rule' then Result := dtRule;
 end;
 
 class function TSpecEnums.DecisionStatusToStr(AValue: TDecisionStatus): string;

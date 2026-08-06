@@ -18,11 +18,14 @@ uses
   Test.DeepSpec.Validation in 'Test.DeepSpec.Validation.pas',
   Test.DeepSpec.Models in 'Test.DeepSpec.Models.pas',
   Test.DeepSpec.CandidateIngest in 'Test.DeepSpec.CandidateIngest.pas',
+  Test.DeepSpec.Decisions in 'Test.DeepSpec.Decisions.pas',
+  Test.DeepSpec.SpecStore in 'Test.DeepSpec.SpecStore.pas',
   DeepSpec.Yaml.Parser in '..\src\core\DeepSpec.Yaml.Parser.pas',
   DeepSpec.Models in '..\src\models\DeepSpec.Models.pas',
   DeepSpec.Validation in '..\src\core\DeepSpec.Validation.pas',
   DeepSpec.Services.Scan in '..\src\services\DeepSpec.Services.Scan.pas',
   DeepSpec.Services.SpecStore in '..\src\services\DeepSpec.Services.SpecStore.pas',
+  DeepSpec.Services.Decisions in '..\src\services\DeepSpec.Services.Decisions.pas',
   DeepSpec.Services.CandidateIngest in '..\src\services\DeepSpec.Services.CandidateIngest.pas';
 
 var

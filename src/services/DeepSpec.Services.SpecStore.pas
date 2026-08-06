@@ -162,8 +162,15 @@ begin
   LFullPath := TPath.Combine(FBasePath, ARelPath);
   if not TFile.Exists(LFullPath) then Exit;
 
+  // Snapshots dir is normally created by CreateDirectoryStructure, but an
+  // existing .deepspec from an older version may lack it — never crash on
+  // a missing backup target (backup is best-effort).
+  var LSnapshotDir := TPath.Combine(FBasePath, 'snapshots');
+  if not TDirectory.Exists(LSnapshotDir) then
+    TDirectory.CreateDirectory(LSnapshotDir);
+
   LBaseName := TPath.GetFileNameWithoutExtension(ARelPath);
-  LBackupPath := TPath.Combine(FBasePath, 'snapshots', LBaseName + '.bak.yaml');
+  LBackupPath := TPath.Combine(LSnapshotDir, LBaseName + '.bak.yaml');
   // Copy (overwrite previous backup) — single rolling backup per tree.
   TFile.Copy(LFullPath, LBackupPath, True);
 end;

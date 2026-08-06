@@ -131,6 +131,19 @@ begin
         LDec.Release := LItem.GetString('release', '');
         LDec.SupersededBy := LItem.GetString('superseded_by', '');
 
+        // DecisionType + target/affected node lists were never read back
+        // (round-trip loss: after a restart, transitions had no targets and
+        // no-op'd). Read them so Save/Load round-trips fully.
+        LDec.DecisionType := TSpecEnums.DecisionTypeFromStr(
+          LItem.GetString('type', ''), dtConfirm);
+        var LTargets := LItem.GetSeq('target_nodes');
+        if LTargets <> nil then
+        begin
+          SetLength(LDec.TargetNodes, LTargets.SeqCount);
+          for var J := 0 to LTargets.SeqCount - 1 do
+            LDec.TargetNodes[J] := LTargets.SeqItem(J).AsString;
+        end;
+
         var LStatusStr := LItem.GetString('status', 'proposed');
         if LStatusStr = 'accepted' then LDec.Status := dsAccepted
         else if LStatusStr = 'rejected' then LDec.Status := dsRejected
