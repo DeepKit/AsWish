@@ -1,4 +1,0 @@
-Embarcadero Delphi for Win64 compiler version 37.0
-Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
-src\services\DeepSpec.Services.Scan.pas(1) Error: E1030 Invalid compiler directive: 'CODEPAGE'
-D:\Temp\opencode\deepspec-spw\CliProbe.dpr(9) Fatal: F2063 Could not compile used unit 'DeepSpec.Services.Scan.pas'
