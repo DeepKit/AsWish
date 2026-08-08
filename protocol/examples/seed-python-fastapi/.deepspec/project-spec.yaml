@@ -1,22 +1,21 @@
-﻿version: "1.0"
+version: "1.0"
 project:
-  name: "seed-python-fastapi"
+  name: "Inventory API"
   path: "."
-  type: "unknown"
-  scan_time: "2026-08-07T10:58:48+08:00"
+  type: "python_backend"
+  scan_time: "2026-05-15T09:00:00+08:00"
 
 summary:
-  total_nodes: 0
-  confirmed_nodes: 0
-  uncertain_nodes: 0
-  open_issues: 0
-  decisions_count: 0
+  total_nodes: 5
+  confirmed_nodes: 1
+  uncertain_nodes: 1
+  open_issues: 1
+  decisions_count: 1
 
 trees:
   function_tree: "trees/function-tree.yaml"
   module_tree: "trees/module-tree.yaml"
   view_tree: "trees/view-tree.yaml"
-  data_tree: "trees/data-tree.yaml"
 
 relations: "relations/requirement-relations.yaml"
 evidence: "evidence/source-evidence.yaml"
