@@ -33,6 +33,7 @@ type
   TDeepSpecRenderService = class(TInterfacedObject)
   private
     FBasePath: string;
+    FLocale: string;
     function HtmlEscape(const S: string): string;
     function PageHeader(const ATitle: string): string;
     function PageFooter: string;
@@ -42,6 +43,10 @@ type
     // CSS slug for a fog state: underscores -> hyphens (bugfix.md BUG-12),
     // so badge-fog-unknown-unknowns matches the hyphen style of badge-fog-misty.
     function FogStateCssClass(AFog: DeepSpec.Models.TFogState): string;
+    /// <summary>Locale-aware UI text: returns AZh when the review pages are
+    ///  rendered for a Chinese Windows locale, else AEn. Only used for
+    ///  human-visible chrome (titles/buttons/hints), never for YAML keys.</summary>
+    function T(const AEn, AZh: string): string;
   public
     procedure Initialize(const ADeepSpecPath: string);
     procedure RenderScanReport(AScan: TDeepSpecScanService;
@@ -72,13 +77,37 @@ uses
   System.IOUtils,
   System.DateUtils,
   System.StrUtils,
-  System.Generics.Defaults;
+  System.Generics.Defaults,
+  Winapi.Windows;
 
 procedure TDeepSpecRenderService.Initialize(const ADeepSpecPath: string);
 begin
   FBasePath := TPath.Combine(ADeepSpecPath, 'html');
   if not TDirectory.Exists(FBasePath) then
     TDirectory.CreateDirectory(FBasePath);
+
+  // Detect the Windows UI language once so review pages render localized
+  // chrome (titles/buttons/hints). Same normalization as the desktop shell.
+  FLocale := 'en-US';
+  var LLocale: array[0..84] of WideChar;
+  if GetUserDefaultLocaleName(LLocale, Length(LLocale)) > 1 then
+  begin
+    var LL := string(PWideChar(@LLocale[0])).ToLower;
+    if LL.StartsWith('zh-hans') or LL.StartsWith('zh-cn')
+       or LL.StartsWith('zh-sg') or (LL = 'zh') then
+      FLocale := 'zh-CN'
+    else if LL.StartsWith('zh-hant') or LL.StartsWith('zh-tw')
+            or LL.StartsWith('zh-hk') or LL.StartsWith('zh-mo') then
+      FLocale := 'zh-TW';
+  end;
+end;
+
+function TDeepSpecRenderService.T(const AEn, AZh: string): string;
+begin
+  if FLocale = 'zh-CN' then
+    Result := AZh
+  else
+    Result := AEn;
 end;
 
 function TDeepSpecRenderService.HtmlEscape(const S: string): string;
@@ -143,7 +172,8 @@ var
     LSb.AppendLine('<h2><span class="badge ' + ABadgeClass + '">' +
       HtmlEscape(ATitle) + '</span> ' + Length(AFiles).ToString + '</h2>');
     if Length(AFiles) = 0 then
-      LSb.AppendLine('<p><em>No files in this category.</em></p>')
+      LSb.AppendLine('<p><em>' + T('No files in this category.', '此类别没有文件。') +
+        '</em></p>')
     else
     begin
       LSb.AppendLine('<div class="file-list">');
@@ -156,24 +186,37 @@ var
 begin
   LSb := TStringBuilder.Create;
   try
-    LSb.Append(PageHeader('Scan Report'));
+    LSb.Append(PageHeader(T('Scan Report', '扫描报告')));
 
-    LSb.AppendLine('<h1>Scan Report: ' + HtmlEscape(AProjectName) + '</h1>');
-    LSb.AppendLine('<p>Project type: <strong>' + HtmlEscape(AProjectType) + '</strong></p>');
+    LSb.AppendLine('<h1>' + T('Scan Report', '扫描报告') + ': ' +
+      HtmlEscape(AProjectName) + '</h1>');
+    LSb.AppendLine('<p>' + T('Project type:', '项目类型：') +
+      ' <strong>' + HtmlEscape(AProjectType) + '</strong></p>');
 
-    LSb.AppendLine('<h2>Summary</h2>');
-    LSb.AppendLine('<div class="stat"><strong>' + AScan.TotalFiles.ToString + '</strong>Total files</div>');
-    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcDocuments).ToString + '</strong>Documents</div>');
-    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcCode).ToString + '</strong>Code</div>');
-    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcUI).ToString + '</strong>UI</div>');
-    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcConfig).ToString + '</strong>Config</div>');
-    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcAiRules).ToString + '</strong>AI Rules</div>');
+    LSb.AppendLine('<h2>' + T('Summary', '汇总') + '</h2>');
+    LSb.AppendLine('<div class="stat"><strong>' + AScan.TotalFiles.ToString +
+      '</strong>' + T('Total files', '文件总数') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcDocuments).ToString +
+      '</strong>' + T('Documents', '文档') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcCode).ToString +
+      '</strong>' + T('Code', '代码') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcUI).ToString +
+      '</strong>' + T('UI', '界面') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcConfig).ToString +
+      '</strong>' + T('Config', '配置') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + AScan.CategoryCount(fcAiRules).ToString +
+      '</strong>' + T('AI Rules', 'AI 规则') + '</div>');
 
-    AppendCategory('Documents', 'badge-doc', AScan.GetFilesByCategory(fcDocuments));
-    AppendCategory('Code', 'badge-code', AScan.GetFilesByCategory(fcCode));
-    AppendCategory('UI', 'badge-ui', AScan.GetFilesByCategory(fcUI));
-    AppendCategory('Config', 'badge-config', AScan.GetFilesByCategory(fcConfig));
-    AppendCategory('AI Rules', 'badge-ai', AScan.GetFilesByCategory(fcAiRules));
+    AppendCategory(T('Documents', '文档'), 'badge-doc',
+      AScan.GetFilesByCategory(fcDocuments));
+    AppendCategory(T('Code', '代码'), 'badge-code',
+      AScan.GetFilesByCategory(fcCode));
+    AppendCategory(T('UI', '界面'), 'badge-ui',
+      AScan.GetFilesByCategory(fcUI));
+    AppendCategory(T('Config', '配置'), 'badge-config',
+      AScan.GetFilesByCategory(fcConfig));
+    AppendCategory(T('AI Rules', 'AI 规则'), 'badge-ai',
+      AScan.GetFilesByCategory(fcAiRules));
 
     LSb.Append(PageFooter);
 
@@ -199,7 +242,7 @@ begin
   LSb := TStringBuilder.Create;
   LSorted := nil;
   try
-    LSb.Append(PageHeader('Index'));
+    LSb.Append(PageHeader(T('Index', '索引')));
     LSb.AppendLine('<h1>DeepSpec: ' + HtmlEscape(AProjectName) + '</h1>');
     LSb.AppendLine('<p>项目规格健康度看板（BUG-9）。</p>');
 
@@ -494,7 +537,16 @@ begin
     for var LNode in ANodes do
       LNodeMap.AddOrSetValue(LNode.Id, LNode);
 
-    LSb.Append(PageHeader(ATreeTitle));
+    // Localize the tree page title by file key (function-tree/module-tree/...)
+    var LTitle := ATreeTitle;
+    if FLocale = 'zh-CN' then
+    begin
+      if ATreeName = 'function-tree' then LTitle := '功能树'
+      else if ATreeName = 'module-tree' then LTitle := '模块树'
+      else if ATreeName = 'view-tree' then LTitle := '界面树'
+      else if ATreeName = 'data-tree' then LTitle := '数据树';
+    end;
+    LSb.Append(PageHeader(LTitle));
 
     // Tree-specific styles
     LSb.AppendLine('<style>');
@@ -558,7 +610,7 @@ begin
     LSb.AppendLine('  .trust-relevance { color: #6c757d; font-size: 0.9em; }');
     LSb.AppendLine('</style>');
 
-    LSb.AppendLine('<h1>' + HtmlEscape(ATreeTitle) + '</h1>');
+    LSb.AppendLine('<h1>' + HtmlEscape(LTitle) + '</h1>');
     LSb.AppendLine('<p><a href="index.html">'#$2190' Back to index</a></p>');
 
     if ANodes.Count = 0 then
@@ -626,7 +678,7 @@ var
       // Low confidence
       if LNode.Confidence = clLow then
         LSb.AppendLine('<li class="problem problem-low-confidence">' +
-          '<span class="badge badge-conf-low">low confidence</span> ' +
+          '<span class="badge badge-conf-low">' + T('low confidence', '低置信度') + '</span> ' +
           HtmlEscape(LNode.Title) +
           ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
           ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
@@ -637,7 +689,7 @@ var
         and (LNode.GenStatus in [gsDraft, gsGenerated])
         and (LNode.SourceLayer = slAiInferred) then
         LSb.AppendLine('<li class="problem problem-no-evidence">' +
-          '<span class="badge badge-prob-no-evidence">no evidence</span> ' +
+          '<span class="badge badge-prob-no-evidence">' + T('no evidence', '无证据') + '</span> ' +
           HtmlEscape(LNode.Title) +
           ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
           ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
@@ -646,7 +698,7 @@ var
       // Candidate/unreviewed node (needs human review)
       if (LNode.Status = nsCandidate) and (LNode.ReviewStatus = rsUnreviewed) then
         LSb.AppendLine('<li class="problem problem-unreviewed">' +
-          '<span class="badge badge-prob-unreviewed">unreviewed</span> ' +
+          '<span class="badge badge-prob-unreviewed">' + T('unreviewed', '未审阅') + '</span> ' +
           HtmlEscape(LNode.Title) +
           ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
           ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
@@ -655,7 +707,7 @@ var
       // Uncertain node
       if LNode.Status = nsUncertain then
         LSb.AppendLine('<li class="problem problem-uncertain">' +
-          '<span class="badge badge-uncertain">uncertain</span> ' +
+          '<span class="badge badge-uncertain">' + T('uncertain', '不确定') + '</span> ' +
           HtmlEscape(LNode.Title) +
           ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
           ' <code>' + HtmlEscape(LNode.Id) + '</code>' +
@@ -691,7 +743,7 @@ var
             if LN.Id = LNode.ParentId then begin LFound := True; Break; end;
         if not LFound then
           LSb.AppendLine('<li class="problem problem-orphan">' +
-            '<span class="badge badge-prob-orphan">orphan</span> ' +
+            '<span class="badge badge-prob-orphan">' + T('orphan', '孤立') + '</span> ' +
             HtmlEscape(LNode.Title) +
             ' — parent <code>' + HtmlEscape(LNode.ParentId) + '</code> not found' +
             ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span>' +
@@ -708,25 +760,25 @@ var
       for var LRef in LN.RelatedFunctions do
         if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
           LSb.AppendLine('<li class="problem problem-orphan">' +
-            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            '<span class="badge badge-prob-orphan">' + T('broken ref', '断裂引用') + '</span> ' +
             HtmlEscape(LN.Title) + ' '#8594' func <code>' + HtmlEscape(LRef) + '</code> (not found)' +
             ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
       for var LRef in LN.RelatedModules do
         if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
           LSb.AppendLine('<li class="problem problem-orphan">' +
-            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            '<span class="badge badge-prob-orphan">' + T('broken ref', '断裂引用') + '</span> ' +
             HtmlEscape(LN.Title) + ' '#8594' mod <code>' + HtmlEscape(LRef) + '</code> (not found)' +
             ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
       for var LRef in LN.RelatedViews do
         if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
           LSb.AppendLine('<li class="problem problem-orphan">' +
-            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            '<span class="badge badge-prob-orphan">' + T('broken ref', '断裂引用') + '</span> ' +
             HtmlEscape(LN.Title) + ' '#8594' view <code>' + HtmlEscape(LRef) + '</code> (not found)' +
             ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
       for var LRef in LN.RelatedData do
         if (LAllIds <> nil) and not LAllIds.ContainsKey(LRef) then
           LSb.AppendLine('<li class="problem problem-orphan">' +
-            '<span class="badge badge-prob-orphan">broken ref</span> ' +
+            '<span class="badge badge-prob-orphan">' + T('broken ref', '断裂引用') + '</span> ' +
             HtmlEscape(LN.Title) + ' '#8594' data <code>' + HtmlEscape(LRef) + '</code> (not found)' +
             ' <span class="problem-tree">(' + HtmlEscape(ATreeLabel) + ')</span></li>');
     end;
@@ -748,7 +800,7 @@ var
           HtmlEscape(LN.Title) + ' <code>' + HtmlEscape(LN.Id) + '</code>' +
           ' <button class="btn-ticket" data-action="ticket-create"' +
           ' data-node-id="' + HtmlEscape(LN.Id) + '"' +
-          ' data-node-title="' + HtmlEscape(LN.Title) + '">＋ ticket</button></div>');
+          ' data-node-title="' + HtmlEscape(LN.Title) + '">＋ ' + T('ticket', '开票') + '</button></div>');
       end;
   end;
 
@@ -756,7 +808,7 @@ begin
   LSb := TStringBuilder.Create;
   LAllIds := nil;
   try
-    LSb.Append(PageHeader('Problems'));
+    LSb.Append(PageHeader(T('Problems', '问题')));
 
     LSb.AppendLine('<style>');
     LSb.AppendLine('  .problem { list-style: none; padding: 0.4em 0.6em; margin: 0.3em 0;' +
@@ -791,31 +843,32 @@ begin
     LSb.AppendLine('  .prob-summary strong { display: block; font-size: 1.5em; color: #4a90e2; }');
     LSb.AppendLine('</style>');
 
-    LSb.AppendLine('<h1>Problems</h1>');
-    LSb.AppendLine('<p><a href="index.html">'#$2190' Back to index</a></p>');
+    LSb.AppendLine('<h1>' + T('Problems', '问题') + '</h1>');
+    LSb.AppendLine('<p><a href="index.html">'#$2190' ' +
+      T('Back to index', '返回索引') + '</a></p>');
 
     // Summary
-    LSb.AppendLine('<h2>Summary</h2>');
+    LSb.AppendLine('<h2>' + T('Summary', '汇总') + '</h2>');
     var LFC: Integer := 0; if AFuncNodes <> nil then LFC := AFuncNodes.Count;
     var LMC: Integer := 0; if AModuleNodes <> nil then LMC := AModuleNodes.Count;
     var LVC: Integer := 0; if AViewNodes <> nil then LVC := AViewNodes.Count;
     var LDC: Integer := 0; if ADataNodes <> nil then LDC := ADataNodes.Count;
     LSb.AppendLine('<div class="prob-summary"><strong>' + LFC.ToString +
-      '</strong>Function nodes</div>');
+      '</strong>' + T('Function nodes', '功能节点') + '</div>');
     LSb.AppendLine('<div class="prob-summary"><strong>' + LMC.ToString +
-      '</strong>Module nodes</div>');
+      '</strong>' + T('Module nodes', '模块节点') + '</div>');
     LSb.AppendLine('<div class="prob-summary"><strong>' + LVC.ToString +
-      '</strong>View nodes</div>');
+      '</strong>' + T('View nodes', '界面节点') + '</div>');
     LSb.AppendLine('<div class="prob-summary"><strong>' + LDC.ToString +
-      '</strong>Data nodes</div>');
+      '</strong>' + T('Data nodes', '数据节点') + '</div>');
 
     // Problem list
-    LSb.AppendLine('<h2>Issues</h2>');
+    LSb.AppendLine('<h2>' + T('Issues', '问题列表') + '</h2>');
     LSb.AppendLine('<ul style="padding-left: 0;">');
-    ScanNodes('Function', AFuncNodes);
-    ScanNodes('Module', AModuleNodes);
-    ScanNodes('View', AViewNodes);
-    ScanNodes('Data', ADataNodes);
+    ScanNodes(T('Function', '功能'), AFuncNodes);
+    ScanNodes(T('Module', '模块'), AModuleNodes);
+    ScanNodes(T('View', '界面'), AViewNodes);
+    ScanNodes(T('Data', '数据'), ADataNodes);
     LSb.AppendLine('</ul>');
 
     // Cross-tree consistency: detect broken cross-tree references
@@ -832,10 +885,10 @@ begin
       if ADataNodes <> nil then for var LN in ADataNodes do LAllIds.AddOrSetValue(LN.Id, True);
 
       LSb.AppendLine('<ul style="padding-left: 0;">');
-      CheckNodeRefs('Function', AFuncNodes);
-      CheckNodeRefs('Module', AModuleNodes);
-      CheckNodeRefs('View', AViewNodes);
-      CheckNodeRefs('Data', ADataNodes);
+      CheckNodeRefs(T('Function', '功能'), AFuncNodes);
+      CheckNodeRefs(T('Module', '模块'), AModuleNodes);
+      CheckNodeRefs(T('View', '界面'), AViewNodes);
+      CheckNodeRefs(T('Data', '数据'), ADataNodes);
       LSb.AppendLine('</ul>');
     finally
       LAllIds.Free;
@@ -843,7 +896,7 @@ begin
     end;
 
     // Fog Map: nodes grouped by fog_state (the growing/shrinking map of foggy endpoints)
-    LSb.AppendLine('<h2 id="fog-map">Fog Map</h2>');
+    LSb.AppendLine('<h2 id="fog-map">' + T('Fog Map', '雾区地图') + '</h2>');
     LSb.AppendLine('<p>Requirement endpoints still in the fog. Converges one-way: ' +
       '<code>unknown_unknowns</code> '#8594' <code>foggy</code> '#8594' ' +
       '<code>misty</code> '#8594' <code>clear</code>. ' +
@@ -860,10 +913,10 @@ begin
       LSb.AppendLine('<div class="fog-group-title"><span class="badge badge-fog-' +
         FogStateCssClass(LState) + '">fog: ' + HtmlEscape(LStateStr) + '</span></div>');
 
-      EmitFogNodes('Function', AFuncNodes, LState, LFoundAny, LHasFog);
-      EmitFogNodes('Module', AModuleNodes, LState, LFoundAny, LHasFog);
-      EmitFogNodes('View', AViewNodes, LState, LFoundAny, LHasFog);
-      EmitFogNodes('Data', ADataNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes(T('Function', '功能'), AFuncNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes(T('Module', '模块'), AModuleNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes(T('View', '界面'), AViewNodes, LState, LFoundAny, LHasFog);
+      EmitFogNodes(T('Data', '数据'), ADataNodes, LState, LFoundAny, LHasFog);
 
       LSb.AppendLine('</div>');
     end;
@@ -873,7 +926,7 @@ begin
 
     // Open Tickets: exploration tickets persisted in issues/doc-issues.yaml.
     // Only open tickets of the four exploration types are shown here.
-    LSb.AppendLine('<h2 id="open-tickets">Open Tickets</h2>');
+    LSb.AppendLine('<h2 id="open-tickets">' + T('Open Tickets', '开放 Ticket') + '</h2>');
     var LTicketCount := 0;
     if AIssues <> nil then
     begin
@@ -974,7 +1027,7 @@ begin
     if AViewNodes <> nil then for var N in AViewNodes do LAllNodes.AddOrSetValue(N.Id, N);
     if ADataNodes <> nil then for var N in ADataNodes do LAllNodes.AddOrSetValue(N.Id, N);
 
-    LSb.Append(PageHeader('Semantic Bundles'));
+    LSb.Append(PageHeader(T('Semantic Bundles', '语义束')));
 
     LSb.AppendLine('<style>');
     LSb.AppendLine('  .bundle { margin: 1em 0; padding: 0.8em; border: 1px solid #dee2e6; border-radius: 6px; }');
@@ -992,7 +1045,7 @@ begin
     LSb.AppendLine('<p><a href="index.html">'#$2190' Back to index</a></p>');
 
     if (ABundles = nil) or (ABundles.Count = 0) then
-      LSb.AppendLine('<p><em>No bundles defined. Bundles group related nodes for batch review.</em></p>')
+      LSb.AppendLine('<p><em>' + T('No bundles defined. Bundles group related nodes for batch review.', '未定义语义束。语义束将相关节点分组供批量审阅。') + '</em></p>')
     else
     begin
       for var I := 0 to ABundles.Count - 1 do
@@ -1021,9 +1074,9 @@ begin
         LSb.AppendLine('</ul>');
         LSb.AppendLine('<div class="bundle-actions">');
         LSb.AppendLine('<button class="btn-accept-all" data-action="bundle-accept" data-bundle-id="' +
-          HtmlEscape(LB.Id) + '">Accept All</button>');
+          HtmlEscape(LB.Id) + '">' + T('Accept All', '全部接受') + '</button>');
         LSb.AppendLine('<button class="btn-reject-all" data-action="bundle-reject" data-bundle-id="' +
-          HtmlEscape(LB.Id) + '">Reject All</button>');
+          HtmlEscape(LB.Id) + '">' + T('Reject All', '全部拒绝') + '</button>');
         LSb.AppendLine('</div>');
         LSb.AppendLine('</div>');
       end;

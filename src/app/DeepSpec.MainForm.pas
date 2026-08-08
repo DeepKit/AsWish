@@ -106,6 +106,7 @@ uses
   DeepSpec.Localization,
   DeepSpec.DeepBaseServices,
   DeepBase.LLM,
+  DeepBase.Manager,
   DeepBase.VCL.DeepShell.Localization,
   DeepBase.VCL.DeepShell.ToolWindow,
   DeepBase.AutoFix.ErrorRecorder,
@@ -186,6 +187,16 @@ begin
   var LLocSvc := Localization as TShellDefaultLocalizationService;
   if LLocSvc <> nil then
     DeepSpecApplyLocale(LLocSvc);
+
+  // DeepBase.Logger 落盘关键生命周期消息（深度集成：状态栏之外有持久日志）。
+  try
+    var LLang := DeepSpecDetectLocale;
+    if DeepBase.Manager.DeepBase <> nil then
+      DeepBase.Manager.DeepBase.Logger.Info(
+        'DeepSpec startup, locale=' + LLang, 'DeepSpec');
+  except
+    // Logger 不可用不阻塞启动
+  end;
 
   Services.RegisterService('deepspec.project', FProjectService);
   Services.RegisterService('deepspec.scan', FScanService);
@@ -278,6 +289,30 @@ begin
   else
     Status.Info('DeepSpec', ShellText('deepspec.status.ready',
       'DeepSpec ready. Open a project folder to begin.'));
+
+  // --- 恢复上次会话（DeepBase 59 号文档 §7）：Settings 开关 → Recent
+  // 上次项目 → 校验路径存在 → OpenAndScan。任何失败不阻塞启动（§8）。---
+  try
+    var LRestore := True;
+    if SettingsStore <> nil then
+      LRestore := SettingsStore.ReadBool('deepspec.session.restore', True);
+    if LRestore and (Recent <> nil) and (not FController.IsProjectOpen) then
+    begin
+      var LItems := Recent.GetRecentProjects;
+      for var LItem in LItems do
+        if (not LItem.Invalid) and TDirectory.Exists(LItem.Path) then
+        begin
+          Status.Info('DeepSpec', 'Restoring last session: ' + LItem.Path);
+          FController.OpenAndScan(LItem.Path);
+          PopulateMruCombo;
+          Break;
+        end;
+    end;
+  except
+    on E: Exception do
+      Status.LogError('DeepSpec', 'Session restore failed: ' + E.Message,
+        E.ClassName);
+  end;
 end;
 
 procedure TDeepSpecMainForm.BuildLeftPanelUI;
@@ -537,6 +572,18 @@ begin
   // Re-enable Visualize so the project can be re-scanned (it was
   // disabled forever after the first scan before).
   FBtnVisualize.Enabled := True;
+
+  // 扫描完成写 DeepBase.Logger（持久日志）。
+  try
+    if DeepBase.Manager.DeepBase <> nil then
+      DeepBase.Manager.DeepBase.Logger.Info(Format(
+        'Scan complete: %d files | func %d / mod %d / view %d / data %d | %s',
+        [FScanService.TotalFiles, FTreeBuilder.FunctionNodes.Count,
+         FTreeBuilder.ModuleNodes.Count, FTreeBuilder.ViewNodes.Count,
+         FTreeBuilder.DataNodes.Count, FProjectService.ProjectType]),
+        'DeepSpec.Scan');
+  except
+  end;
 
   // Auto-open HTML index in main view
   if FController.IsProjectOpen then
