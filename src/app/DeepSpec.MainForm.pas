@@ -104,6 +104,7 @@ uses
   DeepSpec.Commands,
   DeepSpec.Providers,
   DeepSpec.Localization,
+  DeepSpec.DeepBaseServices,
   DeepBase.LLM,
   DeepBase.VCL.DeepShell.Localization,
   DeepBase.VCL.DeepShell.ToolWindow,
@@ -171,6 +172,14 @@ end;
 procedure TDeepSpecMainForm.RegisterServices;
 begin
   inherited;
+
+  // DeepBase 深度集成：用 DB1(ConfigDB) 持久化实现替换 DeepShell 默认的
+  // 内存态 Recent / Settings / Layout 服务（MRU 下拉、窗口位置、布局在
+  // 重启后保留）。DeepShell 的 ResolveServicesFromRegistry 会在本方法
+  // 之后自动替换 FRecent/FSettings/FLayout。
+  Services.RegisterService(CAP_SHELL_RECENT, TDeepSpecDbRecentService.Create);
+  Services.RegisterService(CAP_SHELL_SETTINGS, TDeepSpecDbSettingsStore.Create);
+  Services.RegisterService(CAP_SHELL_LAYOUT, TDeepSpecDbLayoutService.Create);
 
   // Detect the Windows UI language at startup and auto-switch the shell
   // localization service to it (DeepSpec + DeepShell zh-CN/zh-TW tables).

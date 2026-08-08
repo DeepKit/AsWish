@@ -1,45 +1,33 @@
-version: "1.0"
+﻿version: "1.0"
 tree: module
-generated_at: "2026-05-15T09:00:00+08:00"
-generator: "deepspec-llm-v1"
+generated_at: "2026-08-07T10:58:48+08:00"
+generator: "deepspec-treebuilder"
 
 nodes:
-  - id: "mod-api"
+  - id: "mod-seed-python-fastapi"
     tree: module
-    title: "api"
+    title: "seed-python-fastapi Modules"
     kind: package
     parent_id: null
-    summary: "FastAPI route handlers"
+    created_at: "2026-08-07T10:58:48+08:00"
+    updated_at: "2026-08-07T10:58:48+08:00"
+    content_hash: "f8fc37b55ce6cc3d4ae971dabb255dfd3619ef85249bd6a89c0f92f98e0de8e4"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Top-level module structure derived from directory layout"
     status: candidate
-    confidence: high
-    source_layer: parsed_from_a
-
-  - id: "mod-models"
-    tree: module
-    title: "models"
-    kind: package
-    parent_id: null
-    summary: "SQLAlchemy ORM models"
-    status: candidate
-    confidence: high
-    source_layer: parsed_from_a
-
-  - id: "mod-services"
-    tree: module
-    title: "services"
-    kind: service
-    parent_id: null
-    summary: "Business logic layer"
-    status: candidate
+    gen_status: generated
+    review_status: unreviewed
     confidence: medium
-    source_layer: ai_inferred
-
-  - id: "mod-schemas"
-    tree: module
-    title: "schemas"
-    kind: utility
-    parent_id: null
-    summary: "Pydantic request/response schemas"
-    status: candidate
-    confidence: high
     source_layer: parsed_from_a
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

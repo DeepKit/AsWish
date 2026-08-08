@@ -1,67 +1,34 @@
-version: "1.0"
+﻿version: "1.0"
 tree: function
-generated_at: "2026-05-15T09:00:00+08:00"
-generator: "deepspec-llm-v1"
+generated_at: "2026-08-07T10:58:48+08:00"
+generator: "deepspec-treebuilder"
 
 nodes:
-  - id: "func-inventory"
+  - id: "func-seed-python-fastapi"
     tree: function
-    title: "Inventory Management"
+    title: "seed-python-fastapi"
     kind: capability
     parent_id: null
-    summary: "REST API for product inventory CRUD and stock tracking"
-    status: confirmed
-    confidence: high
-    source_layer: human_decision
-    source_refs:
-      - ref_id: "ev-readme"
-        relevance: primary
-    decision_refs:
-      - "dec-001"
-    children:
-      - "func-product-crud"
-      - "func-stock-tracking"
-      - "func-low-stock-alert"
-
-  - id: "func-product-crud"
-    tree: function
-    title: "Product CRUD"
-    kind: feature
-    parent_id: "func-inventory"
-    summary: "Create, read, update, delete products"
+    created_at: "2026-08-07T10:58:48+08:00"
+    updated_at: "2026-08-07T10:58:48+08:00"
+    content_hash: "3d02872520a1edb29c17516581365613783c711640eeb7308bf6769c1c1907da"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Project root capability (stub - run LLM generation for semantic content)"
     status: candidate
-    confidence: high
-    source_layer: parsed_from_a
-    source_refs:
-      - ref_id: "ev-openapi"
-        relevance: primary
-    acceptance_criteria:
-      - "GET /products returns paginated list"
-      - "POST /products creates with SKU validation"
-      - "PUT /products/{id} updates fields"
-      - "DELETE /products/{id} soft-deletes"
-
-  - id: "func-stock-tracking"
-    tree: function
-    title: "Stock Tracking"
-    kind: feature
-    parent_id: "func-inventory"
-    summary: "Track stock levels per warehouse location"
-    status: candidate
-    confidence: medium
-    source_layer: ai_inferred
-    source_refs:
-      - ref_id: "ev-readme"
-        relevance: supporting
-
-  - id: "func-low-stock-alert"
-    tree: function
-    title: "Low Stock Alerts"
-    kind: feature
-    parent_id: "func-inventory"
-    summary: "Notify when stock falls below threshold"
-    status: candidate
+    gen_status: generated
+    review_status: unreviewed
     confidence: low
+    fog_state: unknown_unknowns
     source_layer: ai_inferred
-    issue_refs:
-      - "issue-001"
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

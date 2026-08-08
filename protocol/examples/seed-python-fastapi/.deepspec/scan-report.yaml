@@ -1,0 +1,24 @@
+﻿version: "1.0"
+scan_time: "2026-08-07T10:58:48+08:00"
+project_path: "."
+project_type: "unknown"
+
+file_classification:
+  documents:
+  code:
+  ui:
+  config:
+  ai_rules:
+  ignored:
+    - ".deepspec"
+
+stats:
+  total_files: 1
+  documents: 0
+  code: 0
+  ui: 0
+  config: 0
+  ai_rules: 0
+  ignored: 1
+
+warnings: []
