@@ -1,0 +1,3 @@
+; root.txt — DeepBase project root locator (first line = DeepBase root path)
+; Point this at your DeepBase checkout, e.g.:
+;   D:\_Progs\02Business\DeepBase

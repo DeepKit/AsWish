@@ -105,6 +105,7 @@ uses
   DeepSpec.Providers,
   DeepSpec.Localization,
   DeepSpec.DeepBaseServices,
+  DeepSpec.SettingsProvider,
   DeepBase.LLM,
   DeepBase.Manager,
   DeepBase.VCL.DeepShell.Localization,
@@ -225,6 +226,11 @@ begin
   inherited;
   DeepSpec.Providers.RegisterAllProviders(Self, FProjectService,
     FScanService, FTreeBuilder, FController);
+
+  // DeepBase 61 号文档 §7: 下游业务设置页（扫描配置 + LLM 配置）挂进
+  // DeepShell 设置对话框。
+  RegisterSettingsPageProvider(TDeepSpecSettingsProvider.Create(
+    TDeepBaseLLM(FLLMOwned)));
 end;
 
 procedure TDeepSpecMainForm.AfterShellShown;
