@@ -74,6 +74,9 @@ type
     procedure HandleScanEvent(const AEvent: TDeepShellEvent);
     procedure PopulateTreeFromSpec(ATree: TTreeView; ANodes: TList<TSpecNode>);
     procedure PopulateDocsPanel;
+    /// <summary>Tree node click: render node-detail.html and open it in the
+    ///  main view (the tree pages were dead before — clicking did nothing).</summary>
+    procedure DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
   private
     procedure BuildLeftPanelUI;
     procedure PopulateMruCombo;
@@ -605,6 +608,38 @@ begin
   end;
 end;
 
+procedure TDeepSpecMainForm.DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
+var
+  LList: TList<TSpecNode>;
+  LIdx: Integer;
+begin
+  if (Node = nil) or (FProjectService = nil) or (not FProjectService.IsOpen) then
+    Exit;
+  LList := nil;
+  if Sender = FFuncTree then
+    LList := FTreeBuilder.FunctionNodes
+  else if Sender = FModuleTree then
+    LList := FTreeBuilder.ModuleNodes
+  else if Sender = FViewTree then
+    LList := FTreeBuilder.ViewNodes;
+  if LList = nil then Exit;
+
+  LIdx := Integer(Node.Data);
+  if (LIdx < 0) or (LIdx >= LList.Count) then Exit;
+
+  try
+    var LNode := LList[LIdx];
+    FRender.RenderNodeDetail(LNode);
+    var LRef := TShellObjectRef.Make('node-detail', 'html', LNode.Title,
+      TPath.Combine(FProjectService.DeepSpecPath, 'html\node-detail.html'));
+    OpenView(LRef);
+  except
+    on E: Exception do
+      Status.LogError('DeepSpec', 'Node detail failed: ' + E.Message,
+        E.ClassName);
+  end;
+end;
+
 procedure TDeepSpecMainForm.PopulateTreeFromSpec(ATree: TTreeView;
   ANodes: TList<TSpecNode>);
 
@@ -626,6 +661,7 @@ procedure TDeepSpecMainForm.PopulateTreeFromSpec(ATree: TTreeView;
 
 begin
   if (ATree = nil) or (ANodes = nil) then Exit;
+  ATree.OnChange := DoSpecTreeChange;
   ATree.Items.BeginUpdate;
   try
     ATree.Items.Clear;

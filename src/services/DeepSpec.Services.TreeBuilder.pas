@@ -40,6 +40,10 @@ type
     function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
     function UniqueId(const ABaseId: string): string;
     procedure EnhanceFromDelphi(AScan: TDeepSpecScanService);
+    /// <summary>Extract H1/H2 headings from docs markdown files into
+    ///  function-tree children under the stub root.</summary>
+    procedure BuildDocsFunctions(AScan: TDeepSpecScanService;
+      const ARootId: string);
     procedure BuildDataTreeFromDelphi(AScan: TDeepSpecScanService);
     procedure SetGenStatusGenerated(ANodes: TList<TSpecNode>);
   public
@@ -213,49 +217,66 @@ begin
   LFuncRoot.RelationHash := TSpecHash.NodeRelationHash(LFuncRoot);
   FFunctionNodes.Add(LFuncRoot);
 
-  // ============ Module Tree: from top-level code directories ============
-  LDirs := TDictionary<string, Boolean>.Create;
+  // Doc-derived function nodes: H1/H2 headings from docs markdown become
+  // capability/feature children, so the function tree is not just a stub.
+  BuildDocsFunctions(AScan, LFuncRoot.Id);
+
+  // ============ Module Tree: hierarchical directory structure ============
+  // Every directory that contains code files becomes a package node; the
+  // parent of a directory is its nearest ancestor directory (or the module
+  // root), so nested source trees (src/units/core/...) appear in full depth.
+  var LDirMap := TDictionary<string, Boolean>.Create;
   try
     for var LFile in AScan.GetFilesByCategory(fcCode) do
     begin
-      var LTopDir := GetTopLevelDir(LFile);
-      if (LTopDir <> '') and not LDirs.ContainsKey(LTopDir) then
-        LDirs.Add(LTopDir, True);
+      // Scan stores relative paths with forward slashes; ExtractFilePath
+      // only understands backslashes on Windows, so split manually.
+      var LDir := '';
+      var LSlash := LFile.LastIndexOf('/');
+      if LSlash > 0 then
+        LDir := LFile.Substring(0, LSlash);
+      if LDir = '' then Continue;
+      LDirMap.AddOrSetValue(LDir, True);
     end;
 
     var LModRootId := 'mod-' + LRootSlug;
     var LModRoot := TSpecNode.MakeNew(LModRootId, ttModule,
       AProjectName + ' Modules', 'package');
-    LModRoot.Summary := 'Top-level module structure derived from directory layout';
+    LModRoot.Summary := 'Module structure derived from directory layout';
     LModRoot.Status := nsCandidate;
     LModRoot.Confidence := clMedium;
     LModRoot.SourceLayer := slParsedFromA;
 
-    var LChildren: TList<string>;
-    LChildren := TList<string>.Create;
+    var LDirNodes := TDictionary<string, string>.Create;
     try
-      // Children: each top-level directory
-      for var LDir in LDirs.Keys do
+      for var LDir in LDirMap.Keys do
       begin
         var LDirSlug := MakeSlug(LDir);
         var LDirId := UniqueId('mod-' + LDirSlug);
-        LChildren.Add(LDirId);
-
         var LDirNode := TSpecNode.MakeNew(LDirId, ttModule, LDir, 'package');
-        LDirNode.ParentId := LModRootId;
+
+        // Parent = nearest ancestor directory present in the map, else root.
+        var LParentId := LModRootId;
+        var LPos := LDir.LastIndexOf('/');
+        while LPos > 0 do
+        begin
+          var LParentDir := LDir.Substring(0, LPos);
+          if LDirNodes.TryGetValue(LParentDir, LParentId) then Break;
+          LPos := LParentDir.LastIndexOf('/');
+        end;
+        LDirNode.ParentId := LParentId;
         LDirNode.Summary := 'Module rooted at ' + LDir + '/';
         LDirNode.Status := nsCandidate;
         LDirNode.Confidence := clMedium;
         LDirNode.SourceLayer := slParsedFromA;
 
-        // Add evidence for this directory (use first file as evidence)
+        // Evidence: first code file under this directory.
         for var LFile in AScan.GetFilesByCategory(fcCode) do
-          if LFile.StartsWith(LDir + '/') or LFile.StartsWith(LDir + '\') then
+          if LFile.StartsWith(LDir + '/') or LFile.StartsWith(LDir + '\\') then
           begin
             var LEv := MakeEvidenceForFile(LFile);
-            LEv.Excerpt := 'Top-level directory: ' + LDir;
+            LEv.Excerpt := 'Directory: ' + LDir;
             FEvidenceList.Add(LEv);
-
             var LRef: TSourceRef;
             LRef.RefId := LEv.Id;
             LRef.Relevance := 'primary';
@@ -265,18 +286,18 @@ begin
 
         LDirNode.ContentHash := TSpecHash.NodeContentHash(LDirNode);
         LDirNode.RelationHash := TSpecHash.NodeRelationHash(LDirNode);
+        LDirNodes.Add(LDir, LDirId);
         FModuleNodes.Add(LDirNode);
       end;
-
-      LModRoot.Children := LChildren.ToArray;
-      LModRoot.ContentHash := TSpecHash.NodeContentHash(LModRoot);
-      LModRoot.RelationHash := TSpecHash.NodeRelationHash(LModRoot);
-      FModuleNodes.Insert(0, LModRoot);  // root first
     finally
-      LChildren.Free;
+      LDirNodes.Free;
     end;
+
+    LModRoot.ContentHash := TSpecHash.NodeContentHash(LModRoot);
+    LModRoot.RelationHash := TSpecHash.NodeRelationHash(LModRoot);
+    FModuleNodes.Insert(0, LModRoot);  // root first
   finally
-    LDirs.Free;
+    LDirMap.Free;
   end;
 
   // ============ View Tree: from UI files ============
@@ -358,6 +379,69 @@ begin
   SetGenStatusGenerated(FModuleNodes);
   SetGenStatusGenerated(FViewNodes);
   SetGenStatusGenerated(FDataNodes);
+end;
+
+procedure TDeepSpecTreeBuilder.BuildDocsFunctions(
+  AScan: TDeepSpecScanService; const ARootId: string);
+var
+  LFuncChildren: TList<string>;
+  LCount: Integer;
+begin
+  LFuncChildren := TList<string>.Create;
+  try
+    LCount := 0;
+    for var LFile in AScan.GetFilesByCategory(fcDocuments) do
+    begin
+      var LExt := LowerCase(TPath.GetExtension(LFile));
+      if (LExt <> '.md') and (LExt <> '.txt') and (LExt <> '.rst') then Continue;
+
+      var LFullPath := TPath.Combine(FProjectRootPath, LFile.Replace('/', '\\'));
+      if not TFile.Exists(LFullPath) then Continue;
+
+      var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
+      for var LL in LLines do
+      begin
+        var LTrimmed := LL.Trim;
+        if (Length(LTrimmed) > 0) and
+           (LTrimmed.StartsWith('# ') or LTrimmed.StartsWith('## ')) then
+        begin
+          var LTitle := LTrimmed;
+          if LTitle.StartsWith('## ') then LTitle := LTitle.Substring(3).Trim
+          else if LTitle.StartsWith('# ') then LTitle := LTitle.Substring(2).Trim;
+          if LTitle = '' then Continue;
+
+          var LSlug := MakeSlug(LTitle);
+          if LSlug = '' then LSlug := 'doc-' + LCount.ToString;
+          var LId := UniqueId('func-' + LSlug);
+
+          var LNode := TSpecNode.MakeNew(LId, ttFunction, LTitle, 'feature');
+          LNode.ParentId := ARootId;
+          LNode.Summary := 'Requirement extracted from ' + LFile;
+          LNode.Status := nsCandidate;
+          LNode.Confidence := clLow;
+          LNode.SourceLayer := slParsedFromA;
+
+          var LEv := MakeEvidenceForFile(LFile);
+          LEv.Excerpt := LTrimmed;
+          FEvidenceList.Add(LEv);
+          var LRef: TSourceRef;
+          LRef.RefId := LEv.Id;
+          LRef.Relevance := 'primary';
+          LNode.SourceRefs := [LRef];
+
+          LNode.ContentHash := TSpecHash.NodeContentHash(LNode);
+          LNode.RelationHash := TSpecHash.NodeRelationHash(LNode);
+          FFunctionNodes.Add(LNode);
+          LFuncChildren.Add(LId);
+          Inc(LCount);
+          if LCount >= 200 then Break;
+        end;
+      end;
+      if LCount >= 200 then Break;
+    end;
+  finally
+    LFuncChildren.Free;
+  end;
 end;
 
 procedure TDeepSpecTreeBuilder.SetGenStatusGenerated(ANodes: TList<TSpecNode>);

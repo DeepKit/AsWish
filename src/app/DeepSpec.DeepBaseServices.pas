@@ -452,8 +452,12 @@ begin
     var LState := AState;
     LState.LayoutKey := 'main';
     LState.UpdatedAt := Now;
-    DeepBase.Config.SetConfig(KeyFor(''),
-      LayoutToJson(LState).ToJSON);
+    var LJson := LayoutToJson(LState);
+    try
+      DeepBase.Config.SetConfig(KeyFor(''), LJson.ToJSON);
+    finally
+      LJson.Free;
+    end;
   except
   end;
 end;
@@ -491,8 +495,12 @@ begin
     var LState := AState;
     LState.LayoutKey := 'project:' + AProjectId;
     LState.UpdatedAt := Now;
-    DeepBase.Config.SetConfig(KeyFor(AProjectId),
-      LayoutToJson(LState).ToJSON);
+    var LJson := LayoutToJson(LState);
+    try
+      DeepBase.Config.SetConfig(KeyFor(AProjectId), LJson.ToJSON);
+    finally
+      LJson.Free;
+    end;
   except
   end;
 end;

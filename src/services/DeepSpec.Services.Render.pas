@@ -62,6 +62,9 @@ type
     procedure RenderBundlesPage(
       ABundles: TList<TSemanticBundle>;
       AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>);
+    /// <summary>Render a single-node detail page (node-detail.html) shown
+    ///  in the main view when the user clicks a tree node.</summary>
+    procedure RenderNodeDetail(const ANode: TSpecNode);
     /// <summary>Compute health metrics over 4 trees (+ optional issues).
     /// nil lists are treated as empty. Pure — no IO.</summary>
     class function ComputeHealthMetrics(AFunc, AModule, AView, AData: TList<TSpecNode>;
@@ -1114,6 +1117,67 @@ begin
   finally
     LSb.Free;
     LAllNodes.Free;
+  end;
+end;
+
+procedure TDeepSpecRenderService.RenderNodeDetail(const ANode: TSpecNode);
+var
+  LSb: TStringBuilder;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LSb.Append(PageHeader(ANode.Title));
+    LSb.AppendLine('<p><a href="index.html">'#$2190' ' +
+      T('Back to index', '返回索引') + '</a></p>');
+    LSb.AppendLine('<h1>' + HtmlEscape(ANode.Title) + '</h1>');
+
+    LSb.AppendLine('<div class="stat"><strong>' + HtmlEscape(ANode.Id) +
+      '</strong>' + T('Node ID', '节点 ID') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + HtmlEscape(
+      DeepSpec.Models.TSpecEnums.NodeStatusToStr(ANode.Status)) +
+      '</strong>' + T('Status', '状态') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + HtmlEscape(
+      DeepSpec.Models.TSpecEnums.ConfidenceToStr(ANode.Confidence)) +
+      '</strong>' + T('Confidence', '置信度') + '</div>');
+
+    if ANode.Summary <> '' then
+    begin
+      LSb.AppendLine('<h2>' + T('Summary', '摘要') + '</h2>');
+      LSb.AppendLine('<p>' + HtmlEscape(ANode.Summary) + '</p>');
+    end;
+
+    if (ANode.GenStatus <> gsDraft) or (ANode.ReviewStatus <> rsUnreviewed) then
+    begin
+      LSb.AppendLine('<h2>' + T('Review state', '审阅状态') + '</h2>');
+      LSb.AppendLine('<p><span class="badge">gen: ' + HtmlEscape(
+        DeepSpec.Models.TSpecEnums.GenStatusToStr(ANode.GenStatus)) +
+        '</span><span class="badge">rev: ' + HtmlEscape(
+        DeepSpec.Models.TSpecEnums.ReviewStatusToStr(ANode.ReviewStatus)) +
+        '</span></p>');
+    end;
+
+    if Length(ANode.SourceRefs) > 0 then
+    begin
+      LSb.AppendLine('<h2>' + T('Evidence', '证据') + '</h2>');
+      LSb.AppendLine('<ul>');
+      for var LR in ANode.SourceRefs do
+        LSb.AppendLine('<li><code>' + HtmlEscape(LR.RefId) + '</code> (' +
+          HtmlEscape(LR.Relevance) + ')</li>');
+      LSb.AppendLine('</ul>');
+    end;
+
+    if ANode.HasFogState then
+    begin
+      LSb.AppendLine('<h2>' + T('Fog state', '雾状态') + '</h2>');
+      LSb.AppendLine('<p>' + HtmlEscape(
+        DeepSpec.Models.TSpecEnums.FogStateToStr(ANode.FogState)) + '</p>');
+    end;
+
+    LSb.Append(PageFooter);
+    TFile.WriteAllText(TPath.Combine(FBasePath, 'node-detail.html'),
+      LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
   end;
 end;
 
