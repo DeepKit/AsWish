@@ -207,6 +207,9 @@ var
 begin
   if not ConfigAvailable then Exit;
   try
+    // Defensive: never append to a stale list if Load is ever re-invoked
+    // (multi-LLM review finding; construction-time call only today).
+    FItems.Clear;
     LJson := DeepBase.Config.GetConfig(CFG_RECENT, '');
     if LJson = '' then Exit;
     LArr := TJSONObject.ParseJSONValue(LJson) as TJSONArray;

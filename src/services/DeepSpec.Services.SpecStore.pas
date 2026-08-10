@@ -130,7 +130,9 @@ begin
   if not TDirectory.Exists(LDir) then
     TDirectory.CreateDirectory(LDir);
 
-  var LTempPath := AFullPath + '.tmp';
+  // Unique temp name: fixed ".tmp" suffixes collide under concurrency and
+  // trip some AV heuristics (multi-LLM review finding).
+  var LTempPath := AFullPath + '.tmp-' + TGuid.NewGuid.ToString.Substring(1, 8);
   TFile.WriteAllText(LTempPath, AContent, TEncoding.UTF8);
 
   if TFile.Exists(AFullPath) then
@@ -145,9 +147,15 @@ begin
       nil, REPLACEFILE_WRITE_THROUGH or REPLACEFILE_IGNORE_MERGE_ERRORS,
       nil, nil) then
     begin
-      // Rare fallback: replace not permitted — delete + move.
-      TFile.Delete(AFullPath);
-      TFile.Move(LTempPath, AFullPath);
+      // Fallback: MoveFileExW REPLACE_EXISTING — never delete the target
+      // first (a failed delete+move would lose the original file;
+      // multi-LLM review HIGH finding).
+      if not Winapi.Windows.MoveFileExW(PChar(LTempPath), PChar(AFullPath),
+        MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH) then
+      begin
+        // Last resort: in-place move; keep original intact on failure.
+        TFile.Move(LTempPath, AFullPath);
+      end;
     end;
   end
   else
@@ -166,14 +174,20 @@ begin
   // Snapshots dir is normally created by CreateDirectoryStructure, but an
   // existing .deepspec from an older version may lack it — never crash on
   // a missing backup target (backup is best-effort).
-  var LSnapshotDir := TPath.Combine(FBasePath, 'snapshots');
-  if not TDirectory.Exists(LSnapshotDir) then
-    TDirectory.CreateDirectory(LSnapshotDir);
+  try
+    var LSnapshotDir := TPath.Combine(FBasePath, 'snapshots');
+    if not TDirectory.Exists(LSnapshotDir) then
+      TDirectory.CreateDirectory(LSnapshotDir);
 
-  LBaseName := TPath.GetFileNameWithoutExtension(ARelPath);
-  LBackupPath := TPath.Combine(LSnapshotDir, LBaseName + '.bak.yaml');
-  // Copy (overwrite previous backup) — single rolling backup per tree.
-  TFile.Copy(LFullPath, LBackupPath, True);
+    LBaseName := TPath.GetFileNameWithoutExtension(ARelPath);
+    LBackupPath := TPath.Combine(LSnapshotDir, LBaseName + '.bak.yaml');
+    // Copy (overwrite previous backup) — single rolling backup per tree.
+    // Isolated: a failing backup (disk full / ACL / locked) must NOT abort
+    // the real atomic write below (multi-LLM review finding).
+    TFile.Copy(LFullPath, LBackupPath, True);
+  except
+    // Backup is best-effort; the caller's write must still proceed.
+  end;
 end;
 
 procedure TDeepSpecStoreService.CreateDirectoryStructure;

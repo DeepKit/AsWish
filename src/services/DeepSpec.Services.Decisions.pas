@@ -405,34 +405,57 @@ procedure TDeepSpecDecisionsService.ApplyNodeStatusTransitions(
   const ATreeRelPath: string; ANodes: TList<TSpecNode>);
 var
   LError: string;
+  LIndex: TDictionary<string, TList<TSpecDecision>>;
+  LDecs: TList<TSpecDecision>;
 begin
   if ANodes = nil then Exit;
-  for var I := 0 to ANodes.Count - 1 do
-  begin
-    var LNode := ANodes[I];
+
+  // Index accepted/rejected decisions by target node id ONCE (O(M)) instead
+  // of rescanning every decision for every node (O(N*M)) — multi-LLM review
+  // optimization; also makes the apply pass order-independent.
+  LIndex := TDictionary<string, TList<TSpecDecision>>.Create;
+  try
     for var LDec in FDecisions do
     begin
       if (LDec.Status <> dsAccepted) and (LDec.Status <> dsRejected) then Continue;
-      var LTargetsNode := False;
       for var LT in LDec.TargetNodes do
-        if LT = LNode.Id then begin LTargetsNode := True; Break; end;
-      if not LTargetsNode then Continue;
-      case LDec.DecisionType of
-        dtConfirm:
+      begin
+        if not LIndex.TryGetValue(LT, LDecs) then
         begin
-          TSpecEnums.TryTransitionGen(LNode.GenStatus, gsConfirmed, LError);
-          TSpecEnums.TryTransitionReview(LNode.ReviewStatus, rsAccepted, LError);
-          LNode.Status := nsConfirmed;
+          LDecs := TList<TSpecDecision>.Create;
+          LIndex.Add(LT, LDecs);
         end;
-        dtReject:
-        begin
-          TSpecEnums.TryTransitionGen(LNode.GenStatus, gsSkipped, LError);
-          TSpecEnums.TryTransitionReview(LNode.ReviewStatus, rsRejected, LError);
-          LNode.Status := nsRejected;
-        end;
+        LDecs.Add(LDec);
       end;
     end;
-    ANodes[I] := LNode;
+
+    for var I := 0 to ANodes.Count - 1 do
+    begin
+      var LNode := ANodes[I];
+      if LIndex.TryGetValue(LNode.Id, LDecs) then
+        for var LDec in LDecs do
+        begin
+          case LDec.DecisionType of
+            dtConfirm:
+            begin
+              TSpecEnums.TryTransitionGen(LNode.GenStatus, gsConfirmed, LError);
+              TSpecEnums.TryTransitionReview(LNode.ReviewStatus, rsAccepted, LError);
+              LNode.Status := nsConfirmed;
+            end;
+            dtReject:
+            begin
+              TSpecEnums.TryTransitionGen(LNode.GenStatus, gsSkipped, LError);
+              TSpecEnums.TryTransitionReview(LNode.ReviewStatus, rsRejected, LError);
+              LNode.Status := nsRejected;
+            end;
+          end;
+        end;
+      ANodes[I] := LNode;
+    end;
+  finally
+    for var LList in LIndex.Values do
+      LList.Free;
+    LIndex.Free;
   end;
 end;
 
