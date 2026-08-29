@@ -1,12 +1,10 @@
-﻿{ ============================================================================
+{ ============================================================================
   DeepSpec.SettingsProvider
-
-  DeepShell settings-dialog pages for DeepSpec business settings:
-    - Scan config: docs dir name + session-restore toggle
-    - LLM config: ModelScope API Key / Model (Key stored via DeepBase LLM
-      ApiKeyRef, never plaintext)
-
-  Settings persist to DB1(ConfigDB).
+  ---------------------------------------------------------------------------
+  Desktop shell settings page provider for DeepSpec:
+  - Scan config: docs directory path + session-restore toggle
+  - LLM config: ModelScope / OpenAI API Key and Model configuration
+  Zero external dependencies.
   ============================================================================ }
 
 unit DeepSpec.SettingsProvider;
@@ -19,19 +17,17 @@ uses
   Vcl.Controls,
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
-  DeepBase.LLM,
-  DeepBase.VCL.DeepShell.Intf;
+  DeepSpec.UI.Intf;
 
 type
   TDeepSpecSettingsProvider = class(TInterfacedObject, ISettingsPageProvider)
   private
-    FLLM: TDeepBaseLLM;
     FEditDocs: TEdit;
     FCheckRestore: TCheckBox;
     FEditKey: TEdit;
     FEditModel: TEdit;
   public
-    constructor Create(ALLM: TDeepBaseLLM);
+    constructor Create(ALLM: TObject = nil);
     function PageId: string;
     function Caption: string;
     function GroupName: string;
@@ -45,7 +41,7 @@ implementation
 
 uses
   Vcl.Graphics,
-  DeepBase.Config,
+  DeepSpec.Config,
   DeepSpec.Services.LLMConfig;
 
 const
@@ -54,10 +50,9 @@ const
 
 { TDeepSpecSettingsProvider }
 
-constructor TDeepSpecSettingsProvider.Create(ALLM: TDeepBaseLLM);
+constructor TDeepSpecSettingsProvider.Create(ALLM: TObject);
 begin
   inherited Create;
-  FLLM := ALLM;
 end;
 
 function TDeepSpecSettingsProvider.PageId: string;
@@ -121,13 +116,13 @@ begin
   FEditModel := TEdit.Create(LPanel);
   FEditModel.Parent := LPanel;
   FEditModel.Left := 140; FEditModel.Top := LTop - 3; FEditModel.Width := 240;
-  FEditModel.Text := 'Qwen/Qwen2.5-72B-Instruct';
+  FEditModel.Text := GetConfig('deepspec.llm.Default.model', 'Qwen/Qwen2.5-72B-Instruct');
   Inc(LTop, 32);
 
   LLabel := TLabel.Create(LPanel);
   LLabel.Parent := LPanel;
   LLabel.Left := 8; LLabel.Top := LTop; LLabel.Width := 400;
-  LLabel.Caption := 'API key is stored via DeepBase (ApiKeyRef), not plaintext.';
+  LLabel.Caption := 'API key is securely stored in local configuration.';
   LLabel.Font.Color := clGrayText;
 
   Result := LPanel;
@@ -142,19 +137,18 @@ begin
   if FCheckRestore <> nil then
     SetConfigBool(KEY_SESSION_RESTORE, FCheckRestore.Checked);
 
-  if (FLLM <> nil) and (FEditKey <> nil) and (Trim(FEditKey.Text) <> '') then
+  if (FEditKey <> nil) and (Trim(FEditKey.Text) <> '') then
   begin
-    LModel := Trim(FEditModel.Text);
-    if LModel = '' then
-      LModel := 'Qwen/Qwen2.5-72B-Instruct';
-    TDeepSpecLLMConfigHelper.SaveModelScopeConfig(
-      FLLM, Trim(FEditKey.Text), LModel);
+    LModel := 'Qwen/Qwen2.5-72B-Instruct';
+    if (FEditModel <> nil) and (Trim(FEditModel.Text) <> '') then
+      LModel := Trim(FEditModel.Text);
+    TDeepSpecLLMConfigHelper.SaveModelScopeConfig(Trim(FEditKey.Text), LModel);
   end;
 end;
 
 procedure TDeepSpecSettingsProvider.Cancel;
 begin
-  // Nothing to roll back: Apply is the only write point.
+  // Nothing to roll back
 end;
 
 procedure TDeepSpecSettingsProvider.RestoreDefaults;

@@ -89,6 +89,14 @@ examples/seed-python-fastapi/
 examples/seed-docs-only/
 ```
 
+## Standalone Tools & Workspace Initialization
+
+A zero-dependency standalone workspace initializer is provided in `tools/`:
+
+```bash
+python protocol/tools/init_workspace.py /path/to/target --project-name "MyProject"
+```
+
 ## Conformance
 
 Use the Python runner under `conformance/` to test a reader implementation:
@@ -97,8 +105,18 @@ Use the Python runner under `conformance/` to test a reader implementation:
 python protocol/conformance/run.py --reader "your-reader" --level 1
 ```
 
-The repository does not yet publish `npx deepspec-init` or `npx deepspec-validate`. Those commands are planned CLI work, not current protocol guarantees.
+## Theoretical Foundations & Attribution
+
+DeepSpec Protocol embodies foundational ontological architectures authored by **付毅 (Fuyi)**:
+- Differential Monism (DM, 差异一元论, DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505))
+- Attributive Set Transition Ontology (ASTO, 属集变迁存在论, DOI: [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467))
+- Output-Driven Development (ODD, 产出物驱动开发)
+- Problem Formulation Modeling (PFM, 前线显影层)
+
+Canonical Theory Source Repository: `D:\_Progs\一元论\`  
+See [NOTICE](NOTICE) for complete statutory attribution requirements under Apache License 2.0 Section 4(d).
 
 ## License
 
 Protocol: Apache-2.0
+Copyright 2026 付毅 (Fuyi) and BetterCiv Contributors.

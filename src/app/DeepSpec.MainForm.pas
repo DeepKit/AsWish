@@ -1,9 +1,9 @@
-﻿
 { ============================================================================
   DeepSpec.MainForm
-
-  Main form for DeepSpec - inherits TDeepMainForm from DeepShell.
-  Only registers services, commands, and providers. No business logic here.
+  ---------------------------------------------------------------------------
+  Main form for DeepSpec - inherits TDeepSpecShellForm.
+  Coordinates UI layout, tool panels and registers services, commands, providers.
+  Zero external dependencies.
   ============================================================================ }
 
 unit DeepSpec.MainForm;
@@ -23,9 +23,9 @@ uses
   Vcl.FileCtrl,
   Vcl.Buttons,
   Vcl.Shell.ShellCtrls,
-  DeepBase.VCL.DeepShell.MainForm,
-  DeepBase.VCL.DeepShell.Intf,
-  DeepBase.VCL.DeepShell.Types,
+  DeepSpec.Shell.Form,
+  DeepSpec.UI.Types,
+  DeepSpec.UI.Intf,
   DeepSpec.Controller,
   DeepSpec.Services.Project,
   DeepSpec.Services.Scan,
@@ -39,7 +39,7 @@ uses
   DeepSpec.Models;
 
 type
-  TDeepSpecMainForm = class(TDeepMainForm)
+  TDeepSpecMainForm = class(TDeepSpecShellForm)
   private
     FController: TDeepSpecController;
     FProjectService: TDeepSpecProjectService;
@@ -51,39 +51,41 @@ type
     FDecisions: TDeepSpecDecisionsService;
     FLLMService: TDeepSpecLLMService;
     FSettings: TDeepSpecSettingsService;
-    FLLMOwned: TObject;
+
     // UI: Left panel tabs
     FLeftPages: TPageControl;
     FTabDirs: TTabSheet;
     FTabFunc: TTabSheet;
     FTabModule: TTabSheet;
     FTabView: TTabSheet;
+
     // Directory tab controls
     FDriveCombo: TComboBox;
     FBtnVisualize: TSpeedButton;
     FMruCombo: TComboBox;
     FShellTree: TShellTreeView;
+
     // Tree tabs
     FFuncTree: TTreeView;
     FModuleTree: TTreeView;
     FViewTree: TTreeView;
+
     // Lower panel memos
     FScanLogMemo: TMemo;
     FDocsMemo: TMemo;
     FScanEventToken: string;
+
     procedure HandleScanEvent(const AEvent: TDeepShellEvent);
     procedure PopulateTreeFromSpec(ATree: TTreeView; ANodes: TList<TSpecNode>);
     procedure PopulateDocsPanel;
-    /// <summary>Tree node click: render node-detail.html and open it in the
-    ///  main view (the tree pages were dead before — clicking did nothing).</summary>
     procedure DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
-  private
     procedure BuildLeftPanelUI;
     procedure PopulateMruCombo;
     procedure DoDriveChange(Sender: TObject);
     procedure DoShellTreeChange(Sender: TObject; Node: TTreeNode);
     procedure DoBtnVisualizeClick(Sender: TObject);
     procedure DoMruSelect(Sender: TObject);
+    procedure OpenView(const ARef: TShellObjectRef);
   protected
     procedure InitializeShell; override;
     procedure RegisterServices; override;
@@ -93,7 +95,6 @@ type
     procedure ShutdownShell; override;
   public
     property Controller: TDeepSpecController read FController;
-    function LLMInstance: TObject;
   end;
 
 var
@@ -107,15 +108,109 @@ uses
   DeepSpec.Commands,
   DeepSpec.Providers,
   DeepSpec.Localization,
-  DeepSpec.DeepBaseServices,
+  DeepSpec.Services.Storage,
   DeepSpec.SettingsProvider,
-  DeepBase.LLM,
-  DeepBase.Manager,
-  DeepBase.VCL.DeepShell.Localization,
-  DeepBase.VCL.DeepShell.ToolWindow,
-  DeepBase.AutoFix.ErrorRecorder,
-  DeepBase.AutoFix.ScenarioRunner,
-  DeepBase.AutoFix.HealthSignal;
+  DeepSpec.AutoFix,
+  DeepSpec.Logger,
+  DeepSpec.Config;
+
+{ Status adapter }
+
+type
+  TShellStatusManagerImpl = class(TInterfacedObject, IShellStatusManager)
+  private
+    FForm: TDeepSpecMainForm;
+    FEntries: TList<TShellStatusEntry>;
+  public
+    constructor Create(AForm: TDeepSpecMainForm);
+    destructor Destroy; override;
+    procedure Info(const ASource, AMessage: string);
+    procedure Warning(const ASource, AMessage: string);
+    procedure LogError(const ASource, AMessage, ADetail: string);
+    procedure ShellError(const ASource, AMessage, ADetail: string);
+    procedure Progress(const ATaskId, ASource: string; APercent: Integer; const AMessage: string);
+    procedure TaskStart(const ATaskId, ASource, AMessage: string);
+    procedure TaskFinish(const ATaskId, AMessage: string);
+    procedure Diagnostic(const ASource, AMessage: string);
+    function GetEntries: TArray<TShellStatusEntry>;
+    procedure ClearEntries;
+    procedure SetSanitizer(ASanitizer: TShellStatusSanitizer);
+  end;
+
+constructor TShellStatusManagerImpl.Create(AForm: TDeepSpecMainForm);
+begin
+  inherited Create;
+  FForm := AForm;
+  FEntries := TList<TShellStatusEntry>.Create;
+end;
+
+destructor TShellStatusManagerImpl.Destroy;
+begin
+  FEntries.Free;
+  inherited;
+end;
+
+procedure TShellStatusManagerImpl.Info(const ASource, AMessage: string);
+begin
+  if FForm <> nil then
+    FForm.SetStatusMessage(AMessage);
+  Logger.Info(AMessage, ASource);
+end;
+
+procedure TShellStatusManagerImpl.Warning(const ASource, AMessage: string);
+begin
+  if FForm <> nil then
+    FForm.SetStatusMessage('Warning: ' + AMessage);
+  Logger.Warn(AMessage, ASource);
+end;
+
+procedure TShellStatusManagerImpl.LogError(const ASource, AMessage, ADetail: string);
+begin
+  if FForm <> nil then
+    FForm.SetStatusMessage('Error: ' + AMessage);
+  Logger.Error(AMessage + ' ' + ADetail, ASource);
+end;
+
+procedure TShellStatusManagerImpl.ShellError(const ASource, AMessage, ADetail: string);
+begin
+  LogError(ASource, AMessage, ADetail);
+end;
+
+procedure TShellStatusManagerImpl.Progress(const ATaskId, ASource: string;
+  APercent: Integer; const AMessage: string);
+begin
+  if FForm <> nil then
+    FForm.SetStatusMessage(Format('[%d%%] %s', [APercent, AMessage]));
+end;
+
+procedure TShellStatusManagerImpl.TaskStart(const ATaskId, ASource, AMessage: string);
+begin
+  Info(ASource, AMessage);
+end;
+
+procedure TShellStatusManagerImpl.TaskFinish(const ATaskId, AMessage: string);
+begin
+  Info('Task', AMessage);
+end;
+
+procedure TShellStatusManagerImpl.Diagnostic(const ASource, AMessage: string);
+begin
+  Logger.Debug(AMessage, ASource);
+end;
+
+function TShellStatusManagerImpl.GetEntries: TArray<TShellStatusEntry>;
+begin
+  Result := FEntries.ToArray;
+end;
+
+procedure TShellStatusManagerImpl.ClearEntries;
+begin
+  FEntries.Clear;
+end;
+
+procedure TShellStatusManagerImpl.SetSanitizer(ASanitizer: TShellStatusSanitizer);
+begin
+end;
 
 { TDeepSpecMainForm }
 
@@ -132,11 +227,10 @@ procedure TDeepSpecMainForm.InitializeShell;
     FreeAndNil(FDecisions);
     FreeAndNil(FSettings);
     FreeAndNil(FLLMService);
-    FreeAndNil(FLLMOwned);
   end;
 
 begin
-  inherited;
+  inherited InitializeShell;
   Caption := 'DeepSpec';
 
   FProjectService := nil;
@@ -148,7 +242,6 @@ begin
   FDecisions := nil;
   FSettings := nil;
   FLLMService := nil;
-  FLLMOwned := nil;
 
   try
     FProjectService := TDeepSpecProjectService.Create;
@@ -159,15 +252,7 @@ begin
     FPrompts := TDeepSpecPromptService.Create;
     FDecisions := TDeepSpecDecisionsService.Create;
     FSettings := TDeepSpecSettingsService.Create;
-
-    try
-      var LDeepBaseLLM := TDeepBaseLLM.Create(nil);
-      FLLMOwned := LDeepBaseLLM;
-      FLLMService := TDeepSpecLLMService.Create(LDeepBaseLLM, True);
-    except
-      FLLMService := TDeepSpecLLMService.Create(nil, False);
-      FLLMOwned := nil;
-    end;
+    FLLMService := TDeepSpecLLMService.Create('Default');
   except
     CleanupCreatedServices;
     raise;
@@ -175,32 +260,10 @@ begin
 end;
 
 procedure TDeepSpecMainForm.RegisterServices;
+var
+  LStatus: IShellStatusManager;
 begin
-  inherited;
-
-  // DeepBase 深度集成：用 DB1(ConfigDB) 持久化实现替换 DeepShell 默认的
-  // 内存态 Recent / Settings / Layout 服务（MRU 下拉、窗口位置、布局在
-  // 重启后保留）。DeepShell 的 ResolveServicesFromRegistry 会在本方法
-  // 之后自动替换 FRecent/FSettings/FLayout。
-  Services.RegisterService(CAP_SHELL_RECENT, TDeepSpecDbRecentService.Create);
-  Services.RegisterService(CAP_SHELL_SETTINGS, TDeepSpecDbSettingsStore.Create);
-  Services.RegisterService(CAP_SHELL_LAYOUT, TDeepSpecDbLayoutService.Create);
-
-  // Detect the Windows UI language at startup and auto-switch the shell
-  // localization service to it (DeepSpec + DeepShell zh-CN/zh-TW tables).
-  var LLocSvc := Localization as TShellDefaultLocalizationService;
-  if LLocSvc <> nil then
-    DeepSpecApplyLocale(LLocSvc);
-
-  // DeepBase.Logger 落盘关键生命周期消息（深度集成：状态栏之外有持久日志）。
-  try
-    var LLang := DeepSpecDetectLocale;
-    if DeepBase.Manager.DeepBase <> nil then
-      DeepBase.Manager.DeepBase.Logger.Info(
-        'DeepSpec startup, locale=' + LLang, 'DeepSpec');
-  except
-    // Logger 不可用不阻塞启动
-  end;
+  inherited RegisterServices;
 
   Services.RegisterService('deepspec.project', FProjectService);
   Services.RegisterService('deepspec.scan', FScanService);
@@ -212,106 +275,54 @@ begin
   Services.RegisterService('deepspec.llm', FLLMService);
   Services.RegisterService('deepspec.settings', FSettings);
 
+  LStatus := TShellStatusManagerImpl.Create(Self);
+
   FController := TDeepSpecController.Create(
     FProjectService, FScanService, FSpecStore, FRender, FTreeBuilder,
     FPrompts, FDecisions, FLLMService, FSettings,
-    Status, Context, EventBus);
+    LStatus, Context, Bus);
+
+  Logger.Info('DeepSpec startup completed, locale=' + DeepSpecDetectLocale, 'DeepSpec');
 end;
 
 procedure TDeepSpecMainForm.RegisterCommands;
 begin
-  inherited;
+  inherited RegisterCommands;
   DeepSpec.Commands.RegisterAllCommands(Commands, Self);
 end;
 
 procedure TDeepSpecMainForm.RegisterProviders;
 begin
-  inherited;
+  inherited RegisterProviders;
   DeepSpec.Providers.RegisterAllProviders(Self, FProjectService,
     FScanService, FTreeBuilder, FController);
-
-  // DeepBase 61 号文档 §7: 下游业务设置页（扫描配置 + LLM 配置）挂进
-  // DeepShell 设置对话框。
-  RegisterSettingsPageProvider(TDeepSpecSettingsProvider.Create(
-    TDeepBaseLLM(FLLMOwned)));
+  RegisterSettingsPage(TDeepSpecSettingsProvider.Create);
 end;
 
 procedure TDeepSpecMainForm.AfterShellShown;
-var
-  LMainLeft, LMainTop, LMainWidth, LMainHeight: Integer;
 begin
-  inherited;
+  inherited AfterShellShown;
 
-  // --- Main form: reduce default size by 1/3 ---
-  LMainWidth := MulDiv(Screen.Width, 1, 2);  // half screen width
-  LMainHeight := MulDiv(Screen.Height, 2, 3); // 2/3 screen height
-  LMainLeft := (Screen.Width - LMainWidth) div 2;
-  LMainTop := (Screen.Height - LMainHeight) div 2;
-  SetBounds(LMainLeft, LMainTop, LMainWidth, LMainHeight);
-
-  // --- Resize tool windows to 2/3 of default, dock to main form edges ---
-  // Set position BEFORE showing to avoid flicker
-  if StructureWindow <> nil then
-  begin
-    StructureWindow.Width := MulDiv(StructureWindow.Width, 2, 3);
-    StructureWindow.Height := MulDiv(LMainHeight, 2, 3);
-    StructureWindow.Left := LMainLeft - StructureWindow.Width;
-    StructureWindow.Top := LMainTop;
-  end;
-
-  if InspectorWindow <> nil then
-  begin
-    InspectorWindow.Width := MulDiv(InspectorWindow.Width, 2, 3);
-    InspectorWindow.Height := MulDiv(LMainHeight, 2, 3);
-    InspectorWindow.Left := LMainLeft + LMainWidth;
-    InspectorWindow.Top := LMainTop;
-  end;
-
-  // --- Build left panel PageControl UI ---
   BuildLeftPanelUI;
 
-  // Now show (after all layout is done)
-  if StructureWindow <> nil then
-    StructureWindow.Show;
-  if InspectorWindow <> nil then
-    InspectorWindow.Show;
-
-  // --- AutoFix ---
-  TAutoFixHealthSignal.Emit;
-  if TAutoFixErrorRecorder.Active then
+  TDeepSpecAutoFix.SendHealthSignal('startup', 1);
+  TDeepSpecAutoFix.RegisterScenario('smoke', procedure
   begin
-    // Crash-recovery scenarios. The project to re-open comes from the
-    // DEEPSPEC_AUTOFIX_PROJECT env var (no machine-specific path in code);
-    // 'scan' refreshes the already-open project.
-    var LAutoFixProject := GetEnvironmentVariable('DEEPSPEC_AUTOFIX_PROJECT');
-    if LAutoFixProject <> '' then
-      TAutoFixScenarioRunner.RegisterScenario('open-project', procedure
-      begin
-        FController.OpenAndScan(LAutoFixProject);
-      end);
-    TAutoFixScenarioRunner.RegisterScenario('scan', procedure
-    begin
-      FController.RunScan;
-    end);
-    TAutoFixScenarioRunner.Run;
-  end
-  else
-    Status.Info('DeepSpec', ShellText('deepspec.status.ready',
-      'DeepSpec ready. Open a project folder to begin.'));
+  end);
 
-  // --- 恢复上次会话（DeepBase 59 号文档 §7）：Settings 开关 → Recent
-  // 上次项目 → 校验路径存在 → OpenAndScan。任何失败不阻塞启动（§8）。---
+  SetStatusMessage(ShellText('deepspec.status.ready',
+    'DeepSpec ready. Open a project folder to begin.'));
+
+  // Session restore
   try
-    var LRestore := True;
-    if SettingsStore <> nil then
-      LRestore := SettingsStore.ReadBool('deepspec.session.restore', True);
+    var LRestore := GetConfigBool('deepspec.session.restore', True);
     if LRestore and (Recent <> nil) and (not FController.IsProjectOpen) then
     begin
       var LItems := Recent.GetRecentProjects;
       for var LItem in LItems do
         if (not LItem.Invalid) and TDirectory.Exists(LItem.Path) then
         begin
-          Status.Info('DeepSpec', 'Restoring last session: ' + LItem.Path);
+          SetStatusMessage('Restoring last session: ' + LItem.Path);
           FController.OpenAndScan(LItem.Path);
           PopulateMruCombo;
           Break;
@@ -319,27 +330,29 @@ begin
     end;
   except
     on E: Exception do
-      Status.LogError('DeepSpec', 'Session restore failed: ' + E.Message,
-        E.ClassName);
+      Logger.Error('Session restore failed: ' + E.Message, 'DeepSpec');
   end;
 end;
 
 procedure TDeepSpecMainForm.BuildLeftPanelUI;
+var
+  LTopBar: TPanel;
+  LDrives: TArray<string>;
+  LIdx: Integer;
 begin
-  if StructureWindow = nil then Exit;
+  if LeftPanel = nil then Exit;
 
-  // Create PageControl in the Upper panel of StructureWindow
-  FLeftPages := TPageControl.Create(StructureWindow);
-  FLeftPages.Parent := StructureWindow.Upper;
+  // Create PageControl in LeftPanel
+  FLeftPages := TPageControl.Create(Self);
+  FLeftPages.Parent := LeftPanel;
   FLeftPages.Align := alClient;
 
-  // Tab 1: Drives + Directory
+  // Tab 1: Directory
   FTabDirs := TTabSheet.Create(FLeftPages);
   FTabDirs.PageControl := FLeftPages;
   FTabDirs.Caption := ShellText('deepspec.tab.dirs', 'Directory');
 
-  // Top bar: Drive combo + Visualize button
-  var LTopBar := TPanel.Create(FTabDirs);
+  LTopBar := TPanel.Create(FTabDirs);
   LTopBar.Parent := FTabDirs;
   LTopBar.Align := alTop;
   LTopBar.Height := 28;
@@ -359,7 +372,6 @@ begin
   FBtnVisualize.Caption := ShellText('deepspec.btn.visualize', 'Visualize');
   FBtnVisualize.OnClick := DoBtnVisualizeClick;
 
-  // MRU combo below top bar
   FMruCombo := TComboBox.Create(FTabDirs);
   FMruCombo.Parent := FTabDirs;
   FMruCombo.Align := alTop;
@@ -367,19 +379,15 @@ begin
   FMruCombo.TextHint := ShellText('deepspec.mru.hint', 'Recent projects...');
   FMruCombo.OnChange := DoMruSelect;
 
-  // Shell tree (native VCL - full file system browsing)
   FShellTree := TShellTreeView.Create(FTabDirs);
   FShellTree.Parent := FTabDirs;
   FShellTree.Align := alClient;
   FShellTree.OnChange := DoShellTreeChange;
-  // Don't set Root here - let it default to Desktop/My Computer
-  // User selects drive from combo to navigate
 
-  // Populate drives
-  var LDrives := TDirectory.GetLogicalDrives;
+  LDrives := TDirectory.GetLogicalDrives;
   for var LD in LDrives do
     FDriveCombo.Items.Add(LD);
-  var LIdx := FDriveCombo.Items.IndexOf('C:\');
+  LIdx := FDriveCombo.Items.IndexOf('C:\');
   if LIdx >= 0 then FDriveCombo.ItemIndex := LIdx else FDriveCombo.ItemIndex := 0;
 
   // Tab 2: Function Tree
@@ -400,7 +408,7 @@ begin
   FModuleTree.Align := alClient;
   FModuleTree.ReadOnly := True;
 
-  // Tab 4: View Tree (UI Tree)
+  // Tab 4: View Tree
   FTabView := TTabSheet.Create(FLeftPages);
   FTabView.PageControl := FLeftPages;
   FTabView.Caption := ShellText('deepspec.tab.view', 'Views');
@@ -409,27 +417,23 @@ begin
   FViewTree.Align := alClient;
   FViewTree.ReadOnly := True;
 
-  // MRU
   PopulateMruCombo;
 
-  // --- Left Lower panel: scan log ---
-  if StructureWindow.Lower <> nil then
+  // Bottom panel memos
+  if BottomPanel <> nil then
   begin
-    FScanLogMemo := TMemo.Create(StructureWindow);
-    FScanLogMemo.Parent := StructureWindow.Lower;
-    FScanLogMemo.Align := alClient;
+    FScanLogMemo := TMemo.Create(Self);
+    FScanLogMemo.Parent := BottomPanel;
+    FScanLogMemo.Align := alLeft;
+    FScanLogMemo.Width := 450;
     FScanLogMemo.ReadOnly := True;
     FScanLogMemo.ScrollBars := ssVertical;
     FScanLogMemo.Font.Size := 8;
     FScanLogMemo.Color := clBtnFace;
     FScanLogMemo.Lines.Add('(scan log)');
-  end;
 
-  // --- Right Lower panel: docs list ---
-  if InspectorWindow.Lower <> nil then
-  begin
-    FDocsMemo := TMemo.Create(InspectorWindow);
-    FDocsMemo.Parent := InspectorWindow.Lower;
+    FDocsMemo := TMemo.Create(Self);
+    FDocsMemo.Parent := BottomPanel;
     FDocsMemo.Align := alClient;
     FDocsMemo.ReadOnly := True;
     FDocsMemo.ScrollBars := ssVertical;
@@ -438,17 +442,17 @@ begin
     FDocsMemo.Lines.Add('(docs summary)');
   end;
 
-  // Subscribe to scan-complete events
-  if EventBus <> nil then
-    FScanEventToken := EventBus.Subscribe(sekProjectOpened,
-      HandleScanEvent);
+  if Bus <> nil then
+    FScanEventToken := Bus.Subscribe(sekProjectOpened, HandleScanEvent);
 end;
 
 procedure TDeepSpecMainForm.PopulateMruCombo;
+var
+  LItems: TArray<TShellRecentItem>;
 begin
   FMruCombo.Items.Clear;
   if Recent = nil then Exit;
-  var LItems := Recent.GetRecentProjects;
+  LItems := Recent.GetRecentProjects;
   for var LItem in LItems do
     FMruCombo.Items.Add(LItem.DisplayName);
   if FMruCombo.Items.Count > 0 then
@@ -456,22 +460,22 @@ begin
 end;
 
 procedure TDeepSpecMainForm.DoMruSelect(Sender: TObject);
+var
+  LItems: TArray<TShellRecentItem>;
+  LPath: string;
 begin
   if (FMruCombo.ItemIndex < 0) or (Recent = nil) then Exit;
-  var LItems := Recent.GetRecentProjects;
+  LItems := Recent.GetRecentProjects;
   if FMruCombo.ItemIndex > High(LItems) then Exit;
-  var LPath := LItems[FMruCombo.ItemIndex].ItemKey;
+  LPath := LItems[FMruCombo.ItemIndex].ItemKey;
   if TDirectory.Exists(LPath) then
   begin
-    // Navigate shell tree to the selected path
     try
       FShellTree.Path := LPath;
     except
-      // Path may not be navigable in shell tree
     end;
     FController.OpenAndScan(LPath);
     FBtnVisualize.Enabled := False;
-    // Note: RebuildStructureTree + tree refresh handled by HandleScanEvent
   end;
 end;
 
@@ -482,7 +486,6 @@ begin
     try
       FShellTree.Root := FDriveCombo.Text;
     except
-      // Some drives may not be accessible
     end;
   end;
 end;
@@ -490,23 +493,20 @@ end;
 procedure TDeepSpecMainForm.DoShellTreeChange(Sender: TObject; Node: TTreeNode);
 begin
   if (Node = nil) or (FShellTree = nil) then Exit;
-  var LPath := FShellTree.Path;
-  // Enable whenever a real folder is selected — re-scanning an existing
-  // DeepSpec project is allowed (spec files are snapshotted before
-  // overwrite). Previously the button stayed disabled for folders that
-  // already had a .deepspec, which read as "clicking does nothing".
-  FBtnVisualize.Enabled := TDirectory.Exists(LPath);
+  FBtnVisualize.Enabled := TDirectory.Exists(FShellTree.Path);
 end;
 
 procedure TDeepSpecMainForm.DoBtnVisualizeClick(Sender: TObject);
+var
+  LPath: string;
 begin
   if FShellTree = nil then Exit;
   if FShellTree.Selected = nil then Exit;
 
-  var LPath := FShellTree.Path;
+  LPath := FShellTree.Path;
   if (LPath = '') or (not TDirectory.Exists(LPath)) then
   begin
-    Status.Warning('DeepSpec', 'Please select a folder in the directory tree.');
+    SetStatusMessage('Please select a folder in the directory tree.');
     Exit;
   end;
 
@@ -520,35 +520,37 @@ begin
   end;
 
   FBtnVisualize.Enabled := False;
-  // Note: RebuildStructureTree + tree refresh handled by HandleScanEvent
 end;
 
 procedure TDeepSpecMainForm.ShutdownShell;
 begin
-  if (FScanEventToken <> '') and (EventBus <> nil) then
+  if (FScanEventToken <> '') and (Bus <> nil) then
   begin
-    EventBus.Unsubscribe(FScanEventToken);
+    Bus.Unsubscribe(FScanEventToken);
     FScanEventToken := '';
   end;
   FreeAndNil(FController);
-  inherited;
-end;
-
-function TDeepSpecMainForm.LLMInstance: TObject;
-begin
-  Result := FLLMOwned;
+  FreeAndNil(FProjectService);
+  FreeAndNil(FScanService);
+  FreeAndNil(FSpecStore);
+  FreeAndNil(FRender);
+  FreeAndNil(FTreeBuilder);
+  FreeAndNil(FPrompts);
+  FreeAndNil(FDecisions);
+  FreeAndNil(FSettings);
+  FreeAndNil(FLLMService);
+  inherited ShutdownShell;
 end;
 
 procedure TDeepSpecMainForm.HandleScanEvent(const AEvent: TDeepShellEvent);
+var
+  LHtmlPath: string;
 begin
-  // Scan completed — refresh all panels
-  RebuildStructureTree;
   PopulateTreeFromSpec(FFuncTree, FTreeBuilder.FunctionNodes);
   PopulateTreeFromSpec(FModuleTree, FTreeBuilder.ModuleNodes);
   PopulateTreeFromSpec(FViewTree, FTreeBuilder.ViewNodes);
   PopulateDocsPanel;
 
-  // Live scan log (was a dead "(scan log)" placeholder — never updated).
   if FScanLogMemo <> nil then
   begin
     FScanLogMemo.Lines.BeginUpdate;
@@ -578,40 +580,34 @@ begin
     end;
   end;
 
-  // Re-enable Visualize so the project can be re-scanned (it was
-  // disabled forever after the first scan before).
   FBtnVisualize.Enabled := True;
 
-  // 扫描完成写 DeepBase.Logger（持久日志）。
-  try
-    if DeepBase.Manager.DeepBase <> nil then
-      DeepBase.Manager.DeepBase.Logger.Info(Format(
-        'Scan complete: %d files | func %d / mod %d / view %d / data %d | %s',
-        [FScanService.TotalFiles, FTreeBuilder.FunctionNodes.Count,
-         FTreeBuilder.ModuleNodes.Count, FTreeBuilder.ViewNodes.Count,
-         FTreeBuilder.DataNodes.Count, FProjectService.ProjectType]),
-        'DeepSpec.Scan');
-  except
-  end;
+  Logger.Info(Format(
+    'Scan complete: %d files | func %d / mod %d / view %d / data %d | %s',
+    [FScanService.TotalFiles, FTreeBuilder.FunctionNodes.Count,
+     FTreeBuilder.ModuleNodes.Count, FTreeBuilder.ViewNodes.Count,
+     FTreeBuilder.DataNodes.Count, FProjectService.ProjectType]),
+    'DeepSpec.Scan');
 
-  // Auto-open HTML index in main view
   if FController.IsProjectOpen then
   begin
-    var LHtmlPath := TPath.Combine(
-      FProjectService.DeepSpecPath, 'html\index.html');
+    LHtmlPath := TPath.Combine(FProjectService.DeepSpecPath, 'html\index.html');
     if TFile.Exists(LHtmlPath) then
-    begin
-      var LRef := TShellObjectRef.Make('index-html', 'html', '',
-        LHtmlPath);
-      OpenView(LRef);
-    end;
+      OpenView(TShellObjectRef.Make('index-html', 'html', '', LHtmlPath));
   end;
+end;
+
+procedure TDeepSpecMainForm.OpenView(const ARef: TShellObjectRef);
+begin
+  if Context <> nil then
+    Context.SetObject(ARef);
 end;
 
 procedure TDeepSpecMainForm.DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
 var
   LList: TList<TSpecNode>;
   LIdx: Integer;
+  LNode: TSpecNode;
 begin
   if (Node = nil) or (FProjectService = nil) or (not FProjectService.IsOpen) then
     Exit;
@@ -628,15 +624,13 @@ begin
   if (LIdx < 0) or (LIdx >= LList.Count) then Exit;
 
   try
-    var LNode := LList[LIdx];
+    LNode := LList[LIdx];
     FRender.RenderNodeDetail(LNode);
-    var LRef := TShellObjectRef.Make('node-detail', 'html', LNode.Title,
-      TPath.Combine(FProjectService.DeepSpecPath, 'html\node-detail.html'));
-    OpenView(LRef);
+    OpenView(TShellObjectRef.Make('node-detail', 'html', LNode.Title,
+      TPath.Combine(FProjectService.DeepSpecPath, 'html\node-detail.html')));
   except
     on E: Exception do
-      Status.LogError('DeepSpec', 'Node detail failed: ' + E.Message,
-        E.ClassName);
+      Logger.Error('Node detail render failed: ' + E.Message, 'DeepSpec');
   end;
 end;
 

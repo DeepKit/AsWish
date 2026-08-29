@@ -1,126 +1,141 @@
 # DeepSpec
 
-DeepSpec is an engineering project for building traceable, reviewable, and correctable specifications for AI coding agents.
+DeepSpec is an open-source, AI-native specification tool that provides a **"What You See Is What You Get" (WYSIWYG)** requirement and architecture model for software development.
 
-It does not try to replace coding agents. It gives humans and agents a shared specification workspace so that requirements can be checked before they become code.
-
-```text
-Project materials / code / discussions
-        -> DeepSpec CTF
-        -> .deepspec/ structured facts
-        -> human review decisions
-        -> SpecSnapshot / ContractCandidate
-        -> agent execution / ODD verification
-```
-
-## Positioning
-
-DeepSpec is the project. CTF is the method inside it.
+It transforms project materials (code, documentation, user stories, UI forms) into structured, traceable, and verifiable multi-projection trees (`.deepspec/`) so humans and AI agents share a single source of truth before and during code generation.
 
 ```text
-DeepSpec: Traceable Specifications for AI Coding Agents
-CTF: Constructive Traceable Fallibilist specification method
-ODD: downstream output-driven development and verification
+Project materials (code / docs / UI)
+        ↓
+    DeepSpec CTF Analysis
+        ↓
+  .deepspec/ Structured Projections
+    ├── function-tree.yaml (Behavior)
+    ├── module-tree.yaml   (Architecture)
+    ├── view-tree.yaml     (UI/UX)
+    └── data-tree.yaml     (Data & Persistence)
+        ↓
+  Interactive HTML Visualizer & JS Bridge Review
+        ↓
+  Frozen Spec Snapshot / SPW Acceptance Baseline
 ```
 
-Use this distinction when writing public material:
+---
 
-- Public brand: DeepSpec
-- Method core: CTF
-- Protocol workspace: `.deepspec/`
-- Downstream consumer: coding agents, ODD pipelines, orchestration systems such as Symphony-style issue workflows
+## Key Features
 
-## Core Idea
+- **Four Projections**:
+  - `function-tree`: What the system should do (capabilities, sub-features, requirements).
+  - `module-tree`: Where the behavior lives (units, components, namespaces).
+  - `view-tree`: What users interact with (forms, windows, visual controls).
+  - `data-tree`: What data exists, persists, moves, and migrates (models, tables, DTOs).
+- **Fog of War Exploration (CTF Method)**: Clear separation between verified facts, AI-inferred candidates, and foggy/unknown requirement frontiers.
+- **Interactive Visualizer**: Built-in HTML renderer (WebView2) with responsive dashboards, interactive trees, and JS Bridge for human decision confirmation.
+- **Standalone & Lightweight**: Zero external database dependencies; configuration and state persist locally in standard JSON format.
+- **OpenAI-Compatible LLM Integration**: Directly connects to ModelScope, OpenAI, DeepSeek, Qwen, Ollama, and other compatible LLM endpoints.
+- **Headless CLI & VCL Desktop GUI**: Run scans, validation, and rendering headlessly in CI/CD or interactively on the desktop.
 
-AI coding does not only need more tasks running. It needs specifications that can be traced, reviewed, invalidated, and repaired.
-
-DeepSpec turns messy project material into four coordinated projections:
-
-```text
-function-tree  what the system should do
-module-tree    where the behavior lives
-view-tree      what users see and operate
-data-tree      what data exists, persists, moves, and migrates
-```
-
-Each node can carry evidence, confidence, generation state, review state, related nodes, and human decisions.
+---
 
 ## Repository Map
 
 ```text
-README.md                         public entry
-SPEC.md                           current DeepSpec specification overview
-docs/CTF.md                       engineering explanation of CTF
-docs/DeepSpec-CTF方法论-v1.md      source method note, Chinese
-protocol/                         machine-readable protocol package
-protocol/schemas/                 JSON Schema files
-protocol/examples/                seed .deepspec projects
-protocol/conformance/             reader conformance checks
-src/                              Delphi/VCL desktop implementation
-tasks.md                          implementation and protocol work queue
+LICENSE                           Apache-2.0 License
+README.md                         Public project documentation
+SPEC.md                           DeepSpec protocol specification overview
+protocol/                         Machine-readable JSON Schemas and conformance tests
+src/                              Delphi/VCL desktop GUI and services implementation
+  ├── app/                        Shell form, main window, commands, localization
+  ├── controllers/                Workflow coordination and state transitions
+  ├── core/                       Parsers, hash, validation, config, logger, UI contracts
+  ├── models/                     Domain entities, nodes, issues, enums
+  ├── providers/                  Structure, MainView, Inspector providers
+  └── services/                   Scanner, tree builder, spec store, render, LLM
+cli/                              Headless CLI executable (DeepSpec.CLI.dpr)
+tests/                            DUnitX automated test suite (113 test cases)
+docs/                             Methodology, protocol, and design guides
 ```
 
-## Current Status
+---
 
-The Delphi desktop implementation exists, but the public protocol is being stabilized. Treat `SPEC.md`, `protocol/README.md`, and `protocol/schemas/` as the current engineering baseline.
-
-The protocol is currently `v1.2-draft`:
-
-- Four projections are the target model.
-- `data-tree` is part of the default model.
-- `gen_status` and `review_status` are the preferred node states.
-- Legacy `status` remains readable for older examples and implementation code.
-
-## Quick Start for Readers
-
-Use the seed projects under `protocol/examples/` to inspect `.deepspec/` directories.
-
-```bash
-python protocol/conformance/run.py --reader "your-reader" --level 1
-```
-
-The current repository does not yet publish `npx deepspec-*` commands. CLI commands are tracked in `tasks.md` as future work.
-
-## Desktop App (Delphi)
+## Desktop Application (Delphi / Win64)
 
 ### Prerequisites
 
-- Delphi 13.1 (BDS 37.0) — the self-hosted build scripts default to `d:\Program Files (x86)\Embarcadero\Studio\37.0` and `D:\_Progs\02Business\DeepBase` (override via `BDS` / `DEEPBASE_HOME` env vars).
-- Microsoft Edge WebView2 Runtime (for the HTML review pages in the main view).
-- `root.txt` next to the EXE with the DeepBase project root as its first line (DeepBase DB1/ConfigDB locator).
+- Embarcadero Delphi / RAD Studio 13.1 (or 12.x / 11.x) with `dcc64` (Win64 target).
+- Microsoft Edge WebView2 Runtime (for interactive HTML preview).
 
-### Build
+### Build Instructions
 
 ```bat
-_build.bat               :: main program -> bin\DeepSpec.exe
-cd tests && _build_tests.bat && DeepSpec.Tests.exe   :: 113 unit tests
-cd cli && _build_cli.bat :: headless CLI -> cli\bin\DeepSpec.CLI.exe
+:: 1. Build Main GUI application -> bin\DeepSpec.exe
+_build.bat
+
+:: 2. Build and run automated test suite (113 unit tests)
+cd tests && _build_tests.bat && DeepSpec.Tests.exe
+
+:: 3. Build Headless CLI -> cli\bin\DeepSpec.CLI.exe
+cd cli && _build_cli.bat
 ```
 
 ### First Run
 
-1. Launch `bin\DeepSpec.exe` — the UI follows the Windows display language (zh-CN/zh-TW/en-US).
-2. Menu **Tools → Setup LLM (ModelScope)** — enter a ModelScope API key once (stored via DeepBase).
-3. In the directory tree pick a project folder, click **Visualize** to scan.
-4. The dashboard (index.html) opens in the main view; recent projects and window layout persist across restarts (DB1-backed MRU/layout).
+1. Launch `bin\DeepSpec.exe` — the user interface automatically matches the system language (`zh-CN`, `zh-TW`, or `en-US`).
+2. Go to **Tools → Setup LLM (ModelScope)** to configure your API key and preferred model.
+3. Select a project folder from the directory panel and click **Visualize**.
+4. The interactive dashboard (`index.html`) opens in the center view; spec trees and scan logs update in real time.
 
-### CLI
+---
+
+## Headless CLI Usage
 
 ```bat
-DeepSpec.CLI init <dir>      :: create .deepspec structure
-DeepSpec.CLI scan <dir>      :: scan + build trees + render + prompts
-DeepSpec.CLI generate <dir>  :: export the prompt pack (LLM call runs in the GUI)
-DeepSpec.CLI validate <dir>  :: validate trees/issues YAML (exit 1 on errors)
-DeepSpec.CLI render <dir>    :: re-render HTML from YAML on disk
+DeepSpec.CLI init <dir>                      :: Initialize a fresh .deepspec directory
+DeepSpec.CLI scan <dir>                      :: Scan project codebase and build 4 trees
+DeepSpec.CLI generate <dir>                  :: Export AI generation prompt pack
+DeepSpec.CLI validate <dir>                  :: Validate .deepspec YAML consistency
+DeepSpec.CLI render <dir>                    :: Re-render HTML review pages
+DeepSpec.CLI health <dir> [--json]           :: Output health metrics snapshot
+DeepSpec.CLI decisions apply <dir>           :: Promote pending decisions to formal tree states
+DeepSpec.CLI bundle apply <dir> <id> <act>   :: Batch accept or reject a bundle
+DeepSpec.CLI ingest <dir> <candidate.yaml>   :: Validate and merge candidate nodes
 ```
 
-## Why It Matters
+---
 
-Symphony-style orchestration can keep agents working. DeepSpec focuses on a different layer: making the specification an agent can work from trustworthy enough to review, repair, and hand off.
+## Protocol & Specification (L0 Layer)
 
-```text
-Symphony increases agent throughput.
-DeepSpec improves specification trust.
-CTF supplies the review discipline.
-ODD verifies accepted outputs.
+The DeepSpec protocol is defined in `SPEC.md` and `protocol/`. It is licensed under Apache-2.0 and strictly language-agnostic. Any tool, editor, or autonomous agent can read, validate, or generate `.deepspec/` worktrees.
+
+### Standalone Cold-Environment Initialization
+
+In clean environments without Delphi compiler tools, initialize a conforming `.deepspec/` workspace directly using Python (standard library only, zero third-party dependencies):
+
+```bash
+python protocol/tools/init_workspace.py /path/to/project --project-name "MyProject"
 ```
+
+Python readers are available in `protocol/readers/python/` for programmatic tree access.
+
+---
+
+## Theoretical Foundations & Statutory Attribution
+
+DeepSpec and its `.deepspec/` specification protocol embody and implement proprietary theoretical architectures created and authored by **付毅 (Fuyi)**:
+
+- **Differential Monism (DM, 差异一元论)**: Foundational ontology of difference replacing substance ontology. Academic DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505).
+- **Attributive Set Transition Ontology (ASTO, 属集变迁存在论)**: Multi-state phase transitions, structural boundaries, and formal encoding. Academic DOI: [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467).
+- **Output-Driven Development (ODD, 产出物驱动开发)**: Engineering and governance discipline mandating frozen specification deliverables and deterministic gates before production.
+- **Problem Formulation Modeling (PFM, 前线显影层)**: Front-line intent modeling methodology that uncovers latent constraints and establishes verifiable acceptance criteria.
+
+Canonical Theory Source Repository: `D:\_Progs\一元论\`  
+Upstream Governance Contract: `PC-20260828-DeepSpec-OpenSource`
+
+See [NOTICE](NOTICE) for complete statutory attribution and licensing terms under Apache License 2.0 Section 4(d).
+
+---
+
+## License
+
+DeepSpec is released under the [Apache-2.0 License](LICENSE).
+Copyright 2026 付毅 (Fuyi) and BetterCiv Contributors.

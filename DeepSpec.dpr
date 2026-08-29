@@ -1,8 +1,9 @@
 { ============================================================================
   DeepSpec
-
+  ---------------------------------------------------------------------------
   AI-native requirement specification tool.
-  Based on DeepBase / DeepShell.
+  Fully decoupled, open-source architecture.
+  Zero external database or proprietary framework dependencies.
   ============================================================================ }
 
 program DeepSpec;
@@ -12,22 +13,18 @@ uses
   Winapi.Windows,
   Vcl.Forms,
   Vcl.Dialogs,
-  FireDAC.VCLUI.Wait,
-  FireDAC.Comp.UI,
-  FireDAC.Phys.SQLite,
-  FireDAC.Phys.SQLiteDef,
-  FireDAC.Stan.ExprFuncs,
-  FireDAC.Stan.Def,
-  FireDAC.Stan.Async,
-  FireDAC.DApt,
-  DeepBase.Manager,
-  DeepBase.Persistence.Manager.FireDAC,
-  DeepBase.AutoFix,
-  DeepBase.AutoFix.VclHook,
-  DeepBase.AIErrorHandler.Bootstrap,
+  DeepSpec.AutoFix in 'src\core\DeepSpec.AutoFix.pas',
+  DeepSpec.Security in 'src\core\DeepSpec.Security.pas',
+  DeepSpec.Config in 'src\core\DeepSpec.Config.pas',
+  DeepSpec.Logger in 'src\core\DeepSpec.Logger.pas',
+  DeepSpec.UI.Types in 'src\core\DeepSpec.UI.Types.pas',
+  DeepSpec.UI.Intf in 'src\core\DeepSpec.UI.Intf.pas',
+  DeepSpec.Shell.Form in 'src\app\DeepSpec.Shell.Form.pas',
+  DeepSpec.Localization in 'src\app\DeepSpec.Localization.pas',
+  DeepSpec.SettingsProvider in 'src\app\DeepSpec.SettingsProvider.pas',
+  DeepSpec.Services.Storage in 'src\app\DeepSpec.Services.Storage.pas',
   DeepSpec.MainForm in 'src\app\DeepSpec.MainForm.pas',
   DeepSpec.Commands in 'src\app\DeepSpec.Commands.pas',
-  DeepSpec.Services in 'src\app\DeepSpec.Services.pas',
   DeepSpec.Providers in 'src\app\DeepSpec.Providers.pas',
   DeepSpec.Services.Project in 'src\services\DeepSpec.Services.Project.pas',
   DeepSpec.Services.Scan in 'src\services\DeepSpec.Services.Scan.pas',
@@ -53,42 +50,28 @@ uses
 
 {$R *.res}
 
-var
-  GErrorMsg: string;
-
 begin
   ReportMemoryLeaksOnShutdown := True;
-  InstallAIErrorHandler;                     // AI runtime error handler (chains to AutoFix below)
-  AutoFix.Install;
-  TAutoFixVclHook.Install;             // VCL: hook Application.OnException (no-op unless --autofix-mode)
+  InstallAIErrorHandler;
+  TDeepSpecAutoFix.Install;
+  TAutoFixVclHook.Install;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.Title := 'DeepSpec';
 
-  // DeepBase init - best effort, but never silent (BUG-7): the user must
-  // see a failure instead of a debugger-only OutputDebugString line.
-  if not DeepBase.Manager.DeepBase.InitializeEx(GErrorMsg) then
-    ShowMessage('DeepBase initialization failed: ' + GErrorMsg + sLineBreak +
-      'Settings persistence and LLM features may be unavailable. ' +
-      'The application will continue without them.');
-
   try
-    try
-      Application.CreateForm(TDeepSpecMainForm, DeepSpecMainForm);
-    except
-      on E: Exception do
-      begin
-        ShowMessage('FATAL: Form creation failed: ' + E.ClassName + ': ' + E.Message);
-        Exit;
-      end;
+    Application.CreateForm(TDeepSpecMainForm, DeepSpecMainForm);
+  except
+    on E: Exception do
+    begin
+      ShowMessage('FATAL: Form creation failed: ' + E.ClassName + ': ' + E.Message);
+      Exit;
     end;
-    AutoFix.RegisterScenario('smoke',
-      procedure
-      begin
-        // smoke: verify AutoFix infrastructure is alive
-      end);
-    Application.Run;
-  finally
-    DeepBase.Manager.DeepBase.Finalize;
   end;
+
+  TDeepSpecAutoFix.RegisterScenario('smoke', procedure
+  begin
+  end);
+
+  Application.Run;
 end.

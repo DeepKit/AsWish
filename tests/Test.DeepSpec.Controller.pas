@@ -28,8 +28,8 @@ uses
   System.IOUtils,
   System.Generics.Collections,
   DUnitX.TestFramework,
-  DeepBase.VCL.DeepShell.Intf,
-  DeepBase.VCL.DeepShell.Types,
+  DeepSpec.UI.Intf,
+  DeepSpec.UI.Types,
   DeepSpec.Models,
   DeepSpec.Services.Project,
   DeepSpec.Services.Scan,
@@ -299,7 +299,7 @@ begin
   FPrompts := TDeepSpecPromptService.Create;
   FDecisions := TDeepSpecDecisionsService.Create;
   FSettings := TDeepSpecSettingsService.Create;
-  FLLM := TDeepSpecLLMService.Create(nil, False);
+  FLLM := TDeepSpecLLMService.Create('Default');
   FStatus := TMockStatus.Create;
   FContext := TMockContext.Create;
   FBus := TMockBus.Create;
@@ -351,7 +351,7 @@ begin
   FPrompts := TDeepSpecPromptService.Create;
   FDecisions := TDeepSpecDecisionsService.Create;
   FSettings := TDeepSpecSettingsService.Create;
-  FLLM := TDeepSpecLLMService.Create(nil, False);
+  FLLM := TDeepSpecLLMService.Create('Default');
   FStatus := TMockStatus.Create;
   FContext := TMockContext.Create;
   FBus := TMockBus.Create;

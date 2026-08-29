@@ -1,18 +1,14 @@
-﻿
 { ============================================================================
   DeepSpec.Services.LLM
-
-  Wraps DeepBase.LLM for DeepSpec's specific use cases:
-  - A → B generation (calls LLM with Context Pack + generation prompt)
+  ---------------------------------------------------------------------------
+  Standalone, open-source LLM client for DeepSpec:
+  - A -> B specification generation
   - Single node refinement
-  - Decision write-back
+  - Decision write-back and prompt generation
 
-  This service does NOT handle API key management - that flows through
-  DeepBase.Security and DeepBase.LLM's existing infrastructure. The user
-  configures their LLM provider in DeepBase settings.
-
-  Falls back gracefully if DeepBase LLM is not configured: writes a note
-  to the candidate output explaining how to configure manually.
+  Connects directly to OpenAI-compatible endpoints (ModelScope, OpenAI,
+  DeepSeek, Qwen, Ollama, vLLM, etc.) via Delphi's built-in System.Net.HttpClient.
+  Zero external dependencies.
   ============================================================================ }
 
 unit DeepSpec.Services.LLM;
@@ -22,7 +18,14 @@ interface
 uses
   System.SysUtils,
   System.Classes,
-  DeepBase.LLM;
+  System.Generics.Collections,
+  System.Diagnostics,
+  System.JSON,
+  System.Net.HttpClient,
+  System.Net.URLClient,
+  DeepSpec.Config,
+  DeepSpec.Security,
+  DeepSpec.Logger;
 
 type
   TDeepSpecLLMResult = record
@@ -36,33 +39,17 @@ type
 
   TDeepSpecLLMService = class(TInterfacedObject)
   private
-    FLLM: TDeepBaseLLM;
     FConfigName: string;
-    FOwnsLLM: Boolean;
+    function GetBaseUrl: string;
+    function GetApiKey: string;
+    function GetModel: string;
   public
-    constructor Create(ALLM: TDeepBaseLLM = nil; AOwnsLLM: Boolean = False);
+    constructor Create(const AConfigName: string = 'Default');
     destructor Destroy; override;
 
-    /// <summary>
-    /// Configure which DeepBase LLM config to use (default: 'Default').
-    /// </summary>
     procedure SetConfig(const AConfigName: string);
-
-    /// <summary>
-    /// Test if the configured LLM is available.
-    /// </summary>
     function IsAvailable: Boolean;
-
-    /// <summary>
-    /// Generate B from a prompt. Returns the LLM response.
-    /// If LLM is not configured, returns a Result with Success=False and
-    /// a helpful error message.
-    /// </summary>
     function Generate(const APrompt: string): TDeepSpecLLMResult;
-
-    /// <summary>
-    /// Send a system + user message pair.
-    /// </summary>
     function GenerateWithSystem(const ASystemPrompt, AUserPrompt: string): TDeepSpecLLMResult;
 
     property ConfigName: string read FConfigName;
@@ -70,18 +57,23 @@ type
 
 implementation
 
-constructor TDeepSpecLLMService.Create(ALLM: TDeepBaseLLM; AOwnsLLM: Boolean);
+const
+  CFG_LLM_PREFIX = 'deepspec.llm.';
+  DEFAULT_MODELSCOPE_URL = 'https://api-inference.modelscope.cn/v1';
+  DEFAULT_MODEL = 'Qwen/Qwen2.5-72B-Instruct';
+
+{ TDeepSpecLLMService }
+
+constructor TDeepSpecLLMService.Create(const AConfigName: string);
 begin
   inherited Create;
-  FLLM := ALLM;
-  FOwnsLLM := AOwnsLLM;
-  FConfigName := 'Default';
+  FConfigName := AConfigName;
+  if FConfigName = '' then
+    FConfigName := 'Default';
 end;
 
 destructor TDeepSpecLLMService.Destroy;
 begin
-  if FOwnsLLM then
-    FLLM.Free;
   inherited;
 end;
 
@@ -90,98 +82,171 @@ begin
   FConfigName := AConfigName;
 end;
 
-function TDeepSpecLLMService.IsAvailable: Boolean;
+function TDeepSpecLLMService.GetBaseUrl: string;
 begin
-  Result := False;
-  if FLLM = nil then Exit;
-  try
-    var LCfg := FLLM.GetConfig(FConfigName);
-    Result := LCfg.IsEnabled and (LCfg.ApiKey <> '');
-  except
-    Result := False;
-  end;
+  Result := GetConfig(CFG_LLM_PREFIX + FConfigName + '.base_url', DEFAULT_MODELSCOPE_URL);
+end;
+
+function TDeepSpecLLMService.GetApiKey: string;
+var
+  LEnc: string;
+begin
+  LEnc := GetConfig(CFG_LLM_PREFIX + FConfigName + '.api_key', '');
+  Result := TDeepSpecSecurity.Unprotect(LEnc);
+end;
+
+function TDeepSpecLLMService.GetModel: string;
+begin
+  Result := GetConfig(CFG_LLM_PREFIX + FConfigName + '.model', DEFAULT_MODEL);
+end;
+
+function TDeepSpecLLMService.IsAvailable: Boolean;
+var
+  LKey: string;
+begin
+  LKey := GetApiKey;
+  Result := (LKey <> '') and (GetBaseUrl <> '');
 end;
 
 function TDeepSpecLLMService.Generate(const APrompt: string): TDeepSpecLLMResult;
-var
-  LResp: TLLMChatResponse;
 begin
-  Result := Default(TDeepSpecLLMResult);
-
-  if FLLM = nil then
-  begin
-    Result.Success := False;
-    Result.ErrorMessage :=
-      'DeepBase LLM is not configured. Configure your LLM provider in ' +
-      'DeepBase settings, or copy the prompt from .deepspec/prompts/ to ' +
-      'your external AI tool manually.';
-    Exit;
-  end;
-
-  try
-    if FLLM.Chat(APrompt, LResp, FConfigName) then
-    begin
-      Result.Success := LResp.Success;
-      Result.Content := LResp.Content;
-      Result.DurationMs := LResp.DurationMs;
-      Result.InputTokens := LResp.InputTokens;
-      Result.OutputTokens := LResp.OutputTokens;
-      Result.ErrorMessage := LResp.ErrorMessage;
-    end
-    else
-    begin
-      Result.Success := False;
-      Result.ErrorMessage := LResp.ErrorMessage;
-    end;
-  except
-    on E: Exception do
-    begin
-      Result.Success := False;
-      Result.ErrorMessage := E.Message;
-    end;
-  end;
+  Result := GenerateWithSystem('', APrompt);
 end;
 
 function TDeepSpecLLMService.GenerateWithSystem(const ASystemPrompt,
   AUserPrompt: string): TDeepSpecLLMResult;
 var
-  LResp: TLLMChatResponse;
-  LMessages: TLLMMessages;
+  LHttp: THTTPClient;
+  LReqBody: TJSONObject;
+  LMessages: TJSONArray;
+  LSysMsg, LUserMsg: TJSONObject;
+  LPostStream, LRespStream: TStringStream;
+  LUrl, LApiKey, LModel, LRespText: string;
+  LStopwatch: TStopwatch;
+  LResp: IHTTPResponse;
+  LJsonVal, LChoicesVal, LMsgVal, LUsageVal: TJSONValue;
+  LJsonObj, LChoiceObj, LUsageObj: TJSONObject;
 begin
-  Result := Default(TDeepSpecLLMResult);
+  Result.Success := False;
+  Result.Content := '';
+  Result.ErrorMessage := '';
+  Result.DurationMs := 0;
+  Result.InputTokens := 0;
+  Result.OutputTokens := 0;
 
-  if FLLM = nil then
+  LApiKey := GetApiKey;
+  if LApiKey = '' then
   begin
-    Result.Success := False;
-    Result.ErrorMessage := 'DeepBase LLM is not configured.';
+    Result.ErrorMessage := 'LLM is not configured. Configure your API key in DeepSpec settings.';
     Exit;
   end;
 
-  SetLength(LMessages, 2);
-  LMessages[0] := TLLMMessage.System(ASystemPrompt);
-  LMessages[1] := TLLMMessage.User(AUserPrompt);
+  LUrl := GetBaseUrl;
+  if not LUrl.EndsWith('/') then
+    LUrl := LUrl + '/';
+  if not LUrl.EndsWith('chat/completions') then
+    LUrl := LUrl + 'chat/completions';
 
+  LModel := GetModel;
+
+  LHttp := THTTPClient.Create;
+  LReqBody := TJSONObject.Create;
+  LPostStream := nil;
+  LRespStream := nil;
   try
-    if FLLM.ChatWithMessages(LMessages, LResp, FConfigName) then
+    LHttp.ConnectionTimeout := 30000;
+    LHttp.ResponseTimeout := 120000;
+    LHttp.CustomHeaders['Authorization'] := 'Bearer ' + LApiKey;
+
+    LReqBody.AddPair('model', LModel);
+    LReqBody.AddPair('temperature', TJSONNumber.Create(0.3));
+    LReqBody.AddPair('max_tokens', TJSONNumber.Create(4096));
+
+    LMessages := TJSONArray.Create;
+    if ASystemPrompt <> '' then
     begin
-      Result.Success := LResp.Success;
-      Result.Content := LResp.Content;
-      Result.DurationMs := LResp.DurationMs;
-      Result.InputTokens := LResp.InputTokens;
-      Result.OutputTokens := LResp.OutputTokens;
-      Result.ErrorMessage := LResp.ErrorMessage;
-    end
-    else
-    begin
-      Result.Success := False;
-      Result.ErrorMessage := LResp.ErrorMessage;
+      LSysMsg := TJSONObject.Create;
+      LSysMsg.AddPair('role', 'system');
+      LSysMsg.AddPair('content', ASystemPrompt);
+      LMessages.AddElement(LSysMsg);
     end;
-  except
-    on E: Exception do
-    begin
-      Result.Success := False;
-      Result.ErrorMessage := E.Message;
+
+    LUserMsg := TJSONObject.Create;
+    LUserMsg.AddPair('role', 'user');
+    LUserMsg.AddPair('content', AUserPrompt);
+    LMessages.AddElement(LUserMsg);
+
+    LReqBody.AddPair('messages', LMessages);
+
+    LPostStream := TStringStream.Create(LReqBody.ToJSON, TEncoding.UTF8);
+
+    LStopwatch := TStopwatch.StartNew;
+    try
+      LResp := LHttp.Post(LUrl, LPostStream, nil, [
+        TNameValuePair.Create('Content-Type', 'application/json')
+      ]);
+      LStopwatch.Stop;
+      Result.DurationMs := LStopwatch.ElapsedMilliseconds;
+
+      LRespText := LResp.ContentAsString(TEncoding.UTF8);
+
+      if (LResp.StatusCode >= 200) and (LResp.StatusCode < 300) then
+      begin
+        LJsonVal := TJSONObject.ParseJSONValue(LRespText);
+        if LJsonVal is TJSONObject then
+        begin
+          LJsonObj := TJSONObject(LJsonVal);
+          try
+            LChoicesVal := LJsonObj.GetValue<TJSONValue>('choices', nil);
+            if (LChoicesVal is TJSONArray) and (TJSONArray(LChoicesVal).Count > 0) then
+            begin
+              LChoiceObj := TJSONArray(LChoicesVal).Items[0] as TJSONObject;
+              if LChoiceObj <> nil then
+              begin
+                LMsgVal := LChoiceObj.GetValue<TJSONValue>('message', nil);
+                if LMsgVal is TJSONObject then
+                  Result.Content := TJSONObject(LMsgVal).GetValue<string>('content', '');
+              end;
+            end;
+
+            LUsageVal := LJsonObj.GetValue<TJSONValue>('usage', nil);
+            if LUsageVal is TJSONObject then
+            begin
+              LUsageObj := TJSONObject(LUsageVal);
+              Result.InputTokens := LUsageObj.GetValue<Integer>('prompt_tokens', 0);
+              Result.OutputTokens := LUsageObj.GetValue<Integer>('completion_tokens', 0);
+            end;
+
+            Result.Success := (Result.Content <> '');
+            if not Result.Success then
+              Result.ErrorMessage := 'LLM returned empty content.';
+          finally
+            LJsonObj.Free;
+          end;
+        end
+        else
+        begin
+          if LJsonVal <> nil then LJsonVal.Free;
+          Result.ErrorMessage := 'Invalid JSON response from LLM endpoint.';
+        end;
+      end
+      else
+      begin
+        Result.ErrorMessage := Format('LLM HTTP %d: %s', [LResp.StatusCode, LRespText]);
+      end;
+    except
+      on E: Exception do
+      begin
+        LStopwatch.Stop;
+        Result.DurationMs := LStopwatch.ElapsedMilliseconds;
+        Result.ErrorMessage := 'LLM request failed: ' + E.Message;
+      end;
     end;
+  finally
+    LPostStream.Free;
+    LRespStream.Free;
+    LReqBody.Free;
+    LHttp.Free;
   end;
 end;
 

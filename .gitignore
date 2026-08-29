@@ -23,33 +23,30 @@ tests/dunitx-results.xml
 tests/_debug*.dpr
 tests/_debug_parser.dpr
 
-# External article copies (copyright — keep local, not in repo)
+# External article copies
 docs/refs/
 
-# Tool edit-boundary state (per-session constraint, not a project asset)
+# Internal governance, workorders and private discussion files
 boundary.json
-
-# Generated build logs (regenerable)
-compile_log.txt
-compile_output.txt
-
-# Per-machine config DB (DeepSpec runtime config)
+bugfix.md
+tasks.md
+history.md
+workorders/
+发散讨论/
+root.txt
+root.txt.example
+*.db
 DeepSpecConfig.db
 
-# Sample-project artifacts: a project's own .deepspec/ folder is regenerable
-/.deepspec/
-
-# Plugin drop-ins (regenerable)
-Plugins/
-
+# Tool configs
 .claude/
 .vscode/
-*.db
-
 __pycache__/
 *.pyc
 
-# CLI/test build logs (regenerable)
+# Build logs
+compile_log.txt
+compile_output.txt
 cli/cli_build.txt
 tests/test_build.txt
 tests/test_run.txt

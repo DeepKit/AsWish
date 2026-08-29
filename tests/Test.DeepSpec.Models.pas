@@ -223,7 +223,7 @@ procedure TDefogOneStepTests.Clear_Step_StaysClear;
 begin
   Assert.AreEqual<TFogState>(fsClear,
     TSpecEnums.DefogOneStep(fsClear),
-    'clear is terminal — defog stays at clear');
+    'clear is terminal -- defog stays at clear');
 end;
 
 { THealthMetricsTests — BUG-9 health metrics (pure function) }

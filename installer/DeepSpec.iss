@@ -1,69 +1,91 @@
 ; ============================================================================
-; DeepSpec installer (Inno Setup 6)
+;  DeepSpec installer (Inno Setup 6)
+;  Packages bin\DeepSpec.exe (+ CLI if built). Declares WebView2 Runtime
+;  dependency by guiding the user to the official evergreen bootstrapper
+;  download page instead of bundling the installer (license reasons).
 ;
-; Build:  ISCC.exe installer\DeepSpec.iss
-; Prereq: bin\DeepSpec.exe built via _build.bat (run it first).
-;
-; Notes:
-;   - WebView2 Runtime is NOT bundled; the installer checks and points the
-;     user to the Evergreen bootstrapper (Microsoft requires the runtime to
-;     be installed separately; see WebView2 distribution docs).
-;   - root.txt is created on first run? No — DeepBase requires root.txt next
-;     to the EXE; we ship a template and ask the user to point it at their
-;     DeepBase project root after install.
+;  Build: run _build_installer.bat (needs ISCC.exe from jrsoftware.org)
 ; ============================================================================
 
 #define MyAppName "DeepSpec"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.0.0"
 #define MyAppPublisher "DeepKit"
 #define MyAppExeName "DeepSpec.exe"
 
 [Setup]
-AppId={{8E1D8C4E-5F0A-4B7E-9C2D-DeepSpec01}
+AppId={{7E1F5D9A-6B34-4C2E-9A18-5E2A50010001}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
-UninstallDisplayIcon={app}\{#MyAppExeName}
+ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed=x64compatible
+DisableProgramGroupPage=yes
+OutputDir=..\bin\installer
+OutputBaseFilename=DeepSpec-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
-OutputDir=..\dist
-OutputBaseFilename=DeepSpec-setup-{#MyAppVersion}
-ArchitecturesInstallIn64BitMode=x64compatible
-
-[Languages]
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
-Name: "english"; MessagesFile: "compiler:Default.isl"
+WizardStyle=modern
+UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; \
+    GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "..\bin\DeepSpec.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\root.txt.example"; DestDir: "{app}"; DestName: "root.txt"; Flags: onlyifdoesntexist
+Source: "..\cli\bin\DeepSpec.CLI.exe"; DestDir: "{app}\tools"; \
+    Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
+    Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; \
+    Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+; Intentionally empty: user project data (.deepspec workspaces, settings)
+; must survive uninstall. Only files we installed under {app} are removed.
 
 [Code]
-function WebView2Installed: Boolean;
+// WebView2 Runtime official fixed GUID (Evergreen):
+// HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}
+// The 'pv' value holds the runtime version when installed.
+const
+  WebView2Guid = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+  WebView2Url = 'https://developer.microsoft.com/microsoft-edge/webview2/';
+
+function WebView2Installed(): Boolean;
 var
-  Key: string;
+  Pv: String;
 begin
-  Result := RegKeyExists(HKLM,
-    'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}');
+  Result :=
+    (RegQueryStringValue(HKLM,
+       'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\' + WebView2Guid,
+       'pv', Pv) and (Pv <> '')) or
+    (RegQueryStringValue(HKCU,
+       'Software\Microsoft\EdgeUpdate\Clients\' + WebView2Guid,
+       'pv', Pv) and (Pv <> ''));
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+function InitializeSetup(): Boolean;
+var
+  ErrorCode: Integer;
 begin
-  if (CurStep = ssPostInstall) and (not WebView2Installed) then
-    MsgBox('WebView2 Runtime 未安装。DeepSpec 的主视图（HTML 审阅页）需要它。' + #13#10 +
-      '请从 https://developer.microsoft.com/microsoft-edge/webview2/ 安装 Evergreen Runtime 后重启 DeepSpec。',
-      mbInformation, MB_OK);
+  Result := True;
+  if not WebView2Installed() then
+  begin
+    if MsgBox(
+        'DeepSpec embeds web-based review pages rendered by Microsoft Edge WebView2.' #13#10 +
+        'The WebView2 Runtime was not detected on this machine.' #13#10 #13#10 +
+        'Yes  - open the official download page (recommended, then re-run Setup)' #13#10 +
+        'No   - continue installing without WebView2 (review pages will not render)',
+        mbConfirmation, MB_YESNO) = IDYES then
+      ShellExec('open', WebView2Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+    // Always proceed with installation either way; the app itself starts
+    // fine and only the embedded review browser requires the runtime.
+  end;
 end;

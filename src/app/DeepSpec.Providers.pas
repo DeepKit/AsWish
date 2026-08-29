@@ -1,8 +1,8 @@
-﻿
 { ============================================================================
   DeepSpec.Providers
-
-  Registers DeepSpec providers into DeepShell.
+  ---------------------------------------------------------------------------
+  Registers DeepSpec providers (Structure, MainView, Inspector) into the shell.
+  Zero external dependencies.
   ============================================================================ }
 
 unit DeepSpec.Providers;
@@ -10,14 +10,14 @@ unit DeepSpec.Providers;
 interface
 
 uses
-  DeepBase.VCL.DeepShell.MainForm,
-  DeepBase.VCL.DeepShell.Intf,
+  DeepSpec.Shell.Form,
+  DeepSpec.UI.Intf,
   DeepSpec.Services.Project,
   DeepSpec.Services.Scan,
   DeepSpec.Services.TreeBuilder,
   DeepSpec.Controller;
 
-procedure RegisterAllProviders(AForm: TDeepMainForm;
+procedure RegisterAllProviders(AForm: TDeepSpecShellForm;
   AProjectService: TDeepSpecProjectService;
   AScanService: TDeepSpecScanService;
   ATreeBuilder: TDeepSpecTreeBuilder;
@@ -31,18 +31,15 @@ uses
   DeepSpec.Providers.MainView,
   DeepSpec.Providers.Inspector;
 
-type
-  TDeepMainFormAccess = class(TDeepMainForm);
-
-procedure RegisterAllProviders(AForm: TDeepMainForm;
+procedure RegisterAllProviders(AForm: TDeepSpecShellForm;
   AProjectService: TDeepSpecProjectService;
   AScanService: TDeepSpecScanService;
   ATreeBuilder: TDeepSpecTreeBuilder;
   AController: TDeepSpecController);
 begin
-  TDeepMainFormAccess(AForm).RegisterStructureProvider(
+  AForm.RegisterStructureProvider(
     TDeepSpecStructureProvider.Create(AScanService, ATreeBuilder));
-  TDeepMainFormAccess(AForm).RegisterMainViewProvider(
+  AForm.RegisterMainViewProvider(
     TDeepSpecMainViewProvider.Create(AProjectService,
       // BUG-11 step 2: JS Bridge ticket-create → Controller.CreateTicket
       // (defog one step + validate + persist + re-render).
@@ -61,7 +58,7 @@ begin
       begin
         AController.ApplyBundleDecisions(AAction, ABundleId);
       end));
-  TDeepMainFormAccess(AForm).RegisterInspectorProvider(
+  AForm.RegisterInspectorProvider(
     TDeepSpecInspectorProvider.Create(
       function(const ANodeId: string): TSpecNode
       begin

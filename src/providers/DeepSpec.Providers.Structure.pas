@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   DeepSpec.Providers.Structure
 
   Structure provider for the left tool window tree.
@@ -14,8 +14,8 @@ uses
   System.SysUtils,
   System.Classes,
   System.Generics.Collections,
-  DeepBase.VCL.DeepShell.Intf,
-  DeepBase.VCL.DeepShell.Types,
+  DeepSpec.UI.Intf,
+  DeepSpec.UI.Types,
   DeepSpec.Services.Scan,
   DeepSpec.Services.TreeBuilder,
   DeepSpec.Models;

@@ -14,7 +14,7 @@ uses
   System.SysUtils,
   System.Classes,
   System.Generics.Collections,
-  DeepBase.VCL.DeepShell.Intf,
+  DeepSpec.UI.Intf,
   DeepSpec.Services.Project,
   DeepSpec.Services.Scan,
   DeepSpec.Services.SpecStore,
@@ -111,7 +111,7 @@ implementation
 uses
   System.IOUtils,
   System.StrUtils,
-  DeepBase.VCL.DeepShell.Types,
+  DeepSpec.UI.Types,
   DeepSpec.Validation,
   DeepSpec.Yaml.Writer;
 
@@ -700,7 +700,7 @@ begin
   if not FLLM.IsAvailable then
   begin
     FStatus.Warning('DeepSpec.LLM',
-      'LLM not configured. Configure it in DeepBase settings (LLM tab) or ' +
+      'LLM not configured. Configure it in DeepSpec settings (LLM tab) or ' +
       'use Export Prompt to copy the prompt to your external AI tool.');
     Exit;
   end;

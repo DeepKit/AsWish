@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   DeepSpec.Services.TreeBuilder
 
@@ -188,8 +188,6 @@ end;
 
 procedure TDeepSpecTreeBuilder.BuildFromScan(AScan: TDeepSpecScanService;
   const AProjectName, AProjectRootPath: string);
-var
-  LDirs: TDictionary<string, Boolean>;
 begin
   FFunctionNodes.Clear;
   FModuleNodes.Clear;

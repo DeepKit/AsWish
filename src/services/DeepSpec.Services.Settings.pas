@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   DeepSpec.Services.Settings
 
   Project-level settings: docs directory path, scan preferences.
@@ -28,7 +28,7 @@ implementation
 
 uses
   System.IOUtils,
-  DeepBase.VCL.DeepShell.Intf;
+  DeepSpec.UI.Intf;
 
 const
   SETTING_DOCS_PATH = 'deepspec.docs_path';

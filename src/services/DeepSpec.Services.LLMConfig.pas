@@ -1,11 +1,9 @@
-﻿{ ============================================================================
+{ ============================================================================
   DeepSpec.Services.LLMConfig
-
-  Helper to configure DeepBase LLM with common providers.
-  Provides a one-shot setup for ModelScope (OpenAI-compatible).
-
-  This service does NOT hardcode API keys. It accepts them at runtime
-  and saves them through DeepBase's existing secure storage.
+  ---------------------------------------------------------------------------
+  Helper to configure LLM providers (ModelScope, OpenAI, Ollama, DeepSeek).
+  Saves provider parameters to DeepSpec configuration with key protection.
+  Zero external dependencies.
   ============================================================================ }
 
 unit DeepSpec.Services.LLMConfig;
@@ -14,79 +12,65 @@ interface
 
 uses
   System.SysUtils,
-  DeepBase.LLM,
-  DeepBase.LLM.Types;
+  DeepSpec.Config,
+  DeepSpec.Security;
 
 type
   TDeepSpecLLMConfigHelper = class
   public
-    /// <summary>
-    /// Save a ModelScope (OpenAI-compatible) LLM configuration.
-    /// API key is stored via DeepBase's existing secure mechanism.
-    /// </summary>
-    class procedure SaveModelScopeConfig(ALLM: TDeepBaseLLM;
-      const AApiKey, AModel: string;
+    /// <summary>Save a ModelScope (OpenAI-compatible) LLM configuration.</summary>
+    class procedure SaveModelScopeConfig(const AApiKey, AModel: string;
       const AConfigName: string = 'Default'); static;
 
-    /// <summary>
-    /// Save a generic OpenAI-compatible LLM configuration.
-    /// </summary>
-    class procedure SaveOpenAICompatible(ALLM: TDeepBaseLLM;
-      const AConfigName, ABaseUrl, AApiKey, AModel: string); static;
+    /// <summary>Save a generic OpenAI-compatible LLM configuration.</summary>
+    class procedure SaveOpenAICompatible(const AConfigName, ABaseUrl,
+      AApiKey, AModel: string); static;
 
-    /// <summary>
-    /// Check if a config is already saved with a non-empty API key.
-    /// </summary>
-    class function IsConfigured(ALLM: TDeepBaseLLM;
-      const AConfigName: string = 'Default'): Boolean; static;
+    /// <summary>Check if an LLM configuration has a valid API key.</summary>
+    class function IsConfigured(const AConfigName: string = 'Default'): Boolean; static;
   end;
 
 implementation
 
-class procedure TDeepSpecLLMConfigHelper.SaveModelScopeConfig(ALLM: TDeepBaseLLM;
+const
+  CFG_LLM_PREFIX = 'deepspec.llm.';
+  DEFAULT_MODELSCOPE_URL = 'https://api-inference.modelscope.cn/v1';
+
+class procedure TDeepSpecLLMConfigHelper.SaveModelScopeConfig(
   const AApiKey, AModel: string; const AConfigName: string);
 begin
-  SaveOpenAICompatible(ALLM, AConfigName,
-    'https://api-inference.modelscope.cn/v1', AApiKey, AModel);
+  SaveOpenAICompatible(AConfigName, DEFAULT_MODELSCOPE_URL, AApiKey, AModel);
 end;
 
-class procedure TDeepSpecLLMConfigHelper.SaveOpenAICompatible(ALLM: TDeepBaseLLM;
+class procedure TDeepSpecLLMConfigHelper.SaveOpenAICompatible(
   const AConfigName, ABaseUrl, AApiKey, AModel: string);
 var
-  LConfig: TLLMConfig;
+  LCfgName, LPrefix: string;
 begin
-  if ALLM = nil then
-    raise Exception.Create('LLM service not available');
+  LCfgName := AConfigName;
+  if LCfgName = '' then
+    LCfgName := 'Default';
+  LPrefix := CFG_LLM_PREFIX + LCfgName + '.';
 
-  LConfig.Init;
-  LConfig.Name := AConfigName;
-  LConfig.Provider := lpOpenAI; // OpenAI-compatible
-  LConfig.BaseUrl := ABaseUrl;
-  LConfig.ApiKey := AApiKey;
-  LConfig.Model := AModel;
-  LConfig.MaxTokens := 4096;
-  LConfig.Temperature := 0.3;
-  LConfig.SystemPrompt := '';
-  LConfig.IsEnabled := True;
-  LConfig.IsDefault := SameText(AConfigName, 'Default');
-
-  ALLM.SaveConfig(LConfig);
-  ALLM.RefreshConfigCache;
+  SetConfig(LPrefix + 'base_url', ABaseUrl);
+  SetConfig(LPrefix + 'api_key', TDeepSpecSecurity.Protect(AApiKey));
+  SetConfig(LPrefix + 'model', AModel);
+  SetConfigBool(LPrefix + 'enabled', True);
 end;
 
-class function TDeepSpecLLMConfigHelper.IsConfigured(ALLM: TDeepBaseLLM;
+class function TDeepSpecLLMConfigHelper.IsConfigured(
   const AConfigName: string): Boolean;
 var
-  LCfg: TLLMConfig;
+  LCfgName, LPrefix, LKey, LUrl: string;
 begin
-  Result := False;
-  if ALLM = nil then Exit;
-  try
-    LCfg := ALLM.GetConfig(AConfigName);
-    Result := LCfg.IsEnabled and (LCfg.ApiKey <> '') and (LCfg.BaseUrl <> '');
-  except
-    Result := False;
-  end;
+  LCfgName := AConfigName;
+  if LCfgName = '' then
+    LCfgName := 'Default';
+  LPrefix := CFG_LLM_PREFIX + LCfgName + '.';
+
+  LKey := GetConfig(LPrefix + 'api_key', '');
+  LUrl := GetConfig(LPrefix + 'base_url', '');
+  Result := (LKey <> '') and (LUrl <> '');
 end;
 
 end.

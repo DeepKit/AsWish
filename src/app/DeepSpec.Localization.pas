@@ -1,22 +1,11 @@
-﻿{ ============================================================================
+{ ============================================================================
   DeepSpec.Localization
-
-  i18n integration hub for the DeepSpec desktop shell:
-    - Detects the Windows UI language at startup (BCP-47 via
-      DetectSystemLocale) and normalizes it to the locales DeepSpec ships
-      string tables for (zh-CN / zh-TW / en-US).
-    - Registers the DeepSpec key table plus the DeepShell built-in table
-      (RegisterDefaultShellTexts is otherwise never called anywhere) for
-      the detected locale, then switches the shell localization service to
-      it, and mirrors the choice into DeepBase.Manager.CurrentLanguage so
-      DeepBase's own DB-backed i18n follows the same language.
-
-  Conventions (must keep):
-    - String literals use #$XXXX escapes: Delphi sources are read as ANSI
-      by dcc64, so raw UTF-8 text inside .pas would be mis-decoded.
-    - One RegisterText call per line: implicit string concatenation across
-      physical lines is fragile under GBK source decoding.
-    - ASCII-only comments.
+  ---------------------------------------------------------------------------
+  i18n integration hub for DeepSpec:
+  - Detects Windows UI language (BCP-47) and normalizes to zh-CN / zh-TW / en-US.
+  - Implements IShellLocalizationService for UI strings and commands.
+  - String literals use #$XXXX escapes to avoid dcc64 ANSI mis-decoding.
+  - Zero external dependencies.
   ============================================================================ }
 
 unit DeepSpec.Localization;
@@ -24,26 +13,152 @@ unit DeepSpec.Localization;
 interface
 
 uses
-  DeepBase.VCL.DeepShell.Localization;
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections,
+  DeepSpec.UI.Intf;
 
-/// <summary>Detect the Windows UI language and normalize it to a locale
-///  DeepSpec ships strings for. Returns 'zh-CN', 'zh-TW' or 'en-US'.</summary>
+type
+  TDeepSpecLocalizationService = class(TInterfacedObject, IShellLocalizationService)
+  private
+    FCurrentLocale: string;
+    FStringTables: TDictionary<string, TDictionary<string, string>>;
+    function GetTable(const ALocale: string): TDictionary<string, string>;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    function CurrentLocale: string;
+    procedure SetLocale(const ALocale: string);
+    function GetText(const AKey: string; const ADefault: string = ''): string;
+    procedure RegisterText(const ALocale, AKey, AValue: string);
+    function SupportedLocales: TArray<string>;
+  end;
+
+/// <summary>Detect the Windows UI language (zh-CN, zh-TW, en-US).</summary>
 function DeepSpecDetectLocale: string;
 
-/// <summary>Register DeepSpec + DeepShell text tables for the detected
-///  locale, switch the shell localization service to it, and mirror the
-///  choice into DeepBase.Manager.CurrentLanguage (best effort).</summary>
-procedure DeepSpecApplyLocale(ALocSvc: TShellDefaultLocalizationService);
+/// <summary>Register DeepSpec string tables and apply detected locale.</summary>
+procedure DeepSpecApplyLocale(const ALocSvc: IShellLocalizationService);
 
 implementation
 
 uses
-  System.SysUtils,
-  DeepBase.Consts,
-  DeepBase.Manager,
-  DeepBase.VCL.DeepShell;
+  Winapi.Windows;
 
-procedure RegisterDeepSpecTexts(ALocSvc: TShellDefaultLocalizationService;
+{ System locale detection via Win32 }
+
+function DetectSystemLocale: string;
+var
+  LLangBuf: array[0..84] of WideChar;
+  LLen: Integer;
+begin
+  LLen := GetUserDefaultLocaleName(@LLangBuf[0], Length(LLangBuf));
+  if LLen > 0 then
+    Result := string(LLangBuf)
+  else
+    Result := 'en-US';
+end;
+
+function DeepSpecDetectLocale: string;
+var
+  LLocale, LLower: string;
+begin
+  LLocale := DetectSystemLocale;
+  LLower := LLocale.ToLower;
+  if LLower.StartsWith('zh-hans') or LLower.StartsWith('zh-cn')
+     or LLower.StartsWith('zh-sg') or (LLower = 'zh') then
+    Exit('zh-CN');
+  if LLower.StartsWith('zh-hant') or LLower.StartsWith('zh-tw')
+     or LLower.StartsWith('zh-hk') or LLower.StartsWith('zh-mo') then
+    Exit('zh-TW');
+  Result := 'en-US';
+end;
+
+{ TDeepSpecLocalizationService }
+
+constructor TDeepSpecLocalizationService.Create;
+begin
+  inherited Create;
+  FStringTables := TDictionary<string, TDictionary<string, string>>.Create;
+  FCurrentLocale := 'en-US';
+end;
+
+destructor TDeepSpecLocalizationService.Destroy;
+var
+  LPair: TPair<string, TDictionary<string, string>>;
+begin
+  for LPair in FStringTables do
+    LPair.Value.Free;
+  FStringTables.Free;
+  inherited;
+end;
+
+function TDeepSpecLocalizationService.GetTable(
+  const ALocale: string): TDictionary<string, string>;
+begin
+  if not FStringTables.TryGetValue(ALocale, Result) then
+  begin
+    Result := TDictionary<string, string>.Create;
+    FStringTables.Add(ALocale, Result);
+  end;
+end;
+
+function TDeepSpecLocalizationService.CurrentLocale: string;
+begin
+  Result := FCurrentLocale;
+end;
+
+procedure TDeepSpecLocalizationService.SetLocale(const ALocale: string);
+begin
+  if ALocale <> '' then
+    FCurrentLocale := ALocale;
+end;
+
+function TDeepSpecLocalizationService.GetText(const AKey,
+  ADefault: string): string;
+var
+  LTable: TDictionary<string, string>;
+begin
+  if FStringTables.TryGetValue(FCurrentLocale, LTable) then
+  begin
+    if LTable.TryGetValue(AKey, Result) then
+      Exit;
+  end;
+  // Fallback to en-US
+  if (FCurrentLocale <> 'en-US') and FStringTables.TryGetValue('en-US', LTable) then
+  begin
+    if LTable.TryGetValue(AKey, Result) then
+      Exit;
+  end;
+  if ADefault <> '' then
+    Result := ADefault
+  else
+    Result := AKey;
+end;
+
+procedure TDeepSpecLocalizationService.RegisterText(const ALocale, AKey,
+  AValue: string);
+begin
+  GetTable(ALocale).AddOrSetValue(AKey, AValue);
+end;
+
+function TDeepSpecLocalizationService.SupportedLocales: TArray<string>;
+var
+  LList: TList<string>;
+  LKey: string;
+begin
+  LList := TList<string>.Create;
+  try
+    for LKey in FStringTables.Keys do
+      LList.Add(LKey);
+    Result := LList.ToArray;
+  finally
+    LList.Free;
+  end;
+end;
+
+procedure RegisterDeepSpecTexts(const ALocSvc: IShellLocalizationService;
   const ALocale: string);
 begin
   if SameText(ALocale, 'zh-CN') then
@@ -64,11 +179,11 @@ begin
     ALocSvc.RegisterText(ALocale, 'deepspec.cmd.renderdata', #$6E32#$67D3#$6570#$636E#$6811);
     ALocSvc.RegisterText(ALocale, 'deepspec.cmd.llmsetup', #$8BBE#$7F6E' LLM (ModelScope)');
     ALocSvc.RegisterText(ALocale, 'deepspec.llm.title', 'LLM '#$8BBE#$7F6E);
-    ALocSvc.RegisterText(ALocale, 'deepspec.llm.apikey', #$8F93#$5165' ModelScope API '#$5BC6#$94A5' ('#$5C06#$5B89#$5168#$5B58#$50A8'):');
+    ALocSvc.RegisterText(ALocale, 'deepspec.llm.apikey', #$8F93#$5165' ModelScope API '#$5BC6#$94A5':');
     ALocSvc.RegisterText(ALocale, 'deepspec.llm.model', #$6A21#$578B#$540D#$79F0' ('#$9ED8#$8BA4': Qwen/Qwen2.5-72B-Instruct):');
-    ALocSvc.RegisterText(ALocale, 'deepspec.llm.notinit', 'DeepBase LLM '#$672A#$521D#$59CB#$5316#$3002#$68C0#$67E5' root.txt '#$4E0E' DB1.');
+    ALocSvc.RegisterText(ALocale, 'deepspec.llm.notinit', 'LLM '#$672A#$914D#$7F6E#$3002#$8BF7#$5148#$8FDB#$884C#$8BBE#$7F6E#$3002);
     ALocSvc.RegisterText(ALocale, 'deepspec.llm.configured', 'LLM '#$914D#$7F6E#$6210#$529F#$3002#$4F7F#$7528' Generate B '#$8C03#$7528#$5B83#$3002);
-    ALocSvc.RegisterText(ALocale, 'deepspec.llm.savefail', #$4FDD#$5B58' LLM '#$914D#$7F6E#$5931#$8D25'):');
+    ALocSvc.RegisterText(ALocale, 'deepspec.llm.savefail', #$4FDD#$5B58' LLM '#$914D#$7F6E#$5931#$8D25': ');
     ALocSvc.RegisterText(ALocale, 'deepspec.status.ready', 'DeepSpec '#$5C31#$7EEA#$3002#$6253#$5F00#$9879#$76EE#$6587#$4EF6#$5939#$5F00#$59CB#$3002);
   end
   else if SameText(ALocale, 'zh-TW') then
@@ -89,55 +204,26 @@ begin
     ALocSvc.RegisterText(ALocale, 'deepspec.cmd.renderdata', #$8F89#$71D9#$8CC7#$6599#$6A39);
     ALocSvc.RegisterText(ALocale, 'deepspec.cmd.llmsetup', #$8A2D#$5B9A' LLM (ModelScope)');
     ALocSvc.RegisterText(ALocale, 'deepspec.llm.title', 'LLM '#$8A2D#$5B9A);
-    ALocSvc.RegisterText(ALocale, 'deepspec.llm.apikey', #$8F38#$5165' ModelScope API '#$5BC6#$9470' ('#$5C07#$5B89#$5168#$5132#$5B58'):');
+    ALocSvc.RegisterText(ALocale, 'deepspec.llm.apikey', #$8F38#$5165' ModelScope API '#$5BC6#$9470':');
     ALocSvc.RegisterText(ALocale, 'deepspec.llm.model', #$6A21#$578B#$540D#$7A31' ('#$9ED8#$8A8D': Qwen/Qwen2.5-72B-Instruct):');
-    ALocSvc.RegisterText(ALocale, 'deepspec.llm.notinit', 'DeepBase LLM '#$672A#$521D#$59CB#$5316#$3002#$6AA2#$67E5' root.txt '#$8207' DB1.');
+    ALocSvc.RegisterText(ALocale, 'deepspec.llm.notinit', 'LLM '#$672A#$8A2D#$5B9A#$3002#$8ACB#$5148#$9032#$884C#$8A2D#$5B9A#$3002);
     ALocSvc.RegisterText(ALocale, 'deepspec.llm.configured', 'LLM '#$914D#$7F6E#$6210#$529F#$3002#$4F7F#$7528' Generate B '#$547C#$53EB#$5B83#$3002);
-    ALocSvc.RegisterText(ALocale, 'deepspec.llm.savefail', #$5132#$5B58' LLM '#$914D#$7F6E#$5931#$6557'):');
+    ALocSvc.RegisterText(ALocale, 'deepspec.llm.savefail', #$4FDD#$5B58' LLM '#$914D#$7F6E#$5931#$8D25': ');
     ALocSvc.RegisterText(ALocale, 'deepspec.status.ready', 'DeepSpec '#$5C31#$7E96#$3002#$958B#$555F#$5C08#$6848#$8CC7#$6599#$5935#$958B#$59CB#$3002);
   end;
 end;
 
-function DeepSpecDetectLocale: string;
-var
-  LLocale: string;
-begin
-  LLocale := DetectSystemLocale;
-  var LLower := LLocale.ToLower;
-  if LLower.StartsWith('zh-hans') or LLower.StartsWith('zh-cn')
-     or LLower.StartsWith('zh-sg') or (LLower = 'zh') then
-    Exit('zh-CN');
-  if LLower.StartsWith('zh-hant') or LLower.StartsWith('zh-tw')
-     or LLower.StartsWith('zh-hk') or LLower.StartsWith('zh-mo') then
-    Exit('zh-TW');
-  Result := 'en-US';
-end;
-
-procedure DeepSpecApplyLocale(ALocSvc: TShellDefaultLocalizationService);
+procedure DeepSpecApplyLocale(const ALocSvc: IShellLocalizationService);
 var
   LLocale: string;
 begin
   if ALocSvc = nil then Exit;
 
-  // Ship both Chinese tables so a later SetLocale('zh-TW') works too.
   RegisterDeepSpecTexts(ALocSvc, 'zh-CN');
   RegisterDeepSpecTexts(ALocSvc, 'zh-TW');
-  // DeepShell's own table is otherwise never registered anywhere.
-  RegisterDefaultShellTexts(ALocSvc, 'zh-CN');
-  RegisterDefaultShellTexts(ALocSvc, 'zh-TW');
 
-  // Auto-switch to the Windows UI language (requirement: detect at startup,
-  // then switch). SetLocale is a no-op when already on that locale.
   LLocale := DeepSpecDetectLocale;
   ALocSvc.SetLocale(LLocale);
-
-  // Mirror into DeepBase so its DB-backed i18n follows the same language.
-  try
-    if DeepBase.Manager.DeepBase <> nil then
-      DeepBase.Manager.DeepBase.CurrentLanguage := LLocale;
-  except
-    // DeepBase may be degraded (InitializeEx failure) - non-fatal here.
-  end;
 end;
 
 end.

@@ -1,7 +1,6 @@
-﻿
 { ============================================================================
   DeepSpec.Providers.MainView
-
+  ---------------------------------------------------------------------------
   Main view provider - hosts a TEdgeBrowser (WebView2) for HTML rendering.
   Falls back to a label if WebView2 runtime is not available.
 
@@ -28,8 +27,8 @@ uses
   Vcl.Controls,
   Vcl.StdCtrls,
   Vcl.Edge,
-  DeepBase.VCL.DeepShell.Intf,
-  DeepBase.VCL.DeepShell.Types,
+  DeepSpec.UI.Intf,
+  DeepSpec.UI.Types,
   DeepSpec.Services.Project;
 
 type

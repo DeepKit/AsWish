@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   DeepSpec.Providers.Inspector
 
   Inspector provider - shows properties of the selected node in the
@@ -11,8 +11,8 @@ interface
 
 uses
   System.SysUtils,
-  DeepBase.VCL.DeepShell.Intf,
-  DeepBase.VCL.DeepShell.Types,
+  DeepSpec.UI.Intf,
+  DeepSpec.UI.Types,
   DeepSpec.Models;
 
 type
