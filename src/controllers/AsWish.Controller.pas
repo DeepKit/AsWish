@@ -96,6 +96,19 @@ type
     ///  No-op if no project open.</summary>
     procedure ApplyBundleDecisions(const AAction, ABundleId: string);
     procedure PromotePendingDecisions;
+
+    // Natural Language -> Change Set -> Decision Commands (WO-20260830-0027D)
+    function SubmitUserIntent(const ANodeId, AIntentText: string): string; overload;
+    function SubmitUserIntent(const ANodeId: string; ATree: TTreeType;
+      const AIntentText: string): string; overload;
+    function ReviewChangeSet(const AChangeSetId: string = ''): string;
+    function AcceptChangeSet(const AChangeSetId: string;
+      const ARationale: string = ''): Boolean;
+    function RejectChangeSet(const AChangeSetId: string;
+      const ARationale: string = ''): Boolean;
+    function ClarifyChangeSet(const AChangeSetId: string;
+      const AClarificationText: string): Boolean;
+
     function IsProjectOpen: Boolean;
     property ProjectService: TAsWishProjectService read FProjectService;
     property ScanService: TAsWishScanService read FScanService;
@@ -1063,6 +1076,223 @@ begin
       FStatus.LogError('AsWish.Scan', 'Scan failed: ' + E.Message, E.ClassName);
       FStatus.TaskFinish('scan', 'Scan failed');
     end;
+  end;
+end;
+
+function TAsWishController.SubmitUserIntent(const ANodeId, AIntentText: string): string;
+begin
+  Result := SubmitUserIntent(ANodeId, ttFunction, AIntentText);
+end;
+
+function TAsWishController.SubmitUserIntent(const ANodeId: string;
+  ATree: TTreeType; const AIntentText: string): string;
+var
+  LIngest: TAsWishCandidateIngest;
+  LIntent: TCandidateIntent;
+  LChangeSet: TChangeSet;
+  LBundles: TList<TSemanticBundle>;
+  LTargetNode: TSpecNode;
+  LTreeNodes: TList<TSpecNode>;
+  LAffected: TArray<TTreeType>;
+  LItem: TChangeItem;
+  LChangePath, LPromptPath: string;
+  LCSId: string;
+begin
+  Result := '';
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LIntent := TCandidateIntent.CreateNew(ANodeId, ATree, AIntentText, 'human');
+    LIngest.SaveCandidateIntent(FProjectService.ProjectPath, LIntent);
+
+    // Read bundles for affected projections
+    LBundles := FSpecStore.ReadBundlesFile('bundles.yaml');
+    try
+      case ATree of
+        ttFunction: LTreeNodes := FTreeBuilder.FunctionNodes;
+        ttModule:   LTreeNodes := FTreeBuilder.ModuleNodes;
+        ttView:     LTreeNodes := FTreeBuilder.ViewNodes;
+        ttData:     LTreeNodes := FTreeBuilder.DataNodes;
+      else
+        LTreeNodes := nil;
+      end;
+
+      LTargetNode := Default(TSpecNode);
+      if LTreeNodes <> nil then
+        for var LN in LTreeNodes do
+          if LN.Id = ANodeId then
+          begin
+            LTargetNode := LN;
+            Break;
+          end;
+
+      LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
+
+      LCSId := 'cs-' + ANodeId + '-01';
+      LChangeSet := TChangeSet.CreateNew(LCSId, ANodeId, ATree, AIntentText, 'human');
+      LChangeSet.AffectedProjections := LAffected;
+
+      LItem := TChangeItem.CreateItem(ANodeId, ATree, 'summary', LTargetNode.Summary, AIntentText, cstExplicit, 'Interpreted from human user intent');
+      LChangeSet.Items := TArray<TChangeItem>.Create(LItem);
+
+      LChangePath := LIngest.SaveChangeSet(FProjectService.ProjectPath, LChangeSet);
+      LPromptPath := FPrompts.WriteChangeInterpretPrompt(LIntent, LTargetNode, LBundles);
+
+      Result := LCSId;
+      FStatus.Info('AsWish.ChangeSet', Format('Created ChangeSet %s for %s; Prompt saved at %s',
+        [LCSId, ANodeId, LPromptPath]));
+    finally
+      LBundles.Free;
+    end;
+  finally
+    LIngest.Free;
+  end;
+end;
+
+function TAsWishController.ReviewChangeSet(const AChangeSetId: string): string;
+var
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+begin
+  Result := '';
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LCS := LIngest.LoadChangeSet(FProjectService.ProjectPath, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      Result := 'No change set found.';
+      Exit;
+    end;
+    Result := LIngest.FormatChangeSetReviewSummary(LCS, FTreeBuilder.FunctionNodes);
+  finally
+    LIngest.Free;
+  end;
+end;
+
+function TAsWishController.AcceptChangeSet(const AChangeSetId, ARationale: string): Boolean;
+var
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LDecId: string;
+  LDec: TSpecDecision;
+  LStats: TMergeStats;
+begin
+  Result := False;
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LCS := LIngest.LoadChangeSet(FProjectService.ProjectPath, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      FStatus.LogError('AsWish.ChangeSet', 'ChangeSet not found: ' + AChangeSetId, '');
+      Exit;
+    end;
+
+    // Record formal decision
+    LDecId := FDecisions.RecordChangeSetDecision(LCS, rsAccepted, ARationale);
+    LDec := FDecisions.FindById(LDecId);
+
+    // Apply to live memory trees
+    LStats := LIngest.ApplyChangeSet(LCS, LDec,
+      FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+      FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes);
+
+    // Write updated trees back to disk (Canonical Spec)
+    FSpecStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, FTreeBuilder.FunctionNodes);
+    FSpecStore.WriteTreeFile('trees/module-tree.yaml', ttModule, FTreeBuilder.ModuleNodes);
+    FSpecStore.WriteTreeFile('trees/view-tree.yaml', ttView, FTreeBuilder.ViewNodes);
+    FSpecStore.WriteTreeFile('trees/data-tree.yaml', ttData, FTreeBuilder.DataNodes);
+
+    // Re-render
+    RenderAll;
+
+    FStatus.Info('AsWish.ChangeSet', Format('Accepted %s -> Decision %s recorded; %d nodes updated in Canonical Spec',
+      [LCS.Id, LDecId, LStats.Merged]));
+    Result := True;
+  finally
+    LIngest.Free;
+  end;
+end;
+
+function TAsWishController.RejectChangeSet(const AChangeSetId, ARationale: string): Boolean;
+var
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LDecId: string;
+begin
+  Result := False;
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LCS := LIngest.LoadChangeSet(FProjectService.ProjectPath, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      FStatus.LogError('AsWish.ChangeSet', 'ChangeSet not found: ' + AChangeSetId, '');
+      Exit;
+    end;
+
+    // Record formal decision with status rejected (Canonical Spec trees remain untouched)
+    LDecId := FDecisions.RecordChangeSetDecision(LCS, rsRejected, ARationale);
+
+    FStatus.Info('AsWish.ChangeSet', Format('Rejected %s -> Decision %s recorded (Canonical Spec untouched)',
+      [LCS.Id, LDecId]));
+    Result := True;
+  finally
+    LIngest.Free;
+  end;
+end;
+
+function TAsWishController.ClarifyChangeSet(const AChangeSetId, AClarificationText: string): Boolean;
+var
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LDecId: string;
+begin
+  Result := False;
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LCS := LIngest.LoadChangeSet(FProjectService.ProjectPath, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      FStatus.LogError('AsWish.ChangeSet', 'ChangeSet not found: ' + AChangeSetId, '');
+      Exit;
+    end;
+
+    // Record formal decision with status proposed/clarify (Canonical Spec trees remain untouched)
+    LDecId := FDecisions.RecordChangeSetDecision(LCS, rsDeferred, AClarificationText);
+
+    FStatus.Info('AsWish.ChangeSet', Format('Clarification requested for %s -> Decision %s recorded',
+      [LCS.Id, LDecId]));
+    Result := True;
+  finally
+    LIngest.Free;
   end;
 end;
 

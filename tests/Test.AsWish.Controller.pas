@@ -123,6 +123,9 @@ type
     [Test] procedure Test_ApplyBundleDecisions_Accept;
     [Test] procedure Test_ApplyBundleDecisions_Reject;
     [Test] procedure Test_Restart_KeepsDecisions;
+    [Test] procedure Test_ChangeSet_EndToEnd_Accept;
+    [Test] procedure Test_ChangeSet_EndToEnd_Reject;
+    [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
   end;
 
 implementation
@@ -617,6 +620,99 @@ begin
   Assert.AreEqual<Integer>(1, Length(LDec.TargetNodes),
     'target nodes must round-trip (bugfix #18)');
   Assert.AreEqual<string>(LFuncId, LDec.TargetNodes[0]);
+end;
+
+procedure TTestAsWishController.Test_ChangeSet_EndToEnd_Accept;
+var
+  LFuncId, LCSId, LReview: string;
+  LOK: Boolean;
+  LNode: TSpecNode;
+  LDiskNodes: TList<TSpecNode>;
+begin
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'User wants dark mode theme option');
+  Assert.IsNotEmpty(LCSId, 'SubmitUserIntent must return ChangeSet ID');
+
+  LReview := FController.ReviewChangeSet(LCSId);
+  Assert.IsTrue(LReview.Contains('User wants dark mode theme option'), 'Review must show raw user intent');
+  Assert.IsTrue(LReview.Contains(LFuncId), 'Review must show target node ID');
+
+  LOK := FController.AcceptChangeSet(LCSId, 'Approved dark mode theme');
+  Assert.IsTrue(LOK, 'AcceptChangeSet must succeed');
+
+  // Verify memory tree
+  LNode := FBuilder.FindNodeById(LFuncId);
+  Assert.AreEqual('User wants dark mode theme option', LNode.Summary, 'Summary must be updated in memory');
+  Assert.AreEqual<Integer>(Ord(rsAccepted), Ord(LNode.ReviewStatus), 'ReviewStatus must be accepted');
+  Assert.AreEqual<Integer>(Ord(gsConfirmed), Ord(LNode.GenStatus), 'GenStatus must be confirmed');
+  Assert.IsTrue(Length(LNode.DecisionRefs) > 0, 'DecisionRefs must be recorded');
+
+  // Verify disk tree (Canonical Spec)
+  LDiskNodes := FStore.ReadTreeFile('trees/function-tree.yaml');
+  try
+    Assert.AreEqual('User wants dark mode theme option', LDiskNodes[0].Summary,
+      'Canonical Spec on disk must be updated after Accept');
+  finally
+    LDiskNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishController.Test_ChangeSet_EndToEnd_Reject;
+var
+  LFuncId, LCSId, LOldSummary: string;
+  LOK: Boolean;
+  LNode: TSpecNode;
+  LDiskNodes: TList<TSpecNode>;
+begin
+  LFuncId := RootNodeId;
+  LOldSummary := FBuilder.FindNodeById(LFuncId).Summary;
+
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Unsafe dangerous change');
+  Assert.IsNotEmpty(LCSId);
+
+  LOK := FController.RejectChangeSet(LCSId, 'Unsafe modification rejected by human');
+  Assert.IsTrue(LOK, 'RejectChangeSet must succeed');
+
+  // Verify memory tree is untouched
+  LNode := FBuilder.FindNodeById(LFuncId);
+  Assert.AreEqual(LOldSummary, LNode.Summary, 'Memory tree must NOT be mutated on Reject');
+
+  // Verify disk tree (Canonical Spec) is untouched
+  LDiskNodes := FStore.ReadTreeFile('trees/function-tree.yaml');
+  try
+    Assert.AreEqual(LOldSummary, LDiskNodes[0].Summary, 'Canonical Spec on disk MUST NOT be modified on Reject');
+  finally
+    LDiskNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishController.Test_ChangeSet_EndToEnd_Clarify;
+var
+  LFuncId, LCSId, LOldSummary: string;
+  LOK: Boolean;
+  LNode: TSpecNode;
+  LDiskNodes: TList<TSpecNode>;
+begin
+  LFuncId := RootNodeId;
+  LOldSummary := FBuilder.FindNodeById(LFuncId).Summary;
+
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Ambiguous intent');
+  Assert.IsNotEmpty(LCSId);
+
+  LOK := FController.ClarifyChangeSet(LCSId, 'Please specify which component should be changed');
+  Assert.IsTrue(LOK, 'ClarifyChangeSet must succeed');
+
+  // Verify memory tree is untouched
+  LNode := FBuilder.FindNodeById(LFuncId);
+  Assert.AreEqual(LOldSummary, LNode.Summary, 'Memory tree must NOT be mutated on Clarify');
+
+  // Verify disk tree is untouched
+  LDiskNodes := FStore.ReadTreeFile('trees/function-tree.yaml');
+  try
+    Assert.AreEqual(LOldSummary, LDiskNodes[0].Summary, 'Canonical Spec on disk MUST NOT be modified on Clarify');
+  finally
+    LDiskNodes.Free;
+  end;
 end;
 
 initialization

@@ -146,6 +146,26 @@ lock_status: unlocked | locked
 
 Accept levels must be decided before implementation details are hardened because they affect schema, UI, audit logs, and downstream release gates.
 
+### 8.1 Intent → Change Set → Decision Traceability (WO-20260830-0027A~D)
+
+AsWish enforces a strict separation between human intent, AI interpretation, and authoritative specification changes:
+
+```text
+Human Intent (I said: TCandidateIntent -> .AsWish/llm/candidate-intent.yaml)
+    ↓
+AI Interpretation (AI understood: TChangeSet -> .AsWish/llm/change-set.yaml)
+    ↓
+Human Review (Accept / Reject / Clarify)
+    ↓
+Decision Authority (We decided: TSpecDecision -> .AsWish/decisions/requirement-decisions.yaml)
+    ↓
+Canonical Spec (.AsWish/trees/function-tree.yaml, etc.)
+```
+
+1. **`TCandidateIntent`**: Captures raw human utterance without mutating canonical spec nodes.
+2. **`TChangeSet`**: Structured interpretation of proposed changes containing `before`, `after`, `reason`, and `source_type` (`explicit` / `inferred` / `unknown`), plus affected projections calculated via Semantic Bundles.
+3. **`TSpecDecision`**: The **sole** authority that mutates Canonical Spec. Records `change_set_id` and `change_item_index` for end-to-end auditability. Reject and Clarify decisions leave Canonical Spec untouched.
+
 ## 9. Invariants
 
 AsWish implementations should enforce the protocol invariants in `protocol/invariants.md` and state transitions in `protocol/state-machine.md`.

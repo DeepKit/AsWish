@@ -160,6 +160,94 @@ begin
       end;
     end;
   ACommands.RegisterCommand(LCmd);
+
+  // Natural Language Intent -> Change Set -> Decision Commands (WO-20260830-0027D)
+  LCmd := TShellCommand.Make('aswish.changeset.submit',
+    LForm.ShellText('aswish.cmd.submitintent', 'Submit Natural Language Intent...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := rlLow;
+  LCmd.Handler := procedure
+    var
+      LNodeId, LIntent, LCSId: string;
+    begin
+      LNodeId := '';
+      if not InputQuery('Natural Language Revision', 'Target Node ID (e.g. func-inventory):', LNodeId) then Exit;
+      if LNodeId.Trim = '' then Exit;
+      LIntent := '';
+      if not InputQuery('Natural Language Revision', 'What is your intended change?', LIntent) then Exit;
+      if LIntent.Trim = '' then Exit;
+
+      LCSId := LForm.Controller.SubmitUserIntent(LNodeId.Trim, LIntent.Trim);
+      if LCSId <> '' then
+        ShowMessage('Created ChangeSet ' + LCSId + #13#10 + 'Use "Review Change Set" to inspect interpreted changes.');
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.changeset.review',
+    LForm.ShellText('aswish.cmd.reviewchangeset', 'Review Change Set...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := rlLow;
+  LCmd.Handler := procedure
+    var
+      LCSId, LReview: string;
+    begin
+      LCSId := '';
+      InputQuery('Review Change Set', 'ChangeSet ID (leave empty for latest):', LCSId);
+      LReview := LForm.Controller.ReviewChangeSet(LCSId.Trim);
+      ShowMessage(LReview);
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.changeset.accept',
+    LForm.ShellText('aswish.cmd.acceptchangeset', 'Accept Change Set...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := rlMedium;
+  LCmd.Handler := procedure
+    var
+      LCSId, LRationale: string;
+    begin
+      LCSId := '';
+      InputQuery('Accept Change Set', 'ChangeSet ID (leave empty for latest):', LCSId);
+      LRationale := '';
+      InputQuery('Accept Change Set', 'Rationale / Reason:', LRationale);
+      if LForm.Controller.AcceptChangeSet(LCSId.Trim, LRationale.Trim) then
+        ShowMessage('ChangeSet ' + LCSId + ' ACCEPTED and applied to Canonical Spec.');
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.changeset.reject',
+    LForm.ShellText('aswish.cmd.rejectchangeset', 'Reject Change Set...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := rlLow;
+  LCmd.Handler := procedure
+    var
+      LCSId, LRationale: string;
+    begin
+      LCSId := '';
+      InputQuery('Reject Change Set', 'ChangeSet ID (leave empty for latest):', LCSId);
+      LRationale := '';
+      InputQuery('Reject Change Set', 'Rejection Reason:', LRationale);
+      if LForm.Controller.RejectChangeSet(LCSId.Trim, LRationale.Trim) then
+        ShowMessage('ChangeSet ' + LCSId + ' REJECTED. Canonical Spec remains untouched.');
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.changeset.clarify',
+    LForm.ShellText('aswish.cmd.clarifychangeset', 'Clarify Change Set...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := rlLow;
+  LCmd.Handler := procedure
+    var
+      LCSId, LClarification: string;
+    begin
+      LCSId := '';
+      InputQuery('Clarify Change Set', 'ChangeSet ID (leave empty for latest):', LCSId);
+      LClarification := '';
+      InputQuery('Clarify Change Set', 'Clarification details:', LClarification);
+      if LForm.Controller.ClarifyChangeSet(LCSId.Trim, LClarification.Trim) then
+        ShowMessage('Clarification recorded for ChangeSet ' + LCSId + '. Canonical Spec remains untouched.');
+    end;
+  ACommands.RegisterCommand(LCmd);
 end;
 
 end.
