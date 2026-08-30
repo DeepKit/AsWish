@@ -658,6 +658,181 @@ begin
   end;
 end;
 
+procedure RunChangeSetReview(const ADir, AChangeSetId: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LFuncNodes: TList<TSpecNode>;
+  LSummary: string;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[changeset] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  try
+    LStore.Initialize(ADir);
+    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      Writeln('[changeset] error: change set not found: ' + AChangeSetId);
+      Halt(1);
+    end;
+    LFuncNodes := LStore.ReadTreeFile('trees/function-tree.yaml');
+    try
+      LSummary := LIngest.FormatChangeSetReviewSummary(LCS, LFuncNodes);
+      Writeln(LSummary);
+    finally
+      LFuncNodes.Free;
+    end;
+  finally
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
+procedure RunChangeSetAccept(const ADir, AChangeSetId, ARationale: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LDecisions: TAsWishDecisionsService;
+  LValidator: TYamlValidator;
+  LCS: TChangeSet;
+  LDecId: string;
+  LDec: TSpecDecision;
+  LFunc, LMod, LView, LData: TList<TSpecNode>;
+  LStats: TMergeStats;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[changeset] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  LDecisions := TAsWishDecisionsService.Create;
+  LValidator := TYamlValidator.Create;
+  try
+    LStore.Initialize(ADir);
+    LDecisions.Initialize(TPath.Combine(ADir, '.AsWish'));
+    LDecisions.Load;
+
+    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      Writeln('[changeset] error: change set not found: ' + AChangeSetId);
+      Halt(1);
+    end;
+
+    // Record formal decision
+    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsAccepted, ARationale);
+    LDec := LDecisions.FindById(LDecId);
+
+    // Load canonical spec trees
+    LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
+    LMod := LStore.ReadTreeFile('trees/module-tree.yaml');
+    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
+    LData := LStore.ReadTreeFile('trees/data-tree.yaml');
+    try
+      // Apply change set to trees
+      LStats := LIngest.ApplyChangeSet(LCS, LDec, LFunc, LMod, LView, LData);
+
+      // Write updated trees back to disk (Canonical Spec)
+      LStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LFunc);
+      LStore.WriteTreeFile('trees/module-tree.yaml', ttModule, LMod);
+      LStore.WriteTreeFile('trees/view-tree.yaml', ttView, LView);
+      LStore.WriteTreeFile('trees/data-tree.yaml', ttData, LData);
+
+      // Run consistency validation on updated trees
+      var LFuncPath := TPath.Combine(ADir, '.AsWish\trees\function-tree.yaml');
+      if TFile.Exists(LFuncPath) then
+      begin
+        var LReport := LValidator.ValidateTreeFile(TFile.ReadAllText(LFuncPath, TEncoding.UTF8), vmLenient);
+        LReport.Free;
+      end;
+
+      if GJsonOutput then
+      begin
+        WriteJsonHeader('changeset_accept');
+        WriteJsonKV('status', 'ok');
+        WriteJsonKV('decision_id', LDecId);
+        WriteJsonKV('change_set_id', LCS.Id);
+        WriteJsonKVInt('updated_nodes', LStats.Merged);
+        WriteJsonFooter;
+      end
+      else
+      begin
+        Writeln(Format('[changeset] ACCEPTED %s -> recorded Decision %s', [LCS.Id, LDecId]));
+        Writeln(Format('  applied %d changes to Canonical Spec and validated', [LStats.Merged]));
+      end;
+    finally
+      LData.Free;
+      LView.Free;
+      LMod.Free;
+      LFunc.Free;
+    end;
+  finally
+    LValidator.Free;
+    LDecisions.Free;
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
+procedure RunChangeSetReject(const ADir, AChangeSetId, ARationale: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LDecisions: TAsWishDecisionsService;
+  LCS: TChangeSet;
+  LDecId: string;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[changeset] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  LDecisions := TAsWishDecisionsService.Create;
+  try
+    LStore.Initialize(ADir);
+    LDecisions.Initialize(TPath.Combine(ADir, '.AsWish'));
+    LDecisions.Load;
+
+    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      Writeln('[changeset] error: change set not found: ' + AChangeSetId);
+      Halt(1);
+    end;
+
+    // Record reject decision (Canonical Spec trees remain untouched)
+    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsRejected, ARationale);
+
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('changeset_reject');
+      WriteJsonKV('status', 'ok');
+      WriteJsonKV('decision_id', LDecId);
+      WriteJsonKV('change_set_id', LCS.Id);
+      WriteJsonKV('canonical_spec', 'untouched');
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('[changeset] REJECTED %s -> recorded Decision %s (Canonical Spec untouched)', [LCS.Id, LDecId]));
+    end;
+  finally
+    LDecisions.Free;
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
 procedure RunScan(const ADir: string);
 var
   LProject: TAsWishProjectService;
@@ -1014,12 +1189,46 @@ begin
   end
   else if LCommand = 'changeset' then
   begin
-    if ParamCount < 5 then
+    var LSubAction := LowerCase(ParamStr(2));
+    if LSubAction = 'review' then
     begin
-      Writeln('AsWish.CLI changeset <project-dir> <node-id> <tree> <user_intent>');
-      Halt(2);
+      if ParamCount < 3 then
+      begin
+        Writeln('AsWish.CLI changeset review <project-dir> [changeset-id]');
+        Halt(2);
+      end;
+      RunChangeSetReview(ParamStr(3), ParamStr(4));
+    end
+    else if LSubAction = 'accept' then
+    begin
+      if ParamCount < 3 then
+      begin
+        Writeln('AsWish.CLI changeset accept <project-dir> [changeset-id] [rationale]');
+        Halt(2);
+      end;
+      RunChangeSetAccept(ParamStr(3), ParamStr(4), ParamStr(5));
+    end
+    else if LSubAction = 'reject' then
+    begin
+      if ParamCount < 3 then
+      begin
+        Writeln('AsWish.CLI changeset reject <project-dir> [changeset-id] [rationale]');
+        Halt(2);
+      end;
+      RunChangeSetReject(ParamStr(3), ParamStr(4), ParamStr(5));
+    end
+    else
+    begin
+      if ParamCount < 5 then
+      begin
+        Writeln('AsWish.CLI changeset <project-dir> <node-id> <tree> <user_intent>');
+        Writeln('  or: AsWish.CLI changeset review <project-dir> [changeset-id]');
+        Writeln('  or: AsWish.CLI changeset accept <project-dir> [changeset-id] [rationale]');
+        Writeln('  or: AsWish.CLI changeset reject <project-dir> [changeset-id] [rationale]');
+        Halt(2);
+      end;
+      RunChangeSet(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
     end;
-    RunChangeSet(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
   end
   else
   begin

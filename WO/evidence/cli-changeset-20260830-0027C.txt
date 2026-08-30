@@ -1,0 +1,140 @@
+[changeset] generated change set cs-func-inventory-01 for func-inventory (function)
+  saved change set: _temp_seed_evidence\.AsWish\llm\change-set-cs-func-inventory-01.yaml
+  saved prompt:     _temp_seed_evidence\.AsWish\prompts\change-interpret-func-inventory.md
+================================================================
+ AsWish Change Set Review: cs-func-inventory-01
+================================================================
+Target Node:     Inventory Management (func-inventory)
+Projection:      function
+Raw User Intent: "\\ REST API for inventory and real-time stock alert\"
+Author:          human
+Affected Projs:  function
+----------------------------------------------------------------
+Proposed Changes:
+  [1] Node: func-inventory (function) | Field: summary | Source: explicit
+      Before: REST API for product inventory CRUD and stock tracking
+      After:  \\ REST API for inventory and real-time stock alert\
+      Reason: Interpreted from human user intent
+================================================================
+
+[changeset] ACCEPTED cs-func-inventory-01 -> recorded Decision dec-0002
+  applied 1 changes to Canonical Spec and validated
+﻿version: "1.0"
+tree: function
+generated_at: "2026-08-30T19:32:05+08:00"
+generator: "aswish-treebuilder"
+
+nodes:
+  - id: "func-inventory"
+    tree: function
+    title: "Inventory Management"
+    kind: capability
+    parent_id: null
+    updated_at: "2026-08-30T19:32:05+08:00"
+    revision: 0
+    summary: "\\\\ REST API for inventory and real-time stock alert\\"
+    status: confirmed
+    gen_status: confirmed
+    review_status: accepted
+    confidence: high
+    source_layer: human_decision
+    source_refs:
+      - ref_id: "ev-readme"
+        relevance: primary
+    decision_refs:
+      - "dec-001"
+      - "dec-0002"
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "func-product-crud"
+      - "func-stock-tracking"
+      - "func-low-stock-alert"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-product-crud"
+    tree: function
+    title: "Product CRUD"
+    kind: feature
+    parent_id: "func-inventory"
+    revision: 0
+    summary: "Create, read, update, delete products"
+    status: candidate
+    gen_status: draft
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-openapi"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria:
+      - "GET /products returns paginated list"
+      - "POST /products creates with SKU validation"
+      - "PUT /products/{id} updates fields"
+      - "DELETE /products/{id} soft-deletes"
+    not_doing: []
+  - id: "func-stock-tracking"
+    tree: function
+    title: "Stock Tracking"
+    kind: feature
+    parent_id: "func-inventory"
+    revision: 0
+    summary: "Track stock levels per warehouse location"
+    status: candidate
+    gen_status: draft
+    review_status: unreviewed
+    confidence: medium
+    source_layer: ai_inferred
+    source_refs:
+      - ref_id: "ev-readme"
+        relevance: supporting
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-low-stock-alert"
+    tree: function
+    title: "Low Stock Alerts"
+    kind: feature
+    parent_id: "func-inventory"
+    revision: 0
+    summary: "Notify when stock falls below threshold"
+    status: candidate
+    gen_status: draft
+    review_status: unreviewed
+    confidence: low
+    source_layer: ai_inferred
+    source_refs: []
+    decision_refs: []
+    issue_refs:
+      - "issue-001"
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+[changeset] generated change set cs-func-inventory-01 for func-inventory (function)
+  saved change set: _temp_seed_evidence\.AsWish\llm\change-set-cs-func-inventory-01.yaml
+  saved prompt:     _temp_seed_evidence\.AsWish\prompts\change-interpret-func-inventory.md
+[changeset] REJECTED cs-func-inventory-01 -> recorded Decision dec-0003 (Canonical Spec untouched)

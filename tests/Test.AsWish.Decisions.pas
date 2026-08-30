@@ -26,6 +26,8 @@ type
     procedure Test_ApplyRejectedDecision_Transitions;
     [Test]
     procedure Test_NoTransitionForProposedDecision;
+    [Test]
+    procedure Test_RecordChangeSetDecision_LinksChangeSetAndItem;
   end;
 
 implementation
@@ -194,6 +196,43 @@ begin
   finally
     LDecisions.Free;
     TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTestAsWishDecisions.Test_RecordChangeSetDecision_LinksChangeSetAndItem;
+var
+  LDir: string;
+  LDecisions: TAsWishDecisionsService;
+  LCS: TChangeSet;
+  LDecId: string;
+  LFound: TSpecDecision;
+begin
+  LDir := NewTempDir;
+  LDecisions := TAsWishDecisionsService.Create;
+  try
+    LDecisions.Initialize(LDir);
+    LDecisions.Load;
+
+    LCS := TChangeSet.CreateNew('cs-orders-99', 'func-orders', ttFunction, 'add tax rate field');
+    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsAccepted, 'human approved tax field', 0);
+
+    // Verify in memory
+    LFound := LDecisions.FindById(LDecId);
+    Assert.AreEqual('cs-orders-99', LFound.ChangeSetId, 'ChangeSetId must be recorded');
+    Assert.AreEqual<Integer>(0, LFound.ChangeItemIndex, 'ChangeItemIndex must be recorded');
+    Assert.AreEqual(dsAccepted, LFound.Status, 'Accept decision must have status dsAccepted');
+    Assert.AreEqual(dtConfirm, LFound.DecisionType, 'Accept decision must have dtConfirm type');
+
+    // Reload from disk and verify roundtrip
+    LDecisions.Load;
+    LFound := LDecisions.FindById(LDecId);
+    Assert.AreEqual('cs-orders-99', LFound.ChangeSetId, 'ChangeSetId must survive disk reload');
+    Assert.AreEqual<Integer>(0, LFound.ChangeItemIndex, 'ChangeItemIndex must survive disk reload');
+    Assert.AreEqual(dsAccepted, LFound.Status);
+  finally
+    LDecisions.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
   end;
 end;
 

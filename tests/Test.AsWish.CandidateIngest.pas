@@ -112,6 +112,16 @@ type
     procedure ChangeSet_DistinguishesExplicitInferredUnknown;
     [Test]
     procedure ChangeSet_DoesNotMutateCanonicalSpec;
+
+    // Change Set Review & Decision Writeback (WO-20260830-0027C)
+    [Test]
+    procedure ChangeSet_ReviewSummary_FormatsSemanticChanges;
+    [Test]
+    procedure ChangeSet_Accept_AppliesChangesToCanonicalSpec;
+    [Test]
+    procedure ChangeSet_Reject_DoesNotMutateCanonicalSpec;
+    [Test]
+    procedure ChangeSet_Clarify_DoesNotMutateCanonicalSpec;
   end;
 
 implementation
@@ -950,6 +960,128 @@ begin
 
     // Formatting and creating ChangeSet must not affect in-memory live tree
     Assert.AreEqual(LOldSummary, LFunc[0].Summary, 'ChangeSet generation alone must not mutate live spec');
+  finally
+    LFunc.Free;
+  end;
+end;
+
+// ---------------------------------------------------------------------------
+// Change Set Review & Decision Writeback (WO-20260830-0027C)
+// ---------------------------------------------------------------------------
+
+procedure TCandidateIngestTests.ChangeSet_ReviewSummary_FormatsSemanticChanges;
+var
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+  LNodes: TList<TSpecNode>;
+  LSummary: string;
+begin
+  LCS := TChangeSet.CreateNew('cs-rev-01', 'func-demo', ttFunction, 'allow users to deactivate account');
+  LCS.AffectedProjections := TArray<TTreeType>.Create(ttFunction, ttView);
+  LItem := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', 'delete account permanently', 'deactivate account temporarily', cstExplicit, 'user requested soft delete');
+  LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+  LNodes := StubFunctionRoot;
+  try
+    LSummary := FCand.FormatChangeSetReviewSummary(LCS, LNodes);
+    Assert.IsTrue(LSummary.Contains('cs-rev-01'), 'review summary must contain ChangeSet ID');
+    Assert.IsTrue(LSummary.Contains('func-demo'), 'review summary must contain target node ID');
+    Assert.IsTrue(LSummary.Contains('delete account permanently'), 'review summary must contain Before value');
+    Assert.IsTrue(LSummary.Contains('deactivate account temporarily'), 'review summary must contain After value');
+    Assert.IsTrue(LSummary.Contains('explicit'), 'review summary must contain Source Type');
+    Assert.IsTrue(LSummary.Contains('user requested soft delete'), 'review summary must contain Reason');
+  finally
+    LNodes.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.ChangeSet_Accept_AppliesChangesToCanonicalSpec;
+var
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+  LDec: TSpecDecision;
+  LFunc: TList<TSpecNode>;
+  LStats: TMergeStats;
+begin
+  LCS := TChangeSet.CreateNew('cs-acc-01', 'func-demo', ttFunction, 'update checkout flow');
+  LItem := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', 'legacy checkout', 'fast 1-click checkout', cstExplicit, 'intent');
+  LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+  LDec := Default(TSpecDecision);
+  LDec.Id := 'dec-0099';
+  LDec.DecisionType := dtConfirm;
+  LDec.Status := dsAccepted;
+  LDec.TargetNodes := TArray<string>.Create('func-demo');
+
+  LFunc := StubFunctionRoot;
+  try
+    LStats := FCand.ApplyChangeSet(LCS, LDec, LFunc, nil, nil, nil);
+    Assert.AreEqual<Integer>(1, LStats.Merged, 'one node must be updated');
+    Assert.AreEqual('fast 1-click checkout', LFunc[0].Summary, 'node summary must be updated to After value');
+    Assert.AreEqual(rsAccepted, LFunc[0].ReviewStatus, 'review status must become accepted');
+    Assert.AreEqual(gsConfirmed, LFunc[0].GenStatus, 'gen status must become confirmed');
+    Assert.AreEqual<Integer>(1, Length(LFunc[0].DecisionRefs), 'decision reference must be recorded');
+    Assert.AreEqual('dec-0099', LFunc[0].DecisionRefs[0]);
+  finally
+    LFunc.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.ChangeSet_Reject_DoesNotMutateCanonicalSpec;
+var
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+  LDec: TSpecDecision;
+  LFunc: TList<TSpecNode>;
+  LStats: TMergeStats;
+  LOldSummary: string;
+begin
+  LCS := TChangeSet.CreateNew('cs-rej-01', 'func-demo', ttFunction, 'unwanted change');
+  LItem := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', 'original summary', 'REJECTED VALUE', cstExplicit, 'intent');
+  LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+  LDec := Default(TSpecDecision);
+  LDec.Id := 'dec-0100';
+  LDec.DecisionType := dtReject;
+  LDec.Status := dsRejected;
+  LDec.TargetNodes := TArray<string>.Create('func-demo');
+
+  LFunc := StubFunctionRoot;
+  try
+    LOldSummary := LFunc[0].Summary;
+    LStats := FCand.ApplyChangeSet(LCS, LDec, LFunc, nil, nil, nil);
+    Assert.AreEqual<Integer>(0, LStats.Merged, 'no node should be updated on reject');
+    Assert.AreEqual(LOldSummary, LFunc[0].Summary, 'Canonical spec summary MUST NOT be mutated on Reject');
+  finally
+    LFunc.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.ChangeSet_Clarify_DoesNotMutateCanonicalSpec;
+var
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+  LDec: TSpecDecision;
+  LFunc: TList<TSpecNode>;
+  LStats: TMergeStats;
+  LOldSummary: string;
+begin
+  LCS := TChangeSet.CreateNew('cs-cla-01', 'func-demo', ttFunction, 'unclear intent');
+  LItem := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', 'original summary', 'UNCONFIRMED GUESS', cstUnknown, 'intent');
+  LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+  LDec := Default(TSpecDecision);
+  LDec.Id := 'dec-0101';
+  LDec.DecisionType := dtClarify;
+  LDec.Status := dsProposed;
+  LDec.TargetNodes := TArray<string>.Create('func-demo');
+
+  LFunc := StubFunctionRoot;
+  try
+    LOldSummary := LFunc[0].Summary;
+    LStats := FCand.ApplyChangeSet(LCS, LDec, LFunc, nil, nil, nil);
+    Assert.AreEqual<Integer>(0, LStats.Merged, 'no node should be updated on clarify');
+    Assert.AreEqual(LOldSummary, LFunc[0].Summary, 'Canonical spec summary MUST NOT be mutated on Clarify');
   finally
     LFunc.Free;
   end;

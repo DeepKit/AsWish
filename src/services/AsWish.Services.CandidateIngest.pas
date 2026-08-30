@@ -112,6 +112,18 @@ type
     /// <summary>Compute affected projections for a node across semantic bundles (WO-20260830-0027B).</summary>
     function ComputeAffectedProjections(const ANodeId: string;
       const ABundles: TList<TSemanticBundle>): TArray<TTreeType>;
+
+    /// <summary>
+    /// Apply human-reviewed decision for a Change Set to live Canonical Spec trees (WO-20260830-0027C).
+    /// Mutates trees ONLY when ADecision.Status = dsAccepted (or dtConfirm).
+    /// Reject/Clarify decisions leave Canonical Spec untouched.
+    /// </summary>
+    function ApplyChangeSet(const AChangeSet: TChangeSet; const ADecision: TSpecDecision;
+      AFunc, AMod, AView, AData: TList<TSpecNode>): TMergeStats;
+
+    /// <summary>Format human-readable semantic review summary for a Change Set (WO-20260830-0027C).</summary>
+    function FormatChangeSetReviewSummary(const AChangeSet: TChangeSet;
+      const ANodes: TList<TSpecNode>): string;
   end;
 
 implementation
@@ -832,6 +844,142 @@ begin
     Result := LList.ToArray;
   finally
     LList.Free;
+  end;
+end;
+
+function TAsWishCandidateIngest.ApplyChangeSet(
+  const AChangeSet: TChangeSet; const ADecision: TSpecDecision;
+  AFunc, AMod, AView, AData: TList<TSpecNode>): TMergeStats;
+var
+  LTargetList: TList<TSpecNode>;
+  procedure EnsureDecisionRef(var ANode: TSpecNode);
+  var
+    LFound: Boolean;
+  begin
+    LFound := False;
+    for var LRef in ANode.DecisionRefs do
+      if LRef = ADecision.Id then
+      begin
+        LFound := True;
+        Break;
+      end;
+    if not LFound and (ADecision.Id <> '') then
+    begin
+      SetLength(ANode.DecisionRefs, Length(ANode.DecisionRefs) + 1);
+      ANode.DecisionRefs[High(ANode.DecisionRefs)] := ADecision.Id;
+    end;
+  end;
+begin
+  Result := Default(TMergeStats);
+
+  // If decision is rejected or clarify, Canonical Spec MUST NOT be mutated (AC-03, AC-07)
+  if (ADecision.Status = dsRejected) or (ADecision.DecisionType = dtReject) or
+     (ADecision.DecisionType = dtClarify) then
+  begin
+    Exit;
+  end;
+
+  // Accept decision: apply each change item to the target node
+  for var LItem in AChangeSet.Items do
+  begin
+    case LItem.TargetTree of
+      ttFunction: LTargetList := AFunc;
+      ttModule:   LTargetList := AMod;
+      ttView:     LTargetList := AView;
+      ttData:     LTargetList := AData;
+    else
+      LTargetList := nil;
+    end;
+
+    if LTargetList = nil then Continue;
+
+    var LNodeIdx := -1;
+    for var I := 0 to LTargetList.Count - 1 do
+      if LTargetList[I].Id = LItem.TargetNodeId then
+      begin
+        LNodeIdx := I;
+        Break;
+      end;
+
+    if LNodeIdx >= 0 then
+    begin
+      var LNode := LTargetList[LNodeIdx];
+      var LFieldLower := LowerCase(LItem.Field.Trim);
+
+      if LFieldLower = 'summary' then
+        LNode.Summary := LItem.AfterValue
+      else if LFieldLower = 'title' then
+        LNode.Title := LItem.AfterValue
+      else if LFieldLower = 'kind' then
+        LNode.Kind := LItem.AfterValue
+      else if LFieldLower = 'user_intent' then
+        LNode.UserIntent := LItem.AfterValue;
+
+      // Update review & gen status
+      LNode.ReviewStatus := rsAccepted;
+      LNode.GenStatus := gsConfirmed;
+      LNode.Status := nsConfirmed;
+      LNode.UpdatedAt := Now;
+      EnsureDecisionRef(LNode);
+
+      LTargetList[LNodeIdx] := LNode;
+      Inc(Result.Merged);
+    end;
+  end;
+end;
+
+function TAsWishCandidateIngest.FormatChangeSetReviewSummary(
+  const AChangeSet: TChangeSet; const ANodes: TList<TSpecNode>): string;
+var
+  LSb: TStringBuilder;
+  LTitle: string;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LTitle := AChangeSet.IntentNodeId;
+    if ANodes <> nil then
+      for var LN in ANodes do
+        if LN.Id = AChangeSet.IntentNodeId then
+        begin
+          if LN.Title <> '' then
+            LTitle := LN.Title + ' (' + LN.Id + ')';
+          Break;
+        end;
+
+    LSb.AppendLine('================================================================');
+    LSb.AppendLine(' AsWish Change Set Review: ' + AChangeSet.Id);
+    LSb.AppendLine('================================================================');
+    LSb.AppendLine('Target Node:     ' + LTitle);
+    LSb.AppendLine('Projection:      ' + TSpecEnums.TreeTypeToStr(AChangeSet.IntentTree));
+    LSb.AppendLine('Raw User Intent: "' + AChangeSet.RawUserIntent + '"');
+    LSb.AppendLine('Author:          ' + AChangeSet.Author);
+    if Length(AChangeSet.AffectedProjections) > 0 then
+    begin
+      var LProjStr := '';
+      for var LP in AChangeSet.AffectedProjections do
+        LProjStr := LProjStr + TSpecEnums.TreeTypeToStr(LP) + ' ';
+      LSb.AppendLine('Affected Projs:  ' + LProjStr.Trim);
+    end;
+    LSb.AppendLine('----------------------------------------------------------------');
+    LSb.AppendLine('Proposed Changes:');
+    if Length(AChangeSet.Items) = 0 then
+      LSb.AppendLine('  (No change items)')
+    else
+      for var I := 0 to High(AChangeSet.Items) do
+      begin
+        var LItem := AChangeSet.Items[I];
+        LSb.AppendLine(Format('  [%d] Node: %s (%s) | Field: %s | Source: %s',
+          [I + 1, LItem.TargetNodeId, TSpecEnums.TreeTypeToStr(LItem.TargetTree),
+           LItem.Field, TSpecEnums.ChangeSourceTypeToStr(LItem.SourceType)]));
+        LSb.AppendLine('      Before: ' + IfThen(LItem.BeforeValue <> '', LItem.BeforeValue, '(empty)'));
+        LSb.AppendLine('      After:  ' + IfThen(LItem.AfterValue <> '', LItem.AfterValue, '(empty)'));
+        if LItem.Reason <> '' then
+          LSb.AppendLine('      Reason: ' + LItem.Reason);
+      end;
+    LSb.AppendLine('================================================================');
+    Result := LSb.ToString;
+  finally
+    LSb.Free;
   end;
 end;
 

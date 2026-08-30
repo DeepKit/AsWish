@@ -478,6 +478,10 @@ begin
     else
       WriteScalarKV('superseded_by', 'null');
     WriteStringList('supersedes', ADec.Supersedes);
+    if ADec.ChangeSetId <> '' then
+      WriteQuotedKV('change_set_id', ADec.ChangeSetId);
+    if ADec.ChangeItemIndex >= 0 then
+      WriteScalarKV('change_item_index', IntToStr(ADec.ChangeItemIndex));
   finally
     FIndent := 0;
   end;

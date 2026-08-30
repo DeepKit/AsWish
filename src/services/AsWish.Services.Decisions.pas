@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.Decisions
 
@@ -39,6 +39,14 @@ type
     function GetAccepted: TArray<TSpecDecision>;
     procedure AcceptDecision(const AId: string);
     procedure RejectDecision(const AId: string);
+
+    /// <summary>
+    /// Record a formal Human Decision for an AI-generated Change Set (WO-20260830-0027C).
+    /// Links decision to ChangeSetId and records Accept / Reject / Clarify.
+    /// </summary>
+    function RecordChangeSetDecision(const AChangeSet: TChangeSet;
+      AAction: TReviewStatus; const ARationale: string = '';
+      AItemIndex: Integer = -1): string;
 
     /// <summary>
     /// Read pending-decisions.yaml (produced by the WebView2 JS Bridge),
@@ -156,6 +164,9 @@ begin
         var LDeciderStr := LItem.GetString('decided_by', 'system');
         if LDeciderStr = 'human' then LDec.DecidedBy := dbHuman else LDec.DecidedBy := dbSystem;
 
+        LDec.ChangeSetId := LItem.GetString('change_set_id', '');
+        LDec.ChangeItemIndex := LItem.GetInteger('change_item_index', -1);
+
         FDecisions.Add(LDec);
 
         // Track sequence number to avoid collisions
@@ -264,6 +275,65 @@ begin
       Save;
       Exit;
     end;
+end;
+
+function TAsWishDecisionsService.RecordChangeSetDecision(
+  const AChangeSet: TChangeSet; AAction: TReviewStatus;
+  const ARationale: string; AItemIndex: Integer): string;
+var
+  LDec: TSpecDecision;
+  LTitle: string;
+begin
+  LDec := Default(TSpecDecision);
+  LDec.Id := GenerateNextId;
+  LDec.CreatedAt := Now;
+  LDec.UpdatedAt := Now;
+  LDec.DecidedBy := dbHuman;
+  LDec.Confidence := clHigh;
+  LDec.ChangeSetId := AChangeSet.Id;
+  LDec.ChangeItemIndex := AItemIndex;
+  LDec.TargetNodes := TArray<string>.Create(AChangeSet.IntentNodeId);
+  LDec.Rationale := ARationale;
+
+  case AAction of
+    rsAccepted:
+    begin
+      LDec.DecisionType := dtConfirm;
+      LDec.Status := dsAccepted;
+      LTitle := 'Accept ChangeSet: ' + AChangeSet.Id;
+      LDec.DecisionText := 'Accept interpreted changes for node ' + AChangeSet.IntentNodeId +
+        ' based on intent: ' + AChangeSet.RawUserIntent;
+    end;
+    rsRejected:
+    begin
+      LDec.DecisionType := dtReject;
+      LDec.Status := dsRejected;
+      LTitle := 'Reject ChangeSet: ' + AChangeSet.Id;
+      LDec.DecisionText := 'Reject interpreted changes for node ' + AChangeSet.IntentNodeId +
+        ' based on intent: ' + AChangeSet.RawUserIntent;
+    end;
+    rsDeferred:
+    begin
+      LDec.DecisionType := dtClarify;
+      LDec.Status := dsProposed;
+      LTitle := 'Clarify ChangeSet: ' + AChangeSet.Id;
+      LDec.DecisionText := 'Request human clarification for node ' + AChangeSet.IntentNodeId +
+        ' based on intent: ' + AChangeSet.RawUserIntent;
+    end;
+  else
+    LDec.DecisionType := dtClarify;
+    LDec.Status := dsProposed;
+    LTitle := 'Review ChangeSet: ' + AChangeSet.Id;
+    LDec.DecisionText := 'Pending review for node ' + AChangeSet.IntentNodeId;
+  end;
+
+  LDec.Title := LTitle;
+  if LDec.Rationale = '' then
+    LDec.Rationale := 'Human review decision for ChangeSet ' + AChangeSet.Id;
+
+  FDecisions.Add(LDec);
+  Result := LDec.Id;
+  Save;
 end;
 
 function TAsWishDecisionsService.PromotePending: Integer;

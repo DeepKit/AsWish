@@ -278,6 +278,9 @@ type
     Status: TDecisionStatus;
     SupersededBy: string;
     Supersedes: TArray<string>;
+    /// <summary>Optional reference to originating Change Set (WO-20260830-0027C).</summary>
+    ChangeSetId: string;
+    ChangeItemIndex: Integer;
   end;
 
   /// <summary>
