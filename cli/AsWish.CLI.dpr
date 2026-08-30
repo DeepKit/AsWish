@@ -15,6 +15,7 @@
     AsWish.CLI decisions apply  <dir>              promote pending decisions
     AsWish.CLI bundle apply     <dir> <id> <act>   accept or reject a bundle
     AsWish.CLI ingest            <dir> <candidate> validate and merge candidate nodes
+    AsWish.CLI intent            <dir> <id> <tree> <intent> record candidate user intent
   ============================================================================ }
 
 program AsWish.CLI;
@@ -517,6 +518,52 @@ begin
   end;
 end;
 
+procedure RunIntent(const ADir, ANodeId, ATreeStr, AUserIntent: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LTree: TTreeType;
+  LIntent: TCandidateIntent;
+  LIssue: TSpecIssue;
+  LPath: string;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[intent] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+
+  LTree := TSpecEnums.TreeTypeFromStr(ATreeStr, ttFunction);
+  LIntent := TCandidateIntent.CreateNew(ANodeId, LTree, AUserIntent, 'human');
+
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  try
+    if not LIngest.CheckIntentClarity(LIntent, LIssue) then
+    begin
+      Writeln('[intent] warning: intent unclear, grilling ticket required: ' + LIssue.Title);
+    end;
+    LPath := LIngest.SaveCandidateIntent(ADir, LIntent);
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('intent');
+      WriteJsonKV('status', 'ok');
+      WriteJsonKV('node_id', ANodeId);
+      WriteJsonKV('tree', TSpecEnums.TreeTypeToStr(LTree));
+      WriteJsonKV('saved_to', LPath);
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('[intent] saved candidate intent for %s (%s) to %s',
+        [ANodeId, TSpecEnums.TreeTypeToStr(LTree), LPath]));
+    end;
+  finally
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
 procedure RunScan(const ADir: string);
 var
   LProject: TAsWishProjectService;
@@ -814,6 +861,7 @@ begin
     Writeln('  decisions apply <dir>     promote pending + apply transitions');
     Writeln('  bundle apply <dir> <id> <accept|reject>');
     Writeln('  ingest <dir> <file.yaml>  validate + merge LLM candidate nodes');
+    Writeln('  intent <dir> <id> <tree> <text> record candidate user intent');
     Halt(2);
   end;
 
@@ -860,6 +908,15 @@ begin
       Halt(2);
     end;
     RunIngest(LDir, ParamStr(3));
+  end
+  else if LCommand = 'intent' then
+  begin
+    if ParamCount < 5 then
+    begin
+      Writeln('AsWish.CLI intent <project-dir> <node-id> <tree> <user_intent>');
+      Halt(2);
+    end;
+    RunIntent(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
   end
   else
   begin

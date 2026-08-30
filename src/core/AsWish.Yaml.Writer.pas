@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Yaml.Writer
 
@@ -218,6 +218,8 @@ begin
     WriteStringList('tags', ANode.Tags);
     WriteStringList('acceptance_criteria', ANode.AcceptanceCriteria);
     WriteStringList('not_doing', ANode.NotDoing);
+    if ANode.UserIntent <> '' then
+      WriteQuotedKV('user_intent', ANode.UserIntent);
     if ANode.Tree = ttData then
       WriteDataNodeFields(ANode);
   finally

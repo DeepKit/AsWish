@@ -80,9 +80,30 @@ type
     procedure Merge_NewId_Appended;
     [Test]
     procedure Merge_DataTree_UpdatesFieldsPreservesReview;
+
+    // Candidate User Intent (WO-20260830-0027A)
+    [Test]
+    procedure CandidateIntent_CreateNew_SetsFields;
+    [Test]
+    procedure CandidateIntent_FormatAndParseYaml_RoundTrip;
+    [Test]
+    procedure CandidateIntent_SaveAndLoad_PersistsToDisk;
+    [Test]
+    procedure CandidateIntent_CheckClarity_VagueIntent_GeneratesGrillingTicket;
+    [Test]
+    procedure CandidateIntent_CheckClarity_ClearIntent_ReturnsTrue;
+    [Test]
+    procedure Ingest_NodeWithUserIntent_PreservesUserIntentField;
+    [Test]
+    procedure Merge_NodeWithUserIntent_UpdatesUserIntentField;
+    [Test]
+    procedure Ingest_DoesNotMutateCanonicalSpec_UntilMerge;
   end;
 
 implementation
+
+uses
+  System.IOUtils;
 
 { TCandidateIngestTests }
 
@@ -610,6 +631,163 @@ begin
     end;
   finally
     LData.Free;
+  end;
+end;
+
+// ---------------------------------------------------------------------------
+// Candidate User Intent (WO-20260830-0027A)
+// ---------------------------------------------------------------------------
+
+procedure TCandidateIngestTests.CandidateIntent_CreateNew_SetsFields;
+var
+  LIntent: TCandidateIntent;
+begin
+  LIntent := TCandidateIntent.CreateNew('func-login', ttFunction, 'login page requires sms verification');
+  Assert.AreEqual('func-login', LIntent.NodeId);
+  Assert.AreEqual(ttFunction, LIntent.Tree);
+  Assert.AreEqual('login page requires sms verification', LIntent.UserIntent);
+  Assert.AreEqual('human', LIntent.Author);
+  Assert.AreNotEqual<Double>(0.0, LIntent.CreatedAt);
+end;
+
+procedure TCandidateIngestTests.CandidateIntent_FormatAndParseYaml_RoundTrip;
+var
+  LOriginal, LParsed: TCandidateIntent;
+  LYaml: string;
+begin
+  LOriginal := TCandidateIntent.CreateNew('view-main', ttView, 'add dark theme toggle button', 'alice');
+  LYaml := TAsWishCandidateIngest.FormatCandidateIntentYaml(LOriginal);
+  Assert.IsTrue(LYaml.Contains('view-main'));
+  Assert.IsTrue(LYaml.Contains('add dark theme toggle button'));
+  Assert.IsTrue(LYaml.Contains('alice'));
+
+  LParsed := TAsWishCandidateIngest.ParseCandidateIntentYaml(LYaml);
+  Assert.AreEqual('view-main', LParsed.NodeId);
+  Assert.AreEqual(ttView, LParsed.Tree);
+  Assert.AreEqual('add dark theme toggle button', LParsed.UserIntent);
+  Assert.AreEqual('alice', LParsed.Author);
+end;
+
+procedure TCandidateIngestTests.CandidateIntent_SaveAndLoad_PersistsToDisk;
+var
+  LTempDir: string;
+  LIntent, LLoaded: TCandidateIntent;
+  LSavedPath: string;
+begin
+  LTempDir := TPath.Combine(TPath.GetTempPath, 'aswish_test_intent_' + FormatDateTime('hhnnsszzz', Now));
+  try
+    TDirectory.CreateDirectory(LTempDir);
+    LIntent := TCandidateIntent.CreateNew('data-user', ttData, 'add user_status enum field');
+    LSavedPath := FCand.SaveCandidateIntent(LTempDir, LIntent);
+    Assert.IsTrue(TFile.Exists(LSavedPath), 'candidate-intent.yaml must exist');
+
+    LLoaded := FCand.LoadCandidateIntent(LTempDir);
+    Assert.AreEqual('data-user', LLoaded.NodeId);
+    Assert.AreEqual(ttData, LLoaded.Tree);
+    Assert.AreEqual('add user_status enum field', LLoaded.UserIntent);
+  finally
+    if TDirectory.Exists(LTempDir) then
+      TDirectory.Delete(LTempDir, True);
+  end;
+end;
+
+procedure TCandidateIngestTests.CandidateIntent_CheckClarity_VagueIntent_GeneratesGrillingTicket;
+var
+  LVagueIntent: TCandidateIntent;
+  LIssue: TSpecIssue;
+  LIsClear: Boolean;
+begin
+  LVagueIntent := TCandidateIntent.CreateNew('func-demo', ttFunction, 'fix');
+  LIsClear := FCand.CheckIntentClarity(LVagueIntent, LIssue);
+  Assert.IsFalse(LIsClear, 'vague intent should not pass clarity check');
+  Assert.AreEqual(itGrillingTicket, LIssue.IssueType);
+  Assert.IsTrue(LIssue.RequiresHuman);
+  Assert.AreEqual<Integer>(1, Length(LIssue.AffectedNodes));
+  Assert.AreEqual('func-demo', LIssue.AffectedNodes[0]);
+end;
+
+procedure TCandidateIngestTests.CandidateIntent_CheckClarity_ClearIntent_ReturnsTrue;
+var
+  LClearIntent: TCandidateIntent;
+  LIssue: TSpecIssue;
+  LIsClear: Boolean;
+begin
+  LClearIntent := TCandidateIntent.CreateNew('func-demo', ttFunction, 'redirect to dashboard automatically after successful login');
+  LIsClear := FCand.CheckIntentClarity(LClearIntent, LIssue);
+  Assert.IsTrue(LIsClear, 'clear intent should pass clarity check');
+end;
+
+procedure TCandidateIngestTests.Ingest_NodeWithUserIntent_PreservesUserIntentField;
+const
+  CYAML = 'version: "1.0"' + #10 +
+          'tree: function' + #10 +
+          'nodes:' + #10 +
+          '  - id: func-demo' + #10 +
+          '    kind: capability' + #10 +
+          '    summary: semantic summary' + #10 +
+          '    user_intent: "require sms verification on login"';
+begin
+  var LFunc := StubFunctionRoot;
+  try
+    var R := FCand.Ingest(CYAML, LFunc, nil, nil);
+    try
+      Assert.AreEqual<Integer>(1, R.Accepted.Count);
+      Assert.AreEqual('require sms verification on login', R.Accepted[0].UserIntent);
+    finally
+      R.FreeOwned;
+    end;
+  finally
+    LFunc.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.Merge_NodeWithUserIntent_UpdatesUserIntentField;
+const
+  CYAML = 'version: "1.0"' + #10 +
+          'tree: function' + #10 +
+          'nodes:' + #10 +
+          '  - id: func-demo' + #10 +
+          '    kind: capability' + #10 +
+          '    summary: new summary' + #10 +
+          '    user_intent: "require sms verification on login"';
+begin
+  var LFunc := StubFunctionRoot;
+  try
+    var R := FCand.Ingest(CYAML, LFunc, nil, nil);
+    try
+      FCand.MergeInto(R.Accepted, LFunc, nil, nil);
+      Assert.AreEqual('require sms verification on login', LFunc[0].UserIntent);
+    finally
+      R.FreeOwned;
+    end;
+  finally
+    LFunc.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.Ingest_DoesNotMutateCanonicalSpec_UntilMerge;
+const
+  CYAML = 'version: "1.0"' + #10 +
+          'tree: function' + #10 +
+          'nodes:' + #10 +
+          '  - id: func-demo' + #10 +
+          '    kind: capability' + #10 +
+          '    summary: completely rewritten summary';
+var
+  LFunc: TList<TSpecNode>;
+begin
+  LFunc := StubFunctionRoot;
+  try
+    var LOldSummary := LFunc[0].Summary;
+    var R := FCand.Ingest(CYAML, LFunc, nil, nil);
+    try
+      // Ingest step only validates into Accepted list; does NOT mutate LFunc
+      Assert.AreEqual(LOldSummary, LFunc[0].Summary, 'Ingest alone must not touch live canonical spec');
+    finally
+      R.FreeOwned;
+    end;
+  finally
+    LFunc.Free;
   end;
 end;
 

@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.SpecStore
 
@@ -484,6 +484,7 @@ begin
     LNode.AcceptanceCriteria := StringList(LItem.Get('acceptance_criteria'));
     LNode.NotDoing := StringList(LItem.Get('not_doing'));
     LNode.RelatedData := StringList(LItem.Get('related_data'));
+    LNode.UserIntent := LItem.GetString('user_intent', '');
 
     // data-tree specific fields
     if LNode.Tree = ttData then

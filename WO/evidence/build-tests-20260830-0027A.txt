@@ -1,0 +1,3 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+16172 lines, 1.91 seconds, 8582848 bytes code, 796984 bytes data.

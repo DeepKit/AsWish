@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Models
 
@@ -136,11 +136,28 @@ type
     Tags: TArray<string>;
     AcceptanceCriteria: TArray<string>;
     NotDoing: TArray<string>;
+    UserIntent: string;
     class function MakeNew(const AId: string; ATree: TTreeType;
       const ATitle, AKind: string): TSpecNode; static;
   end;
 
   TSpecNodeList = TList<TSpecNode>;
+
+  /// <summary>
+  /// Human natural language intent record attached to a node/projection candidate.
+  /// Holds raw user intent and target context without mutating Canonical Spec.
+  /// (WO-20260830-0027A)
+  /// </summary>
+  TCandidateIntent = record
+    NodeId: string;
+    Tree: TTreeType;
+    UserIntent: string;
+    CreatedAt: TDateTime;
+    Author: string;
+    SourceRefs: TArray<string>;
+    class function CreateNew(const ANodeId: string; ATree: TTreeType;
+      const AUserIntent: string; const AAuthor: string = 'human'): TCandidateIntent; static;
+  end;
 
   TSemanticBundle = record
     Id: string;
@@ -323,6 +340,21 @@ begin
   Result.Revision := 1;
   Result.CreatedAt := Now;
   Result.UpdatedAt := Now;
+end;
+
+{ TCandidateIntent }
+
+class function TCandidateIntent.CreateNew(const ANodeId: string; ATree: TTreeType;
+  const AUserIntent: string; const AAuthor: string): TCandidateIntent;
+begin
+  Result := Default(TCandidateIntent);
+  Result.NodeId := ANodeId;
+  Result.Tree := ATree;
+  Result.UserIntent := AUserIntent;
+  Result.CreatedAt := Now;
+  Result.Author := AAuthor;
+  if Result.Author = '' then
+    Result.Author := 'human';
 end;
 
 { TSpecEnums }

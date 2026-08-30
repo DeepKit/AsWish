@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.CandidateIngest
 
@@ -84,11 +84,27 @@ type
       AFunc, AMod, AView: TList<TSpecNode>): TMergeStats; overload;
     function MergeInto(AAccepted: TList<TSpecNode>;
       AFunc, AMod, AView, AData: TList<TSpecNode>): TMergeStats; overload;
+
+    /// <summary>Format human natural language candidate intent into YAML string (WO-20260830-0027A).</summary>
+    class function FormatCandidateIntentYaml(const AIntent: TCandidateIntent): string; static;
+    /// <summary>Parse YAML string into TCandidateIntent record (WO-20260830-0027A).</summary>
+    class function ParseCandidateIntentYaml(const AYaml: string): TCandidateIntent; static;
+
+    /// <summary>Persist human natural language candidate intent to .AsWish/llm/candidate-intent.yaml (WO-20260830-0027A).</summary>
+    function SaveCandidateIntent(const AProjectPath: string; const AIntent: TCandidateIntent): string;
+    /// <summary>Load candidate intent from .AsWish/llm/candidate-intent.yaml (WO-20260830-0027A).</summary>
+    function LoadCandidateIntent(const AProjectPath: string): TCandidateIntent;
+
+    /// <summary>Check if natural language intent has sufficient clarity for LLM interpretation.
+    /// If insufficient (empty/vague), constructs a grilling_ticket issue for human clarification (AC-03).</summary>
+    function CheckIntentClarity(const AIntent: TCandidateIntent; out AIssue: TSpecIssue): Boolean;
   end;
 
 implementation
 
 uses
+  System.IOUtils,
+  System.StrUtils,
   AsWish.Yaml.Parser;
 
 { TCandidateIngestResult }
@@ -391,6 +407,8 @@ function TAsWishCandidateIngest.MergeInto(AAccepted: TList<TSpecNode>;
       LExisting.Tags := ACand.Tags;
       LExisting.AcceptanceCriteria := ACand.AcceptanceCriteria;
       LExisting.NotDoing := ACand.NotDoing;
+      if ACand.UserIntent <> '' then
+        LExisting.UserIntent := ACand.UserIntent;
 
       // Data metadata is part of the node contract. An omitted optional field
       // must not erase a known schema fact, while presence flags preserve
@@ -482,6 +500,116 @@ begin
       ttData:     if AData <> nil then MergeOne(AData, L);
     end;
   end;
+end;
+
+class function TAsWishCandidateIngest.FormatCandidateIntentYaml(
+  const AIntent: TCandidateIntent): string;
+var
+  LSb: TStringBuilder;
+  LEscapedIntent: string;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LSb.AppendLine('version: "1.2"');
+    LSb.AppendLine('tree: ' + TSpecEnums.TreeTypeToStr(AIntent.Tree));
+    LSb.AppendLine('node_id: "' + AIntent.NodeId + '"');
+    LEscapedIntent := AIntent.UserIntent.Replace('\', '\\').Replace('"', '\"').Replace(#13, '\r').Replace(#10, '\n');
+    LSb.AppendLine('user_intent: "' + LEscapedIntent + '"');
+    LSb.AppendLine('author: "' + AIntent.Author + '"');
+    if AIntent.CreatedAt <> 0 then
+      LSb.AppendLine('created_at: "' + FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', AIntent.CreatedAt) + '"')
+    else
+      LSb.AppendLine('created_at: "' + FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', Now) + '"');
+    Result := LSb.ToString;
+  finally
+    LSb.Free;
+  end;
+end;
+
+class function TAsWishCandidateIngest.ParseCandidateIntentYaml(
+  const AYaml: string): TCandidateIntent;
+var
+  LParser: TYamlParser;
+  LRoot: TYamlNode;
+begin
+  Result := Default(TCandidateIntent);
+  if AYaml = '' then Exit;
+  LParser := TYamlParser.Create;
+  try
+    LRoot := LParser.Parse(AYaml);
+    if LRoot <> nil then
+    begin
+      try
+        Result.Tree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('tree', ''));
+        Result.NodeId := LRoot.GetString('node_id', '');
+        Result.UserIntent := LRoot.GetString('user_intent', '');
+        Result.Author := LRoot.GetString('author', 'human');
+        Result.CreatedAt := Now;
+      finally
+        LRoot.Free;
+      end;
+    end;
+  finally
+    LParser.Free;
+  end;
+end;
+
+function TAsWishCandidateIngest.SaveCandidateIntent(
+  const AProjectPath: string; const AIntent: TCandidateIntent): string;
+var
+  LLlmDir: string;
+  LFilePath: string;
+  LYaml: string;
+begin
+  LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
+  if not TDirectory.Exists(LLlmDir) then
+    TDirectory.CreateDirectory(LLlmDir);
+  LFilePath := TPath.Combine(LLlmDir, 'candidate-intent.yaml');
+  LYaml := FormatCandidateIntentYaml(AIntent);
+  TAsWishStoreService.AtomicWriteTextFile(LFilePath, LYaml);
+  Result := LFilePath;
+end;
+
+function TAsWishCandidateIngest.LoadCandidateIntent(
+  const AProjectPath: string): TCandidateIntent;
+var
+  LFilePath: string;
+begin
+  Result := Default(TCandidateIntent);
+  LFilePath := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), 'candidate-intent.yaml');
+  if TFile.Exists(LFilePath) then
+    Result := ParseCandidateIntentYaml(TFile.ReadAllText(LFilePath, TEncoding.UTF8));
+end;
+
+function TAsWishCandidateIngest.CheckIntentClarity(
+  const AIntent: TCandidateIntent; out AIssue: TSpecIssue): Boolean;
+var
+  LTrimmed: string;
+begin
+  AIssue := Default(TSpecIssue);
+  LTrimmed := AIntent.UserIntent.Trim;
+  // If intent is blank or too short (< 4 chars) or generic words, trigger grilling ticket
+  if (LTrimmed.Length < 4) or SameText(LTrimmed, 'fix') or SameText(LTrimmed, 'change') or
+     SameText(LTrimmed, 'update') or SameText(LTrimmed, 'todo') or
+     (LTrimmed = #$4FEE#$6539) or (LTrimmed = #$6539#$4E00#$4E0B) or (LTrimmed = #$4F18#$5316) then
+  begin
+    AIssue.Id := 'issue-grill-' + FormatDateTime('yyyymmdd-hhnnss', Now);
+    AIssue.IssueType := itGrillingTicket;
+    AIssue.Severity := isHigh;
+    AIssue.Status := issOpen;
+    AIssue.Title := 'Clarify intent for node: ' + AIntent.NodeId;
+    AIssue.Description := 'Human user intent input is insufficient or ambiguous ("' + LTrimmed +
+      '"), clarification via grilling ticket is required for target, boundary, and acceptance criteria.';
+    AIssue.RequiresHuman := True;
+    AIssue.AffectedNodes := TArray<string>.Create(AIntent.NodeId);
+    AIssue.SuggestedAction := 'Clarify user intent via grilling prompt';
+    AIssue.SuggestedPrompt := 'Clarify specific outcome, constraints, and acceptance criteria for node ' + AIntent.NodeId;
+    AIssue.CreatedAt := Now;
+    AIssue.UpdatedAt := Now;
+    Result := False;
+  end
+  else
+    Result := True;
 end;
 
 end.
