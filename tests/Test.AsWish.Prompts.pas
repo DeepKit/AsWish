@@ -19,6 +19,8 @@ type
     procedure GrillingTicket_WritesStructuredPrompt;
     [Test]
     procedure NonGrillingIssue_DoesNotWritePrompt;
+    [Test]
+    procedure ChangeInterpretPrompt_WritesStructuredPrompt;
   end;
 
 implementation
@@ -119,6 +121,49 @@ begin
   finally
     LService.Free;
     TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TGrillingPromptTests.ChangeInterpretPrompt_WritesStructuredPrompt;
+var
+  LDir, LPath, LContent: string;
+  LService: TAsWishPromptService;
+  LIntent: TCandidateIntent;
+  LNode: TSpecNode;
+  LBundles: TList<TSemanticBundle>;
+  LBundle: TSemanticBundle;
+begin
+  LDir := NewTempDir;
+  LService := TAsWishPromptService.Create;
+  LBundles := TList<TSemanticBundle>.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    LService.Initialize(LDir);
+
+    LIntent := TCandidateIntent.CreateNew('func-checkout', ttFunction, 'User wants 1-click checkout');
+    LNode := TSpecNode.MakeNew('func-checkout', ttFunction, 'Checkout', 'capability');
+    LNode.Summary := 'Standard multi-step checkout';
+
+    LBundle := Default(TSemanticBundle);
+    LBundle.Id := 'bundle-pay';
+    LBundle.NodeIds := TArray<string>.Create('func-checkout', 'view-checkout', 'data-payment');
+    LBundles.Add(LBundle);
+
+    LPath := LService.WriteChangeInterpretPrompt(LIntent, LNode, LBundles);
+    Assert.IsTrue(TFile.Exists(LPath), 'change interpret prompt file must exist');
+
+    LContent := TFile.ReadAllText(LPath, TEncoding.UTF8);
+    Assert.IsTrue(LContent.Contains('User wants 1-click checkout'), 'must contain raw intent');
+    Assert.IsTrue(LContent.Contains('Standard multi-step checkout'), 'must contain current summary');
+    Assert.IsTrue(LContent.Contains('function'), 'must contain function projection');
+    Assert.IsTrue(LContent.Contains('view'), 'must contain view projection from bundle');
+    Assert.IsTrue(LContent.Contains('data'), 'must contain data projection from bundle');
+    Assert.IsTrue(LContent.Contains('explicit'), 'must contain explicit / inferred rules');
+  finally
+    LBundles.Free;
+    LService.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
   end;
 end;
 

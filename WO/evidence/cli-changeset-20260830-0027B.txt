@@ -1,0 +1,20 @@
+[changeset] generated change set cs-func-orders-01 for func-orders (function)
+  saved change set: protocol\examples\seed-python-fastapi\.AsWish\llm\change-set-cs-func-orders-01.yaml
+  saved prompt:     protocol\examples\seed-python-fastapi\.AsWish\prompts\change-interpret-func-orders.md
+﻿version: "1.2"
+change_set_id: "cs-func-orders-01"
+intent_node_id: "func-orders"
+intent_tree: function
+raw_user_intent: "\\\\ Add discount percentage field to order line items\\"
+author: "human"
+created_at: "2026-08-30T19:16:37+08:00"
+affected_projections:
+  - function
+items:
+  - target_node_id: "func-orders"
+    target_projection: function
+    field: "summary"
+    before: ""
+    after: "\\\\ Add discount percentage field to order line items\\"
+    source_type: explicit
+    reason: "Interpreted from human user intent"

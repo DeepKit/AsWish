@@ -98,6 +98,20 @@ type
     /// <summary>Check if natural language intent has sufficient clarity for LLM interpretation.
     /// If insufficient (empty/vague), constructs a grilling_ticket issue for human clarification (AC-03).</summary>
     function CheckIntentClarity(const AIntent: TCandidateIntent; out AIssue: TSpecIssue): Boolean;
+
+    /// <summary>Format structured Change Set into YAML string (WO-20260830-0027B).</summary>
+    class function FormatChangeSetYaml(const AChangeSet: TChangeSet): string; static;
+    /// <summary>Parse YAML string into TChangeSet record (WO-20260830-0027B).</summary>
+    class function ParseChangeSetYaml(const AYaml: string): TChangeSet; static;
+
+    /// <summary>Persist structured Change Set to .AsWish/llm/change-set.yaml (WO-20260830-0027B).</summary>
+    function SaveChangeSet(const AProjectPath: string; const AChangeSet: TChangeSet): string;
+    /// <summary>Load structured Change Set from .AsWish/llm/ (WO-20260830-0027B).</summary>
+    function LoadChangeSet(const AProjectPath: string; const AChangeSetId: string = ''): TChangeSet;
+
+    /// <summary>Compute affected projections for a node across semantic bundles (WO-20260830-0027B).</summary>
+    function ComputeAffectedProjections(const ANodeId: string;
+      const ABundles: TList<TSemanticBundle>): TArray<TTreeType>;
   end;
 
 implementation
@@ -610,6 +624,215 @@ begin
   end
   else
     Result := True;
+end;
+
+class function TAsWishCandidateIngest.FormatChangeSetYaml(
+  const AChangeSet: TChangeSet): string;
+var
+  LSb: TStringBuilder;
+  function Escape(const S: string): string;
+  begin
+    Result := S.Replace('\', '\\').Replace('"', '\"').Replace(#13, '\r').Replace(#10, '\n');
+  end;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LSb.AppendLine('version: "1.2"');
+    LSb.AppendLine('change_set_id: "' + Escape(AChangeSet.Id) + '"');
+    LSb.AppendLine('intent_node_id: "' + Escape(AChangeSet.IntentNodeId) + '"');
+    LSb.AppendLine('intent_tree: ' + TSpecEnums.TreeTypeToStr(AChangeSet.IntentTree));
+    LSb.AppendLine('raw_user_intent: "' + Escape(AChangeSet.RawUserIntent) + '"');
+    LSb.AppendLine('author: "' + Escape(AChangeSet.Author) + '"');
+    if AChangeSet.CreatedAt <> 0 then
+      LSb.AppendLine('created_at: "' + FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', AChangeSet.CreatedAt) + '"')
+    else
+      LSb.AppendLine('created_at: "' + FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', Now) + '"');
+
+    if Length(AChangeSet.AffectedProjections) > 0 then
+    begin
+      LSb.AppendLine('affected_projections:');
+      for var LP in AChangeSet.AffectedProjections do
+        LSb.AppendLine('  - ' + TSpecEnums.TreeTypeToStr(LP));
+    end
+    else
+      LSb.AppendLine('affected_projections: []');
+
+    if Length(AChangeSet.Items) > 0 then
+    begin
+      LSb.AppendLine('items:');
+      for var LItem in AChangeSet.Items do
+      begin
+        LSb.AppendLine('  - target_node_id: "' + Escape(LItem.TargetNodeId) + '"');
+        LSb.AppendLine('    target_projection: ' + TSpecEnums.TreeTypeToStr(LItem.TargetTree));
+        LSb.AppendLine('    field: "' + Escape(LItem.Field) + '"');
+        LSb.AppendLine('    before: "' + Escape(LItem.BeforeValue) + '"');
+        LSb.AppendLine('    after: "' + Escape(LItem.AfterValue) + '"');
+        LSb.AppendLine('    source_type: ' + TSpecEnums.ChangeSourceTypeToStr(LItem.SourceType));
+        if LItem.Reason <> '' then
+          LSb.AppendLine('    reason: "' + Escape(LItem.Reason) + '"');
+      end;
+    end
+    else
+      LSb.AppendLine('items: []');
+
+    Result := LSb.ToString;
+  finally
+    LSb.Free;
+  end;
+end;
+
+class function TAsWishCandidateIngest.ParseChangeSetYaml(
+  const AYaml: string): TChangeSet;
+var
+  LParser: TYamlParser;
+  LRoot: TYamlNode;
+  LItemsSeq: TYamlNode;
+  LProjSeq: TYamlNode;
+  LItemsList: TList<TChangeItem>;
+  LProjList: TList<TTreeType>;
+begin
+  Result := Default(TChangeSet);
+  if AYaml = '' then Exit;
+  LParser := TYamlParser.Create;
+  try
+    LRoot := LParser.Parse(AYaml);
+    if LRoot <> nil then
+    begin
+      try
+        Result.Id := LRoot.GetString('change_set_id', LRoot.GetString('id', ''));
+        Result.IntentNodeId := LRoot.GetString('intent_node_id', LRoot.GetString('target_node_id', ''));
+        Result.IntentTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('intent_tree', LRoot.GetString('target_projection', '')));
+        Result.RawUserIntent := LRoot.GetString('raw_user_intent', LRoot.GetString('user_intent', ''));
+        Result.Author := LRoot.GetString('author', 'human');
+        Result.CreatedAt := Now;
+
+        LProjSeq := LRoot.GetSeq('affected_projections');
+        if LProjSeq <> nil then
+        begin
+          LProjList := TList<TTreeType>.Create;
+          try
+            for var I := 0 to LProjSeq.SeqCount - 1 do
+            begin
+              var LItemNode := LProjSeq.SeqItem(I);
+              if LItemNode <> nil then
+                LProjList.Add(TSpecEnums.TreeTypeFromStr(LItemNode.AsString));
+            end;
+            Result.AffectedProjections := LProjList.ToArray;
+          finally
+            LProjList.Free;
+          end;
+        end;
+
+        LItemsSeq := LRoot.GetSeq('items');
+        if LItemsSeq <> nil then
+        begin
+          LItemsList := TList<TChangeItem>.Create;
+          try
+            for var I := 0 to LItemsSeq.SeqCount - 1 do
+            begin
+              var LMap := LItemsSeq.SeqItem(I);
+              if (LMap <> nil) and (LMap.Kind = ykMap) then
+              begin
+                var LItem: TChangeItem;
+                LItem.TargetNodeId := LMap.GetString('target_node_id', Result.IntentNodeId);
+                LItem.TargetTree := TSpecEnums.TreeTypeFromStr(LMap.GetString('target_projection', ''), Result.IntentTree);
+                LItem.Field := LMap.GetString('field', '');
+                LItem.BeforeValue := LMap.GetString('before', '');
+                LItem.AfterValue := LMap.GetString('after', '');
+                LItem.SourceType := TSpecEnums.ChangeSourceTypeFromStr(LMap.GetString('source_type', 'explicit'));
+                LItem.Reason := LMap.GetString('reason', '');
+                LItemsList.Add(LItem);
+              end;
+            end;
+            Result.Items := LItemsList.ToArray;
+          finally
+            LItemsList.Free;
+          end;
+        end;
+      finally
+        LRoot.Free;
+      end;
+    end;
+  finally
+    LParser.Free;
+  end;
+end;
+
+function TAsWishCandidateIngest.SaveChangeSet(
+  const AProjectPath: string; const AChangeSet: TChangeSet): string;
+var
+  LLlmDir: string;
+  LFilePath: string;
+  LYaml: string;
+begin
+  LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
+  if not TDirectory.Exists(LLlmDir) then
+    TDirectory.CreateDirectory(LLlmDir);
+  if AChangeSet.Id <> '' then
+    LFilePath := TPath.Combine(LLlmDir, 'change-set-' + AChangeSet.Id + '.yaml')
+  else
+    LFilePath := TPath.Combine(LLlmDir, 'change-set.yaml');
+  LYaml := FormatChangeSetYaml(AChangeSet);
+  TAsWishStoreService.AtomicWriteTextFile(LFilePath, LYaml);
+  Result := LFilePath;
+end;
+
+function TAsWishCandidateIngest.LoadChangeSet(
+  const AProjectPath: string; const AChangeSetId: string): TChangeSet;
+var
+  LFilePath: string;
+begin
+  Result := Default(TChangeSet);
+  if AChangeSetId <> '' then
+    LFilePath := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), 'change-set-' + AChangeSetId + '.yaml')
+  else
+    LFilePath := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), 'change-set.yaml');
+  if TFile.Exists(LFilePath) then
+    Result := ParseChangeSetYaml(TFile.ReadAllText(LFilePath, TEncoding.UTF8));
+end;
+
+function TAsWishCandidateIngest.ComputeAffectedProjections(
+  const ANodeId: string; const ABundles: TList<TSemanticBundle>): TArray<TTreeType>;
+var
+  LList: TList<TTreeType>;
+  procedure AddIfMissing(ATree: TTreeType);
+  begin
+    if not LList.Contains(ATree) then
+      LList.Add(ATree);
+  end;
+begin
+  LList := TList<TTreeType>.Create;
+  try
+    if ANodeId.StartsWith('func-') then AddIfMissing(ttFunction)
+    else if ANodeId.StartsWith('mod-') then AddIfMissing(ttModule)
+    else if ANodeId.StartsWith('view-') then AddIfMissing(ttView)
+    else if ANodeId.StartsWith('data-') then AddIfMissing(ttData);
+
+    if ABundles <> nil then
+      for var LB in ABundles do
+      begin
+        var LInBundle := False;
+        for var LNId in LB.NodeIds do
+          if LNId = ANodeId then
+          begin
+            LInBundle := True;
+            Break;
+          end;
+        if LInBundle then
+        begin
+          for var LNId in LB.NodeIds do
+          begin
+            if LNId.StartsWith('func-') then AddIfMissing(ttFunction)
+            else if LNId.StartsWith('mod-') then AddIfMissing(ttModule)
+            else if LNId.StartsWith('view-') then AddIfMissing(ttView)
+            else if LNId.StartsWith('data-') then AddIfMissing(ttData);
+          end;
+        end;
+      end;
+    Result := LList.ToArray;
+  finally
+    LList.Free;
+  end;
 end;
 
 end.

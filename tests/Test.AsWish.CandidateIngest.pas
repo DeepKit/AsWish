@@ -98,6 +98,20 @@ type
     procedure Merge_NodeWithUserIntent_UpdatesUserIntentField;
     [Test]
     procedure Ingest_DoesNotMutateCanonicalSpec_UntilMerge;
+
+    // Structured Change Set (WO-20260830-0027B)
+    [Test]
+    procedure ChangeSet_CreateNew_SetsFields;
+    [Test]
+    procedure ChangeSet_FormatAndParseYaml_RoundTrip;
+    [Test]
+    procedure ChangeSet_SaveAndLoad_PersistsToDisk;
+    [Test]
+    procedure ChangeSet_ComputeAffectedProjections_ViaSemanticBundles;
+    [Test]
+    procedure ChangeSet_DistinguishesExplicitInferredUnknown;
+    [Test]
+    procedure ChangeSet_DoesNotMutateCanonicalSpec;
   end;
 
 implementation
@@ -786,6 +800,156 @@ begin
     finally
       R.FreeOwned;
     end;
+  finally
+    LFunc.Free;
+  end;
+end;
+
+// ---------------------------------------------------------------------------
+// Structured Change Set (WO-20260830-0027B)
+// ---------------------------------------------------------------------------
+
+procedure TCandidateIngestTests.ChangeSet_CreateNew_SetsFields;
+var
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+begin
+  LCS := TChangeSet.CreateNew('cs-01', 'func-orders', ttFunction, 'add discount percentage');
+  LItem := TChangeItem.CreateItem('func-orders', ttFunction, 'summary', 'old summary', 'new summary with discount', cstExplicit, 'user requested');
+  LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+  Assert.AreEqual('cs-01', LCS.Id);
+  Assert.AreEqual('func-orders', LCS.IntentNodeId);
+  Assert.AreEqual(ttFunction, LCS.IntentTree);
+  Assert.AreEqual('add discount percentage', LCS.RawUserIntent);
+  Assert.AreEqual<Integer>(1, Length(LCS.Items));
+  Assert.AreEqual('summary', LCS.Items[0].Field);
+  Assert.AreEqual(cstExplicit, LCS.Items[0].SourceType);
+end;
+
+procedure TCandidateIngestTests.ChangeSet_FormatAndParseYaml_RoundTrip;
+var
+  LOriginal, LParsed: TChangeSet;
+  LItem1, LItem2: TChangeItem;
+  LYaml: string;
+begin
+  LOriginal := TChangeSet.CreateNew('cs-demo-01', 'func-demo', ttFunction, 'add auto-refresh', 'bob');
+  LOriginal.AffectedProjections := TArray<TTreeType>.Create(ttFunction, ttView);
+  LItem1 := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', 'Static view', 'Auto-refreshing view', cstExplicit, 'direct intent');
+  LItem2 := TChangeItem.CreateItem('view-demo', ttView, 'kind', 'page', 'live_page', cstInferred, 'inferred view change');
+  LOriginal.Items := TArray<TChangeItem>.Create(LItem1, LItem2);
+
+  LYaml := TAsWishCandidateIngest.FormatChangeSetYaml(LOriginal);
+  Assert.IsTrue(LYaml.Contains('cs-demo-01'));
+  Assert.IsTrue(LYaml.Contains('func-demo'));
+  Assert.IsTrue(LYaml.Contains('view-demo'));
+  Assert.IsTrue(LYaml.Contains('auto-refresh'));
+  Assert.IsTrue(LYaml.Contains('explicit'));
+  Assert.IsTrue(LYaml.Contains('inferred'));
+
+  LParsed := TAsWishCandidateIngest.ParseChangeSetYaml(LYaml);
+  Assert.AreEqual('cs-demo-01', LParsed.Id);
+  Assert.AreEqual('func-demo', LParsed.IntentNodeId);
+  Assert.AreEqual(ttFunction, LParsed.IntentTree);
+  Assert.AreEqual('add auto-refresh', LParsed.RawUserIntent);
+  Assert.AreEqual('bob', LParsed.Author);
+  Assert.AreEqual<Integer>(2, Length(LParsed.AffectedProjections));
+  Assert.AreEqual<Integer>(2, Length(LParsed.Items));
+  Assert.AreEqual('func-demo', LParsed.Items[0].TargetNodeId);
+  Assert.AreEqual('summary', LParsed.Items[0].Field);
+  Assert.AreEqual('Static view', LParsed.Items[0].BeforeValue);
+  Assert.AreEqual('Auto-refreshing view', LParsed.Items[0].AfterValue);
+  Assert.AreEqual(cstExplicit, LParsed.Items[0].SourceType);
+  Assert.AreEqual('view-demo', LParsed.Items[1].TargetNodeId);
+  Assert.AreEqual(cstInferred, LParsed.Items[1].SourceType);
+end;
+
+procedure TCandidateIngestTests.ChangeSet_SaveAndLoad_PersistsToDisk;
+var
+  LTempDir: string;
+  LCS, LLoaded: TChangeSet;
+  LItem: TChangeItem;
+  LSavedPath: string;
+begin
+  LTempDir := TPath.Combine(TPath.GetTempPath, 'aswish_test_cs_' + FormatDateTime('hhnnsszzz', Now));
+  try
+    TDirectory.CreateDirectory(LTempDir);
+    LCS := TChangeSet.CreateNew('cs-test-99', 'mod-core', ttModule, 'refactor parser');
+    LItem := TChangeItem.CreateItem('mod-core', ttModule, 'summary', 'old parser', 'new parser', cstExplicit, 'refactor');
+    LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+    LSavedPath := FCand.SaveChangeSet(LTempDir, LCS);
+    Assert.IsTrue(TFile.Exists(LSavedPath), 'change set yaml must exist');
+
+    LLoaded := FCand.LoadChangeSet(LTempDir, 'cs-test-99');
+    Assert.AreEqual('cs-test-99', LLoaded.Id);
+    Assert.AreEqual('mod-core', LLoaded.IntentNodeId);
+    Assert.AreEqual('refactor parser', LLoaded.RawUserIntent);
+    Assert.AreEqual<Integer>(1, Length(LLoaded.Items));
+    Assert.AreEqual('new parser', LLoaded.Items[0].AfterValue);
+  finally
+    if TDirectory.Exists(LTempDir) then
+      TDirectory.Delete(LTempDir, True);
+  end;
+end;
+
+procedure TCandidateIngestTests.ChangeSet_ComputeAffectedProjections_ViaSemanticBundles;
+var
+  LBundles: TList<TSemanticBundle>;
+  LBundle: TSemanticBundle;
+  LAffected: TArray<TTreeType>;
+begin
+  LBundles := TList<TSemanticBundle>.Create;
+  try
+    LBundle := Default(TSemanticBundle);
+    LBundle.Id := 'bundle-auth';
+    LBundle.Title := 'Auth Flow';
+    LBundle.NodeIds := TArray<string>.Create('func-login', 'mod-auth', 'view-login', 'data-user');
+    LBundles.Add(LBundle);
+
+    LAffected := FCand.ComputeAffectedProjections('func-login', LBundles);
+    Assert.AreEqual<Integer>(4, Length(LAffected), 'bundle with 4 trees should yield 4 affected projections');
+  finally
+    LBundles.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.ChangeSet_DistinguishesExplicitInferredUnknown;
+var
+  LCS, LParsed: TChangeSet;
+  LItem1, LItem2, LItem3: TChangeItem;
+  LYaml: string;
+begin
+  LCS := TChangeSet.CreateNew('cs-diff-01', 'func-pay', ttFunction, 'pay with points');
+  LItem1 := TChangeItem.CreateItem('func-pay', ttFunction, 'summary', 'cash only', 'points supported', cstExplicit, 'user explicitly stated');
+  LItem2 := TChangeItem.CreateItem('data-pay', ttData, 'points_balance', '0', 'points field added', cstInferred, 'deduced data field');
+  LItem3 := TChangeItem.CreateItem('view-pay', ttView, 'points_input', 'none', 'input field or slider?', cstUnknown, 'UI widget not specified');
+  LCS.Items := TArray<TChangeItem>.Create(LItem1, LItem2, LItem3);
+
+  LYaml := TAsWishCandidateIngest.FormatChangeSetYaml(LCS);
+  LParsed := TAsWishCandidateIngest.ParseChangeSetYaml(LYaml);
+
+  Assert.AreEqual<Integer>(3, Length(LParsed.Items));
+  Assert.AreEqual(cstExplicit, LParsed.Items[0].SourceType);
+  Assert.AreEqual(cstInferred, LParsed.Items[1].SourceType);
+  Assert.AreEqual(cstUnknown, LParsed.Items[2].SourceType);
+end;
+
+procedure TCandidateIngestTests.ChangeSet_DoesNotMutateCanonicalSpec;
+var
+  LFunc: TList<TSpecNode>;
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+begin
+  LFunc := StubFunctionRoot;
+  try
+    var LOldSummary := LFunc[0].Summary;
+    LCS := TChangeSet.CreateNew('cs-test-01', 'func-demo', ttFunction, 'mutating intent text');
+    LItem := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', LOldSummary, 'RADICAL CHANGE', cstExplicit, 'test');
+    LCS.Items := TArray<TChangeItem>.Create(LItem);
+
+    // Formatting and creating ChangeSet must not affect in-memory live tree
+    Assert.AreEqual(LOldSummary, LFunc[0].Summary, 'ChangeSet generation alone must not mutate live spec');
   finally
     LFunc.Free;
   end;

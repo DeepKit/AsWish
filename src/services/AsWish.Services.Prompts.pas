@@ -34,6 +34,10 @@ type
     ///  string for non-grilling issues.</summary>
     function WriteGrillingPrompt(const AIssue: TSpecIssue;
       const ANodes: TList<TSpecNode>): string;
+    /// <summary>Write an LLM interpretation prompt to convert raw user intent
+    ///  into a structured Change Set (WO-20260830-0027B). Returns absolute output path.</summary>
+    function WriteChangeInterpretPrompt(const AIntent: TCandidateIntent;
+      const ANode: TSpecNode; const ABundles: TList<TSemanticBundle>): string;
   end;
 
 implementation
@@ -500,6 +504,108 @@ begin
       'grilling-ticket-' + SafeIssueId(AIssue.Id) + '.md');
     WritePromptFile(TPath.GetFileName(Result), LSb.ToString);
   finally
+    LSb.Free;
+  end;
+end;
+
+function TAsWishPromptService.WriteChangeInterpretPrompt(
+  const AIntent: TCandidateIntent; const ANode: TSpecNode;
+  const ABundles: TList<TSemanticBundle>): string;
+var
+  LSb: TStringBuilder;
+  LFileName: string;
+  LAffectedProjections: TList<string>;
+begin
+  LFileName := 'change-interpret-' + AIntent.NodeId + '.md';
+  LSb := TStringBuilder.Create;
+  LAffectedProjections := TList<string>.Create;
+  try
+    // Identify related projections from semantic bundles
+    if ABundles <> nil then
+      for var LB in ABundles do
+      begin
+        var LInBundle := False;
+        for var LNId in LB.NodeIds do
+          if LNId = AIntent.NodeId then
+          begin
+            LInBundle := True;
+            Break;
+          end;
+        if LInBundle then
+        begin
+          for var LNId in LB.NodeIds do
+          begin
+            if LNId.StartsWith('func-') and not LAffectedProjections.Contains('function') then
+              LAffectedProjections.Add('function')
+            else if LNId.StartsWith('mod-') and not LAffectedProjections.Contains('module') then
+              LAffectedProjections.Add('module')
+            else if LNId.StartsWith('view-') and not LAffectedProjections.Contains('view') then
+              LAffectedProjections.Add('view')
+            else if LNId.StartsWith('data-') and not LAffectedProjections.Contains('data') then
+              LAffectedProjections.Add('data');
+          end;
+        end;
+      end;
+    if not LAffectedProjections.Contains(TSpecEnums.TreeTypeToStr(AIntent.Tree)) then
+      LAffectedProjections.Add(TSpecEnums.TreeTypeToStr(AIntent.Tree));
+
+    LSb.AppendLine('# AsWish LLM Interpretation: Candidate User Intent -> Structured Change Set');
+    LSb.AppendLine;
+    LSb.AppendLine('You are the AsWish Spec Interpreter. Your mission is to interpret the following raw human user intent into a structured YAML Change Set.');
+    LSb.AppendLine('CRITICAL: Do NOT mutate the live Canonical Spec trees directly. You are generating an interpretation candidate for human review.');
+    LSb.AppendLine;
+    LSb.AppendLine('## 1. Raw Human User Intent');
+    LSb.AppendLine;
+    LSb.AppendLine('- Target Node ID: `' + AIntent.NodeId + '`');
+    LSb.AppendLine('- Target Projection: `' + TSpecEnums.TreeTypeToStr(AIntent.Tree) + '`');
+    LSb.AppendLine('- Author: `' + AIntent.Author + '`');
+    LSb.AppendLine('- User Intent Text:');
+    LSb.AppendLine('  > ' + AIntent.UserIntent);
+    LSb.AppendLine;
+    LSb.AppendLine('## 2. Current Node Context');
+    LSb.AppendLine;
+    LSb.AppendLine('- Title: ' + ANode.Title);
+    LSb.AppendLine('- Kind: ' + ANode.Kind);
+    LSb.AppendLine('- Current Summary: ' + ANode.Summary);
+    LSb.AppendLine('- Parent ID: ' + ANode.ParentId);
+    LSb.AppendLine('- Review Status: ' + TSpecEnums.ReviewStatusToStr(ANode.ReviewStatus));
+    LSb.AppendLine;
+    LSb.AppendLine('## 3. Affected Projections (via Semantic Bundles)');
+    LSb.AppendLine;
+    for var LP in LAffectedProjections do
+      LSb.AppendLine('- ' + LP);
+    LSb.AppendLine;
+    LSb.AppendLine('## 4. Required Output Format');
+    LSb.AppendLine;
+    LSb.AppendLine('Output ONLY a valid YAML document matching the following schema:');
+    LSb.AppendLine;
+    LSb.AppendLine('```yaml');
+    LSb.AppendLine('version: "1.2"');
+    LSb.AppendLine('change_set_id: "cs-' + AIntent.NodeId + '-01"');
+    LSb.AppendLine('target_node_id: "' + AIntent.NodeId + '"');
+    LSb.AppendLine('target_projection: "' + TSpecEnums.TreeTypeToStr(AIntent.Tree) + '"');
+    LSb.AppendLine('raw_user_intent: "' + AIntent.UserIntent.Replace('"', '\"') + '"');
+    LSb.AppendLine('items:');
+    LSb.AppendLine('  - target_node_id: "' + AIntent.NodeId + '"');
+    LSb.AppendLine('    target_projection: "' + TSpecEnums.TreeTypeToStr(AIntent.Tree) + '"');
+    LSb.AppendLine('    field: "summary"');
+    LSb.AppendLine('    before: "' + ANode.Summary.Replace('"', '\"') + '"');
+    LSb.AppendLine('    after: "<new summary interpreted from intent>"');
+    LSb.AppendLine('    source_type: "explicit"  # explicit | inferred | unknown');
+    LSb.AppendLine('    reason: "<why this change was made>"');
+    LSb.AppendLine('```');
+    LSb.AppendLine;
+    LSb.AppendLine('## 5. Interpretation Rules');
+    LSb.AppendLine;
+    LSb.AppendLine('- Mark directly stated changes as `explicit`.');
+    LSb.AppendLine('- Mark derived/implied changes as `inferred`.');
+    LSb.AppendLine('- Mark unclear/ambiguous aspects as `unknown` and explain in reason.');
+    LSb.AppendLine('- Keep all field names aligned with AsWish protocol schemas.');
+
+    Result := TPath.Combine(FBasePath, LFileName);
+    WritePromptFile(LFileName, LSb.ToString);
+  finally
+    LAffectedProjections.Free;
     LSb.Free;
   end;
 end;

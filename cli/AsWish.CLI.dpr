@@ -16,6 +16,7 @@
     AsWish.CLI bundle apply     <dir> <id> <act>   accept or reject a bundle
     AsWish.CLI ingest            <dir> <candidate> validate and merge candidate nodes
     AsWish.CLI intent            <dir> <id> <tree> <intent> record candidate user intent
+    AsWish.CLI changeset         <dir> <id> <tree> <intent> generate structured change set
   ============================================================================ }
 
 program AsWish.CLI;
@@ -564,6 +565,99 @@ begin
   end;
 end;
 
+procedure RunChangeSet(const ADir, ANodeId, ATreeStr, AUserIntent: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LPrompts: TAsWishPromptService;
+  LTree: TTreeType;
+  LIntent: TCandidateIntent;
+  LChangeSet: TChangeSet;
+  LBundles: TList<TSemanticBundle>;
+  LNodes: TList<TSpecNode>;
+  LTargetNode: TSpecNode;
+  LTreeFile: string;
+  LAffected: TArray<TTreeType>;
+  LChangePath, LPromptPath: string;
+  LItem: TChangeItem;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[changeset] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+
+  LTree := TSpecEnums.TreeTypeFromStr(ATreeStr, ttFunction);
+  LIntent := TCandidateIntent.CreateNew(ANodeId, LTree, AUserIntent, 'human');
+
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  LPrompts := TAsWishPromptService.Create;
+  try
+    LStore.Initialize(ADir);
+    LPrompts.Initialize(TPath.Combine(ADir, '.AsWish'));
+
+    LBundles := LStore.ReadBundlesFile('bundles.yaml');
+    try
+      case LTree of
+        ttFunction: LTreeFile := 'trees/function-tree.yaml';
+        ttModule:   LTreeFile := 'trees/module-tree.yaml';
+        ttView:     LTreeFile := 'trees/view-tree.yaml';
+        ttData:     LTreeFile := 'trees/data-tree.yaml';
+      end;
+      LNodes := LStore.ReadTreeFile(LTreeFile);
+      try
+        LTargetNode := Default(TSpecNode);
+        for var LN in LNodes do
+          if LN.Id = ANodeId then
+          begin
+            LTargetNode := LN;
+            Break;
+          end;
+
+        LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
+
+        LChangeSet := TChangeSet.CreateNew('cs-' + ANodeId + '-01', ANodeId, LTree, AUserIntent, 'human');
+        LChangeSet.AffectedProjections := LAffected;
+
+        LItem := TChangeItem.CreateItem(ANodeId, LTree, 'summary', LTargetNode.Summary, AUserIntent, cstExplicit, 'Interpreted from human user intent');
+        LChangeSet.Items := TArray<TChangeItem>.Create(LItem);
+
+        LChangePath := LIngest.SaveChangeSet(ADir, LChangeSet);
+        LPromptPath := LPrompts.WriteChangeInterpretPrompt(LIntent, LTargetNode, LBundles);
+
+        if GJsonOutput then
+        begin
+          WriteJsonHeader('changeset');
+          WriteJsonKV('status', 'ok');
+          WriteJsonKV('change_set_id', LChangeSet.Id);
+          WriteJsonKV('node_id', ANodeId);
+          WriteJsonKV('tree', TSpecEnums.TreeTypeToStr(LTree));
+          WriteJsonKV('saved_to', LChangePath);
+          WriteJsonKV('prompt_path', LPromptPath);
+          WriteJsonKVInt('items_count', Length(LChangeSet.Items));
+          WriteJsonFooter;
+        end
+        else
+        begin
+          Writeln(Format('[changeset] generated change set %s for %s (%s)',
+            [LChangeSet.Id, ANodeId, TSpecEnums.TreeTypeToStr(LTree)]));
+          Writeln('  saved change set: ' + LChangePath);
+          Writeln('  saved prompt:     ' + LPromptPath);
+        end;
+      finally
+        LNodes.Free;
+      end;
+    finally
+      LBundles.Free;
+    end;
+  finally
+    LPrompts.Free;
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
 procedure RunScan(const ADir: string);
 var
   LProject: TAsWishProjectService;
@@ -917,6 +1011,15 @@ begin
       Halt(2);
     end;
     RunIntent(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
+  end
+  else if LCommand = 'changeset' then
+  begin
+    if ParamCount < 5 then
+    begin
+      Writeln('AsWish.CLI changeset <project-dir> <node-id> <tree> <user_intent>');
+      Halt(2);
+    end;
+    RunChangeSet(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
   end
   else
   begin
