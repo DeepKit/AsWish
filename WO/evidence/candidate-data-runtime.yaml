@@ -1,0 +1,12 @@
+version: "1.2"
+tree: data
+nodes:
+  - id: data-runtime-profile
+    title: Runtime Profile
+    kind: entity
+    data_type: object
+    persistence: db
+    source_layer: ai_inferred
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed

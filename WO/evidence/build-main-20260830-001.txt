@@ -1,0 +1,5 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\services\DeepSpec.Services.Prompts.pas(352) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'System.SysUtils' unit, or 'TCharHelper.IsInArray' function in 'System.Character' unit.
+src\services\DeepSpec.Services.Context.pas(47) Hint: H2219 Private symbol 'EstimateTokens' declared but never used
+15191 lines, 1.69 seconds, 6245396 bytes code, 645616 bytes data.

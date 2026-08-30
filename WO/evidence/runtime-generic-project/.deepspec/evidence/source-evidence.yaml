@@ -1,0 +1,94 @@
+﻿version: "1.0"
+
+evidence:
+  - id: "ev-readme-md"
+    source_layer: parsed_from_a
+    path: "README.md"
+    lines: null
+    excerpt: "# Fresh sample project"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-models-user-ts"
+    source_layer: parsed_from_a
+    path: "models/user.ts"
+    lines: null
+    excerpt: "Directory: models"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-legacy-pas"
+    source_layer: parsed_from_a
+    path: "legacy.pas"
+    lines: null
+    excerpt: "unit Legacy;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-app-py"
+    source_layer: parsed_from_a
+    path: "app.py"
+    lines: null
+    excerpt: "File: app.py"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-legacy-pas"
+    source_layer: parsed_from_a
+    path: "legacy.pas"
+    lines: null
+    excerpt: "File: legacy.pas"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-data-users-json"
+    source_layer: parsed_from_a
+    path: "data/users.json"
+    lines: null
+    excerpt: "File: data/users.json"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-models-user-ts"
+    source_layer: parsed_from_a
+    path: "models/user.ts"
+    lines: null
+    excerpt: "File: models/user.ts"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []

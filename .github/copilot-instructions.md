@@ -1,10 +1,10 @@
-# GitHub Copilot / Coding Agent Instructions for DeepSpec
+# GitHub Copilot / Coding Agent Instructions for AsWish
 
-DeepSpec turns messy human-AI requirement conversations into traceable, reviewable, fallible specifications for coding agents.
+AsWish turns messy human-AI requirement conversations into traceable, reviewable, fallible specifications for coding agents.
 
 ## Core Positioning
 
-DeepSpec is not a generic code generator. It is a specification construction and review system.
+AsWish is not a generic code generator. It is a specification construction and review system.
 
 Use this pipeline as the default mental model:
 
@@ -24,11 +24,11 @@ Human intent / project facts / source code evidence
 - Prefer partial success: one failed tree, parser, LLM call, or validation pass must not block unrelated readable results.
 - Keep AI context least-privilege: each AI call should receive the smallest context sufficient for the current task.
 - Human judgment is not replaced: tooling should make human judgment more inspectable and consequential.
-- Do not turn DeepSpec into ODD. DeepSpec constructs and freezes specifications; ODD verifies implementation outputs against contracts.
+- Do not turn AsWish into ODD. AsWish constructs and freezes specifications; ODD verifies implementation outputs against contracts.
 
 ## Architecture Expectations
 
-- `.deepspec/` is the project-local specification workspace.
+- `.AsWish/` is the project-local specification workspace.
 - `protocol/` defines schemas, conformance rules, and reader expectations.
 - `src/core/` should stay independent from UI concerns.
 - `src/services/` coordinates parsing, storage, rendering, LLM calls, and decisions.

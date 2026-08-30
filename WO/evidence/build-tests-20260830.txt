@@ -1,0 +1,4 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+D:\_Progs\02Business\DeepSpec\src\services\DeepSpec.Services.TreeBuilder.pas(40) Hint: H2219 Private symbol 'GetTopLevelDir' declared but never used
+15527 lines, 1.77 seconds, 8556308 bytes code, 795120 bytes data.

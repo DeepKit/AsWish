@@ -1,12 +1,12 @@
-# DeepSpec Reader Profile v1.2-draft
+# AsWish Reader Profile v1.2-draft
 
-> Minimum specification for tools that consume `.deepspec/` directories.
+> Minimum specification for tools that consume `.AsWish/` directories.
 
 ## Level 0: Scanner Reader
 
 | Capability | Required |
 |---|---|
-| Detect `.deepspec/project-spec.yaml` | Yes |
+| Detect `.AsWish/project-spec.yaml` | Yes |
 | Read `project.name`, `project.type`, `project.scan_time` | Yes |
 | Read `summary.*` counters | Yes |
 | Report missing project cleanly | Yes |
@@ -64,7 +64,7 @@ slug_override: null
 
 | Situation | Required behavior |
 |---|---|
-| `project-spec.yaml` missing | Report "not a DeepSpec project" |
+| `project-spec.yaml` missing | Report "not a AsWish project" |
 | Optional tree referenced but missing | Warning, continue with empty tree |
 | Required v1.0 tree missing | Warning, continue with partial data if possible |
 | Unknown `x_` field or kind | Ignore or preserve silently |
@@ -74,4 +74,4 @@ slug_override: null
 
 ## Non-Goals
 
-A reader does not need to write `.deepspec/`, run LLM calls, render HTML, or enforce all invariants. Those are writer/gate capabilities.
+A reader does not need to write `.AsWish/`, run LLM calls, render HTML, or enforce all invariants. Those are writer/gate capabilities.

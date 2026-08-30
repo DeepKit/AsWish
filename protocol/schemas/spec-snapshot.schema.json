@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/spec-snapshot.schema.json",
-  "title": "DeepSpec Snapshot",
+  "$id": "https://aswish.dev/schemas/v1/spec-snapshot.schema.json",
+  "title": "AsWish Snapshot",
   "type": "object",
   "required": ["version", "snapshot_id", "created_at", "source_project", "files"],
   "additionalProperties": true,

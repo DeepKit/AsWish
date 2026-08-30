@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/bundle.schema.json",
-  "title": "DeepSpec Semantic Bundles",
+  "$id": "https://aswish.dev/schemas/v1/bundle.schema.json",
+  "title": "AsWish Semantic Bundles",
   "type": "object",
   "required": ["version", "bundles"],
   "additionalProperties": true,

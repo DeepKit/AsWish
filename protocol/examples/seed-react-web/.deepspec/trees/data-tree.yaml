@@ -1,7 +1,7 @@
 version: "1.0"
 tree: data
 generated_at: "2026-05-19T00:0000+08:00"
-generator: "DeepSpec v2.0"
+generator: "AsWish v2.0"
 
 nodes:
   - id:-user

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/decisions.schema.json",
-  "title": "DeepSpec Requirement Decisions",
+  "$id": "https://aswish.dev/schemas/v1/decisions.schema.json",
+  "title": "AsWish Requirement Decisions",
   "description": "Schema for requirement-decisions.yaml. Human decisions are first-class facts.",
   "type": "object",
   "required": ["version", "decisions"],

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/evidence.schema.json",
-  "title": "DeepSpec Source Evidence",
+  "$id": "https://aswish.dev/schemas/v1/evidence.schema.json",
+  "title": "AsWish Source Evidence",
   "description": "Schema for source-evidence.yaml",
   "type": "object",
   "required": ["version", "evidence"],

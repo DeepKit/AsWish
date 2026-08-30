@@ -1,4 +1,4 @@
-# DeepSpec Controlled Vocabulary
+# AsWish Controlled Vocabulary
 
 > Status: v1.2-draft
 

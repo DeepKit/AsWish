@@ -1,0 +1,20 @@
+ README.md                                          |   9 +-
+ cli/DeepSpec.CLI.dpr                               |  25 +-
+ ...\205\344\270\216\344\270\211\346\240\221-v1.md" |   2 +
+ ...\232\347\224\250\345\215\217\350\256\256-v1.md" |   2 +
+ ...\206\346\241\214\350\256\250\350\256\272-v1.md" |   2 +
+ ...\241\351\230\205\346\204\217\350\247\201-v1.md" |   2 +
+ ...\241\351\230\205\346\204\217\350\247\201-v1.md" |   2 +
+ ...\207\346\241\243\347\264\242\345\274\225-v1.md" | 230 +-----
+ docs/README.md                                     |   3 +
+ src/controllers/DeepSpec.Controller.pas            |   7 +-
+ src/core/DeepSpec.Validation.pas                   | 203 ++++-
+ src/models/DeepSpec.Models.pas                     |   4 +-
+ src/services/DeepSpec.Services.CandidateIngest.pas |  99 ++-
+ src/services/DeepSpec.Services.Prompts.pas         |  13 +-
+ src/services/DeepSpec.Services.TreeBuilder.pas     | 827 ++++++++++++++++++++-
+ tests/DeepSpec.Tests.dpr                           |   2 +
+ tests/Test.DeepSpec.CandidateIngest.pas            | 103 ++-
+ tests/Test.DeepSpec.SpecStore.pas                  |  73 ++
+ tests/Test.DeepSpec.Validation.pas                 | 156 ++++
+ 19 files changed, 1494 insertions(+), 270 deletions(-)

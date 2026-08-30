@@ -1,6 +1,6 @@
-# Contributing to DeepSpec
+# Contributing to AsWish
 
-DeepSpec is a specification construction and review system for human-AI software work.
+AsWish is a specification construction and review system for human-AI software work.
 
 ## Contribution Priorities
 
@@ -12,14 +12,14 @@ DeepSpec is a specification construction and review system for human-AI software
 
 ## Before You Start
 
-- Read `docs/DeepSpec-CTF方法论-v1.md` for the method.
+- Read `docs/AsWish-CTF方法论-v1.md` for the method.
 - Read `protocol/README.md` for protocol expectations.
 - Prefer small changes with clear verification.
 - Do not mix broad theory rewrites with implementation changes.
 
 ## CTF Boundary
 
-DeepSpec constructs, reviews, and freezes specifications. It does not replace ODD-style implementation verification.
+AsWish constructs, reviews, and freezes specifications. It does not replace ODD-style implementation verification.
 
 A healthy contribution should make this chain clearer:
 

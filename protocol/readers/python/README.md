@@ -1,6 +1,6 @@
-# deepspec-reader (Python)
+# aswish-reader (Python)
 
-Minimal DeepSpec Protocol reader. Level 1 compliance with v1.2-draft data-tree awareness.
+Minimal AsWish Protocol reader. Level 1 compliance with v1.2-draft data-tree awareness.
 
 ## Install
 
@@ -13,11 +13,11 @@ No other dependencies.
 ## Usage
 
 ```python
-from deepspec_reader import open_deepspec
+from aswish_reader import open_aswish
 
-spec = open_deepspec("/path/to/project")
+spec = open_aswish("/path/to/project")
 if spec is None:
-    print("Not a DeepSpec project")
+    print("Not a AsWish project")
     exit()
 
 # Project info
@@ -39,7 +39,7 @@ for instruction in spec.ai_instructions():
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `open_deepspec(path)` | `Reader \| None` | Open project, None if no .deepspec |
+| `open_aswish(path)` | `Reader \| None` | Open project, None if no .AsWish |
 | `reader.project()` | `ProjectSpec` | Project metadata and summary |
 | `reader.tree(type)` | `TreeFile` | Load tree: "function", "module", "view", "data" when present |
 | `reader.all_nodes()` | `list[dict]` | All nodes across all trees |

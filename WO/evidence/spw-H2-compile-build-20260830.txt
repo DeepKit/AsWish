@@ -1,0 +1,7 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\services\DeepSpec.Services.Context.pas(47) Hint: H2219 Private symbol 'EstimateTokens' declared but never used
+15014 lines, 1.70 seconds, 6236852 bytes code, 645304 bytes data.
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+15521 lines, 1.70 seconds, 8556580 bytes code, 795184 bytes data.

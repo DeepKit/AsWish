@@ -4,7 +4,7 @@
 
 Briefly describe the change and why it is needed.
 
-## DeepSpec invariants
+## AsWish invariants
 
 - [ ] Traceability is preserved: new or changed outputs can be linked to evidence or human decisions.
 - [ ] Fallibility is preserved: generated or accepted content can be questioned, marked stale, rejected, or regenerated.

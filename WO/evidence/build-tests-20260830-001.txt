@@ -1,0 +1,5 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+D:\_Progs\02Business\DeepSpec\src\services\DeepSpec.Services.Prompts.pas(352) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'System.SysUtils' unit, or 'TCharHelper.IsInArray' function in 'System.Character' unit.
+Test.DeepSpec.Prompts.pas(76) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+15826 lines, 1.62 seconds, 8570508 bytes code, 795816 bytes data.

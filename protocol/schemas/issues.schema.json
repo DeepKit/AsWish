@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/issues.schema.json",
-  "title": "DeepSpec Document Issues",
+  "$id": "https://aswish.dev/schemas/v1/issues.schema.json",
+  "title": "AsWish Document Issues",
   "description": "Schema for doc-issues.yaml",
   "type": "object",
   "required": ["version", "issues"],

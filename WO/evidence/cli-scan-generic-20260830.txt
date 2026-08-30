@@ -1,0 +1,4 @@
+[scan] scanning WO\evidence\runtime-generic-project
+[scan] 6 files, type=delphi_vcl
+[scan] trees: function 2 / module 4 / view 0 / data 6
+[scan] done -> WO\evidence\runtime-generic-project\.deepspec\html\

@@ -1,0 +1,11 @@
+{
+  "command": "health",
+  "totalNodes": 12,
+  "confirmedNodes": 0,
+  "coveragePct": 0.00,
+  "avgConfidence": 0.68,
+  "decisionBacklog": 0,
+  "fogCount": 1,
+  "highRiskOpen": 0,
+  "status": "ok"
+}

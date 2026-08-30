@@ -1,0 +1,5 @@
+=== H1.resource-locks: DeepBase dependency ===
+[info] DeepBase present at D:\_Progs\02Business\DeepBase with all 11 search dirs
+[info] all 0 distinct DeepBase.* units referenced by src/ resolve under DEEPBASE_HOME
+[info] DeepBase is NOT vendored in repo (no submodule, no vendored DCU) — build depends on external absolute path
+[PASS] DeepBase resource lock intact

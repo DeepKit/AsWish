@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/agent-result.schema.json",
-  "title": "DeepSpec Agent Results",
+  "$id": "https://aswish.dev/schemas/v1/agent-result.schema.json",
+  "title": "AsWish Agent Results",
   "type": "object",
   "required": ["version", "agent_results"],
   "additionalProperties": true,

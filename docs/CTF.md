@@ -1,8 +1,8 @@
-# CTF in DeepSpec
+# CTF in AsWish
 
 CTF means Constructive Traceable Fallibilist Method.
 
-It is the method used by DeepSpec to turn project material and AI output into specifications that humans can inspect and repair.
+It is the method used by AsWish to turn project material and AI output into specifications that humans can inspect and repair.
 
 ## One Sentence
 
@@ -13,7 +13,7 @@ A requirement's form and granularity are constructed through human-AI dialogue, 
 CTF belongs before execution.
 
 ```text
-CTF / DeepSpec: form a trustworthy specification
+CTF / AsWish: form a trustworthy specification
 Symphony-style orchestration: keep agents working on tasks
 ODD: verify, seal, and rework implementation outputs
 ```
@@ -125,22 +125,22 @@ Remove manual `reasoning_type` selection. Infer automatically from evidence pres
 
 ## Checklist Automation
 
-Machine-checkable items (A2 traceable, A3 fallible, A5 minimal context, A7 partial success) belong in `deepspec_validate`, not in a human checklist.
+Machine-checkable items (A2 traceable, A3 fallible, A5 minimal context, A7 partial success) belong in `aswish_validate`, not in a human checklist.
 
 Only A6 (problem-first) requires human judgment. Present as a non-blocking prompt, not a blocking dialog.
 
 ## Tool Protocol
 
 ```text
-deepspec_read     -- read tree data or summary
-deepspec_validate -- check invariants, schema, cross-tree consistency
-deepspec_query    -- RAG over four projection trees
-deepspec_update   -- write nodes and decisions with conflict detection
+aswish_read     -- read tree data or summary
+aswish_validate -- check invariants, schema, cross-tree consistency
+aswish_query    -- RAG over four projection trees
+aswish_update   -- write nodes and decisions with conflict detection
 ```
 
-Day-one minimum: `deepspec_read` + `deepspec_validate`. The other two can follow.
+Day-one minimum: `aswish_read` + `aswish_validate`. The other two can follow.
 
-All `.deepspec/` content is human-readable YAML. If every AI tool disappears, a reviewer can still open the files in a text editor.
+All `.AsWish/` content is human-readable YAML. If every AI tool disappears, a reviewer can still open the files in a text editor.
 
 ## Why It Helps AI Engineering
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/data-tree.schema.json",
-  "title": "DeepSpec Data Tree File",
+  "$id": "https://aswish.dev/schemas/v1/data-tree.schema.json",
+  "title": "AsWish Data Tree File",
   "description": "Schema for data-tree.yaml. Tracks entities, fields, relations, state transitions, migrations, persistence boundaries, and constraints.",
   "type": "object",
   "required": ["version", "tree", "generated_at", "generator", "nodes"],

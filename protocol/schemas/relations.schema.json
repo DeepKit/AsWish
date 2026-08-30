@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/relations.schema.json",
-  "title": "DeepSpec Requirement Relations",
+  "$id": "https://aswish.dev/schemas/v1/relations.schema.json",
+  "title": "AsWish Requirement Relations",
   "description": "Schema for requirement-relations.yaml",
   "type": "object",
   "required": ["version", "generated_at", "relations"],

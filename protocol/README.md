@@ -1,16 +1,16 @@
-# DeepSpec Protocol
+# AsWish Protocol
 
 > AI-native specification facts for software projects.  
 > Current baseline: v1.2-draft.
 
 ## What Is This?
 
-DeepSpec Protocol defines a structured `.deepspec/` workspace that humans and AI coding agents can both read.
+AsWish Protocol defines a structured `.AsWish/` workspace that humans and AI coding agents can both read.
 
 ```text
 Human intent / project files / code evidence
-        -> DeepSpec CTF
-YAML facts in .deepspec/
+        -> AsWish CTF
+YAML facts in .AsWish/
         -> generated HTML / reader tools
 Human review decisions
         -> SpecSnapshot / ContractCandidate
@@ -29,7 +29,7 @@ YAML files are the source of truth. HTML pages are generated review surfaces.
 ## Directory Structure
 
 ```text
-.deepspec/
+.AsWish/
   project-spec.yaml
   trees/
     function-tree.yaml
@@ -107,11 +107,11 @@ python protocol/conformance/run.py --reader "your-reader" --level 1
 
 ## Theoretical Foundations & Attribution
 
-DeepSpec Protocol embodies foundational ontological architectures authored by **付毅 (Fuyi)**:
-- Differential Monism (DM, 差异一元论, DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505))
+AsWish Protocol embodies foundational ontological architectures authored by **付毅 (Fuyi)**:
+- Difference Monism (DM, 差异一元论, DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505))
 - Attributive Set Transition Ontology (ASTO, 属集变迁存在论, DOI: [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467))
 - Output-Driven Development (ODD, 产出物驱动开发)
-- Problem Formulation Modeling (PFM, 前线显影层)
+- Problem Manifestation Methodology (PFM, 前线显影层)
 
 Canonical Theory Source Repository: `D:\_Progs\一元论\`  
 See [NOTICE](NOTICE) for complete statutory attribution requirements under Apache License 2.0 Section 4(d).

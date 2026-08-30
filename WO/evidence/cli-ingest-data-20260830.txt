@@ -1,0 +1,1 @@
+[ingest] accepted=1 rejected=0 merged=0 added=1 fogCleared=0

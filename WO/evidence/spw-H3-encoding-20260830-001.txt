@@ -1,0 +1,3 @@
+=== H3.encoding-guard ===
+[info] 38 files UTF-8-clean, 0 files ANSI/cp1252
+[PASS] no encoding corruption in Delphi sources

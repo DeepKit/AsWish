@@ -852,7 +852,7 @@ end;
 ```delphi
 except
   on E: Exception do
-    DeepBase.Logger.Error('Scan failed', E, 'DeepSpec.Scan');
+    DeepBase.Logger.Error('Scan failed', E, 'AsWish.Scan');
 end;
 ```
 

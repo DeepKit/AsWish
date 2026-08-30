@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/review-decision.schema.json",
-  "title": "DeepSpec Review Decisions",
+  "$id": "https://aswish.dev/schemas/v1/review-decision.schema.json",
+  "title": "AsWish Review Decisions",
   "type": "object",
   "required": ["version", "review_decisions"],
   "additionalProperties": true,

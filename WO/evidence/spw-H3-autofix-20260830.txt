@@ -1,0 +1,9 @@
+=== H3.runtime-autofix ===
+[info] dpr installs InstallAIErrorHandler
+[info] dpr installs TAutoFixVclHook.Install
+[info] boundary.json allowed_paths: src/
+[info] boundary.json blocked_paths: DeepBase/, *.dproj, *.dpr, *.ps1 ...
+[FAIL] 3 problem(s):
+  - DeepSpec.dpr missing AutoFix.Install
+  - DeepSpec.dpr missing AutoFix.RegisterScenario
+  - MainForm no longer registers AutoFix scenarios

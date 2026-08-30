@@ -1,7 +1,7 @@
 /**
- * @deepspec/reader - Minimal DeepSpec Protocol Reader (Level 1, v1.2-draft aware)
+ * @aswish/reader - Minimal AsWish Protocol Reader (Level 1, v1.2-draft aware)
  *
- * Reads .deepspec/ directories and provides typed access to
+ * Reads .AsWish/ directories and provides typed access to
  * project facts, trees, and decisions.
  */
 
@@ -114,16 +114,16 @@ const NODE_DEFAULTS: Partial<TreeNode> = {
 
 // --- Reader ---
 
-export class DeepSpecReader {
+export class AsWishReader {
   private basePath: string;
   private _project: ProjectSpec | null = null;
   private _trees: Map<TreeType, TreeFile> = new Map();
 
   constructor(projectRoot: string) {
-    this.basePath = join(projectRoot, '.deepspec');
+    this.basePath = join(projectRoot, '.AsWish');
   }
 
-  /** Check if this project has a .deepspec directory */
+  /** Check if this project has a .AsWish directory */
   exists(): boolean {
     return existsSync(join(this.basePath, 'project-spec.yaml'));
   }
@@ -203,7 +203,7 @@ export class DeepSpecReader {
   private readYaml(relativePath: string): unknown {
     const fullPath = join(this.basePath, relativePath);
     if (!existsSync(fullPath)) {
-      throw new Error(`DeepSpec file not found: ${relativePath}`);
+      throw new Error(`AsWish file not found: ${relativePath}`);
     }
     const content = readFileSync(fullPath, 'utf-8');
     return parseYaml(content);
@@ -212,7 +212,7 @@ export class DeepSpecReader {
 
 // --- Convenience ---
 
-export function openDeepSpec(projectRoot: string): DeepSpecReader | null {
-  const reader = new DeepSpecReader(projectRoot);
+export function openAsWish(projectRoot: string): AsWishReader | null {
+  const reader = new AsWishReader(projectRoot);
   return reader.exists() ? reader : null;
 }

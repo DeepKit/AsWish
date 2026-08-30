@@ -1,8 +1,8 @@
-# DeepSpec State Machine
+# AsWish State Machine
 
 > Status: v1.2-draft
 
-DeepSpec separates generation state from review state.
+AsWish separates generation state from review state.
 
 ## Generation State
 

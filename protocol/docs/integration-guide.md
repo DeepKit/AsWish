@@ -1,12 +1,12 @@
-# DeepSpec Protocol: 10-Minute Integration Guide
+# AsWish Protocol: 10-Minute Integration Guide
 
-> For tool developers who want to read `.deepspec/` directories.
+> For tool developers who want to read `.AsWish/` directories.
 
 ## What You Build
 
 A minimal reader that can:
 
-1. Find a `.deepspec/` directory
+1. Find a `.AsWish/` directory
 2. Parse `project-spec.yaml`
 3. Load function/module/view trees
 4. Load `data-tree` when present
@@ -15,10 +15,10 @@ A minimal reader that can:
 ## Step 1: Find the Entry Point
 
 ```text
-{project_root}/.deepspec/project-spec.yaml
+{project_root}/.AsWish/project-spec.yaml
 ```
 
-If this file exists, the project has DeepSpec facts.
+If this file exists, the project has AsWish facts.
 
 ## Step 2: Parse `project-spec.yaml`
 
@@ -115,7 +115,7 @@ for path in Path('protocol/schemas').glob('*.json'):
 
 ## What Not To Do
 
-- Do not write to `.deepspec/` without user consent.
+- Do not write to `.AsWish/` without user consent.
 - Do not treat generated pending nodes as confirmed facts.
 - Do not ignore human `ai_instruction` fields.
 - Do not parse generated HTML as facts.

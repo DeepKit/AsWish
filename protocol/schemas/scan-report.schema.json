@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/scan-report.schema.json",
-  "title": "DeepSpec Scan Report",
+  "$id": "https://aswish.dev/schemas/v1/scan-report.schema.json",
+  "title": "AsWish Scan Report",
   "description": "Schema for scan-report.yaml - file classification and project scan results",
   "type": "object",
   "required": ["version", "scan_time", "project_path", "project_type", "file_classification", "stats"],

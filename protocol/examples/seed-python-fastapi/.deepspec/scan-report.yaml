@@ -10,7 +10,7 @@ file_classification:
   config:
   ai_rules:
   ignored:
-    - ".deepspec"
+    - ".AsWish"
 
 stats:
   total_files: 1

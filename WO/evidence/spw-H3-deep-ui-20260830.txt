@@ -1,0 +1,4 @@
+=== H3.deep-ui-test (static JS Bridge contract) ===
+[info] rendered actions: ['bundle-accept', 'bundle-reject', 'export-optimization-prompt', 'node-confirm', 'node-reject', 'ticket-create']
+[info] host-handled actions: ['bundle-accept', 'bundle-reject', 'export-optimization-prompt', 'node-confirm', 'node-reject', 'ticket-create']
+[PASS] every rendered data-action has a host handler

@@ -1,5 +1,7 @@
 # DeepSpec 三棵树通用协议 v1.1
 
+> 历史文档（失效口径）：本文记录早期“三棵树”设计；当前统一采用四投影，详见 [`../SPEC.md`](../SPEC.md)。
+
 > 日期：2026-05-14  
 > 状态：v1.1 已采纳两轮审阅意见  
 > 用途：定义 DeepSpec B 事实层中三棵树、关系边、来源证据、问题和决策的 YAML Schema，作为 LLM 输出校验、DeepSpec 解析和 HTML 渲染的共同契约。
@@ -606,6 +608,10 @@ unknown_unknowns  →  foggy  →  misty  →  clear
 ### 8.2.3 一次只解一个 ticket（建议流程）
 
 为保护 AI context，建议工作流：每个节点同一时刻**只保留一个 open 状态的探索 ticket**；解完一个（status → resolved）并据结果推进 fog_state 收敛一步后，再开下一个。协议层不强制此约束，由 UI/工作流保证。
+
+### 8.2.4 Grilling ticket 追问 Prompt
+
+`grilling_ticket` 的可复制追问清单由 [`src/services/DeepSpec.Services.Prompts.pas::TDeepSpecPromptService.WriteGrillingPrompt`](../src/services/DeepSpec.Services.Prompts.pas) 生成，输出到 `prompts/grilling-ticket-<issue_id>.md`。该代码是决策树拆解、目标/边界/验收三问、推荐答案和受影响雾区节点清单的唯一模板来源；本协议只保留索引，不复制模板正文。
 
 ---
 
@@ -1402,6 +1408,7 @@ nodes: []
 .deepspec/prompts/context-pack.md
 .deepspec/prompts/doc-optimization-prompt.md
 .deepspec/prompts/node-prompt.md
+.deepspec/prompts/grilling-ticket-*.md
 .deepspec/prompts/agents-draft.md
 .deepspec/prompts/claude-draft.md
 .deepspec/prompts/cursor-rules-draft.md
@@ -1421,7 +1428,7 @@ nodes: []
 
 ```text
 - 自动生成的模板类提示词（context-pack.md / doc-optimization-prompt.md / node-prompt.md
-  / *-draft.md）→ 排除（每次扫描可重新生成）
+  / grilling-ticket-*.md / *-draft.md）→ 排除（每次扫描可重新生成）
 - 由人类决策派生的提示词（decision-context.md / decision-rewrite-prompt.md）→ 提交
 - 用户手工创建的自定义提示词 → 放在 .deepspec/prompts/custom/ 子目录，提交
 ```

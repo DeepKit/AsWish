@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================================
-REM  DeepSpec installer build script (Inno Setup 6)
-REM  Detects ISCC.exe, compiles DeepSpec.iss, prints the artifact path.
+REM  AsWish installer build script (Inno Setup 6)
+REM  Detects ISCC.exe, compiles AsWish.iss, prints the artifact path.
 REM    ISCC - env override for a custom Inno Setup install location
 REM ============================================================================
 
@@ -18,12 +18,12 @@ if not exist "%ISCC%" (
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
-echo [installer] compiling DeepSpec.iss ...
-"%ISCC%" DeepSpec.iss
+echo [installer] compiling AsWish.iss ...
+"%ISCC%" AsWish.iss
 if errorlevel 1 (
   echo [ERROR] ISCC compilation failed
   exit /b 1
 )
 
-echo [installer] done -^> ..\bin\installer\DeepSpec-Setup-0.1.0.0.exe
+echo [installer] done -^> ..\bin\installer\AsWish-Setup-0.1.0.0.exe
 exit /b 0

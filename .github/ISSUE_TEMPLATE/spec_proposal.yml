@@ -1,13 +1,13 @@
 ---
 name: Spec / Protocol Proposal
-description: Propose a change to DeepSpec protocol, schemas, CTF workflow, or .deepspec structure
+description: Propose a change to AsWish protocol, schemas, CTF workflow, or .AsWish structure
 title: "spec: "
 labels: ["spec", "protocol"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use this when changing what DeepSpec means, stores, validates, or exposes to coding agents.
+        Use this when changing what AsWish means, stores, validates, or exposes to coding agents.
   - type: textarea
     id: problem
     attributes:
@@ -26,7 +26,7 @@ body:
     id: evidence
     attributes:
       label: Evidence and examples
-      description: Link to source files, sample .deepspec data, screenshots, or user cases.
+      description: Link to source files, sample .AsWish data, screenshots, or user cases.
     validations:
       required: true
   - type: checkboxes
@@ -43,5 +43,5 @@ body:
     id: migration
     attributes:
       label: Migration / compatibility plan
-      description: How should existing .deepspec data or readers handle this change?
+      description: How should existing .AsWish data or readers handle this change?
 ---

@@ -1,20 +1,20 @@
-# DeepSpec SPEC
+# AsWish SPEC
 
 > Status: v1.2-draft  
-> Scope: protocol and workflow baseline for `.deepspec/` workspaces
+> Scope: protocol and workflow baseline for `.AsWish/` workspaces
 
 ## 1. Objective
 
-DeepSpec defines a project-local specification workspace that humans and AI agents can both read. The workspace must make generated requirements traceable, reviewable, fallible, and usable as input to downstream coding agents.
+AsWish defines a project-local specification workspace that humans and AI agents can both read. The workspace must make generated requirements traceable, reviewable, fallible, and usable as input to downstream coding agents.
 
-DeepSpec is not an agent orchestrator. It is a specification construction and quality gate layer.
+AsWish is not an agent orchestrator. It is a specification construction and quality gate layer.
 
 ## 2. Workspace
 
-A DeepSpec-enabled project contains a `.deepspec/` directory.
+A AsWish-enabled project contains a `.AsWish/` directory.
 
 ```text
-.deepspec/
+.AsWish/
   project-spec.yaml
   trees/
     function-tree.yaml
@@ -40,7 +40,7 @@ A DeepSpec-enabled project contains a `.deepspec/` directory.
 
 ## 3. Four Projections
 
-DeepSpec represents a requirement through four weakly coupled projections.
+AsWish represents a requirement through four weakly coupled projections.
 
 | Projection | Question | Main risk it controls |
 |---|---|---|
@@ -76,7 +76,7 @@ Readers should map legacy status conservatively:
 | rejected | generated | rejected |
 | superseded | generated | rejected |
 
-Execution state does not belong to CTF/DeepSpec. Task execution state belongs to orchestration or ODD layers.
+Execution state does not belong to CTF/AsWish. Task execution state belongs to orchestration or ODD layers.
 
 ## 5. Traceability
 
@@ -120,7 +120,7 @@ Bundles support cross-tree review and detect projection gaps.
 
 ## 7. Agent Results
 
-When an AI agent produces a proposal, DeepSpec should record more than the final answer.
+When an AI agent produces a proposal, AsWish should record more than the final answer.
 
 Required review signals:
 
@@ -148,7 +148,7 @@ Accept levels must be decided before implementation details are hardened because
 
 ## 9. Invariants
 
-DeepSpec implementations should enforce the protocol invariants in `protocol/invariants.md` and state transitions in `protocol/state-machine.md`.
+AsWish implementations should enforce the protocol invariants in `protocol/invariants.md` and state transitions in `protocol/state-machine.md`.
 
 Minimum invariants:
 
@@ -175,13 +175,13 @@ Do not use `x-` for kind names.
 Recommended public framing:
 
 ```text
-DeepSpec makes AI-generated specifications traceable, reviewable, and correctable.
+AsWish makes AI-generated specifications traceable, reviewable, and correctable.
 ```
 
 Recommended comparison:
 
 ```text
 Symphony makes every task runnable by agents.
-DeepSpec makes every agent task specification reviewable.
+AsWish makes every agent task specification reviewable.
 ODD makes accepted outputs verifiable.
 ```

@@ -1,4 +1,4 @@
-DeepSpec & DeepSpec Protocol
+AsWish & AsWish Protocol
 Copyright 2026 付毅 (Fuyi) and BetterCiv Contributors.
 
 This product is licensed under the Apache License, Version 2.0 (the "License").
@@ -9,11 +9,11 @@ You may obtain a copy of the License at:
 THEORETICAL FOUNDATION AND STATUTORY ATTRIBUTION
 ================================================================================
 
-This software, its specification protocol (.deepspec/), and its ontological
+This software, its specification protocol (.AsWish/), and its ontological
 architecture are founded upon, derive from, and embody the following proprietary
 theoretical achievements created and authored by 付毅 (Fuyi):
 
-1. Differential Monism (DM, 差异一元论)
+1. Difference Monism (DM, 差异一元论)
    - The foundational philosophical framework replacing substance ontology with
      differential ontology, establishing difference as the origin of structured cognition.
    - Academic DOI / Zenodo Permanent Archive: 10.5281/zenodo.19852505
@@ -28,23 +28,35 @@ theoretical achievements created and authored by 付毅 (Fuyi):
 3. Output-Driven Development (ODD, 产出物驱动开发)
    - The engineering and governance discipline mandating frozen specification
      deliverables, deterministic gates, and verifiable evidence before production.
-   - Core Theoretical Ledger: 50-产出物驱动开发（ODD）
+   - Academic DOI / Zenodo Permanent Archive: 10.5281/zenodo.20024964
+   - Core Theoretical Ledger: 50-工程方法层（ODD）
    - Theory Author: 付毅 (Fuyi)
 
-4. Problem Formulation Modeling (PFM, 前线显影层)
+   3.1 Constructive Traceable Fallibilist Specification (CTF, 建构追溯可谬规格方法论)
+   - The pre-specification layer of ODD that converts unstable human-machine
+     requirements into traceable, reviewable, defeasible, freezable specification
+     snapshots, before they reach ODD contract execution.
+   - Theory Source: ODD.P03 (50-工程方法层（ODD）/AA-母版源层/ODD.P03.CTF建构追溯可谬规格方法论.md)
+   - Academic DOI: PENDING (preprint prepared 2026-08-29; to be minted on Zenodo)
+   - Claim Strength: C2 (analytical framework / engineering protocol; does not claim C5)
+   - Theory Author: 付毅 (Fuyi)
+
+4. Problem Manifestation Methodology (PFM, 前线显影层)
    - The front-line intent modeling methodology that reveals problem fields,
      uncovers latent constraints, and establishes verifiable acceptance criteria.
    - Core Theoretical Ledger: 54-前线显影层（PFM）
+   - Prior Public Record (priority): 10.5281/zenodo.19856528
+     (Lighthouse Marketing Methodology / LMM v1.0, 2026-04-28, historical name of PFM)
    - Theory Author: 付毅 (Fuyi)
 
 Canonical Theory Source Repository:
    D:\_Progs\一元论\ (Monism Canonical Archive)
 
 Upstream Problem Contract:
-   PC-20260828-DeepSpec-OpenSource
-   (08_元管理/BCW/docs/problem-contract-20260828-DeepSpec开源-v1.md)
+   PC-20260828-AsWish-OpenSource
+   (08_元管理/BCW/docs/problem-contract-20260828-AsWish开源-v1.md)
 
 Under Section 4(d) of the Apache License 2.0, any derivative work, redistribution,
-or external implementation of DeepSpec or the DeepSpec protocol MUST retain this
+or external implementation of AsWish or the AsWish protocol MUST retain this
 NOTICE and provide prominent statutory attribution to the author (付毅 / Fuyi)
 and the canonical theoretical foundations above.

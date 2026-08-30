@@ -1,0 +1,121 @@
+﻿version: "1.0"
+tree: module
+generated_at: "2026-08-30T00:30:59+08:00"
+generator: "deepspec-treebuilder"
+
+nodes:
+  - id: "mod-runtime-generic-project"
+    tree: module
+    title: "runtime-generic-project Modules"
+    kind: package
+    parent_id: null
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    content_hash: "d5fd68f3e9d22b6f158c2a2c9b9760263064be8fb4d9a196b94c3d7194d3654c"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Module structure derived from directory layout"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "mod-models"
+    tree: module
+    title: "models"
+    kind: package
+    parent_id: "mod-runtime-generic-project"
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    content_hash: "2e3f341f2212856db9c78f040c547c56b748353656932231adba3f23f516c508"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Module rooted at models/"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-models-user-ts"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "mod-class-tlegacy"
+    tree: module
+    title: "TLegacy"
+    kind: class
+    parent_id: "mod-unit-legacy"
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    content_hash: "b86637ef15cb98028b3faaae7b695584fa94e387614b8199163f1e3449c17256"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "TLegacy declaration in Legacy"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-legacy-pas"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "mod-unit-legacy"
+    tree: module
+    title: "Legacy"
+    kind: unit
+    parent_id: null
+    created_at: "2026-08-30T00:30:59+08:00"
+    updated_at: "2026-08-30T00:30:59+08:00"
+    content_hash: "974421680f168cdf29c17b8c5859b47ac68671747b44a6c81fe06b92972403fb"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Pascal unit declared in legacy.pas"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-legacy-pas"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "mod-class-tlegacy"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

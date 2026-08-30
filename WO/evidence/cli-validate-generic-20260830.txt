@@ -1,0 +1,6 @@
+[validate] trees/function-tree.yaml: 0 error(s), 0 warning(s)
+[validate] trees/module-tree.yaml: 0 error(s), 0 warning(s)
+[validate] trees/view-tree.yaml: 0 error(s), 0 warning(s)
+[validate] trees/data-tree.yaml: 0 error(s), 0 warning(s)
+[validate] issues/doc-issues.yaml: 0 error(s), 0 warning(s)
+[validate] OK

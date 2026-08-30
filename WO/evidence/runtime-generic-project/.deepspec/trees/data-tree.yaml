@@ -1,0 +1,212 @@
+﻿version: "1.0"
+tree: data
+generated_at: "2026-08-30T00:31:21+08:00"
+generator: "deepspec-treebuilder"
+
+nodes:
+  - id: "data-runtime-generic-project"
+    tree: data
+    title: "runtime-generic-project Data"
+    kind: entity
+    parent_id: null
+    content_hash: "96137ecf30dee48fa617314b033d454d496e846fd83c64a2291801f6ab0eed11"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Data projection inferred from project sources"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "data-entity-profile"
+      - "data-entity-user"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    field_constraints: []
+    valid_states: []
+  - id: "data-entity-profile"
+    tree: data
+    title: "Profile"
+    kind: entity
+    parent_id: "data-runtime-generic-project"
+    content_hash: "e50ed976cbcb9fcae2b1c2f61d73ad679241744fd1d65f72b414333000b65ccc"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Data entity inferred from data/users.json"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-data-users-json"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "data-field-profile-email"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    field_constraints: []
+    valid_states: []
+  - id: "data-field-profile-email"
+    tree: data
+    title: "email"
+    kind: field
+    parent_id: "data-entity-profile"
+    content_hash: "81ec3808de5407976b43fb9e3c19cdff29c83051afd80df2dbe2212c86423a1c"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "email: string (inferred from data/users.json)"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-data-users-json"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    data_type: "string"
+    field_constraints: []
+    valid_states: []
+  - id: "data-entity-user"
+    tree: data
+    title: "User"
+    kind: entity
+    parent_id: "data-runtime-generic-project"
+    content_hash: "39bfc616f03e5edcd700665f5b4d20c10de91033265632e427ed4ba1e912d179"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "Data entity inferred from models/user.ts"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-models-user-ts"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "data-field-user-id"
+      - "data-field-user-displayname"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    field_constraints: []
+    valid_states: []
+  - id: "data-field-user-id"
+    tree: data
+    title: "id"
+    kind: field
+    parent_id: "data-entity-user"
+    content_hash: "221bd6d99bf7bd95d22a60d36b4aff580b99925818c957e2b7bd2baaf0db200b"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "id: string (inferred from models/user.ts)"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-models-user-ts"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    data_type: "string"
+    field_constraints: []
+    valid_states: []
+  - id: "data-field-user-displayname"
+    tree: data
+    title: "displayName"
+    kind: field
+    parent_id: "data-entity-user"
+    content_hash: "760c2f23044c7025093d90d3ac1b0e018b1cccd0e2edc10c1e6ae65dd2049dca"
+    relation_hash: "c9ca9e69b9fc0d2d9f646e9d879df867e8bc9503fbf713b6c18f99b4a1637187"
+    revision: 1
+    summary: "displayName: string (inferred from models/user.ts)"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-models-user-ts"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    data_type: "string"
+    field_constraints: []
+    valid_states: []
+  - id: "data-runtime-profile"
+    tree: data
+    title: "Runtime Profile"
+    kind: entity
+    parent_id: null
+    revision: 0
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: ai_inferred
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    data_type: "object"
+    field_constraints: []
+    persistence: db
+    valid_states: []

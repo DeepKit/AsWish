@@ -1,4 +1,4 @@
-# DeepSpec build / IDE artifacts
+# AsWish build / IDE artifacts
 bin/
 dcu/
 __history/
@@ -36,7 +36,7 @@ workorders/
 root.txt
 root.txt.example
 *.db
-DeepSpecConfig.db
+AsWishConfig.db
 
 # Tool configs
 .claude/

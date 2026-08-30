@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/tree.schema.json",
-  "title": "DeepSpec Tree File",
+  "$id": "https://aswish.dev/schemas/v1/tree.schema.json",
+  "title": "AsWish Tree File",
   "description": "Schema for function-tree.yaml, module-tree.yaml, view-tree.yaml, and data-tree.yaml. v1.2-draft keeps legacy status readable while introducing orthogonal gen_status and review_status.",
   "type": "object",
   "required": ["version", "tree", "generated_at", "generator", "nodes"],

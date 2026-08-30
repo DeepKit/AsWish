@@ -1,6 +1,6 @@
 name: build
 
-# DeepSpec CI — self-hosted Windows runner with Delphi BDS 37.0.
+# AsWish CI — self-hosted Windows runner with Delphi BDS 37.0.
 # Why self-hosted: BDS is commercial software, cannot run on GitHub public
 # runners. This runner lives on the same machine that has DeepBase source
 # at D:\_Progs\02Business\DeepBase, so the ..\DeepBase\ relative search paths
@@ -33,20 +33,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build main program (DeepSpec.exe)
+      - name: Build main program (AsWish.exe)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
         run: .\_build.bat
 
-      - name: Build CLI (DeepSpec.CLI.exe)
+      - name: Build CLI (AsWish.CLI.exe)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
         working-directory: cli
         run: .\_build_cli.bat
 
-      - name: Build tests (DeepSpec.Tests.exe)
+      - name: Build tests (AsWish.Tests.exe)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
@@ -55,7 +55,7 @@ jobs:
 
       - name: Run tests
         working-directory: tests
-        run: .\DeepSpec.Tests.exe
+        run: .\AsWish.Tests.exe
 
       - name: Upload test report
         if: always()

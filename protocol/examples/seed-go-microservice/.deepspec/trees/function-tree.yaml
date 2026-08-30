@@ -1,7 +1,7 @@
 version: "1.0"
 tree: function
 generated_at: "2026-05-15T09:00:00+08:00"
-generator: "deepspec-llm-v1"
+generator: "aswish-llm-v1"
 
 nodes:
   - id: "func-user-service"

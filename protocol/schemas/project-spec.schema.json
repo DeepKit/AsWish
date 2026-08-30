@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://deepspec.dev/schemas/v1/project-spec.schema.json",
-  "title": "DeepSpec Project Specification",
-  "description": "Root index file for a .deepspec directory. References all fact files.",
+  "$id": "https://aswish.dev/schemas/v1/project-spec.schema.json",
+  "title": "AsWish Project Specification",
+  "description": "Root index file for a .AsWish directory. References all fact files.",
   "type": "object",
   "required": ["version", "project", "summary", "trees"],
   "additionalProperties": true,

@@ -1,48 +1,48 @@
 {
   "schema": "spw/run-manifest/v1",
-  "workspace": "D:/_Progs/02Business/DeepSpec",
+  "workspace": "D:/_Progs/02Business/AsWish",
   "project_profile": "delphi_gui",
   "risk_lane": "standard",
   "subject_files": [
-    "DeepSpec.dpr",
-    "src/app/DeepSpec.Commands.pas",
-    "src/app/DeepSpec.Localization.pas",
-    "src/app/DeepSpec.MainForm.pas",
-    "src/app/DeepSpec.Providers.pas",
-    "src/app/DeepSpec.Services.pas",
-    "src/controllers/DeepSpec.Controller.pas",
-    "src/core/DeepSpec.Delphi.DfmParser.pas",
-    "src/core/DeepSpec.Delphi.PasParser.pas",
-    "src/core/DeepSpec.Hash.pas",
-    "src/core/DeepSpec.Validation.pas",
-    "src/core/DeepSpec.Yaml.Parser.pas",
-    "src/core/DeepSpec.Yaml.Writer.pas",
-    "src/models/DeepSpec.Models.pas",
-    "src/providers/DeepSpec.Providers.Inspector.pas",
-    "src/providers/DeepSpec.Providers.MainView.pas",
-    "src/providers/DeepSpec.Providers.Structure.pas",
-    "src/services/DeepSpec.Services.CandidateIngest.pas",
-    "src/services/DeepSpec.Services.Context.pas",
-    "src/services/DeepSpec.Services.Decisions.pas",
-    "src/services/DeepSpec.Services.LLM.pas",
-    "src/services/DeepSpec.Services.LLMConfig.pas",
-    "src/services/DeepSpec.Services.Project.pas",
-    "src/services/DeepSpec.Services.Prompts.pas",
-    "src/services/DeepSpec.Services.Render.pas",
-    "src/services/DeepSpec.Services.Scan.pas",
-    "src/services/DeepSpec.Services.Settings.pas",
-    "src/services/DeepSpec.Services.SpecStore.pas",
-    "src/services/DeepSpec.Services.TreeBuilder.pas",
-    "cli/DeepSpec.CLI.dpr"
+    "AsWish.dpr",
+    "src/app/AsWish.Commands.pas",
+    "src/app/AsWish.Localization.pas",
+    "src/app/AsWish.MainForm.pas",
+    "src/app/AsWish.Providers.pas",
+    "src/app/AsWish.Services.pas",
+    "src/controllers/AsWish.Controller.pas",
+    "src/core/AsWish.Delphi.DfmParser.pas",
+    "src/core/AsWish.Delphi.PasParser.pas",
+    "src/core/AsWish.Hash.pas",
+    "src/core/AsWish.Validation.pas",
+    "src/core/AsWish.Yaml.Parser.pas",
+    "src/core/AsWish.Yaml.Writer.pas",
+    "src/models/AsWish.Models.pas",
+    "src/providers/AsWish.Providers.Inspector.pas",
+    "src/providers/AsWish.Providers.MainView.pas",
+    "src/providers/AsWish.Providers.Structure.pas",
+    "src/services/AsWish.Services.CandidateIngest.pas",
+    "src/services/AsWish.Services.Context.pas",
+    "src/services/AsWish.Services.Decisions.pas",
+    "src/services/AsWish.Services.LLM.pas",
+    "src/services/AsWish.Services.LLMConfig.pas",
+    "src/services/AsWish.Services.Project.pas",
+    "src/services/AsWish.Services.Prompts.pas",
+    "src/services/AsWish.Services.Render.pas",
+    "src/services/AsWish.Services.Scan.pas",
+    "src/services/AsWish.Services.Settings.pas",
+    "src/services/AsWish.Services.SpecStore.pas",
+    "src/services/AsWish.Services.TreeBuilder.pas",
+    "cli/AsWish.CLI.dpr"
   ],
   "observer_files": [
-    "src/app/DeepSpec.MainForm.pas",
-    "src/controllers/DeepSpec.Controller.pas",
-    "src/providers/DeepSpec.Providers.MainView.pas",
-    "src/services/DeepSpec.Services.Render.pas",
-    "src/services/DeepSpec.Services.CandidateIngest.pas",
-    "src/services/DeepSpec.Services.SpecStore.pas",
-    "src/core/DeepSpec.Validation.pas"
+    "src/app/AsWish.MainForm.pas",
+    "src/controllers/AsWish.Controller.pas",
+    "src/providers/AsWish.Providers.MainView.pas",
+    "src/services/AsWish.Services.Render.pas",
+    "src/services/AsWish.Services.CandidateIngest.pas",
+    "src/services/AsWish.Services.SpecStore.pas",
+    "src/core/AsWish.Validation.pas"
   ],
   "resource_locks": [
     {
@@ -73,7 +73,7 @@
       "gate_id": "H1.resource-locks",
       "required": true,
       "claims": ["controlled_entry_only"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_resource_locks.py"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_resource_locks.py"],
       "timeout": 120
     },
     {
@@ -91,44 +91,44 @@
         "state_machine_check",
         "required_fields_on_activation"
       ],
-      "command": ["cmd", "/c", "cd tests && DeepSpec.Tests.exe"],
+      "command": ["cmd", "/c", "cd tests && AsWish.Tests.exe"],
       "timeout": 300
     },
     {
       "gate_id": "H3.encoding-guard",
       "required": true,
       "claims": ["counterfactual_1", "counterfactual_2"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_encoding.py"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_encoding.py"],
       "timeout": 120
     },
     {
       "gate_id": "H3.runtime-autofix",
       "required": true,
       "claims": ["counterfactual_3", "counterfactual_4", "counterfactual_5"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_autofix.py"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_autofix.py"],
       "timeout": 120
     },
     {
       "gate_id": "H3.deep-ui-test",
       "required": true,
       "claims": ["counterfactual_6", "counterfactual_7", "counterfactual_8"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/deepspec-spw/gate_ui_bridge.py"],
+      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_ui_bridge.py"],
       "timeout": 120
     }
   ],
   "claim_evidence": {
     "controlled_entry_only": [
-      "tests/Test.DeepSpec.CandidateIngest.pas (sandbox rejects bad-prefix/hanging-parent/source-layer spoof)",
-      "src/services/DeepSpec.Services.CandidateIngest.pas::Ingest"
+      "tests/Test.AsWish.CandidateIngest.pas (sandbox rejects bad-prefix/hanging-parent/source-layer spoof)",
+      "src/services/AsWish.Services.CandidateIngest.pas::Ingest"
     ],
     "active_detail_trigger": [
-      "tests/Test.DeepSpec.Validation.pas::TValidationIssuesTests (empty affected_nodes rejected)"
+      "tests/Test.AsWish.Validation.pas::TValidationIssuesTests (empty affected_nodes rejected)"
     ],
     "state_machine_check": [
-      "tests/Test.DeepSpec.Models.pas (CanTransitionFog/CanTransitionGen/CanTransitionReview 13 cases)"
+      "tests/Test.AsWish.Models.pas (CanTransitionFog/CanTransitionGen/CanTransitionReview 13 cases)"
     ],
     "required_fields_on_activation": [
-      "tests/Test.DeepSpec.Validation.pas (INV-2/4/5/6: parent ref, gen/review status, cycles, hashes)"
+      "tests/Test.AsWish.Validation.pas (INV-2/4/5/6: parent ref, gen/review status, cycles, hashes)"
     ],
     "counterfactual_1": ["gate_encoding.py: undecodable/NUL source files must fail"],
     "counterfactual_2": ["gate_encoding.py: mixed line endings must fail"],

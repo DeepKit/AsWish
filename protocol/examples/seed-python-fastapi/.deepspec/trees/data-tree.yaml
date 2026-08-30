@@ -1,5 +1,5 @@
 ﻿version: "1.0"
 tree: data
 generated_at: "2026-08-07T10:58:48+08:00"
-generator: "deepspec-scan"
+generator: "aswish-scan"
 nodes: []

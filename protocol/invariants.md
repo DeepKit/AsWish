@@ -1,8 +1,8 @@
-# DeepSpec Protocol Invariants
+# AsWish Protocol Invariants
 
 > Status: v1.2-draft
 
-These invariants define what a valid `.deepspec/` workspace must preserve.
+These invariants define what a valid `.AsWish/` workspace must preserve.
 
 ## Core Invariants
 
@@ -21,4 +21,4 @@ These invariants define what a valid `.deepspec/` workspace must preserve.
 
 ## Failure Behavior
 
-Validation failure should not destroy readable facts. DeepSpec should mark affected nodes or files, preserve the last readable snapshot, and allow unrelated trees to remain usable.
+Validation failure should not destroy readable facts. AsWish should mark affected nodes or files, preserve the last readable snapshot, and allow unrelated trees to remain usable.

@@ -1,6 +1,6 @@
-# DeepSpec Conformance Test Suite
+# AsWish Conformance Test Suite
 
-This directory contains a lightweight Python runner for checking reader behavior against the DeepSpec Reader Profile.
+This directory contains a lightweight Python runner for checking reader behavior against the AsWish Reader Profile.
 
 ## Actual Layout
 

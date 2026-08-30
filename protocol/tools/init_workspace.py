@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""DeepSpec Protocol L0: Standalone Workspace Initializer (Cold Environment Rebuilder).
+"""AsWish Protocol L0: Standalone Workspace Initializer (Cold Environment Rebuilder).
 
 Zero dependencies outside Python 3 standard library. Creates a valid, conforming
-.deepspec/ workspace according to DeepSpec Protocol v1.2-draft.
+.AsWish/ workspace according to AsWish Protocol v1.2-draft.
 
 Usage:
     python init_workspace.py <target_dir> [--project-name <name>] [--force]
@@ -18,18 +18,18 @@ import sys
 from pathlib import Path
 
 
-def create_deepspec_workspace(
+def create_aswish_workspace(
     target_dir: Path | str,
     project_name: str | None = None,
     force: bool = False,
 ) -> Path:
-    """Create a pristine .deepspec/ workspace in target_dir."""
+    """Create a pristine .AsWish/ workspace in target_dir."""
     target = Path(target_dir).resolve()
     target.mkdir(parents=True, exist_ok=True)
 
-    ds_dir = target / ".deepspec"
+    ds_dir = target / ".AsWish"
     if ds_dir.exists() and not force:
-        raise FileExistsError(f".deepspec directory already exists in {target}. Use --force to overwrite.")
+        raise FileExistsError(f".AsWish directory already exists in {target}. Use --force to overwrite.")
 
     p_name = project_name or target.name or "UntitledProject"
     iso_now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -44,7 +44,7 @@ def create_deepspec_workspace(
 project:
   name: "{p_name}"
   root: "."
-  description: "DeepSpec specification workspace for {p_name}"
+  description: "AsWish specification workspace for {p_name}"
   primary_language: "agnostic"
   initialized_at: "{iso_now}"
 summary:
@@ -72,7 +72,7 @@ trees:
         tree_content = f"""version: "1.2"
 tree: "{tree_type}"
 generated_at: "{iso_now}"
-generator: "DeepSpec-L0-Init/1.0"
+generator: "AsWish-L0-Init/1.0"
 description: "{desc}"
 nodes: []
 """
@@ -96,18 +96,18 @@ nodes: []
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="DeepSpec Protocol L0: Standalone Workspace Initializer")
-    parser.add_argument("target_dir", help="Project directory to initialize .deepspec/ in")
+    parser = argparse.ArgumentParser(description="AsWish Protocol L0: Standalone Workspace Initializer")
+    parser.add_argument("target_dir", help="Project directory to initialize .AsWish/ in")
     parser.add_argument("--project-name", help="Name of the project")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing .deepspec directory")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing .AsWish directory")
     args = parser.parse_args()
 
     try:
-        ds = create_deepspec_workspace(args.target_dir, args.project_name, args.force)
-        print(f"[OK] Initialized DeepSpec workspace at: {ds}")
+        ds = create_aswish_workspace(args.target_dir, args.project_name, args.force)
+        print(f"[OK] Initialized AsWish workspace at: {ds}")
         return 0
     except Exception as exc:
-        print(f"[ERROR] Failed to initialize DeepSpec workspace: {exc}", file=sys.stderr)
+        print(f"[ERROR] Failed to initialize AsWish workspace: {exc}", file=sys.stderr)
         return 1
 
 

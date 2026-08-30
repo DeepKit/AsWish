@@ -1,4 +1,4 @@
-# DeepSpec Protocol Governance
+# AsWish Protocol Governance
 
 ## Principles
 
@@ -56,10 +56,10 @@ Same process as kind, with title: `[relation-proposal] {type_name}`
 
 ## Conformance
 
-Tools claiming "DeepSpec v1 compatible" must:
+Tools claiming "AsWish v1 compatible" must:
 
 1. Pass the conformance test suite at their declared level (0/1/2)
-2. Not modify `.deepspec/` files without user consent
+2. Not modify `.AsWish/` files without user consent
 3. Handle unknown fields gracefully (ignore, don't error)
 
 ---

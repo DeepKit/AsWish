@@ -8,13 +8,13 @@ Report privately to the project maintainer until a public process is established
 
 ## Sensitive Data Rules
 
-DeepSpec may inspect source code, requirements, UI files, and project metadata. Treat all of these as potentially sensitive.
+AsWish may inspect source code, requirements, UI files, and project metadata. Treat all of these as potentially sensitive.
 
 Do not commit:
 
 - API keys, tokens, cookies, credentials, or local config secrets
 - private customer requirements or proprietary source snippets unless explicitly anonymized
-- `.deepspec/` workspaces generated from private projects without review
+- `.AsWish/` workspaces generated from private projects without review
 - database dumps or generated binary artifacts
 
 ## Agent Safety

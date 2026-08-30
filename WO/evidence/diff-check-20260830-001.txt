@@ -1,0 +1,1444 @@
+src/services/DeepSpec.Services.SpecStore.pas:2: trailing whitespace.
++{ ============================================================================
+src/services/DeepSpec.Services.SpecStore.pas:3: trailing whitespace.
++  DeepSpec.Services.SpecStore
+src/services/DeepSpec.Services.SpecStore.pas:4: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:5: trailing whitespace.
++  Manages the .deepspec directory: creates structure, writes YAML files,
+src/services/DeepSpec.Services.SpecStore.pas:6: trailing whitespace.
++  generates scan-report and project-spec.
+src/services/DeepSpec.Services.SpecStore.pas:7: trailing whitespace.
++  ============================================================================ }
+src/services/DeepSpec.Services.SpecStore.pas:8: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:9: trailing whitespace.
++unit DeepSpec.Services.SpecStore;
+src/services/DeepSpec.Services.SpecStore.pas:10: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:11: trailing whitespace.
++interface
+src/services/DeepSpec.Services.SpecStore.pas:12: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:13: trailing whitespace.
++uses
+src/services/DeepSpec.Services.SpecStore.pas:14: trailing whitespace.
++  System.SysUtils,
+src/services/DeepSpec.Services.SpecStore.pas:15: trailing whitespace.
++  System.Classes,
+src/services/DeepSpec.Services.SpecStore.pas:16: trailing whitespace.
++  System.Generics.Collections,
+src/services/DeepSpec.Services.SpecStore.pas:17: trailing whitespace.
++  DeepSpec.Services.Scan,
+src/services/DeepSpec.Services.SpecStore.pas:18: trailing whitespace.
++  DeepSpec.Models,
+src/services/DeepSpec.Services.SpecStore.pas:19: trailing whitespace.
++  DeepSpec.Yaml.Parser;
+src/services/DeepSpec.Services.SpecStore.pas:20: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:21: trailing whitespace.
++type
+src/services/DeepSpec.Services.SpecStore.pas:22: trailing whitespace.
++  TDeepSpecStoreService = class(TInterfacedObject)
+src/services/DeepSpec.Services.SpecStore.pas:23: trailing whitespace.
++  private
+src/services/DeepSpec.Services.SpecStore.pas:24: trailing whitespace.
++    FBasePath: string;
+src/services/DeepSpec.Services.SpecStore.pas:25: trailing whitespace.
++    procedure EnsureDirectory(const ARelPath: string);
+src/services/DeepSpec.Services.SpecStore.pas:26: trailing whitespace.
++    procedure WriteYamlFile(const ARelPath, AContent: string);
+src/services/DeepSpec.Services.SpecStore.pas:27: trailing whitespace.
++    /// <summary>Before overwriting a tree YAML, copy the existing file to
+src/services/DeepSpec.Services.SpecStore.pas:28: trailing whitespace.
++    /// snapshots/ so user edits or prior agent output are never silently
+src/services/DeepSpec.Services.SpecStore.pas:29: trailing whitespace.
++    /// lost (bugfix.md BUG-5b). Keeps the most recent backup per tree.</summary>
+src/services/DeepSpec.Services.SpecStore.pas:30: trailing whitespace.
++    procedure BackupTreeFileIfExisting(const ARelPath: string);
+src/services/DeepSpec.Services.SpecStore.pas:31: trailing whitespace.
++  public
+src/services/DeepSpec.Services.SpecStore.pas:32: trailing whitespace.
++    constructor Create;
+src/services/DeepSpec.Services.SpecStore.pas:33: trailing whitespace.
++    procedure Initialize(const AProjectPath: string);
+src/services/DeepSpec.Services.SpecStore.pas:34: trailing whitespace.
++    procedure CreateDirectoryStructure;
+src/services/DeepSpec.Services.SpecStore.pas:35: trailing whitespace.
++    procedure WriteScanReport(AScanService: TDeepSpecScanService);
+src/services/DeepSpec.Services.SpecStore.pas:36: trailing whitespace.
++    procedure WriteProjectSpec(const AProjectName, AProjectType: string;
+src/services/DeepSpec.Services.SpecStore.pas:37: trailing whitespace.
++      ATotalNodes: Integer);
+src/services/DeepSpec.Services.SpecStore.pas:38: trailing whitespace.
++    procedure WriteEmptyTrees;
+src/services/DeepSpec.Services.SpecStore.pas:39: trailing whitespace.
++    procedure WriteGitIgnore;
+src/services/DeepSpec.Services.SpecStore.pas:40: trailing whitespace.
++    procedure WriteTreeFile(const ARelPath: string; ATree: DeepSpec.Models.TTreeType;
+src/services/DeepSpec.Services.SpecStore.pas:41: trailing whitespace.
++      ANodes: System.Generics.Collections.TList<DeepSpec.Models.TSpecNode>);
+src/services/DeepSpec.Services.SpecStore.pas:42: trailing whitespace.
++    procedure WriteEvidenceFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:43: trailing whitespace.
++      AEvidence: System.Generics.Collections.TList<DeepSpec.Models.TSpecEvidence>);
+src/services/DeepSpec.Services.SpecStore.pas:44: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:45: trailing whitespace.
++    /// <summary>
+src/services/DeepSpec.Services.SpecStore.pas:46: trailing whitespace.
++    /// Read a tree YAML file produced by WriteTreeFile and return the
+src/services/DeepSpec.Services.SpecStore.pas:47: trailing whitespace.
++    /// list of nodes. Returns an empty list if the file is missing or
+src/services/DeepSpec.Services.SpecStore.pas:48: trailing whitespace.
++    /// the YAML cannot be parsed. Caller owns the returned list.
+src/services/DeepSpec.Services.SpecStore.pas:49: trailing whitespace.
++    /// </summary>
+src/services/DeepSpec.Services.SpecStore.pas:50: trailing whitespace.
++    function ReadTreeFile(const ARelPath: string): TList<TSpecNode>;
+src/services/DeepSpec.Services.SpecStore.pas:51: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:52: trailing whitespace.
++    /// <summary>
+src/services/DeepSpec.Services.SpecStore.pas:53: trailing whitespace.
++    /// Parse a single tree document (a parsed YAML root map with `tree`
+src/services/DeepSpec.Services.SpecStore.pas:54: trailing whitespace.
++    /// and `nodes` keys) into a node list. Extracted from ReadTreeFile so
+src/services/DeepSpec.Services.SpecStore.pas:55: trailing whitespace.
++    /// the candidate-ingest sandbox (Services.CandidateIngest) can reuse
+src/services/DeepSpec.Services.SpecStore.pas:56: trailing whitespace.
++    /// the exact same field mapping without re-implementing it. Caller
+src/services/DeepSpec.Services.SpecStore.pas:57: trailing whitespace.
++    /// owns the returned list. ADefaultTree is used when a node omits
+src/services/DeepSpec.Services.SpecStore.pas:58: trailing whitespace.
++    /// its own `tree` field.
+src/services/DeepSpec.Services.SpecStore.pas:59: trailing whitespace.
++    /// </summary>
+src/services/DeepSpec.Services.SpecStore.pas:60: trailing whitespace.
++    function ParseTreeNodes(ARoot: DeepSpec.Yaml.Parser.TYamlNode;
+src/services/DeepSpec.Services.SpecStore.pas:61: trailing whitespace.
++      ADefaultTree: DeepSpec.Models.TTreeType): TList<TSpecNode>;
+src/services/DeepSpec.Services.SpecStore.pas:62: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:63: trailing whitespace.
++    /// <summary>Write bundles.yaml</summary>
+src/services/DeepSpec.Services.SpecStore.pas:64: trailing whitespace.
++    procedure WriteBundlesFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:65: trailing whitespace.
++      ABundles: TList<TSemanticBundle>);
+src/services/DeepSpec.Services.SpecStore.pas:66: trailing whitespace.
++    /// <summary>Read bundles.yaml</summary>
+src/services/DeepSpec.Services.SpecStore.pas:67: trailing whitespace.
++    function ReadBundlesFile(const ARelPath: string): TList<TSemanticBundle>;
+src/services/DeepSpec.Services.SpecStore.pas:68: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:69: trailing whitespace.
++    /// <summary>Write issues/doc-issues.yaml (BUG-11: persists exploration
+src/services/DeepSpec.Services.SpecStore.pas:70: trailing whitespace.
++    /// tickets alongside ordinary issues — tickets are issues whose type is
+src/services/DeepSpec.Services.SpecStore.pas:71: trailing whitespace.
++    /// research_ticket/prototype_ticket/grilling_ticket/fog_unknown).</summary>
+src/services/DeepSpec.Services.SpecStore.pas:72: trailing whitespace.
++    procedure WriteIssuesFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:73: trailing whitespace.
++      AIssues: TList<TSpecIssue>);
+src/services/DeepSpec.Services.SpecStore.pas:74: trailing whitespace.
++    /// <summary>Read issues/doc-issues.yaml. Caller owns the returned list.</summary>
+src/services/DeepSpec.Services.SpecStore.pas:75: trailing whitespace.
++    function ReadIssuesFile(const ARelPath: string): TList<TSpecIssue>;
+src/services/DeepSpec.Services.SpecStore.pas:76: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:77: trailing whitespace.
++    /// <summary>Atomic text-file write (bugfix.md BUG-5): write to a .tmp
+src/services/DeepSpec.Services.SpecStore.pas:78: trailing whitespace.
++    /// sibling, then TFile.Replace (atomic on NTFS) or TFile.Move on first
+src/services/DeepSpec.Services.SpecStore.pas:79: trailing whitespace.
++    /// write. Shared by SpecStore itself and by callers that must not bypass
+src/services/DeepSpec.Services.SpecStore.pas:80: trailing whitespace.
++    /// the crash-safe path (Decisions.Save, JS Bridge pending-decisions).
+src/services/DeepSpec.Services.SpecStore.pas:81: trailing whitespace.
++    /// Class method: works on any full path, no instance state needed.</summary>
+src/services/DeepSpec.Services.SpecStore.pas:82: trailing whitespace.
++    class procedure AtomicWriteTextFile(const AFullPath, AContent: string); static;
+src/services/DeepSpec.Services.SpecStore.pas:83: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:84: trailing whitespace.
++    property BasePath: string read FBasePath;
+src/services/DeepSpec.Services.SpecStore.pas:85: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:86: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:87: trailing whitespace.
++implementation
+src/services/DeepSpec.Services.SpecStore.pas:88: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:89: trailing whitespace.
++uses
+src/services/DeepSpec.Services.SpecStore.pas:90: trailing whitespace.
++  System.IOUtils,
+src/services/DeepSpec.Services.SpecStore.pas:91: trailing whitespace.
++  System.DateUtils,
+src/services/DeepSpec.Services.SpecStore.pas:92: trailing whitespace.
++  Winapi.Windows,
+src/services/DeepSpec.Services.SpecStore.pas:93: trailing whitespace.
++  DeepSpec.Yaml.Writer;
+src/services/DeepSpec.Services.SpecStore.pas:94: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:95: trailing whitespace.
++constructor TDeepSpecStoreService.Create;
+src/services/DeepSpec.Services.SpecStore.pas:96: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:97: trailing whitespace.
++  inherited Create;
+src/services/DeepSpec.Services.SpecStore.pas:98: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:99: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:100: trailing whitespace.
++procedure TDeepSpecStoreService.Initialize(const AProjectPath: string);
+src/services/DeepSpec.Services.SpecStore.pas:101: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:102: trailing whitespace.
++  FBasePath := TPath.Combine(AProjectPath, '.deepspec');
+src/services/DeepSpec.Services.SpecStore.pas:103: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:104: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:105: trailing whitespace.
++procedure TDeepSpecStoreService.EnsureDirectory(const ARelPath: string);
+src/services/DeepSpec.Services.SpecStore.pas:106: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:107: trailing whitespace.
++  var LFullPath := TPath.Combine(FBasePath, ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:108: trailing whitespace.
++  if not TDirectory.Exists(LFullPath) then
+src/services/DeepSpec.Services.SpecStore.pas:109: trailing whitespace.
++    TDirectory.CreateDirectory(LFullPath);
+src/services/DeepSpec.Services.SpecStore.pas:110: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:111: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:112: trailing whitespace.
++procedure TDeepSpecStoreService.WriteYamlFile(const ARelPath, AContent: string);
+src/services/DeepSpec.Services.SpecStore.pas:113: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:114: trailing whitespace.
++  // Atomic write: write to a temp file, then replace the target.
+src/services/DeepSpec.Services.SpecStore.pas:115: trailing whitespace.
++  // Prevents half-written files if the process crashes mid-write
+src/services/DeepSpec.Services.SpecStore.pas:116: trailing whitespace.
++  // (bugfix.md BUG-5). TFile.Replace is atomic on NTFS and preserves
+src/services/DeepSpec.Services.SpecStore.pas:117: trailing whitespace.
++  // the destination file's attributes; on first write (no destination)
+src/services/DeepSpec.Services.SpecStore.pas:118: trailing whitespace.
++  // we rename the temp file into place.
+src/services/DeepSpec.Services.SpecStore.pas:119: trailing whitespace.
++  var LFullPath := TPath.Combine(FBasePath, ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:120: trailing whitespace.
++  var LDir := TPath.GetDirectoryName(LFullPath);
+src/services/DeepSpec.Services.SpecStore.pas:121: trailing whitespace.
++  if not TDirectory.Exists(LDir) then
+src/services/DeepSpec.Services.SpecStore.pas:122: trailing whitespace.
++    TDirectory.CreateDirectory(LDir);
+src/services/DeepSpec.Services.SpecStore.pas:123: trailing whitespace.
++  AtomicWriteTextFile(LFullPath, AContent);
+src/services/DeepSpec.Services.SpecStore.pas:124: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:125: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:126: trailing whitespace.
++class procedure TDeepSpecStoreService.AtomicWriteTextFile(
+src/services/DeepSpec.Services.SpecStore.pas:127: trailing whitespace.
++  const AFullPath, AContent: string);
+src/services/DeepSpec.Services.SpecStore.pas:128: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:129: trailing whitespace.
++  var LDir := TPath.GetDirectoryName(AFullPath);
+src/services/DeepSpec.Services.SpecStore.pas:130: trailing whitespace.
++  if not TDirectory.Exists(LDir) then
+src/services/DeepSpec.Services.SpecStore.pas:131: trailing whitespace.
++    TDirectory.CreateDirectory(LDir);
+src/services/DeepSpec.Services.SpecStore.pas:132: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:133: trailing whitespace.
++  // Unique temp name: fixed ".tmp" suffixes collide under concurrency and
+src/services/DeepSpec.Services.SpecStore.pas:134: trailing whitespace.
++  // trip some AV heuristics (multi-LLM review finding).
+src/services/DeepSpec.Services.SpecStore.pas:135: trailing whitespace.
++  var LTempPath := AFullPath + '.tmp-' + TGuid.NewGuid.ToString.Substring(1, 8);
+src/services/DeepSpec.Services.SpecStore.pas:136: trailing whitespace.
++  TFile.WriteAllText(LTempPath, AContent, TEncoding.UTF8);
+src/services/DeepSpec.Services.SpecStore.pas:137: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:138: trailing whitespace.
++  if TFile.Exists(AFullPath) then
+src/services/DeepSpec.Services.SpecStore.pas:139: trailing whitespace.
++  begin
+src/services/DeepSpec.Services.SpecStore.pas:140: trailing whitespace.
++    // Atomic replace on NTFS via ReplaceFileW with NO backup (nil).
+src/services/DeepSpec.Services.SpecStore.pas:141: trailing whitespace.
++    // NOTE: TFile.Replace(..., '') is broken here — the RTL runs
+src/services/DeepSpec.Services.SpecStore.pas:142: trailing whitespace.
++    // TPath.DoGetFullPath('') on the backup name and raises
+src/services/DeepSpec.Services.SpecStore.pas:143: trailing whitespace.
++    // EInOutArgumentException "Path is empty". First scans always took
+src/services/DeepSpec.Services.SpecStore.pas:144: trailing whitespace.
++    // the TFile.Move branch, so re-scans of an existing project crashed
+src/services/DeepSpec.Services.SpecStore.pas:145: trailing whitespace.
++    // (observed headless via DeepSpec.CLI scan; GUI re-scan hit the same).
+src/services/DeepSpec.Services.SpecStore.pas:146: trailing whitespace.
++    if not Winapi.Windows.ReplaceFile(PChar(AFullPath), PChar(LTempPath),
+src/services/DeepSpec.Services.SpecStore.pas:147: trailing whitespace.
++      nil, REPLACEFILE_WRITE_THROUGH or REPLACEFILE_IGNORE_MERGE_ERRORS,
+src/services/DeepSpec.Services.SpecStore.pas:148: trailing whitespace.
++      nil, nil) then
+src/services/DeepSpec.Services.SpecStore.pas:149: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:150: trailing whitespace.
++      // Fallback: MoveFileExW REPLACE_EXISTING — never delete the target
+src/services/DeepSpec.Services.SpecStore.pas:151: trailing whitespace.
++      // first (a failed delete+move would lose the original file;
+src/services/DeepSpec.Services.SpecStore.pas:152: trailing whitespace.
++      // multi-LLM review HIGH finding).
+src/services/DeepSpec.Services.SpecStore.pas:153: trailing whitespace.
++      if not Winapi.Windows.MoveFileExW(PChar(LTempPath), PChar(AFullPath),
+src/services/DeepSpec.Services.SpecStore.pas:154: trailing whitespace.
++        MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH) then
+src/services/DeepSpec.Services.SpecStore.pas:155: trailing whitespace.
++      begin
+src/services/DeepSpec.Services.SpecStore.pas:156: trailing whitespace.
++        // Last resort: in-place move; keep original intact on failure.
+src/services/DeepSpec.Services.SpecStore.pas:157: trailing whitespace.
++        TFile.Move(LTempPath, AFullPath);
+src/services/DeepSpec.Services.SpecStore.pas:158: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:159: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:160: trailing whitespace.
++  end
+src/services/DeepSpec.Services.SpecStore.pas:161: trailing whitespace.
++  else
+src/services/DeepSpec.Services.SpecStore.pas:162: trailing whitespace.
++    TFile.Move(LTempPath, AFullPath);
+src/services/DeepSpec.Services.SpecStore.pas:163: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:164: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:165: trailing whitespace.
++procedure TDeepSpecStoreService.BackupTreeFileIfExisting(const ARelPath: string);
+src/services/DeepSpec.Services.SpecStore.pas:166: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:167: trailing whitespace.
++  LFullPath, LBackupPath, LBaseName: string;
+src/services/DeepSpec.Services.SpecStore.pas:168: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:169: trailing whitespace.
++  // Keep the most recent prior version under snapshots/ so overwriting a
+src/services/DeepSpec.Services.SpecStore.pas:170: trailing whitespace.
++  // tree never silently discards user edits or prior agent output.
+src/services/DeepSpec.Services.SpecStore.pas:171: trailing whitespace.
++  LFullPath := TPath.Combine(FBasePath, ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:172: trailing whitespace.
++  if not TFile.Exists(LFullPath) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:173: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:174: trailing whitespace.
++  // Snapshots dir is normally created by CreateDirectoryStructure, but an
+src/services/DeepSpec.Services.SpecStore.pas:175: trailing whitespace.
++  // existing .deepspec from an older version may lack it — never crash on
+src/services/DeepSpec.Services.SpecStore.pas:176: trailing whitespace.
++  // a missing backup target (backup is best-effort).
+src/services/DeepSpec.Services.SpecStore.pas:177: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:178: trailing whitespace.
++    var LSnapshotDir := TPath.Combine(FBasePath, 'snapshots');
+src/services/DeepSpec.Services.SpecStore.pas:179: trailing whitespace.
++    if not TDirectory.Exists(LSnapshotDir) then
+src/services/DeepSpec.Services.SpecStore.pas:180: trailing whitespace.
++      TDirectory.CreateDirectory(LSnapshotDir);
+src/services/DeepSpec.Services.SpecStore.pas:181: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:182: trailing whitespace.
++    LBaseName := TPath.GetFileNameWithoutExtension(ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:183: trailing whitespace.
++    LBackupPath := TPath.Combine(LSnapshotDir, LBaseName + '.bak.yaml');
+src/services/DeepSpec.Services.SpecStore.pas:184: trailing whitespace.
++    // Copy (overwrite previous backup) — single rolling backup per tree.
+src/services/DeepSpec.Services.SpecStore.pas:185: trailing whitespace.
++    // Isolated: a failing backup (disk full / ACL / locked) must NOT abort
+src/services/DeepSpec.Services.SpecStore.pas:186: trailing whitespace.
++    // the real atomic write below (multi-LLM review finding).
+src/services/DeepSpec.Services.SpecStore.pas:187: trailing whitespace.
++    TFile.Copy(LFullPath, LBackupPath, True);
+src/services/DeepSpec.Services.SpecStore.pas:188: trailing whitespace.
++  except
+src/services/DeepSpec.Services.SpecStore.pas:189: trailing whitespace.
++    // Backup is best-effort; the caller's write must still proceed.
+src/services/DeepSpec.Services.SpecStore.pas:190: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:191: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:192: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:193: trailing whitespace.
++procedure TDeepSpecStoreService.CreateDirectoryStructure;
+src/services/DeepSpec.Services.SpecStore.pas:194: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:195: trailing whitespace.
++  EnsureDirectory('');
+src/services/DeepSpec.Services.SpecStore.pas:196: trailing whitespace.
++  EnsureDirectory('trees');
+src/services/DeepSpec.Services.SpecStore.pas:197: trailing whitespace.
++  EnsureDirectory('relations');
+src/services/DeepSpec.Services.SpecStore.pas:198: trailing whitespace.
++  EnsureDirectory('evidence');
+src/services/DeepSpec.Services.SpecStore.pas:199: trailing whitespace.
++  EnsureDirectory('issues');
+src/services/DeepSpec.Services.SpecStore.pas:200: trailing whitespace.
++  EnsureDirectory('decisions');
+src/services/DeepSpec.Services.SpecStore.pas:201: trailing whitespace.
++  EnsureDirectory('prompts');
+src/services/DeepSpec.Services.SpecStore.pas:202: trailing whitespace.
++  EnsureDirectory('html');
+src/services/DeepSpec.Services.SpecStore.pas:203: trailing whitespace.
++  EnsureDirectory('llm');
+src/services/DeepSpec.Services.SpecStore.pas:204: trailing whitespace.
++  EnsureDirectory('logs');
+src/services/DeepSpec.Services.SpecStore.pas:205: trailing whitespace.
++  EnsureDirectory('snapshots');
+src/services/DeepSpec.Services.SpecStore.pas:206: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:207: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:208: trailing whitespace.
++procedure TDeepSpecStoreService.WriteScanReport(AScanService: TDeepSpecScanService);
+src/services/DeepSpec.Services.SpecStore.pas:209: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:210: trailing whitespace.
++  var LNow := FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', Now);
+src/services/DeepSpec.Services.SpecStore.pas:211: trailing whitespace.
++  var LSb := TStringBuilder.Create;
+src/services/DeepSpec.Services.SpecStore.pas:212: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:213: trailing whitespace.
++    LSb.AppendLine('version: "1.0"');
+src/services/DeepSpec.Services.SpecStore.pas:214: trailing whitespace.
++    LSb.AppendLine('scan_time: "' + LNow + '"');
+src/services/DeepSpec.Services.SpecStore.pas:215: trailing whitespace.
++    LSb.AppendLine('project_path: "."');
+src/services/DeepSpec.Services.SpecStore.pas:216: trailing whitespace.
++    LSb.AppendLine('project_type: "unknown"');
+src/services/DeepSpec.Services.SpecStore.pas:217: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:218: trailing whitespace.
++    LSb.AppendLine('file_classification:');
+src/services/DeepSpec.Services.SpecStore.pas:219: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:220: trailing whitespace.
++    // Documents
+src/services/DeepSpec.Services.SpecStore.pas:221: trailing whitespace.
++    LSb.AppendLine('  documents:');
+src/services/DeepSpec.Services.SpecStore.pas:222: trailing whitespace.
++    for var LFile in AScanService.GetFilesByCategory(fcDocuments) do
+src/services/DeepSpec.Services.SpecStore.pas:223: trailing whitespace.
++      LSb.AppendLine('    - "' + LFile + '"');
+src/services/DeepSpec.Services.SpecStore.pas:224: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:225: trailing whitespace.
++    // Code
+src/services/DeepSpec.Services.SpecStore.pas:226: trailing whitespace.
++    LSb.AppendLine('  code:');
+src/services/DeepSpec.Services.SpecStore.pas:227: trailing whitespace.
++    for var LFile in AScanService.GetFilesByCategory(fcCode) do
+src/services/DeepSpec.Services.SpecStore.pas:228: trailing whitespace.
++      LSb.AppendLine('    - "' + LFile + '"');
+src/services/DeepSpec.Services.SpecStore.pas:229: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:230: trailing whitespace.
++    // UI
+src/services/DeepSpec.Services.SpecStore.pas:231: trailing whitespace.
++    LSb.AppendLine('  ui:');
+src/services/DeepSpec.Services.SpecStore.pas:232: trailing whitespace.
++    for var LFile in AScanService.GetFilesByCategory(fcUI) do
+src/services/DeepSpec.Services.SpecStore.pas:233: trailing whitespace.
++      LSb.AppendLine('    - "' + LFile + '"');
+src/services/DeepSpec.Services.SpecStore.pas:234: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:235: trailing whitespace.
++    // Config
+src/services/DeepSpec.Services.SpecStore.pas:236: trailing whitespace.
++    LSb.AppendLine('  config:');
+src/services/DeepSpec.Services.SpecStore.pas:237: trailing whitespace.
++    for var LFile in AScanService.GetFilesByCategory(fcConfig) do
+src/services/DeepSpec.Services.SpecStore.pas:238: trailing whitespace.
++      LSb.AppendLine('    - "' + LFile + '"');
+src/services/DeepSpec.Services.SpecStore.pas:239: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:240: trailing whitespace.
++    // AI Rules
+src/services/DeepSpec.Services.SpecStore.pas:241: trailing whitespace.
++    LSb.AppendLine('  ai_rules:');
+src/services/DeepSpec.Services.SpecStore.pas:242: trailing whitespace.
++    for var LFile in AScanService.GetFilesByCategory(fcAiRules) do
+src/services/DeepSpec.Services.SpecStore.pas:243: trailing whitespace.
++      LSb.AppendLine('    - "' + LFile + '"');
+src/services/DeepSpec.Services.SpecStore.pas:244: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:245: trailing whitespace.
++    // Ignored
+src/services/DeepSpec.Services.SpecStore.pas:246: trailing whitespace.
++    LSb.AppendLine('  ignored:');
+src/services/DeepSpec.Services.SpecStore.pas:247: trailing whitespace.
++    for var LFile in AScanService.GetFilesByCategory(fcIgnored) do
+src/services/DeepSpec.Services.SpecStore.pas:248: trailing whitespace.
++      LSb.AppendLine('    - "' + LFile + '"');
+src/services/DeepSpec.Services.SpecStore.pas:249: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:250: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:251: trailing whitespace.
++    LSb.AppendLine('stats:');
+src/services/DeepSpec.Services.SpecStore.pas:252: trailing whitespace.
++    LSb.AppendLine('  total_files: ' + AScanService.TotalFiles.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:253: trailing whitespace.
++    LSb.AppendLine('  documents: ' + AScanService.CategoryCount(fcDocuments).ToString);
+src/services/DeepSpec.Services.SpecStore.pas:254: trailing whitespace.
++    LSb.AppendLine('  code: ' + AScanService.CategoryCount(fcCode).ToString);
+src/services/DeepSpec.Services.SpecStore.pas:255: trailing whitespace.
++    LSb.AppendLine('  ui: ' + AScanService.CategoryCount(fcUI).ToString);
+src/services/DeepSpec.Services.SpecStore.pas:256: trailing whitespace.
++    LSb.AppendLine('  config: ' + AScanService.CategoryCount(fcConfig).ToString);
+src/services/DeepSpec.Services.SpecStore.pas:257: trailing whitespace.
++    LSb.AppendLine('  ai_rules: ' + AScanService.CategoryCount(fcAiRules).ToString);
+src/services/DeepSpec.Services.SpecStore.pas:258: trailing whitespace.
++    LSb.AppendLine('  ignored: ' + AScanService.CategoryCount(fcIgnored).ToString);
+src/services/DeepSpec.Services.SpecStore.pas:259: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:260: trailing whitespace.
++    LSb.AppendLine('warnings: []');
+src/services/DeepSpec.Services.SpecStore.pas:261: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:262: trailing whitespace.
++    WriteYamlFile('scan-report.yaml', LSb.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:263: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:264: trailing whitespace.
++    LSb.Free;
+src/services/DeepSpec.Services.SpecStore.pas:265: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:266: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:267: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:268: trailing whitespace.
++procedure TDeepSpecStoreService.WriteProjectSpec(const AProjectName, AProjectType: string;
+src/services/DeepSpec.Services.SpecStore.pas:269: trailing whitespace.
++  ATotalNodes: Integer);
+src/services/DeepSpec.Services.SpecStore.pas:270: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:271: trailing whitespace.
++  var LNow := FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', Now);
+src/services/DeepSpec.Services.SpecStore.pas:272: trailing whitespace.
++  var LSb := TStringBuilder.Create;
+src/services/DeepSpec.Services.SpecStore.pas:273: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:274: trailing whitespace.
++    LSb.AppendLine('version: "1.0"');
+src/services/DeepSpec.Services.SpecStore.pas:275: trailing whitespace.
++    LSb.AppendLine('project:');
+src/services/DeepSpec.Services.SpecStore.pas:276: trailing whitespace.
++    LSb.AppendLine('  name: "' + AProjectName + '"');
+src/services/DeepSpec.Services.SpecStore.pas:277: trailing whitespace.
++    LSb.AppendLine('  path: "."');
+src/services/DeepSpec.Services.SpecStore.pas:278: trailing whitespace.
++    LSb.AppendLine('  type: "' + AProjectType + '"');
+src/services/DeepSpec.Services.SpecStore.pas:279: trailing whitespace.
++    LSb.AppendLine('  scan_time: "' + LNow + '"');
+src/services/DeepSpec.Services.SpecStore.pas:280: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:281: trailing whitespace.
++    LSb.AppendLine('summary:');
+src/services/DeepSpec.Services.SpecStore.pas:282: trailing whitespace.
++    LSb.AppendLine('  total_nodes: ' + ATotalNodes.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:283: trailing whitespace.
++    LSb.AppendLine('  confirmed_nodes: 0');
+src/services/DeepSpec.Services.SpecStore.pas:284: trailing whitespace.
++    LSb.AppendLine('  uncertain_nodes: 0');
+src/services/DeepSpec.Services.SpecStore.pas:285: trailing whitespace.
++    LSb.AppendLine('  open_issues: 0');
+src/services/DeepSpec.Services.SpecStore.pas:286: trailing whitespace.
++    LSb.AppendLine('  decisions_count: 0');
+src/services/DeepSpec.Services.SpecStore.pas:287: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:288: trailing whitespace.
++    LSb.AppendLine('trees:');
+src/services/DeepSpec.Services.SpecStore.pas:289: trailing whitespace.
++    LSb.AppendLine('  function_tree: "trees/function-tree.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:290: trailing whitespace.
++    LSb.AppendLine('  module_tree: "trees/module-tree.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:291: trailing whitespace.
++    LSb.AppendLine('  view_tree: "trees/view-tree.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:292: trailing whitespace.
++    LSb.AppendLine('  data_tree: "trees/data-tree.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:293: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:294: trailing whitespace.
++    LSb.AppendLine('relations: "relations/requirement-relations.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:295: trailing whitespace.
++    LSb.AppendLine('evidence: "evidence/source-evidence.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:296: trailing whitespace.
++    LSb.AppendLine('issues: "issues/doc-issues.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:297: trailing whitespace.
++    LSb.AppendLine('decisions: "decisions/requirement-decisions.yaml"');
+src/services/DeepSpec.Services.SpecStore.pas:298: trailing whitespace.
++    LSb.AppendLine('');
+src/services/DeepSpec.Services.SpecStore.pas:299: trailing whitespace.
++    LSb.AppendLine('imports: []');
+src/services/DeepSpec.Services.SpecStore.pas:300: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:301: trailing whitespace.
++    WriteYamlFile('project-spec.yaml', LSb.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:302: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:303: trailing whitespace.
++    LSb.Free;
+src/services/DeepSpec.Services.SpecStore.pas:304: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:305: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:306: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:307: trailing whitespace.
++procedure TDeepSpecStoreService.WriteEmptyTrees;
+src/services/DeepSpec.Services.SpecStore.pas:308: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:309: trailing whitespace.
++  var LNow := FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', Now);
+src/services/DeepSpec.Services.SpecStore.pas:310: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:311: trailing whitespace.
++  var LTemplate :=
+src/services/DeepSpec.Services.SpecStore.pas:312: trailing whitespace.
++    'version: "1.0"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:313: trailing whitespace.
++    'tree: %s' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:314: trailing whitespace.
++    'generated_at: "' + LNow + '"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:315: trailing whitespace.
++    'generator: "deepspec-scan"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:316: trailing whitespace.
++    'nodes: []' + sLineBreak;
+src/services/DeepSpec.Services.SpecStore.pas:317: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:318: trailing whitespace.
++  WriteYamlFile('trees/function-tree.yaml', Format(LTemplate, ['function']));
+src/services/DeepSpec.Services.SpecStore.pas:319: trailing whitespace.
++  WriteYamlFile('trees/module-tree.yaml', Format(LTemplate, ['module']));
+src/services/DeepSpec.Services.SpecStore.pas:320: trailing whitespace.
++  WriteYamlFile('trees/view-tree.yaml', Format(LTemplate, ['view']));
+src/services/DeepSpec.Services.SpecStore.pas:321: trailing whitespace.
++  WriteYamlFile('trees/data-tree.yaml', Format(LTemplate, ['data']));
+src/services/DeepSpec.Services.SpecStore.pas:322: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:323: trailing whitespace.
++  WriteYamlFile('relations/requirement-relations.yaml',
+src/services/DeepSpec.Services.SpecStore.pas:324: trailing whitespace.
++    'version: "1.0"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:325: trailing whitespace.
++    'generated_at: "' + LNow + '"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:326: trailing whitespace.
++    'relations: []' + sLineBreak);
+src/services/DeepSpec.Services.SpecStore.pas:327: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:328: trailing whitespace.
++  WriteYamlFile('evidence/source-evidence.yaml',
+src/services/DeepSpec.Services.SpecStore.pas:329: trailing whitespace.
++    'version: "1.0"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:330: trailing whitespace.
++    'evidence: []' + sLineBreak);
+src/services/DeepSpec.Services.SpecStore.pas:331: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:332: trailing whitespace.
++  WriteYamlFile('issues/doc-issues.yaml',
+src/services/DeepSpec.Services.SpecStore.pas:333: trailing whitespace.
++    'version: "1.0"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:334: trailing whitespace.
++    'issues: []' + sLineBreak);
+src/services/DeepSpec.Services.SpecStore.pas:335: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:336: trailing whitespace.
++  WriteYamlFile('decisions/requirement-decisions.yaml',
+src/services/DeepSpec.Services.SpecStore.pas:337: trailing whitespace.
++    'version: "1.0"' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:338: trailing whitespace.
++    'decisions: []' + sLineBreak);
+src/services/DeepSpec.Services.SpecStore.pas:339: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:340: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:341: trailing whitespace.
++procedure TDeepSpecStoreService.WriteGitIgnore;
+src/services/DeepSpec.Services.SpecStore.pas:342: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:343: trailing whitespace.
++  var LContent :=
+src/services/DeepSpec.Services.SpecStore.pas:344: trailing whitespace.
++    '# DeepSpec generated artifacts (regenerable)' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:345: trailing whitespace.
++    'html/' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:346: trailing whitespace.
++    'llm/candidate-output.yaml' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:347: trailing whitespace.
++    'llm/last-run.yaml' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:348: trailing whitespace.
++    'logs/' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:349: trailing whitespace.
++    '' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:350: trailing whitespace.
++    '# Auto-generated prompt templates' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:356: trailing whitespace.
++    'prompts/claude-draft.md' + sLineBreak +
+src/services/DeepSpec.Services.SpecStore.pas:357: trailing whitespace.
++    'prompts/cursor-rules-draft.md' + sLineBreak;
+src/services/DeepSpec.Services.SpecStore.pas:358: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:359: trailing whitespace.
++  WriteYamlFile('.gitignore', LContent);
+src/services/DeepSpec.Services.SpecStore.pas:360: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:361: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:362: trailing whitespace.
++procedure TDeepSpecStoreService.WriteTreeFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:363: trailing whitespace.
++  ATree: DeepSpec.Models.TTreeType;
+src/services/DeepSpec.Services.SpecStore.pas:364: trailing whitespace.
++  ANodes: System.Generics.Collections.TList<DeepSpec.Models.TSpecNode>);
+src/services/DeepSpec.Services.SpecStore.pas:365: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:366: trailing whitespace.
++  var LWriter := TYamlWriter.Create;
+src/services/DeepSpec.Services.SpecStore.pas:367: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:368: trailing whitespace.
++    LWriter.WriteTreeFile(ATree, 'deepspec-treebuilder', ANodes);
+src/services/DeepSpec.Services.SpecStore.pas:369: trailing whitespace.
++    BackupTreeFileIfExisting(ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:370: trailing whitespace.
++    WriteYamlFile(ARelPath, LWriter.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:371: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:372: trailing whitespace.
++    LWriter.Free;
+src/services/DeepSpec.Services.SpecStore.pas:373: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:374: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:375: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:376: trailing whitespace.
++procedure TDeepSpecStoreService.WriteEvidenceFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:377: trailing whitespace.
++  AEvidence: System.Generics.Collections.TList<DeepSpec.Models.TSpecEvidence>);
+src/services/DeepSpec.Services.SpecStore.pas:378: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:379: trailing whitespace.
++  var LWriter := TYamlWriter.Create;
+src/services/DeepSpec.Services.SpecStore.pas:380: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:381: trailing whitespace.
++    LWriter.WriteEvidenceFile(AEvidence);
+src/services/DeepSpec.Services.SpecStore.pas:382: trailing whitespace.
++    WriteYamlFile(ARelPath, LWriter.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:383: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:384: trailing whitespace.
++    LWriter.Free;
+src/services/DeepSpec.Services.SpecStore.pas:385: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:386: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:387: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:388: trailing whitespace.
++function TDeepSpecStoreService.ParseTreeNodes(ARoot: TYamlNode;
+src/services/DeepSpec.Services.SpecStore.pas:389: trailing whitespace.
++  ADefaultTree: TTreeType): TList<TSpecNode>;
+src/services/DeepSpec.Services.SpecStore.pas:390: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:391: trailing whitespace.
++  function StringList(ANode: TYamlNode): TArray<string>;
+src/services/DeepSpec.Services.SpecStore.pas:392: trailing whitespace.
++  begin
+src/services/DeepSpec.Services.SpecStore.pas:393: trailing whitespace.
++    Result := nil;
+src/services/DeepSpec.Services.SpecStore.pas:394: trailing whitespace.
++    if (ANode = nil) or (ANode.Kind <> ykSequence) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:395: trailing whitespace.
++    SetLength(Result, ANode.SeqCount);
+src/services/DeepSpec.Services.SpecStore.pas:396: trailing whitespace.
++    for var I := 0 to ANode.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:397: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:398: trailing whitespace.
++      var LItem := ANode.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:399: trailing whitespace.
++      if LItem <> nil then
+src/services/DeepSpec.Services.SpecStore.pas:400: trailing whitespace.
++        Result[I] := LItem.AsString;
+src/services/DeepSpec.Services.SpecStore.pas:401: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:402: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:403: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:404: trailing whitespace.
++  function ReadSourceRefs(ANode: TYamlNode): TSourceRefArray;
+src/services/DeepSpec.Services.SpecStore.pas:405: trailing whitespace.
++  begin
+src/services/DeepSpec.Services.SpecStore.pas:406: trailing whitespace.
++    Result := nil;
+src/services/DeepSpec.Services.SpecStore.pas:407: trailing whitespace.
++    if (ANode = nil) or (ANode.Kind <> ykSequence) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:408: trailing whitespace.
++    SetLength(Result, ANode.SeqCount);
+src/services/DeepSpec.Services.SpecStore.pas:409: trailing whitespace.
++    for var I := 0 to ANode.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:410: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:411: trailing whitespace.
++      var LItem := ANode.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:412: trailing whitespace.
++      if LItem = nil then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:413: trailing whitespace.
++      Result[I].RefId := LItem.GetString('ref_id', '');
+src/services/DeepSpec.Services.SpecStore.pas:414: trailing whitespace.
++      Result[I].Relevance := LItem.GetString('relevance', '');
+src/services/DeepSpec.Services.SpecStore.pas:415: trailing whitespace.
++      Result[I].Note := LItem.GetString('note', '');
+src/services/DeepSpec.Services.SpecStore.pas:416: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:417: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:418: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:419: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:420: trailing whitespace.
++  LNodesSeq, LItem: TYamlNode;
+src/services/DeepSpec.Services.SpecStore.pas:421: trailing whitespace.
++  LNode: TSpecNode;
+src/services/DeepSpec.Services.SpecStore.pas:422: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:423: trailing whitespace.
++  Result := TList<TSpecNode>.Create;
+src/services/DeepSpec.Services.SpecStore.pas:424: trailing whitespace.
++  if ARoot = nil then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:425: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:426: trailing whitespace.
++  LNodesSeq := ARoot.GetSeq('nodes');
+src/services/DeepSpec.Services.SpecStore.pas:427: trailing whitespace.
++  if LNodesSeq = nil then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:428: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:429: trailing whitespace.
++  for var I := 0 to LNodesSeq.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:430: trailing whitespace.
++  begin
+src/services/DeepSpec.Services.SpecStore.pas:431: trailing whitespace.
++    LItem := LNodesSeq.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:432: trailing whitespace.
++    if (LItem = nil) or (LItem.Kind <> ykMap) then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:433: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:434: trailing whitespace.
++    LNode := Default(TSpecNode);
+src/services/DeepSpec.Services.SpecStore.pas:435: trailing whitespace.
++    LNode.Id := LItem.GetString('id', '');
+src/services/DeepSpec.Services.SpecStore.pas:436: trailing whitespace.
++    if LNode.Id = '' then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:437: trailing whitespace.
++    LNode.Tree := TSpecEnums.TreeTypeFromStr(LItem.GetString('tree', ''),
+src/services/DeepSpec.Services.SpecStore.pas:438: trailing whitespace.
++      ADefaultTree);
+src/services/DeepSpec.Services.SpecStore.pas:439: trailing whitespace.
++    LNode.Title := LItem.GetString('title', '');
+src/services/DeepSpec.Services.SpecStore.pas:440: trailing whitespace.
++    LNode.Kind := LItem.GetString('kind', '');
+src/services/DeepSpec.Services.SpecStore.pas:441: trailing whitespace.
++    LNode.ParentId := LItem.GetString('parent_id', '');
+src/services/DeepSpec.Services.SpecStore.pas:442: trailing whitespace.
++    LNode.SlugOverride := LItem.GetString('slug_override', '');
+src/services/DeepSpec.Services.SpecStore.pas:443: trailing whitespace.
++    LNode.ContentHash := LItem.GetString('content_hash', '');
+src/services/DeepSpec.Services.SpecStore.pas:444: trailing whitespace.
++    LNode.RelationHash := LItem.GetString('relation_hash', '');
+src/services/DeepSpec.Services.SpecStore.pas:445: trailing whitespace.
++    LNode.Revision := LItem.GetInteger('revision', 0);
+src/services/DeepSpec.Services.SpecStore.pas:446: trailing whitespace.
++    LNode.Summary := LItem.GetString('summary', '');
+src/services/DeepSpec.Services.SpecStore.pas:447: trailing whitespace.
++    LNode.Status := TSpecEnums.NodeStatusFromStr(LItem.GetString('status', ''));
+src/services/DeepSpec.Services.SpecStore.pas:448: trailing whitespace.
++    LNode.GenStatus := TSpecEnums.GenStatusFromStr(LItem.GetString('gen_status', ''));
+src/services/DeepSpec.Services.SpecStore.pas:449: trailing whitespace.
++    LNode.ReviewStatus := TSpecEnums.ReviewStatusFromStr(LItem.GetString('review_status', ''));
+src/services/DeepSpec.Services.SpecStore.pas:450: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:451: trailing whitespace.
++    // Backward compatibility: derive gen_status/review_status from old status
+src/services/DeepSpec.Services.SpecStore.pas:452: trailing whitespace.
++    // if the new fields were not present in the YAML file.
+src/services/DeepSpec.Services.SpecStore.pas:453: trailing whitespace.
++    if not LItem.Has('gen_status') then
+src/services/DeepSpec.Services.SpecStore.pas:454: trailing whitespace.
++      case LNode.Status of
+src/services/DeepSpec.Services.SpecStore.pas:455: trailing whitespace.
++        nsConfirmed:  LNode.GenStatus := gsConfirmed;
+src/services/DeepSpec.Services.SpecStore.pas:456: trailing whitespace.
++        nsRejected,
+src/services/DeepSpec.Services.SpecStore.pas:457: trailing whitespace.
++        nsSuperseded: LNode.GenStatus := gsSkipped;
+src/services/DeepSpec.Services.SpecStore.pas:458: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:459: trailing whitespace.
++    if not LItem.Has('review_status') then
+src/services/DeepSpec.Services.SpecStore.pas:460: trailing whitespace.
++      case LNode.Status of
+src/services/DeepSpec.Services.SpecStore.pas:461: trailing whitespace.
++        nsConfirmed:  LNode.ReviewStatus := rsAccepted;
+src/services/DeepSpec.Services.SpecStore.pas:462: trailing whitespace.
++        nsRejected:   LNode.ReviewStatus := rsRejected;
+src/services/DeepSpec.Services.SpecStore.pas:463: trailing whitespace.
++        nsSuperseded: LNode.ReviewStatus := rsDeferred;
+src/services/DeepSpec.Services.SpecStore.pas:464: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:465: trailing whitespace.
++    LNode.Confidence := TSpecEnums.ConfidenceFromStr(LItem.GetString('confidence', ''));
+src/services/DeepSpec.Services.SpecStore.pas:466: trailing whitespace.
++    // fog_state: parse if present so round-trip survives reload (otherwise
+src/services/DeepSpec.Services.SpecStore.pas:467: trailing whitespace.
++    // Render's fog badges and Fog Map always show empty — see bugfix.md #1).
+src/services/DeepSpec.Services.SpecStore.pas:468: trailing whitespace.
++    if LItem.Has('fog_state') then
+src/services/DeepSpec.Services.SpecStore.pas:469: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:470: trailing whitespace.
++      LNode.FogState := TSpecEnums.FogStateFromStr(
+src/services/DeepSpec.Services.SpecStore.pas:471: trailing whitespace.
++        LItem.GetString('fog_state', ''), fsClear);
+src/services/DeepSpec.Services.SpecStore.pas:472: trailing whitespace.
++      LNode.HasFogState := True;
+src/services/DeepSpec.Services.SpecStore.pas:473: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:474: trailing whitespace.
++    LNode.SourceLayer := TSpecEnums.SourceLayerFromStr(
+src/services/DeepSpec.Services.SpecStore.pas:475: trailing whitespace.
++      LItem.GetString('source_layer', ''));
+src/services/DeepSpec.Services.SpecStore.pas:476: trailing whitespace.
++    LNode.SourceRefs := ReadSourceRefs(LItem.Get('source_refs'));
+src/services/DeepSpec.Services.SpecStore.pas:477: trailing whitespace.
++    LNode.DecisionRefs := StringList(LItem.Get('decision_refs'));
+src/services/DeepSpec.Services.SpecStore.pas:478: trailing whitespace.
++    LNode.IssueRefs := StringList(LItem.Get('issue_refs'));
+src/services/DeepSpec.Services.SpecStore.pas:479: trailing whitespace.
++    LNode.RelatedFunctions := StringList(LItem.Get('related_functions'));
+src/services/DeepSpec.Services.SpecStore.pas:480: trailing whitespace.
++    LNode.RelatedModules := StringList(LItem.Get('related_modules'));
+src/services/DeepSpec.Services.SpecStore.pas:481: trailing whitespace.
++    LNode.RelatedViews := StringList(LItem.Get('related_views'));
+src/services/DeepSpec.Services.SpecStore.pas:482: trailing whitespace.
++    LNode.Children := StringList(LItem.Get('children'));
+src/services/DeepSpec.Services.SpecStore.pas:483: trailing whitespace.
++    LNode.Tags := StringList(LItem.Get('tags'));
+src/services/DeepSpec.Services.SpecStore.pas:484: trailing whitespace.
++    LNode.AcceptanceCriteria := StringList(LItem.Get('acceptance_criteria'));
+src/services/DeepSpec.Services.SpecStore.pas:485: trailing whitespace.
++    LNode.NotDoing := StringList(LItem.Get('not_doing'));
+src/services/DeepSpec.Services.SpecStore.pas:486: trailing whitespace.
++    LNode.RelatedData := StringList(LItem.Get('related_data'));
+src/services/DeepSpec.Services.SpecStore.pas:487: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:488: trailing whitespace.
++    // data-tree specific fields
+src/services/DeepSpec.Services.SpecStore.pas:489: trailing whitespace.
++    if LNode.Tree = ttData then
+src/services/DeepSpec.Services.SpecStore.pas:490: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:491: trailing whitespace.
++      var LRisk := LItem.GetString('risk_score', '');
+src/services/DeepSpec.Services.SpecStore.pas:492: trailing whitespace.
++      if LRisk <> '' then
+src/services/DeepSpec.Services.SpecStore.pas:493: trailing whitespace.
++      begin
+src/services/DeepSpec.Services.SpecStore.pas:494: trailing whitespace.
++        LNode.HasRiskScore := True;
+src/services/DeepSpec.Services.SpecStore.pas:495: trailing whitespace.
++        LNode.RiskScore := TSpecEnums.RiskLevelFromStr(LRisk);
+src/services/DeepSpec.Services.SpecStore.pas:496: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:497: trailing whitespace.
++      LNode.DataType := LItem.GetString('data_type', '');
+src/services/DeepSpec.Services.SpecStore.pas:498: trailing whitespace.
++      LNode.Nullable := LItem.GetBoolean('nullable', False);
+src/services/DeepSpec.Services.SpecStore.pas:499: trailing whitespace.
++      LNode.HasNullable := LItem.Has('nullable');
+src/services/DeepSpec.Services.SpecStore.pas:500: trailing whitespace.
++      LNode.DefaultValue := LItem.GetString('default_value', '');
+src/services/DeepSpec.Services.SpecStore.pas:501: trailing whitespace.
++      LNode.FieldConstraints := StringList(LItem.Get('field_constraints'));
+src/services/DeepSpec.Services.SpecStore.pas:502: trailing whitespace.
++      LNode.Persistence := LItem.GetString('persistence', '');
+src/services/DeepSpec.Services.SpecStore.pas:503: trailing whitespace.
++      LNode.SourceEntity := LItem.GetString('source_entity', '');
+src/services/DeepSpec.Services.SpecStore.pas:504: trailing whitespace.
++      LNode.TargetEntity := LItem.GetString('target_entity', '');
+src/services/DeepSpec.Services.SpecStore.pas:505: trailing whitespace.
++      LNode.Cardinality := LItem.GetString('cardinality', '');
+src/services/DeepSpec.Services.SpecStore.pas:506: trailing whitespace.
++      LNode.Cascade := LItem.GetString('cascade', '');
+src/services/DeepSpec.Services.SpecStore.pas:507: trailing whitespace.
++      LNode.ValidStates := StringList(LItem.Get('valid_states'));
+src/services/DeepSpec.Services.SpecStore.pas:508: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:509: trailing whitespace.
++      var LTrans := LItem.Get('transitions');
+src/services/DeepSpec.Services.SpecStore.pas:510: trailing whitespace.
++      if (LTrans <> nil) and (LTrans.Kind = ykSequence) then
+src/services/DeepSpec.Services.SpecStore.pas:511: trailing whitespace.
++      begin
+src/services/DeepSpec.Services.SpecStore.pas:512: trailing whitespace.
++        SetLength(LNode.Transitions, LTrans.SeqCount);
+src/services/DeepSpec.Services.SpecStore.pas:513: trailing whitespace.
++        for var TJ := 0 to LTrans.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:514: trailing whitespace.
++        begin
+src/services/DeepSpec.Services.SpecStore.pas:515: trailing whitespace.
++          var TItem := LTrans.SeqItem(TJ);
+src/services/DeepSpec.Services.SpecStore.pas:516: trailing whitespace.
++          if TItem <> nil then
+src/services/DeepSpec.Services.SpecStore.pas:517: trailing whitespace.
++            LNode.Transitions[TJ] := TPair<string, string>.Create(
+src/services/DeepSpec.Services.SpecStore.pas:518: trailing whitespace.
++              TItem.GetString('from', ''),
+src/services/DeepSpec.Services.SpecStore.pas:519: trailing whitespace.
++              TItem.GetString('to', ''));
+src/services/DeepSpec.Services.SpecStore.pas:520: trailing whitespace.
++        end;
+src/services/DeepSpec.Services.SpecStore.pas:521: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:522: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:523: trailing whitespace.
++      LNode.BackwardCompatible := LItem.GetBoolean('backward_compatible', False);
+src/services/DeepSpec.Services.SpecStore.pas:524: trailing whitespace.
++      LNode.HasBackwardCompatible := LItem.Has('backward_compatible');
+src/services/DeepSpec.Services.SpecStore.pas:525: trailing whitespace.
++      LNode.HasRollback := LItem.GetBoolean('has_rollback', False);
+src/services/DeepSpec.Services.SpecStore.pas:526: trailing whitespace.
++      LNode.HasHasRollback := LItem.Has('has_rollback');
+src/services/DeepSpec.Services.SpecStore.pas:527: trailing whitespace.
++      LNode.Scope := LItem.GetString('scope', '');
+src/services/DeepSpec.Services.SpecStore.pas:528: trailing whitespace.
++      LNode.Enforcement := LItem.GetString('enforcement', '');
+src/services/DeepSpec.Services.SpecStore.pas:529: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:530: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:531: trailing whitespace.
++    Result.Add(LNode);
+src/services/DeepSpec.Services.SpecStore.pas:532: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:533: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:534: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:535: trailing whitespace.
++function TDeepSpecStoreService.ReadTreeFile(const ARelPath: string): TList<TSpecNode>;
+src/services/DeepSpec.Services.SpecStore.pas:536: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:537: trailing whitespace.
++  LParser: TYamlParser;
+src/services/DeepSpec.Services.SpecStore.pas:538: trailing whitespace.
++  LRoot: TYamlNode;
+src/services/DeepSpec.Services.SpecStore.pas:539: trailing whitespace.
++  LFullPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:540: trailing whitespace.
++  LDefaultTree: TTreeType;
+src/services/DeepSpec.Services.SpecStore.pas:541: trailing whitespace.
++  LParsed: TList<TSpecNode>;
+src/services/DeepSpec.Services.SpecStore.pas:542: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:543: trailing whitespace.
++  // Start with an empty list; replaced by ParseTreeNodes on success.
+src/services/DeepSpec.Services.SpecStore.pas:544: trailing whitespace.
++  Result := TList<TSpecNode>.Create;
+src/services/DeepSpec.Services.SpecStore.pas:545: trailing whitespace.
++  LFullPath := TPath.Combine(FBasePath, ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:546: trailing whitespace.
++  if not TFile.Exists(LFullPath) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:547: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:548: trailing whitespace.
++  LParser := TYamlParser.Create;
+src/services/DeepSpec.Services.SpecStore.pas:549: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:550: trailing whitespace.
++    LRoot := LParser.ParseFile(LFullPath);
+src/services/DeepSpec.Services.SpecStore.pas:551: trailing whitespace.
++    if LRoot = nil then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:552: trailing whitespace.
++    try
+src/services/DeepSpec.Services.SpecStore.pas:553: trailing whitespace.
++      LDefaultTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('tree', ''));
+src/services/DeepSpec.Services.SpecStore.pas:554: trailing whitespace.
++      LParsed := ParseTreeNodes(LRoot, LDefaultTree);
+src/services/DeepSpec.Services.SpecStore.pas:555: trailing whitespace.
++      // Swap in the parsed list and free the placeholder we created above.
+src/services/DeepSpec.Services.SpecStore.pas:556: trailing whitespace.
++      Result.Free;
+src/services/DeepSpec.Services.SpecStore.pas:557: trailing whitespace.
++      Result := LParsed;
+src/services/DeepSpec.Services.SpecStore.pas:558: trailing whitespace.
++    finally
+src/services/DeepSpec.Services.SpecStore.pas:559: trailing whitespace.
++      LRoot.Free;
+src/services/DeepSpec.Services.SpecStore.pas:560: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:561: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:562: trailing whitespace.
++    LParser.Free;
+src/services/DeepSpec.Services.SpecStore.pas:563: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:564: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:565: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:566: trailing whitespace.
++procedure TDeepSpecStoreService.WriteBundlesFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:567: trailing whitespace.
++  ABundles: TList<TSemanticBundle>);
+src/services/DeepSpec.Services.SpecStore.pas:568: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:569: trailing whitespace.
++  LSb: TStringBuilder;
+src/services/DeepSpec.Services.SpecStore.pas:570: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:571: trailing whitespace.
++  LSb := TStringBuilder.Create;
+src/services/DeepSpec.Services.SpecStore.pas:572: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:573: trailing whitespace.
++    LSb.AppendLine('version: "1.0"');
+src/services/DeepSpec.Services.SpecStore.pas:574: trailing whitespace.
++    LSb.AppendLine('bundles:');
+src/services/DeepSpec.Services.SpecStore.pas:575: trailing whitespace.
++    for var LB in ABundles do
+src/services/DeepSpec.Services.SpecStore.pas:576: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:577: trailing whitespace.
++      LSb.AppendLine('  - id: ' + LB.Id);
+src/services/DeepSpec.Services.SpecStore.pas:578: trailing whitespace.
++      LSb.AppendLine('    title: "' + LB.Title.Replace('"', '""') + '"');
+src/services/DeepSpec.Services.SpecStore.pas:579: trailing whitespace.
++      if LB.Description <> '' then
+src/services/DeepSpec.Services.SpecStore.pas:580: trailing whitespace.
++        LSb.AppendLine('    description: "' + LB.Description.Replace('"', '""') + '"');
+src/services/DeepSpec.Services.SpecStore.pas:581: trailing whitespace.
++      LSb.AppendLine('    nodes: [' + string.Join(', ', LB.NodeIds) + ']');
+src/services/DeepSpec.Services.SpecStore.pas:582: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:583: trailing whitespace.
++    WriteYamlFile(ARelPath, LSb.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:584: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:585: trailing whitespace.
++    LSb.Free;
+src/services/DeepSpec.Services.SpecStore.pas:586: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:587: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:588: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:589: trailing whitespace.
++function TDeepSpecStoreService.ReadBundlesFile(
+src/services/DeepSpec.Services.SpecStore.pas:590: trailing whitespace.
++  const ARelPath: string): TList<TSemanticBundle>;
+src/services/DeepSpec.Services.SpecStore.pas:591: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:592: trailing whitespace.
++  LParser: TYamlParser;
+src/services/DeepSpec.Services.SpecStore.pas:593: trailing whitespace.
++  LRoot, LSeq: TYamlNode;
+src/services/DeepSpec.Services.SpecStore.pas:594: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:595: trailing whitespace.
++  Result := TList<TSemanticBundle>.Create;
+src/services/DeepSpec.Services.SpecStore.pas:596: trailing whitespace.
++  var LPath := TPath.Combine(FBasePath, ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:597: trailing whitespace.
++  if not TFile.Exists(LPath) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:598: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:599: trailing whitespace.
++  LParser := TYamlParser.Create;
+src/services/DeepSpec.Services.SpecStore.pas:600: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:601: trailing whitespace.
++    LRoot := LParser.ParseFile(LPath);
+src/services/DeepSpec.Services.SpecStore.pas:602: trailing whitespace.
++    try
+src/services/DeepSpec.Services.SpecStore.pas:603: trailing whitespace.
++      LSeq := LRoot.GetSeq('bundles');
+src/services/DeepSpec.Services.SpecStore.pas:604: trailing whitespace.
++      if LSeq = nil then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:605: trailing whitespace.
++      for var I := 0 to LSeq.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:606: trailing whitespace.
++      begin
+src/services/DeepSpec.Services.SpecStore.pas:607: trailing whitespace.
++        var LItem := LSeq.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:608: trailing whitespace.
++        if LItem = nil then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:609: trailing whitespace.
++        var LB: TSemanticBundle;
+src/services/DeepSpec.Services.SpecStore.pas:610: trailing whitespace.
++        LB := Default(TSemanticBundle);
+src/services/DeepSpec.Services.SpecStore.pas:611: trailing whitespace.
++        LB.Id := LItem.GetString('id', '');
+src/services/DeepSpec.Services.SpecStore.pas:612: trailing whitespace.
++        LB.Title := LItem.GetString('title', '');
+src/services/DeepSpec.Services.SpecStore.pas:613: trailing whitespace.
++        LB.Description := LItem.GetString('description', '');
+src/services/DeepSpec.Services.SpecStore.pas:614: trailing whitespace.
++        var LNodes := LItem.GetSeq('nodes');
+src/services/DeepSpec.Services.SpecStore.pas:615: trailing whitespace.
++        if LNodes <> nil then
+src/services/DeepSpec.Services.SpecStore.pas:616: trailing whitespace.
++        begin
+src/services/DeepSpec.Services.SpecStore.pas:617: trailing whitespace.
++          SetLength(LB.NodeIds, LNodes.SeqCount);
+src/services/DeepSpec.Services.SpecStore.pas:618: trailing whitespace.
++          for var J := 0 to LNodes.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:619: trailing whitespace.
++            LB.NodeIds[J] := LNodes.SeqItem(J).AsString;
+src/services/DeepSpec.Services.SpecStore.pas:620: trailing whitespace.
++        end;
+src/services/DeepSpec.Services.SpecStore.pas:621: trailing whitespace.
++        Result.Add(LB);
+src/services/DeepSpec.Services.SpecStore.pas:622: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:623: trailing whitespace.
++    finally
+src/services/DeepSpec.Services.SpecStore.pas:624: trailing whitespace.
++      LRoot.Free;
+src/services/DeepSpec.Services.SpecStore.pas:625: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:626: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:627: trailing whitespace.
++    LParser.Free;
+src/services/DeepSpec.Services.SpecStore.pas:628: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:629: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:630: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:631: trailing whitespace.
++procedure TDeepSpecStoreService.WriteIssuesFile(const ARelPath: string;
+src/services/DeepSpec.Services.SpecStore.pas:632: trailing whitespace.
++  AIssues: TList<TSpecIssue>);
+src/services/DeepSpec.Services.SpecStore.pas:633: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:634: trailing whitespace.
++  LWriter: TYamlWriter;
+src/services/DeepSpec.Services.SpecStore.pas:635: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:636: trailing whitespace.
++  LWriter := TYamlWriter.Create;
+src/services/DeepSpec.Services.SpecStore.pas:637: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:638: trailing whitespace.
++    LWriter.WriteIssuesFile(AIssues);
+src/services/DeepSpec.Services.SpecStore.pas:639: trailing whitespace.
++    WriteYamlFile(ARelPath, LWriter.ToString);
+src/services/DeepSpec.Services.SpecStore.pas:640: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:641: trailing whitespace.
++    LWriter.Free;
+src/services/DeepSpec.Services.SpecStore.pas:642: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:643: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:644: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:645: trailing whitespace.
++function TDeepSpecStoreService.ReadIssuesFile(
+src/services/DeepSpec.Services.SpecStore.pas:646: trailing whitespace.
++  const ARelPath: string): TList<TSpecIssue>;
+src/services/DeepSpec.Services.SpecStore.pas:647: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:648: trailing whitespace.
++  function StringList(ANode: TYamlNode): TArray<string>;
+src/services/DeepSpec.Services.SpecStore.pas:649: trailing whitespace.
++  begin
+src/services/DeepSpec.Services.SpecStore.pas:650: trailing whitespace.
++    Result := nil;
+src/services/DeepSpec.Services.SpecStore.pas:651: trailing whitespace.
++    if (ANode = nil) or (ANode.Kind <> ykSequence) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:652: trailing whitespace.
++    SetLength(Result, ANode.SeqCount);
+src/services/DeepSpec.Services.SpecStore.pas:653: trailing whitespace.
++    for var I := 0 to ANode.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:654: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:655: trailing whitespace.
++      var LItem := ANode.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:656: trailing whitespace.
++      if LItem <> nil then
+src/services/DeepSpec.Services.SpecStore.pas:657: trailing whitespace.
++        Result[I] := LItem.AsString;
+src/services/DeepSpec.Services.SpecStore.pas:658: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:659: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:660: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:661: trailing whitespace.
++  function ReadSourceRefs(ANode: TYamlNode): TSourceRefArray;
+src/services/DeepSpec.Services.SpecStore.pas:662: trailing whitespace.
++  begin
+src/services/DeepSpec.Services.SpecStore.pas:663: trailing whitespace.
++    Result := nil;
+src/services/DeepSpec.Services.SpecStore.pas:664: trailing whitespace.
++    if (ANode = nil) or (ANode.Kind <> ykSequence) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:665: trailing whitespace.
++    SetLength(Result, ANode.SeqCount);
+src/services/DeepSpec.Services.SpecStore.pas:666: trailing whitespace.
++    for var I := 0 to ANode.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:667: trailing whitespace.
++    begin
+src/services/DeepSpec.Services.SpecStore.pas:668: trailing whitespace.
++      var LItem := ANode.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:669: trailing whitespace.
++      if LItem = nil then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:670: trailing whitespace.
++      Result[I].RefId := LItem.GetString('ref_id', '');
+src/services/DeepSpec.Services.SpecStore.pas:671: trailing whitespace.
++      Result[I].Relevance := LItem.GetString('relevance', '');
+src/services/DeepSpec.Services.SpecStore.pas:672: trailing whitespace.
++      Result[I].Note := LItem.GetString('note', '');
+src/services/DeepSpec.Services.SpecStore.pas:673: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:674: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:675: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:676: trailing whitespace.
++var
+src/services/DeepSpec.Services.SpecStore.pas:677: trailing whitespace.
++  LParser: TYamlParser;
+src/services/DeepSpec.Services.SpecStore.pas:678: trailing whitespace.
++  LRoot, LSeq: TYamlNode;
+src/services/DeepSpec.Services.SpecStore.pas:679: trailing whitespace.
++begin
+src/services/DeepSpec.Services.SpecStore.pas:680: trailing whitespace.
++  Result := TList<TSpecIssue>.Create;
+src/services/DeepSpec.Services.SpecStore.pas:681: trailing whitespace.
++  var LPath := TPath.Combine(FBasePath, ARelPath);
+src/services/DeepSpec.Services.SpecStore.pas:682: trailing whitespace.
++  if not TFile.Exists(LPath) then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:683: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:684: trailing whitespace.
++  LParser := TYamlParser.Create;
+src/services/DeepSpec.Services.SpecStore.pas:685: trailing whitespace.
++  try
+src/services/DeepSpec.Services.SpecStore.pas:686: trailing whitespace.
++    LRoot := LParser.ParseFile(LPath);
+src/services/DeepSpec.Services.SpecStore.pas:687: trailing whitespace.
++    try
+src/services/DeepSpec.Services.SpecStore.pas:688: trailing whitespace.
++      LSeq := LRoot.GetSeq('issues');
+src/services/DeepSpec.Services.SpecStore.pas:689: trailing whitespace.
++      if LSeq = nil then Exit;
+src/services/DeepSpec.Services.SpecStore.pas:690: trailing whitespace.
++      for var I := 0 to LSeq.SeqCount - 1 do
+src/services/DeepSpec.Services.SpecStore.pas:691: trailing whitespace.
++      begin
+src/services/DeepSpec.Services.SpecStore.pas:692: trailing whitespace.
++        var LItem := LSeq.SeqItem(I);
+src/services/DeepSpec.Services.SpecStore.pas:693: trailing whitespace.
++        if (LItem = nil) or (LItem.Kind <> ykMap) then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:694: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:695: trailing whitespace.
++        var LIssue: TSpecIssue;
+src/services/DeepSpec.Services.SpecStore.pas:696: trailing whitespace.
++        LIssue := Default(TSpecIssue);
+src/services/DeepSpec.Services.SpecStore.pas:697: trailing whitespace.
++        LIssue.Id := LItem.GetString('id', '');
+src/services/DeepSpec.Services.SpecStore.pas:698: trailing whitespace.
++        if LIssue.Id = '' then Continue;
+src/services/DeepSpec.Services.SpecStore.pas:699: trailing whitespace.
++        LIssue.Severity := TSpecEnums.IssueSeverityFromStr(
+src/services/DeepSpec.Services.SpecStore.pas:700: trailing whitespace.
++          LItem.GetString('severity', ''));
+src/services/DeepSpec.Services.SpecStore.pas:701: trailing whitespace.
++        LIssue.IssueType := TSpecEnums.IssueTypeFromStr(
+src/services/DeepSpec.Services.SpecStore.pas:702: trailing whitespace.
++          LItem.GetString('type', ''));
+src/services/DeepSpec.Services.SpecStore.pas:703: trailing whitespace.
++        LIssue.Title := LItem.GetString('title', '');
+src/services/DeepSpec.Services.SpecStore.pas:704: trailing whitespace.
++        LIssue.Description := LItem.GetString('description', '');
+src/services/DeepSpec.Services.SpecStore.pas:705: trailing whitespace.
++        LIssue.AffectedNodes := StringList(LItem.Get('affected_nodes'));
+src/services/DeepSpec.Services.SpecStore.pas:706: trailing whitespace.
++        LIssue.SourceRefs := ReadSourceRefs(LItem.Get('source_refs'));
+src/services/DeepSpec.Services.SpecStore.pas:707: trailing whitespace.
++        LIssue.SuggestedAction := LItem.GetString('suggested_action', '');
+src/services/DeepSpec.Services.SpecStore.pas:708: trailing whitespace.
++        LIssue.SuggestedPrompt := LItem.GetString('suggested_prompt', '');
+src/services/DeepSpec.Services.SpecStore.pas:709: trailing whitespace.
++        LIssue.Status := TSpecEnums.IssueStatusFromStr(
+src/services/DeepSpec.Services.SpecStore.pas:710: trailing whitespace.
++          LItem.GetString('status', ''));
+src/services/DeepSpec.Services.SpecStore.pas:711: trailing whitespace.
++        LIssue.ResolvedBy := LItem.GetString('resolved_by', '');
+src/services/DeepSpec.Services.SpecStore.pas:712: trailing whitespace.
++        // requires_human: optional HITL/AFK flag for exploration tickets.
+src/services/DeepSpec.Services.SpecStore.pas:713: trailing whitespace.
++        if LItem.Has('requires_human') then
+src/services/DeepSpec.Services.SpecStore.pas:714: trailing whitespace.
++        begin
+src/services/DeepSpec.Services.SpecStore.pas:715: trailing whitespace.
++          LIssue.HasRequiresHuman := True;
+src/services/DeepSpec.Services.SpecStore.pas:716: trailing whitespace.
++          LIssue.RequiresHuman := LItem.GetBoolean('requires_human', False);
+src/services/DeepSpec.Services.SpecStore.pas:717: trailing whitespace.
++        end;
+src/services/DeepSpec.Services.SpecStore.pas:718: trailing whitespace.
++        Result.Add(LIssue);
+src/services/DeepSpec.Services.SpecStore.pas:719: trailing whitespace.
++      end;
+src/services/DeepSpec.Services.SpecStore.pas:720: trailing whitespace.
++    finally
+src/services/DeepSpec.Services.SpecStore.pas:721: trailing whitespace.
++      LRoot.Free;
+src/services/DeepSpec.Services.SpecStore.pas:722: trailing whitespace.
++    end;
+src/services/DeepSpec.Services.SpecStore.pas:723: trailing whitespace.
++  finally
+src/services/DeepSpec.Services.SpecStore.pas:724: trailing whitespace.
++    LParser.Free;
+src/services/DeepSpec.Services.SpecStore.pas:725: trailing whitespace.
++  end;
+src/services/DeepSpec.Services.SpecStore.pas:726: trailing whitespace.
++end;
+src/services/DeepSpec.Services.SpecStore.pas:727: trailing whitespace.
++
+src/services/DeepSpec.Services.SpecStore.pas:728: trailing whitespace.
++end.

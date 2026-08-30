@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-DeepSpec Conformance Test Runner
+AsWish Conformance Test Runner
 
 Usage:
-    python run.py --reader "python deepspec_reader_cli.py" --level 1
-    python run.py --reader "npx deepspec-reader-cli" --level 2
+    python run.py --reader "python aswish_reader_cli.py" --level 1
+    python run.py --reader "npx aswish-reader-cli" --level 2
 
 The reader CLI must support these commands:
     <reader> exists <path>         → {"exists": true/false}
@@ -140,7 +140,7 @@ class ConformanceRunner:
             self.test("t206_ai_instruction", decisions[0].get("ai_instruction") is not None)
 
     def run(self, level: int):
-        print(f"DeepSpec Conformance Test — Level {level}")
+        print(f"AsWish Conformance Test — Level {level}")
         print(f"Reader: {self.reader}")
 
         self.level_0()
@@ -160,7 +160,7 @@ class ConformanceRunner:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="DeepSpec Conformance Test Runner")
+    parser = argparse.ArgumentParser(description="AsWish Conformance Test Runner")
     parser.add_argument("--reader", required=True, help="Reader CLI command")
     parser.add_argument("--level", type=int, default=1, choices=[0, 1, 2])
     args = parser.parse_args()
