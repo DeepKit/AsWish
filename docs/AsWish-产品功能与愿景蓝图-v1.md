@@ -1,35 +1,35 @@
-# DeepSpec 产品功能与愿景蓝图
+# AsWish 产品功能与愿景蓝图
 
 > **English title**: Product Capability & Vision Blueprint
 > **版本**：v1.0
 > **日期**：2026-08-30
-> **产品**：DeepSpec
+> **产品**：AsWish
 > **产品形态**：Delphi/VCL Desktop + Headless CLI + Open Specification Protocol
 > **许可证**：Apache-2.0（产品/协议开源边界以正式发布包为准）
 > **状态**：当前产品功能与愿景基线
 >
 > **与既有文档的关系**：
-> - 战略口径见 `DeepSpec-战略定稿-v1.md`（免费/付费边界、市场楔子、进入第二层门槛）
-> - 路线层次见 `DeepSpec-三层产品路线-v1.md`（需求可视化 → 需求所见即所得 → CLI 实现）
+> - 战略口径见 `AsWish-战略定稿-v1.md`（免费/付费边界、市场楔子、进入第二层门槛）
+> - 路线层次见 `AsWish-三层产品路线-v1.md`（需求可视化 → 需求所见即所得 → CLI 实现）
 > - 理论归属与确权状态见 `理论确权清单-v1.md`（含 fog_state 待确权口径）
-> - 方法论见 `DeepSpec-CTF方法论-v2.1.md`；Wayfinder 外部启发见 `wayfinder-对DeepSpec的启发.md`
+> - 方法论见 `AsWish-CTF方法论-v2.1.md`；Wayfinder 外部启发见 `wayfinder-对AsWish的启发.md`
 > - 工程基线以 `../SPEC.md`（v1.2-draft）为准
 
 ---
 
 ## 一、产品一句话
 
-DeepSpec 让人类与 AI Agent 在开发前看见、确认同一个软件应该是什么；开发后再验证，做出来的是否还是那个东西。
+AsWish 让人类与 AI Agent 在开发前看见、确认同一个软件应该是什么；开发后再验证，做出来的是否还是那个东西。
 
 更完整的产品定义：
 
-DeepSpec 是 AI 原生软件开发的 **Specification Control Layer（规格控制层）**：它把模糊问题显影、关键决策确认后的共同理解固化为可追溯的规格，以视觉化对象交给开发 Agent，并在开发完成后用真实实现证据验证规格是否仍然成立。
+AsWish 是 AI 原生软件开发的 **Specification Control Layer（规格控制层）**：它把模糊问题显影、关键决策确认后的共同理解固化为可追溯的规格，以视觉化对象交给开发 Agent，并在开发完成后用真实实现证据验证规格是否仍然成立。
 
 ---
 
-## 二、DeepSpec 不是什么
+## 二、AsWish 不是什么
 
-DeepSpec 不定位为：
+AsWish 不定位为：
 
 - PRD 生成器；
 - 普通需求管理系统；
@@ -41,13 +41,13 @@ DeepSpec 不定位为：
 - 单纯 UI 截图比对工具；
 - 取代 Cursor / Codex / Claude Code / 其他 Agent 的主开发环境。
 
-DeepSpec 的位置是：
+AsWish 的位置是：
 
 > 位于"人类意图"和"Agent 执行"之间，并向后延伸到"成品验证"的规格控制层。
 
 ---
 
-## 三、DeepSpec 要解决的根问题
+## 三、AsWish 要解决的根问题
 
 AI Coding 带来的核心变化不是"代码写得更快"这么简单，而是：
 
@@ -70,13 +70,13 @@ AI 原生开发逐渐变成：
 > **人在什么时候真正确认过"我们到底要做什么"？**
 > **开发完成以后，做出来的到底是不是前面确认的那个东西？**
 
-DeepSpec 针对的就是这两个断口。
+AsWish 针对的就是这两个断口。
 
 ---
 
 ## 四、核心产品闭环
 
-DeepSpec 的完整主链：
+AsWish 的完整主链：
 
 ```text
 ① 问题显影
@@ -120,7 +120,7 @@ DeepSpec 的完整主链：
 
 > 让说不清的问题，变得可说、可见、可承接。
 
-### 5.2 DeepSpec 中的表现
+### 5.2 AsWish 中的表现
 
 项目材料经过：
 
@@ -138,7 +138,7 @@ clear / misty / foggy / unknown_unknowns
 
 等机制用于表达当前不确定状态。
 
-> 注意：fog_state 当前属于 DeepSpec 的工程构造，理论归属继续保持"待确权"口径（详见 `理论确权清单-v1.md`）。
+> 注意：fog_state 当前属于 AsWish 的工程构造，理论归属继续保持"待确权"口径（详见 `理论确权清单-v1.md`）。
 
 ---
 
@@ -150,13 +150,13 @@ clear / misty / foggy / unknown_unknowns
 
 > **哪些关键决策其实还没有确认？**
 
-因此 DeepSpec 不追求让 AI 一次性猜完整，而是：
+因此 AsWish 不追求让 AI 一次性猜完整，而是：
 
 > 找到当前最关键的未决断口，一次解决一个。
 
 ### 6.2 与外部 Wayfinder / Grilling 的关系
 
-DeepSpec 可以吸收外部实践中的：
+AsWish 可以吸收外部实践中的：
 
 - frontier；
 - fog of war；
@@ -166,9 +166,9 @@ DeepSpec 可以吸收外部实践中的：
 
 等工作方式。
 
-但 DeepSpec 的产品机制不等于 Wayfinder，也不把其概念强归为一元论理论。
+但 AsWish 的产品机制不等于 Wayfinder，也不把其概念强归为一元论理论。
 
-DeepSpec 自己的核心表达是：
+AsWish 自己的核心表达是：
 
 ```text
 Decision Confirmation
@@ -184,11 +184,11 @@ Decision Confirmation
 
 ## 七、第三环：规格建构
 
-这是 DeepSpec 的核心产品层。
+这是 AsWish 的核心产品层。
 
 ### 7.1 四投影
 
-DeepSpec 使用四个核心投影：
+AsWish 使用四个核心投影：
 
 ```text
 Function / Module / View / Data
@@ -212,7 +212,7 @@ CTF Semantic Bundle
 
 ### 7.3 Spec 的性质
 
-DeepSpec 中的 Spec 不是永久真理，而是：
+AsWish 中的 Spec 不是永久真理，而是：
 
 > 当前被人类接受、具有来源与证据、允许未来被推翻的共同规格状态。
 
@@ -228,7 +228,7 @@ fallible。
 
 ## 八、第四环：视觉确认
 
-这是 DeepSpec 区别于传统 Spec 工具的关键产品能力之一。
+这是 AsWish 区别于传统 Spec 工具的关键产品能力之一。
 
 ### 8.1 不是"编辑 Spec"
 
@@ -238,7 +238,7 @@ fallible。
 - "提交按钮放到页面底部。"
 - "这个页面不应该出现删除按钮。"
 
-DeepSpec 根据现有 CandidateIngest / Decisions 机制形成新的规格判断。
+AsWish 根据现有 CandidateIngest / Decisions 机制形成新的规格判断。
 
 ### 8.2 View Spec 必须能够被"看见"
 
@@ -256,7 +256,7 @@ View Spec → Visual Renderer → Visual Preview
 
 ### 8.3 Visual Baseline
 
-当人类确认"这就是我们准备开发的样子"时，DeepSpec 保存：
+当人类确认"这就是我们准备开发的样子"时，AsWish 保存：
 
 ```text
 Accepted Visual Baseline
@@ -277,7 +277,7 @@ Human Decision；
 
 ## 九、第五环：Agent 开发
 
-DeepSpec 不自己成为 Coding Agent，而是将：
+AsWish 不自己成为 Coding Agent，而是将：
 
 ```text
 Accepted Spec + View Spec + Visual Baseline + Relevant Decisions + Evidence
@@ -285,7 +285,7 @@ Accepted Spec + View Spec + Visual Baseline + Relevant Decisions + Evidence
 
 交给用户选择的 Agent / CLI / IDE。
 
-因此 DeepSpec 的边界是：
+因此 AsWish 的边界是：
 
 > 告诉 Agent 应该做什么，以及已经确认的东西长什么样。
 
@@ -329,7 +329,7 @@ Accepted Visual Baseline → Actual Implementation → Visual Comparison
 
 ## 十一、视觉差异不是自动裁决
 
-DeepSpec 发现"前后不一致"不意味着"开发错误"，因为开发者可能有正当理由进行修改。
+AsWish 发现"前后不一致"不意味着"开发错误"，因为开发者可能有正当理由进行修改。
 
 因此：
 
@@ -343,7 +343,7 @@ Difference → Human Review → Existing Decisions → Accepted / Rejected
 
 ## 十二、第七环：证据回流
 
-DeepSpec 的最终价值不只是"检查页面"，而是逐渐形成：
+AsWish 的最终价值不只是"检查页面"，而是逐渐形成：
 
 ```text
 问题 → 决策 → 规格 → 开发 → 成品 → 验证 → 差异 → 新决策 → 新规格
@@ -361,7 +361,7 @@ Specification Feedback Loop
 
 ## 十三、产品功能架构
 
-DeepSpec 的功能可以分为七层：
+AsWish 的功能可以分为七层：
 
 ```text
 Layer A  Problem Manifestation      问题显影
@@ -376,7 +376,7 @@ Layer G  Evidence / Provenance       证据与追溯
 底层统一由：
 
 ```text
-.deepspec/
+.AsWish/
   YAML Schema
   Validation
   Decisions
@@ -390,7 +390,7 @@ Layer G  Evidence / Provenance       证据与追溯
 
 ## 十四、当前已存在的产品能力
 
-根据当前仓库状态，DeepSpec 已经具备第一阶段基础：
+根据当前仓库状态，AsWish 已经具备第一阶段基础：
 
 **Desktop**
 - Delphi/VCL GUI；
@@ -406,7 +406,7 @@ init / scan / generate / validate / render / health / decisions / bundle / inges
 ```
 
 **Protocol**
-- `.deepspec/`
+- `.AsWish/`
 - YAML facts
 - 四投影；
 - Semantic Bundles；
@@ -425,7 +425,7 @@ init / scan / generate / validate / render / health / decisions / bundle / inges
 
 ## 十五、理论与产品的关系
 
-DeepSpec 不是简单"贴了一层理论品牌"，它是部分理论构造的工程化实现。
+AsWish 不是简单"贴了一层理论品牌"，它是部分理论构造的工程化实现。
 
 **DM —— 差异一元论**
 
@@ -460,19 +460,19 @@ runtime invariants。
 
 主要贡献：契约、验证、证据、封存与人类裁决的工程骨架。
 
-DeepSpec 位于：
+AsWish 位于：
 
 > 开发产出发生之前的规格控制层。
 
 **CTF —— 建构追溯可谬规格方法论**
 
-这是 DeepSpec 最直接、最核心的方法论来源。
+这是 AsWish 最直接、最核心的方法论来源。
 
 核心思想：
 
 > 需求的形式和粒度是人机协作的建构产物，必须可追溯，且始终可谬。
 
-DeepSpec 的：
+AsWish 的：
 
 ```text
 traceable；
@@ -503,7 +503,7 @@ review decision；
 
 ## 十六、外部 Wayfinder / Grilling 的关系
 
-DeepSpec 可兼容、吸收以下外部工作方式：
+AsWish 可兼容、吸收以下外部工作方式：
 
 ```text
 frontier；
@@ -516,7 +516,7 @@ code-first evidence gathering。
 
 但产品归属必须保持清楚：
 
-> Wayfinder 是外部启发与兼容对象；DeepSpec 将其与 PFM、CTF、四投影、Decision、Visual Baseline 等机制组合成自己的规格控制链。
+> Wayfinder 是外部启发与兼容对象；AsWish 将其与 PFM、CTF、四投影、Decision、Visual Baseline 等机制组合成自己的规格控制链。
 
 因此：
 
@@ -571,7 +571,7 @@ private model；
 enterprise integration。
 ```
 
-> 但 DeepSpec 始终不以"最好用的 Coding Agent"为战略目标。
+> 但 AsWish 始终不以"最好用的 Coding Agent"为战略目标。
 
 ---
 
@@ -645,7 +645,7 @@ Protocol + SDK + CLI + Agent integrations
 
 ## 二十、最终产品愿景
 
-DeepSpec 最终不是一个"AI 需求文档工具"，而应该成为：
+AsWish 最终不是一个"AI 需求文档工具"，而应该成为：
 
 > **AI 原生软件开发中的规格控制层。**
 
@@ -673,6 +673,6 @@ DeepSpec 最终不是一个"AI 需求文档工具"，而应该成为：
 Human Intent → Specification → Agent → Software → Evidence → Verification
 ```
 
-而 DeepSpec 的核心承诺可以压缩成：
+而 AsWish 的核心承诺可以压缩成：
 
 > **先让人和 Agent 对同一个东西达成可见的共识，再让 Agent 去做；做完以后，再证明它做的还是那个东西。**
