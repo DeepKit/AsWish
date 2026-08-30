@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Providers.MainView
   ---------------------------------------------------------------------------
   Main view provider - hosts a TEdgeBrowser (WebView2) for HTML rendering.
@@ -51,6 +51,14 @@ type
   TBundleActionProc = reference to procedure(
     const AAction, ABundleId: string);
 
+  /// <summary>JS Bridge callback for submitting natural language intent from GUI.</summary>
+  TChangeSetSubmitProc = reference to procedure(
+    const ANodeId, AIntentText: string);
+
+  /// <summary>JS Bridge callback for ChangeSet decisions (accept/reject/clarify).</summary>
+  TChangeSetActionProc = reference to procedure(
+    const AAction, AChangeSetId, AParam: string);
+
   /// <summary>
   /// Holds a target URL and navigates the browser when it becomes ready.
   /// Also handles incoming postMessage events from the page (JS Bridge).
@@ -63,6 +71,8 @@ type
     FOnCreateTicket: TCreateTicketProc;
     FOnExportOptPrompt: TExportOptPromptProc;
     FOnBundleAction: TBundleActionProc;
+    FOnSubmitIntent: TChangeSetSubmitProc;
+    FOnChangeSetAction: TChangeSetActionProc;
     procedure HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
     procedure HandleWebMessage(Sender: TCustomEdgeBrowser;
       Args: TWebMessageReceivedEventArgs);
@@ -73,7 +83,9 @@ type
       AProjectService: TAsWishProjectService;
       AOnCreateTicket: TCreateTicketProc;
       AOnExportOptPrompt: TExportOptPromptProc;
-      AOnBundleAction: TBundleActionProc);
+      AOnBundleAction: TBundleActionProc;
+      AOnSubmitIntent: TChangeSetSubmitProc = nil;
+      AOnChangeSetAction: TChangeSetActionProc = nil);
   end;
 
   TAsWishMainViewProvider = class(TInterfacedObject, IShellMainViewProvider)
@@ -82,12 +94,16 @@ type
     FOnCreateTicket: TCreateTicketProc;
     FOnExportOptPrompt: TExportOptPromptProc;
     FOnBundleAction: TBundleActionProc;
+    FOnSubmitIntent: TChangeSetSubmitProc;
+    FOnChangeSetAction: TChangeSetActionProc;
     function GetIndexHtmlPath: string;
   public
     constructor Create(AProjectService: TAsWishProjectService;
       AOnCreateTicket: TCreateTicketProc;
       AOnExportOptPrompt: TExportOptPromptProc;
-      AOnBundleAction: TBundleActionProc);
+      AOnBundleAction: TBundleActionProc;
+      AOnSubmitIntent: TChangeSetSubmitProc = nil;
+      AOnChangeSetAction: TChangeSetActionProc = nil);
     function ProviderId: string;
     function CanOpen(const ARef: TShellObjectRef): Boolean;
     function GetViewForObject(const ARef: TShellObjectRef): TShellViewInfo;
@@ -110,7 +126,9 @@ constructor TBrowserNavigator.CreateFor(AOwner: TComponent; const ATargetUrl: st
   AProjectService: TAsWishProjectService;
   AOnCreateTicket: TCreateTicketProc;
   AOnExportOptPrompt: TExportOptPromptProc;
-  AOnBundleAction: TBundleActionProc);
+  AOnBundleAction: TBundleActionProc;
+  AOnSubmitIntent: TChangeSetSubmitProc;
+  AOnChangeSetAction: TChangeSetActionProc);
 begin
   inherited Create(AOwner);
   FTargetUrl := ATargetUrl;
@@ -118,6 +136,8 @@ begin
   FOnCreateTicket := AOnCreateTicket;
   FOnExportOptPrompt := AOnExportOptPrompt;
   FOnBundleAction := AOnBundleAction;
+  FOnSubmitIntent := AOnSubmitIntent;
+  FOnChangeSetAction := AOnChangeSetAction;
 end;
 
 procedure TBrowserNavigator.HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
@@ -184,6 +204,42 @@ begin
       // nodes and apply state transitions (dead-button fix, bundles.html).
       if Assigned(FOnBundleAction) then
         FOnBundleAction(LAction, LBundleId);
+    end
+    else if LAction = 'changeset-submit' then
+    begin
+      var LIntentText := LObj.GetValue<string>('intent_text', '');
+      if Assigned(FOnSubmitIntent) then
+      begin
+        FOnSubmitIntent(LNodeId, LIntentText);
+        var LReviewPath := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');
+        if TFile.Exists(LReviewPath) then
+          Sender.Navigate('file:///' + LReviewPath.Replace('\', '/'));
+      end;
+    end
+    else if (LAction = 'changeset-accept') or (LAction = 'changeset-reject') or (LAction = 'changeset-clarify') then
+    begin
+      var LCSId := LObj.GetValue<string>('changeset_id', '');
+      var LRationale := LObj.GetValue<string>('rationale', '');
+      if LAction = 'changeset-clarify' then
+        LRationale := LObj.GetValue<string>('clarification', '');
+      if Assigned(FOnChangeSetAction) then
+      begin
+        FOnChangeSetAction(LAction, LCSId, LRationale);
+        var LIndexPath := TPath.Combine(FProjectService.AsWishPath, 'html\index.html');
+        if TFile.Exists(LIndexPath) then
+          Sender.Navigate('file:///' + LIndexPath.Replace('\', '/'));
+      end;
+    end
+    else if LAction = 'changeset-regenerate' then
+    begin
+      var LIntentText := LObj.GetValue<string>('intent_text', '');
+      if Assigned(FOnSubmitIntent) then
+      begin
+        FOnSubmitIntent(LNodeId, LIntentText);
+        var LReviewPath := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');
+        if TFile.Exists(LReviewPath) then
+          Sender.Navigate('file:///' + LReviewPath.Replace('\', '/'));
+      end;
     end;
   finally
     LJson.Free;
@@ -233,13 +289,16 @@ end;
 
 constructor TAsWishMainViewProvider.Create(AProjectService: TAsWishProjectService;
   AOnCreateTicket: TCreateTicketProc; AOnExportOptPrompt: TExportOptPromptProc;
-  AOnBundleAction: TBundleActionProc);
+  AOnBundleAction: TBundleActionProc; AOnSubmitIntent: TChangeSetSubmitProc;
+  AOnChangeSetAction: TChangeSetActionProc);
 begin
   inherited Create;
   FProjectService := AProjectService;
   FOnCreateTicket := AOnCreateTicket;
   FOnExportOptPrompt := AOnExportOptPrompt;
   FOnBundleAction := AOnBundleAction;
+  FOnSubmitIntent := AOnSubmitIntent;
+  FOnChangeSetAction := AOnChangeSetAction;
 end;
 
 function TAsWishMainViewProvider.ProviderId: string;
@@ -288,7 +347,8 @@ begin
 
     // Navigator gets owned by the browser, freed automatically.
     LNavigator := TBrowserNavigator.CreateFor(LBrowser, LUrl, FProjectService,
-      FOnCreateTicket, FOnExportOptPrompt, FOnBundleAction);
+      FOnCreateTicket, FOnExportOptPrompt, FOnBundleAction,
+      FOnSubmitIntent, FOnChangeSetAction);
     LBrowser.OnCreateWebViewCompleted := LNavigator.HandleCreated;
     LBrowser.OnWebMessageReceived := LNavigator.HandleWebMessage;
 

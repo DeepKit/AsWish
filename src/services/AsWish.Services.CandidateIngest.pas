@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Services.CandidateIngest
 
@@ -94,6 +94,8 @@ type
     function SaveCandidateIntent(const AProjectPath: string; const AIntent: TCandidateIntent): string;
     /// <summary>Load candidate intent from .AsWish/llm/candidate-intent.yaml (WO-20260830-0027A).</summary>
     function LoadCandidateIntent(const AProjectPath: string): TCandidateIntent;
+    /// <summary>List all candidate intents in .AsWish/llm/ (Dogfood intent list).</summary>
+    function ListCandidateIntents(const AProjectPath: string): TArray<TCandidateIntent>;
 
     /// <summary>Check if natural language intent has sufficient clarity for LLM interpretation.
     /// If insufficient (empty/vague), constructs a grilling_ticket issue for human clarification (AC-03).</summary>
@@ -607,6 +609,37 @@ begin
     Result := ParseCandidateIntentYaml(TFile.ReadAllText(LFilePath, TEncoding.UTF8));
 end;
 
+function TAsWishCandidateIngest.ListCandidateIntents(
+  const AProjectPath: string): TArray<TCandidateIntent>;
+var
+  LDir: string;
+  LFiles: TArray<string>;
+  LList: TList<TCandidateIntent>;
+  LIntent: TCandidateIntent;
+begin
+  LList := TList<TCandidateIntent>.Create;
+  try
+    LDir := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), '');
+    if TDirectory.Exists(LDir) then
+    begin
+      LFiles := TDirectory.GetFiles(LDir, 'candidate-intent*.yaml');
+      for var LFile in LFiles do
+      begin
+        try
+          LIntent := ParseCandidateIntentYaml(TFile.ReadAllText(LFile, TEncoding.UTF8));
+          if LIntent.NodeId <> '' then
+            LList.Add(LIntent);
+        except
+          // Skip malformed
+        end;
+      end;
+    end;
+    Result := LList.ToArray;
+  finally
+    LList.Free;
+  end;
+end;
+
 function TAsWishCandidateIngest.CheckIntentClarity(
   const AIntent: TCandidateIntent; out AIssue: TSpecIssue): Boolean;
 var
@@ -774,7 +807,7 @@ function TAsWishCandidateIngest.SaveChangeSet(
   const AProjectPath: string; const AChangeSet: TChangeSet): string;
 var
   LLlmDir: string;
-  LFilePath: string;
+  LFilePath, LLatestPath: string;
   LYaml: string;
 begin
   LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
@@ -786,19 +819,40 @@ begin
     LFilePath := TPath.Combine(LLlmDir, 'change-set.yaml');
   LYaml := FormatChangeSetYaml(AChangeSet);
   TAsWishStoreService.AtomicWriteTextFile(LFilePath, LYaml);
+
+  // Also write/update change-set.yaml as latest active pointer
+  LLatestPath := TPath.Combine(LLlmDir, 'change-set.yaml');
+  TAsWishStoreService.AtomicWriteTextFile(LLatestPath, LYaml);
+
   Result := LFilePath;
 end;
 
 function TAsWishCandidateIngest.LoadChangeSet(
   const AProjectPath: string; const AChangeSetId: string): TChangeSet;
 var
-  LFilePath: string;
+  LLlmDir, LFilePath: string;
+  LFiles: TArray<string>;
 begin
   Result := Default(TChangeSet);
+  LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
+
   if AChangeSetId <> '' then
-    LFilePath := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), 'change-set-' + AChangeSetId + '.yaml')
+  begin
+    LFilePath := TPath.Combine(LLlmDir, 'change-set-' + AChangeSetId + '.yaml');
+    if not TFile.Exists(LFilePath) then
+      LFilePath := TPath.Combine(LLlmDir, AChangeSetId);
+  end
   else
-    LFilePath := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), 'change-set.yaml');
+  begin
+    LFilePath := TPath.Combine(LLlmDir, 'change-set.yaml');
+    if not TFile.Exists(LFilePath) and TDirectory.Exists(LLlmDir) then
+    begin
+      LFiles := TDirectory.GetFiles(LLlmDir, 'change-set*.yaml');
+      if Length(LFiles) > 0 then
+        LFilePath := LFiles[0];
+    end;
+  end;
+
   if TFile.Exists(LFilePath) then
     Result := ParseChangeSetYaml(TFile.ReadAllText(LFilePath, TEncoding.UTF8));
 end;

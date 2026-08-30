@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.CLI -- headless command-line entry (Phase 5 B-P0).
 
   Reuses the same src/ services as the desktop app (no DeepShell/GUI
@@ -565,6 +565,45 @@ begin
   end;
 end;
 
+procedure RunIntentList(const ADir: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LIntents: TArray<TCandidateIntent>;
+  I: Integer;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[intent list] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  try
+    LIntents := LIngest.ListCandidateIntents(ADir);
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('intent_list');
+      WriteJsonKVInt('total', Length(LIntents));
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('Found %d candidate intent(s):', [Length(LIntents)]));
+      for I := 0 to Length(LIntents) - 1 do
+      begin
+        Writeln(Format('  [%d] Node: %s (%s) | Author: %s',
+          [I + 1, LIntents[I].NodeId, TSpecEnums.TreeTypeToStr(LIntents[I].Tree), LIntents[I].Author]));
+        Writeln('      Intent: ' + LIntents[I].UserIntent);
+      end;
+    end;
+  finally
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
 procedure RunChangeSet(const ADir, ANodeId, ATreeStr, AUserIntent: string);
 var
   LStore: TAsWishStoreService;
@@ -825,6 +864,58 @@ begin
     else
     begin
       Writeln(Format('[changeset] REJECTED %s -> recorded Decision %s (Canonical Spec untouched)', [LCS.Id, LDecId]));
+    end;
+  finally
+    LDecisions.Free;
+    LIngest.Free;
+    LStore.Free;
+  end;
+end;
+
+procedure RunChangeSetClarify(const ADir, AChangeSetId, AClarification: string);
+var
+  LStore: TAsWishStoreService;
+  LIngest: TAsWishCandidateIngest;
+  LDecisions: TAsWishDecisionsService;
+  LCS: TChangeSet;
+  LDecId: string;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[changeset] error: no .AsWish directory; run scan first');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  LIngest := TAsWishCandidateIngest.Create(LStore);
+  LDecisions := TAsWishDecisionsService.Create;
+  try
+    LStore.Initialize(ADir);
+    LDecisions.Initialize(TPath.Combine(ADir, '.AsWish'));
+    LDecisions.Load;
+
+    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
+    if LCS.Id = '' then
+    begin
+      Writeln('[changeset] error: change set not found: ' + AChangeSetId);
+      Halt(1);
+    end;
+
+    // Record clarify decision with rsDeferred (Canonical Spec trees remain untouched)
+    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsDeferred, AClarification);
+
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('changeset_clarify');
+      WriteJsonKV('status', 'ok');
+      WriteJsonKV('decision_id', LDecId);
+      WriteJsonKV('change_set_id', LCS.Id);
+      WriteJsonKV('canonical_spec', 'untouched');
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('[changeset] CLARIFIED %s -> recorded Decision %s (Canonical Spec untouched)', [LCS.Id, LDecId]));
+      Writeln('  Clarification detail: ' + AClarification);
     end;
   finally
     LDecisions.Free;
@@ -1180,12 +1271,25 @@ begin
   end
   else if LCommand = 'intent' then
   begin
-    if ParamCount < 5 then
+    var LSub := LowerCase(ParamStr(2));
+    if LSub = 'list' then
     begin
-      Writeln('AsWish.CLI intent <project-dir> <node-id> <tree> <user_intent>');
-      Halt(2);
+      RunIntentList(ParamStr(3));
+    end
+    else if LowerCase(ParamStr(3)) = 'list' then
+    begin
+      RunIntentList(ParamStr(2));
+    end
+    else
+    begin
+      if ParamCount < 5 then
+      begin
+        Writeln('AsWish.CLI intent <project-dir> <node-id> <tree> <user_intent>');
+        Writeln('  or: AsWish.CLI intent list <project-dir>');
+        Halt(2);
+      end;
+      RunIntent(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
     end;
-    RunIntent(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
   end
   else if LCommand = 'changeset' then
   begin
@@ -1206,7 +1310,14 @@ begin
         Writeln('AsWish.CLI changeset accept <project-dir> [changeset-id] [rationale]');
         Halt(2);
       end;
-      RunChangeSetAccept(ParamStr(3), ParamStr(4), ParamStr(5));
+      var LCSId := ParamStr(4);
+      var LRationale := ParamStr(5);
+      if (ParamCount = 4) and not LCSId.StartsWith('cs-') then
+      begin
+        LRationale := LCSId;
+        LCSId := '';
+      end;
+      RunChangeSetAccept(ParamStr(3), LCSId, LRationale);
     end
     else if LSubAction = 'reject' then
     begin
@@ -1215,7 +1326,30 @@ begin
         Writeln('AsWish.CLI changeset reject <project-dir> [changeset-id] [rationale]');
         Halt(2);
       end;
-      RunChangeSetReject(ParamStr(3), ParamStr(4), ParamStr(5));
+      var LCSId := ParamStr(4);
+      var LRationale := ParamStr(5);
+      if (ParamCount = 4) and not LCSId.StartsWith('cs-') then
+      begin
+        LRationale := LCSId;
+        LCSId := '';
+      end;
+      RunChangeSetReject(ParamStr(3), LCSId, LRationale);
+    end
+    else if LSubAction = 'clarify' then
+    begin
+      if ParamCount < 3 then
+      begin
+        Writeln('AsWish.CLI changeset clarify <project-dir> [changeset-id] <clarification>');
+        Halt(2);
+      end;
+      var LCSId := ParamStr(4);
+      var LClarification := ParamStr(5);
+      if (ParamCount = 4) and not LCSId.StartsWith('cs-') then
+      begin
+        LClarification := LCSId;
+        LCSId := '';
+      end;
+      RunChangeSetClarify(ParamStr(3), LCSId, LClarification);
     end
     else
     begin
@@ -1225,6 +1359,7 @@ begin
         Writeln('  or: AsWish.CLI changeset review <project-dir> [changeset-id]');
         Writeln('  or: AsWish.CLI changeset accept <project-dir> [changeset-id] [rationale]');
         Writeln('  or: AsWish.CLI changeset reject <project-dir> [changeset-id] [rationale]');
+        Writeln('  or: AsWish.CLI changeset clarify <project-dir> [changeset-id] <clarification>');
         Halt(2);
       end;
       RunChangeSet(LDir, ParamStr(3), ParamStr(4), ParamStr(5));

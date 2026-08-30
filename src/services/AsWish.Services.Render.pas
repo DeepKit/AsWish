@@ -47,6 +47,7 @@ type
     ///  rendered for a Chinese Windows locale, else AEn. Only used for
     ///  human-visible chrome (titles/buttons/hints), never for YAML keys.</summary>
     function T(const AEn, AZh: string): string;
+    function YamlEscape(const S: string): string;
   public
     procedure Initialize(const AAsWishPath: string);
     procedure RenderScanReport(AScan: TAsWishScanService;
@@ -65,6 +66,10 @@ type
     /// <summary>Render a single-node detail page (node-detail.html) shown
     ///  in the main view when the user clicks a tree node.</summary>
     procedure RenderNodeDetail(const ANode: TSpecNode);
+    /// <summary>Render the 4-layer ChangeSet review surface (changeset-review.html)
+    ///  implementing 0-9 universal choice protocol and decision actions.</summary>
+    procedure RenderChangeSetReviewPage(const AChangeSet: TChangeSet;
+      ANodes: TList<TSpecNode>; const AProjectName: string = '');
     /// <summary>Compute health metrics over 4 trees (+ optional issues).
     /// nil lists are treated as empty. Pure — no IO.</summary>
     class function ComputeHealthMetrics(AFunc, AModule, AView, AData: TList<TSpecNode>;
@@ -122,6 +127,11 @@ begin
     .Replace('"', '&quot;');
 end;
 
+function TAsWishRenderService.YamlEscape(const S: string): string;
+begin
+  Result := '"' + S.Replace('\', '\\').Replace('"', '\"').Replace(#13, ' ').Replace(#10, ' ') + '"';
+end;
+
 function TAsWishRenderService.PageHeader(const ATitle: string): string;
 begin
   Result :=
@@ -131,13 +141,35 @@ begin
     '  <meta charset="UTF-8">' + sLineBreak +
     '  <title>' + HtmlEscape(ATitle) + ' - AsWish</title>' + sLineBreak +
     '  <style>' + sLineBreak +
-    '    body { font-family: -apple-system, "Segoe UI", sans-serif; margin: 2em; color: #333; }' + sLineBreak +
+    '    :root {' + sLineBreak +
+    '      --bg-color: #ffffff; --text-color: #1e293b; --card-bg: #f8fafc; --card-border: #e2e8f0;' + sLineBreak +
+    '      --choice-opt-bg: #eff6ff; --choice-opt-text: #1e40af; --choice-opt-border: #bfdbfe;' + sLineBreak +
+    '      --choice-rec-border: #2563eb; --choice-regen-bg: #f5f3ff; --choice-regen-text: #6b21a8;' + sLineBreak +
+    '      --choice-regen-border: #ddd6fe; --choice-input-bg: #ecfdf5; --choice-input-text: #065f46;' + sLineBreak +
+    '      --choice-input-border: #a7f3d0; --choice-back-bg: #f8fafc; --choice-back-text: #475569;' + sLineBreak +
+    '      --choice-back-border: #cbd5e1; --badge-explicit-bg: #dbeafe; --badge-explicit-text: #1e40af;' + sLineBreak +
+    '      --badge-inferred-bg: #fef3c7; --badge-inferred-text: #92400e; --badge-unknown-bg: #f3f4f6;' + sLineBreak +
+    '      --badge-unknown-text: #4b5563;' + sLineBreak +
+    '    }' + sLineBreak +
+    '    @media (prefers-color-scheme: dark) {' + sLineBreak +
+    '      :root {' + sLineBreak +
+    '        --bg-color: #0f172a; --text-color: #f1f5f9; --card-bg: #1e293b; --card-border: #334155;' + sLineBreak +
+    '        --choice-opt-bg: #1e293b; --choice-opt-text: #93c5fd; --choice-opt-border: #3b82f6;' + sLineBreak +
+    '        --choice-rec-border: #60a5fa; --choice-regen-bg: #2e1065; --choice-regen-text: #c084fc;' + sLineBreak +
+    '        --choice-regen-border: #7c3aed; --choice-input-bg: #064e3b; --choice-input-text: #34d399;' + sLineBreak +
+    '        --choice-input-border: #059669; --choice-back-bg: #1e293b; --choice-back-text: #94a3b8;' + sLineBreak +
+    '        --choice-back-border: #475569; --badge-explicit-bg: #1e3a8a; --badge-explicit-text: #bfdbfe;' + sLineBreak +
+    '        --badge-inferred-bg: #78350f; --badge-inferred-text: #fde68a; --badge-unknown-bg: #374151;' + sLineBreak +
+    '        --badge-unknown-text: #d1d5db;' + sLineBreak +
+    '      }' + sLineBreak +
+    '    }' + sLineBreak +
+    '    body { font-family: -apple-system, "Segoe UI", sans-serif; margin: 2em; color: var(--text-color); background: var(--bg-color); }' + sLineBreak +
     '    h1 { border-bottom: 2px solid #4a90e2; padding-bottom: 0.5em; }' + sLineBreak +
     '    h2 { color: #4a90e2; margin-top: 1.5em; }' + sLineBreak +
     '    .stat { display: inline-block; margin: 0.5em 1em 0.5em 0; padding: 0.5em 1em;' + sLineBreak +
-    '            background: #f0f4f8; border-left: 3px solid #4a90e2; }' + sLineBreak +
+    '            background: var(--card-bg); border-left: 3px solid #4a90e2; border-radius: 4px; }' + sLineBreak +
     '    .stat strong { display: block; font-size: 1.5em; color: #4a90e2; }' + sLineBreak +
-    '    .file-list { background: #f9f9f9; padding: 1em; border-radius: 4px; max-height: 400px; overflow-y: auto; }' + sLineBreak +
+    '    .file-list { background: var(--card-bg); padding: 1em; border-radius: 4px; max-height: 400px; overflow-y: auto; }' + sLineBreak +
     '    .file-list code { display: block; padding: 0.2em 0; font-size: 0.9em; }' + sLineBreak +
     '    .badge { display: inline-block; padding: 0.2em 0.6em; border-radius: 3px;' + sLineBreak +
     '             font-size: 0.85em; margin-right: 0.5em; }' + sLineBreak +
@@ -146,7 +178,43 @@ begin
     '    .badge-ui { background: #fff3e0; color: #f57c00; }' + sLineBreak +
     '    .badge-config { background: #e8f5e9; color: #388e3c; }' + sLineBreak +
     '    .badge-ai { background: #fce4ec; color: #c2185b; }' + sLineBreak +
-    '    footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid #eee;' + sLineBreak +
+    '    .badge-source-explicit { background: var(--badge-explicit-bg); color: var(--badge-explicit-text); font-weight: bold; }' + sLineBreak +
+    '    .badge-source-inferred { background: var(--badge-inferred-bg); color: var(--badge-inferred-text); font-weight: bold; }' + sLineBreak +
+    '    .badge-source-unknown  { background: var(--badge-unknown-bg); color: var(--badge-unknown-text); font-weight: bold; }' + sLineBreak +
+    '    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 1.2em; margin-bottom: 1.2em; }' + sLineBreak +
+    '    .card-i-said { border-left: 4px solid #3b82f6; }' + sLineBreak +
+    '    .card-ai-understood { border-left: 4px solid #8b5cf6; }' + sLineBreak +
+    '    .card-changes { border-left: 4px solid #10b981; }' + sLineBreak +
+    '    .card-decision { border-left: 4px solid #f59e0b; }' + sLineBreak +
+    '    .intent-box { background: rgba(59, 130, 246, 0.08); padding: 1em; border-radius: 6px; }' + sLineBreak +
+    '    .intent-text { font-size: 1.15em; font-style: italic; margin: 0 0 0.5em 0; }' + sLineBreak +
+    '    .intent-meta { font-size: 0.85em; color: #64748b; display: flex; gap: 1.5em; }' + sLineBreak +
+    '    .changes-table { width: 100%; border-collapse: collapse; margin-top: 0.8em; }' + sLineBreak +
+    '    .changes-table th, .changes-table td { border: 1px solid var(--card-border); padding: 0.6em 0.8em; text-align: left; }' + sLineBreak +
+    '    .changes-table th { background: rgba(0,0,0,0.03); }' + sLineBreak +
+    '    .diff-before { background: #fee2e2; color: #991b1b; padding: 0.2em 0.4em; border-radius: 3px; text-decoration: line-through; }' + sLineBreak +
+    '    .diff-after  { background: #dcfce7; color: #166534; padding: 0.2em 0.4em; border-radius: 3px; font-weight: 600; }' + sLineBreak +
+    '    .choice-container { display: flex; flex-direction: column; gap: 0.5em; margin-top: 0.8em; }' + sLineBreak +
+    '    .btn-choice { display: flex; align-items: center; width: 100%; text-align: left; padding: 0.8em 1em; border-radius: 6px; font-size: 0.95em; cursor: pointer; transition: all 0.15s ease; border: 1px solid transparent; }' + sLineBreak +
+    '    .btn-choice-opt { background: var(--choice-opt-bg); color: var(--choice-opt-text); border-color: var(--choice-opt-border); }' + sLineBreak +
+    '    .btn-choice-rec { border: 2px solid var(--choice-rec-border); font-weight: bold; }' + sLineBreak +
+    '    .btn-choice-danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }' + sLineBreak +
+    '    .btn-choice-regen { background: var(--choice-regen-bg); color: var(--choice-regen-text); border-color: var(--choice-regen-border); }' + sLineBreak +
+    '    .btn-choice-input { background: var(--choice-input-bg); color: var(--choice-input-text); border-color: var(--choice-input-border); }' + sLineBreak +
+    '    .btn-choice-back { background: var(--choice-back-bg); color: var(--choice-back-text); border-color: var(--choice-back-border); }' + sLineBreak +
+    '    .choice-key { font-family: monospace; font-weight: bold; margin-right: 0.8em; font-size: 1.1em; }' + sLineBreak +
+    '    .choice-divider { height: 1px; background: var(--card-border); margin: 0.5em 0; }' + sLineBreak +
+    '    .rec-badge { margin-left: auto; background: #2563eb; color: #fff; font-size: 0.75em; padding: 0.2em 0.5em; border-radius: 4px; }' + sLineBreak +
+    '    .form-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 6px; padding: 1em; margin-top: 1em; }' + sLineBreak +
+    '    .form-textarea { width: 100%; min-height: 80px; padding: 0.6em; border-radius: 4px; border: 1px solid var(--card-border); font-family: inherit; font-size: 0.95em; box-sizing: border-box; }' + sLineBreak +
+    '    .form-actions { margin-top: 0.6em; display: flex; gap: 0.6em; }' + sLineBreak +
+    '    .btn-primary { background: #2563eb; color: #fff; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-weight: 500; }' + sLineBreak +
+    '    .btn-secondary { background: #64748b; color: #fff; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; }' + sLineBreak +
+    '    .status-banner { margin-top: 1em; padding: 0.8em 1.2em; border-radius: 6px; font-weight: 500; }' + sLineBreak +
+    '    .status-success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }' + sLineBreak +
+    '    .status-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }' + sLineBreak +
+    '    .status-info { background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc; }' + sLineBreak +
+    '    footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid var(--card-border);' + sLineBreak +
     '             color: #999; font-size: 0.85em; }' + sLineBreak +
     '  </style>' + sLineBreak +
     '</head>' + sLineBreak +
@@ -312,6 +380,8 @@ begin
       ATotalFiles.ToString + ' files)</li>');
     LSb.AppendLine('  <li><a href="problems.html">Problems</a></li>');
     LSb.AppendLine('  <li><a href="bundles.html">Bundles</a></li>');
+    LSb.AppendLine('  <li><a href="changeset-review.html"><strong>' +
+      T('ChangeSet Review (I said &rarr; AI understood &rarr; Decision)', '意图审阅与裁决（我说 &rarr; AI 理解 &rarr; 裁决）') + '</strong></a></li>');
     LSb.AppendLine('  <li><a href="function-tree.html">Function Tree</a></li>');
     LSb.AppendLine('  <li><a href="module-tree.html">Module Tree</a></li>');
     LSb.AppendLine('  <li><a href="view-tree.html">View Tree</a></li>');
@@ -1173,8 +1243,354 @@ begin
         AsWish.Models.TSpecEnums.FogStateToStr(ANode.FogState)) + '</p>');
     end;
 
+    // Natural Language intent input for this node (0-9 Standard Input)
+    LSb.AppendLine('<h2>' + T('Natural Language Revision (I said)', '人类自然语言修订（我说）') + '</h2>');
+    LSb.AppendLine('<div class="card card-i-said">');
+    LSb.AppendLine('  <p>' + T('Express your revision intent for this node in plain natural language:', '使用自然语言提出你对该节点的修改意图：') + '</p>');
+    LSb.AppendLine('  <textarea id="node-intent-input" class="form-textarea" placeholder="' +
+      T('e.g., Update summary to support dark mode and keep existing settings compatible...',
+        '例如：修改功能摘要，支持深色模式并保持现有配置兼容...') + '"></textarea>');
+    LSb.AppendLine('  <div class="form-actions" style="margin-top: 0.8em;">');
+    LSb.AppendLine('    <button class="btn-choice btn-choice-input" onclick="submitNodeIntent()">' +
+      '<span class="choice-key">[9]</span> ' + T('Submit Intent for AI Interpretation', '提交意图并让 AI 生成理解') + '</button>');
+    LSb.AppendLine('  </div>');
+    LSb.AppendLine('</div>');
+
+    LSb.AppendLine('<script>');
+    LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('  function submitNodeIntent() {');
+    LSb.AppendLine('    var txt = document.getElementById("node-intent-input").value.trim();');
+    LSb.AppendLine('    if (!txt) { alert("Please enter your intent."); return; }');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      window.chrome.webview.postMessage(JSON.stringify({');
+    LSb.AppendLine('        action: "changeset-submit",');
+    LSb.AppendLine('        node_id: ' + YamlEscape(ANode.Id) + ',');
+    LSb.AppendLine('        intent_text: txt');
+    LSb.AppendLine('      }));');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("Action: changeset-submit for " + ' + YamlEscape(ANode.Id) + ');');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('</script>');
+
     LSb.Append(PageFooter);
     TFile.WriteAllText(TPath.Combine(FBasePath, 'node-detail.html'),
+      LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
+  end;
+end;
+
+procedure TAsWishRenderService.RenderChangeSetReviewPage(
+  const AChangeSet: TChangeSet; ANodes: TList<TSpecNode>;
+  const AProjectName: string);
+var
+  LSb: TStringBuilder;
+  LTargetTitle: string;
+  I: Integer;
+  LItem: TChangeItem;
+  LSourceText, LSourceBadgeClass: string;
+  LTreeName: string;
+begin
+  LTargetTitle := AChangeSet.IntentNodeId;
+  if ANodes <> nil then
+    for var LN in ANodes do
+      if LN.Id = AChangeSet.IntentNodeId then
+      begin
+        LTargetTitle := LN.Title + ' (' + LN.Id + ')';
+        Break;
+      end;
+
+  LSb := TStringBuilder.Create;
+  try
+    LSb.Append(PageHeader(T('Review AI Interpretation', '审阅 AI 理解与提议')));
+
+    // Top navigation
+    LSb.AppendLine('<div style="margin-bottom: 1.5em; display: flex; justify-content: space-between; align-items: center;">');
+    LSb.AppendLine('  <a href="index.html">&#8592; ' + T('Back to Project Dashboard', '返回项目概览') + '</a>');
+    LSb.AppendLine('  <span class="badge badge-doc">' + T('ChangeSet ID: ', '变更集编号：') + HtmlEscape(AChangeSet.Id) + '</span>');
+    LSb.AppendLine('</div>');
+
+    LSb.AppendLine('<h1>' + T('AI Understanding & Proposed Changes', 'AI 理解与变更提议') + '</h1>');
+    LSb.AppendLine('<p style="color: #64748b; margin-top: -0.5em;">' +
+      T('Review the 4-layer information model below. Only your explicit Decision can modify the Canonical Spec.',
+        '请审阅下方四层信息模型。只有你的明确裁决才能写入正式规范。') + '</p>');
+
+    // -------------------------------------------------------------
+    // ① I said (我说)
+    // -------------------------------------------------------------
+    LSb.AppendLine('<div class="card card-i-said">');
+    LSb.AppendLine('  <h2>' + T('1. I said (Your Original Intent)', '1. 我说（你的原始意图）') + '</h2>');
+    LSb.AppendLine('  <div class="intent-box">');
+    LSb.AppendLine('    <p class="intent-text">&ldquo;' + HtmlEscape(AChangeSet.RawUserIntent) + '&rdquo;</p>');
+    LSb.AppendLine('    <div class="intent-meta">');
+    LSb.AppendLine('      <span><strong>' + T('Target Node: ', '目标节点：') + '</strong><code>' + HtmlEscape(LTargetTitle) + '</code></span>');
+    LSb.AppendLine('      <span><strong>' + T('Author: ', '提出方：') + '</strong>' + HtmlEscape(AChangeSet.Author) + '</span>');
+    if AChangeSet.CreatedAt <> 0 then
+      LSb.AppendLine('      <span><strong>' + T('Time: ', '时间：') + '</strong>' + HtmlEscape(FormatDateTime('yyyy-mm-dd hh:nn:ss', AChangeSet.CreatedAt)) + '</span>');
+    LSb.AppendLine('    </div>');
+    LSb.AppendLine('  </div>');
+    LSb.AppendLine('</div>');
+
+    // -------------------------------------------------------------
+    // ② AI understood (AI 理解)
+    // -------------------------------------------------------------
+    LSb.AppendLine('<div class="card card-ai-understood">');
+    LSb.AppendLine('  <h2>' + T('2. AI understood (AI Interpretation)', '2. AI 理解（意图解析与提议）') + '</h2>');
+    LSb.AppendLine('  <p>' + T('Based on your intent, the AI interpreted the following structural changes. This is a proposal and has <strong>NOT</strong> modified the Canonical Spec.',
+      '根据你的意图，AI 提议了以下具体变更。这是待审阅的理解提议，<strong>尚未</strong>写入正式规范。') + '</p>');
+    LSb.AppendLine('</div>');
+
+    // -------------------------------------------------------------
+    // ③ Changes (准备改变什么)
+    // -------------------------------------------------------------
+    LSb.AppendLine('<div class="card card-changes">');
+    LSb.AppendLine('  <h2>' + T('3. Changes & Affected Projections', '3. 准备改变什么（变更明细与受影响范围）') + '</h2>');
+
+    // Changes table
+    LSb.AppendLine('  <table class="changes-table">');
+    LSb.AppendLine('    <thead><tr>');
+    LSb.AppendLine('      <th>#</th>');
+    LSb.AppendLine('      <th>' + T('Target / Tree', '目标 / 投影') + '</th>');
+    LSb.AppendLine('      <th>' + T('Field', '变更字段') + '</th>');
+    LSb.AppendLine('      <th>' + T('Before (Current)', '变更前 (当前)') + '</th>');
+    LSb.AppendLine('      <th>' + T('After (Proposed)', '变更后 (提议)') + '</th>');
+    LSb.AppendLine('      <th>' + T('Source', '来源性质') + '</th>');
+    LSb.AppendLine('      <th>' + T('Reason', '提议理由') + '</th>');
+    LSb.AppendLine('    </tr></thead>');
+    LSb.AppendLine('    <tbody>');
+
+    if Length(AChangeSet.Items) = 0 then
+    begin
+      LSb.AppendLine('    <tr><td colspan="7"><em>' + T('No change items in this ChangeSet.', '此变更集无具体变更项。') + '</em></td></tr>');
+    end
+    else
+    begin
+      for I := 0 to Length(AChangeSet.Items) - 1 do
+      begin
+        LItem := AChangeSet.Items[I];
+        case LItem.TargetTree of
+          ttFunction: LTreeName := T('Function Tree', '功能树');
+          ttModule:   LTreeName := T('Module Tree', '模块树');
+          ttView:     LTreeName := T('View Tree', '视图树');
+          ttData:     LTreeName := T('Data Tree', '数据树');
+        else
+          LTreeName := 'Tree';
+        end;
+
+        case LItem.SourceType of
+          cstExplicit:
+          begin
+            LSourceText := T('Explicitly Requested', '你明确提出');
+            LSourceBadgeClass := 'badge-source-explicit';
+          end;
+          cstInferred:
+          begin
+            LSourceText := T('AI Inferred', 'AI 推断');
+            LSourceBadgeClass := 'badge-source-inferred';
+          end;
+        else
+          LSourceText := T('Uncertain / Unknown', '尚未确定');
+          LSourceBadgeClass := 'badge-source-unknown';
+        end;
+
+        LSb.AppendLine('    <tr>');
+        LSb.AppendLine('      <td><strong>' + IntToStr(I + 1) + '</strong></td>');
+        LSb.AppendLine('      <td><code>' + HtmlEscape(LItem.TargetNodeId) + '</code><br><small style="color:#64748b;">' + HtmlEscape(LTreeName) + '</small></td>');
+        LSb.AppendLine('      <td><code>' + HtmlEscape(LItem.Field) + '</code></td>');
+        LSb.AppendLine('      <td><div class="diff-before">' + HtmlEscape(LItem.BeforeValue) + '</div></td>');
+        LSb.AppendLine('      <td><div class="diff-after">' + HtmlEscape(LItem.AfterValue) + '</div></td>');
+        LSb.AppendLine('      <td><span class="badge ' + LSourceBadgeClass + '">' + HtmlEscape(LSourceText) + '</span></td>');
+        LSb.AppendLine('      <td>' + HtmlEscape(LItem.Reason) + '</td>');
+        LSb.AppendLine('    </tr>');
+      end;
+    end;
+    LSb.AppendLine('    </tbody>');
+    LSb.AppendLine('  </table>');
+
+    // Affected Projections
+    if Length(AChangeSet.AffectedProjections) > 0 then
+    begin
+      LSb.AppendLine('  <div style="margin-top: 1em;">');
+      LSb.AppendLine('    <strong>' + T('Affected Projections (via Semantic Bundles): ', '受影响投影（根据语义束计算）：') + '</strong>');
+      for var LP in AChangeSet.AffectedProjections do
+      begin
+        case LP of
+          ttFunction: LSb.AppendLine('<span class="badge badge-doc">Function</span>');
+          ttModule:   LSb.AppendLine('<span class="badge badge-code">Module</span>');
+          ttView:     LSb.AppendLine('<span class="badge badge-ui">View</span>');
+          ttData:     LSb.AppendLine('<span class="badge badge-config">Data</span>');
+        end;
+      end;
+      LSb.AppendLine('  </div>');
+    end;
+    LSb.AppendLine('</div>');
+
+    // -------------------------------------------------------------
+    // ④ Decision & 0–9 Action Surface (你是否同意这个理解)
+    // -------------------------------------------------------------
+    LSb.AppendLine('<div class="card card-decision">');
+    LSb.AppendLine('  <h2>' + T('4. Decision (0–9 Universal Choice)', '4. 你的裁决（0–9 统一选择交互）') + '</h2>');
+    LSb.AppendLine('  <p>' + T('Choose your decision below using mouse or press number keys (1–4, 8, 9, 0):', '使用鼠标点击或按键盘数字键 (1–4, 8, 9, 0) 作出裁决：') + '</p>');
+
+    LSb.AppendLine('  <div class="choice-container">');
+
+    // 1: Accept
+    LSb.AppendLine('    <button id="btn-1" class="btn-choice btn-choice-opt btn-choice-rec" onclick="doAccept()">');
+    LSb.AppendLine('      <span class="choice-key">[1]</span> ' + T('Accept this interpretation and apply to Canonical Spec', '接受这个理解并写入规范 (Accept)') + ' <span class="rec-badge">' + T('Recommended', '推荐') + '</span>');
+    LSb.AppendLine('    </button>');
+
+    // 2: Itemized review
+    LSb.AppendLine('    <button id="btn-2" class="btn-choice btn-choice-opt" onclick="toggleItemized()">');
+    LSb.AppendLine('      <span class="choice-key">[2]</span> ' + T('Itemized review (Confirm each change item individually)', '逐项分项确认 (Itemized Review)') + '');
+    LSb.AppendLine('    </button>');
+
+    // 3: Clarify
+    LSb.AppendLine('    <button id="btn-3" class="btn-choice btn-choice-opt" onclick="toggleClarifyForm()">');
+    LSb.AppendLine('      <span class="choice-key">[3]</span> ' + T('Refine detail / Request clarification before accept (Clarify)', '修改细节 / 补充说明后接受 (Clarify)') + '');
+    LSb.AppendLine('    </button>');
+
+    // 4: Reject
+    LSb.AppendLine('    <button id="btn-4" class="btn-choice btn-choice-opt btn-choice-danger" onclick="doReject()">');
+    LSb.AppendLine('      <span class="choice-key">[4]</span> ' + T('Reject this interpretation (Canonical Spec remains untouched)', '拒绝这个理解 (Reject，规范保持不变)') + '');
+    LSb.AppendLine('    </button>');
+
+    // Divider
+    LSb.AppendLine('    <div class="choice-divider"></div>');
+
+    // 8: Regenerate
+    LSb.AppendLine('    <button id="btn-8" class="btn-choice btn-choice-regen" onclick="doRegenerate()">');
+    LSb.AppendLine('      <span class="choice-key">[8]</span> ' + T('Regenerate interpretation (AI re-interprets intent, not a Decision)', '让 AI 重新生成理解 (Regenerate，非决策)') + '');
+    LSb.AppendLine('    </button>');
+
+    // 9: Human override
+    LSb.AppendLine('    <button id="btn-9" class="btn-choice btn-choice-input" onclick="toggleEscapeHatch()">');
+    LSb.AppendLine('      <span class="choice-key">[9]</span> ' + T('Describe myself / New natural language (Escape Hatch)', '我自己说明 / 输入新意图 (Escape Hatch)') + '');
+    LSb.AppendLine('    </button>');
+
+    // 0: Back
+    LSb.AppendLine('    <button id="btn-0" class="btn-choice btn-choice-back" onclick="doBack()">');
+    LSb.AppendLine('      <span class="choice-key">[0]</span> ' + T('Back to Dashboard (Navigation only, does NOT reject)', '返回上一步 (Back，纯导航不裁决)') + '');
+    LSb.AppendLine('    </button>');
+
+    LSb.AppendLine('  </div>');
+
+    // Clarify inline form
+    LSb.AppendLine('  <div id="clarify-panel" class="form-panel" style="display:none;">');
+    LSb.AppendLine('    <h3>' + T('Clarification & Detail Refinement', '补充细节与澄清说明') + '</h3>');
+    LSb.AppendLine('    <p style="color:#64748b;">' + T('Describe what specific adjustment you want AI to take into account:', '请填写你想调整或补充的具体细节：') + '</p>');
+    LSb.AppendLine('    <textarea id="clarify-input" class="form-textarea" placeholder="' + T('e.g., Only enable dark mode for main dashboard, keep sidebar theme unchanged...', '例如：仅对主仪表盘启用深色模式，侧边栏保持不变...') + '"></textarea>');
+    LSb.AppendLine('    <div class="form-actions">');
+    LSb.AppendLine('      <button class="btn-primary" onclick="submitClarify()">' + T('Submit Clarification', '提交澄清') + '</button>');
+    LSb.AppendLine('      <button class="btn-secondary" onclick="toggleClarifyForm()">' + T('Cancel', '取消') + '</button>');
+    LSb.AppendLine('    </div>');
+    LSb.AppendLine('  </div>');
+
+    // Escape hatch inline form
+    LSb.AppendLine('  <div id="escape-panel" class="form-panel" style="display:none;">');
+    LSb.AppendLine('    <h3>' + T('New Intent (Human Override)', '输入新意图（人类自主表达）') + '</h3>');
+    LSb.AppendLine('    <textarea id="new-intent-input" class="form-textarea" placeholder="' + T('Type your revision intent in natural language...', '使用自然语言输入新的意图...') + '"></textarea>');
+    LSb.AppendLine('    <div class="form-actions">');
+    LSb.AppendLine('      <button class="btn-primary" onclick="submitNewIntent()">' + T('Submit New Intent', '提交新意图') + '</button>');
+    LSb.AppendLine('      <button class="btn-secondary" onclick="toggleEscapeHatch()">' + T('Cancel', '取消') + '</button>');
+    LSb.AppendLine('    </div>');
+    LSb.AppendLine('  </div>');
+
+    // Status banner
+    LSb.AppendLine('  <div id="status-banner" class="status-banner" style="display:none;"></div>');
+    LSb.AppendLine('</div>');
+
+    // Embedded JavaScript
+    LSb.AppendLine('<script>');
+    LSb.AppendLine('  var changeSetId = ' + YamlEscape(AChangeSet.Id) + ';');
+    LSb.AppendLine('  var targetNodeId = ' + YamlEscape(AChangeSet.IntentNodeId) + ';');
+    LSb.AppendLine('  var rawIntent = ' + YamlEscape(AChangeSet.RawUserIntent) + ';');
+    LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function post(msg) {');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      try { window.chrome.webview.postMessage(JSON.stringify(msg)); }');
+    LSb.AppendLine('      catch (e) { console.error(e); }');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("Action: " + msg.action + " (WebView2 bridge offline)");');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function doAccept() {');
+    LSb.AppendLine('    post({ action: "changeset-accept", changeset_id: changeSetId, rationale: "Accepted via Review UI" });');
+    LSb.AppendLine('    showBanner("Accept decision recorded. Applying to Canonical Spec...", "success");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function doReject() {');
+    LSb.AppendLine('    post({ action: "changeset-reject", changeset_id: changeSetId, rationale: "Rejected via Review UI" });');
+    LSb.AppendLine('    showBanner("Reject decision recorded. Canonical Spec remains untouched.", "danger");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function toggleClarifyForm() {');
+    LSb.AppendLine('    var p = document.getElementById("clarify-panel");');
+    LSb.AppendLine('    p.style.display = (p.style.display === "none") ? "block" : "none";');
+    LSb.AppendLine('    if (p.style.display === "block") { document.getElementById("clarify-input").focus(); }');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function submitClarify() {');
+    LSb.AppendLine('    var val = document.getElementById("clarify-input").value.trim();');
+    LSb.AppendLine('    if (!val) { alert("Please enter clarification text."); return; }');
+    LSb.AppendLine('    post({ action: "changeset-clarify", changeset_id: changeSetId, clarification: val });');
+    LSb.AppendLine('    showBanner("Clarification recorded. Canonical Spec remains untouched.", "info");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function doRegenerate() {');
+    LSb.AppendLine('    post({ action: "changeset-regenerate", node_id: targetNodeId, intent_text: rawIntent });');
+    LSb.AppendLine('    showBanner("Re-generating interpretation with AI...", "info");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function toggleEscapeHatch() {');
+    LSb.AppendLine('    var p = document.getElementById("escape-panel");');
+    LSb.AppendLine('    p.style.display = (p.style.display === "none") ? "block" : "none";');
+    LSb.AppendLine('    if (p.style.display === "block") { document.getElementById("new-intent-input").focus(); }');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function submitNewIntent() {');
+    LSb.AppendLine('    var val = document.getElementById("new-intent-input").value.trim();');
+    LSb.AppendLine('    if (!val) { alert("Please enter your intent."); return; }');
+    LSb.AppendLine('    post({ action: "changeset-submit", node_id: targetNodeId, intent_text: val });');
+    LSb.AppendLine('    showBanner("Submitted new intent. Interpreting...", "info");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function doBack() {');
+    LSb.AppendLine('    window.location.href = "index.html";');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function toggleItemized() {');
+    LSb.AppendLine('    alert("All change items are displayed in the table above with Before/After details.");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  function showBanner(text, type) {');
+    LSb.AppendLine('    var b = document.getElementById("status-banner");');
+    LSb.AppendLine('    b.className = "status-banner status-" + type;');
+    LSb.AppendLine('    b.innerHTML = text;');
+    LSb.AppendLine('    b.style.display = "block";');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('');
+    LSb.AppendLine('  // Keyboard shortcuts for 0..9 standard');
+    LSb.AppendLine('  document.addEventListener("keydown", function(e) {');
+    LSb.AppendLine('    var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : "";');
+    LSb.AppendLine('    if (tag === "INPUT" || tag === "TEXTAREA") return;');
+    LSb.AppendLine('    switch(e.key) {');
+    LSb.AppendLine('      case "1": doAccept(); break;');
+    LSb.AppendLine('      case "2": toggleItemized(); break;');
+    LSb.AppendLine('      case "3": toggleClarifyForm(); break;');
+    LSb.AppendLine('      case "4": doReject(); break;');
+    LSb.AppendLine('      case "8": doRegenerate(); break;');
+    LSb.AppendLine('      case "9": toggleEscapeHatch(); break;');
+    LSb.AppendLine('      case "0": doBack(); break;');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  });');
+    LSb.AppendLine('</script>');
+
+    LSb.Append(PageFooter);
+
+    TFile.WriteAllText(TPath.Combine(FBasePath, 'changeset-review.html'),
       LSb.ToString, TEncoding.UTF8);
   finally
     LSb.Free;

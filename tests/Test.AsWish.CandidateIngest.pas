@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.CandidateIngest
 
   DUnitX tests for the strongly-typed candidate sandbox (BUG-8). These pin
@@ -122,12 +122,19 @@ type
     procedure ChangeSet_Reject_DoesNotMutateCanonicalSpec;
     [Test]
     procedure ChangeSet_Clarify_DoesNotMutateCanonicalSpec;
+
+    // GUI Review Surface & Intent List (WO-20260830-0027D-R1)
+    [Test]
+    procedure CandidateIntent_ListCandidateIntents_ReturnsAll;
+    [Test]
+    procedure ChangeSet_RenderReviewPage_GeneratesValidHtml;
   end;
 
 implementation
 
 uses
-  System.IOUtils;
+  System.IOUtils,
+  AsWish.Services.Render;
 
 { TCandidateIngestTests }
 
@@ -1084,6 +1091,85 @@ begin
     Assert.AreEqual(LOldSummary, LFunc[0].Summary, 'Canonical spec summary MUST NOT be mutated on Clarify');
   finally
     LFunc.Free;
+  end;
+end;
+
+procedure TCandidateIngestTests.CandidateIntent_ListCandidateIntents_ReturnsAll;
+var
+  LTempDir, LPath2: string;
+  LIntent1, LIntent2: TCandidateIntent;
+  LList: TArray<TCandidateIntent>;
+begin
+  LTempDir := TPath.Combine(TPath.GetTempPath, 'aswish_test_intent_list_' + TGUID.NewGuid.ToString);
+  TDirectory.CreateDirectory(LTempDir);
+  try
+    LIntent1 := TCandidateIntent.CreateNew('func-inventory', ttFunction, 'first intent', 'alice');
+    LIntent2 := TCandidateIntent.CreateNew('mod-auth', ttModule, 'second intent', 'bob');
+
+    FCand.SaveCandidateIntent(LTempDir, LIntent1);
+    // Write second intent with distinct filename
+    LPath2 := TPath.Combine(TPath.Combine(TPath.Combine(LTempDir, '.AsWish'), 'llm'), 'candidate-intent-02.yaml');
+    TFile.WriteAllText(LPath2, TAsWishCandidateIngest.FormatCandidateIntentYaml(LIntent2), TEncoding.UTF8);
+
+    LList := FCand.ListCandidateIntents(LTempDir);
+    Assert.AreEqual<Integer>(2, Length(LList), 'ListCandidateIntents must return all saved candidate intents');
+  finally
+    if TDirectory.Exists(LTempDir) then
+      TDirectory.Delete(LTempDir, True);
+  end;
+end;
+
+procedure TCandidateIngestTests.ChangeSet_RenderReviewPage_GeneratesValidHtml;
+var
+  LTempDir, LHtmlPath, LHtml: string;
+  LCS: TChangeSet;
+  LItem: TChangeItem;
+  LRender: TAsWishRenderService;
+  LFunc: TList<TSpecNode>;
+begin
+  LTempDir := TPath.Combine(TPath.GetTempPath, 'aswish_test_review_page_' + TGUID.NewGuid.ToString);
+  TDirectory.CreateDirectory(LTempDir);
+  LRender := TAsWishRenderService.Create;
+  try
+    LRender.Initialize(LTempDir);
+    LCS := TChangeSet.CreateNew('cs-test-01', 'func-demo', ttFunction, 'User wants dark mode theme option', 'human');
+    LItem := TChangeItem.CreateItem('func-demo', ttFunction, 'summary', 'Old summary', 'User wants dark mode theme option', cstExplicit, 'Interpreted from user');
+    LCS.Items := TArray<TChangeItem>.Create(LItem);
+    LCS.AffectedProjections := TArray<TTreeType>.Create(ttFunction, ttView);
+
+    LFunc := StubFunctionRoot;
+    try
+      LRender.RenderChangeSetReviewPage(LCS, LFunc, 'TestProject');
+    finally
+      LFunc.Free;
+    end;
+
+    LHtmlPath := TPath.Combine(TPath.Combine(LTempDir, 'html'), 'changeset-review.html');
+    Assert.IsTrue(TFile.Exists(LHtmlPath), 'changeset-review.html must exist on disk');
+
+    LHtml := TFile.ReadAllText(LHtmlPath, TEncoding.UTF8);
+    // Four-layer information model check (supports localized chrome)
+    Assert.IsTrue(LHtml.Contains('1. I said') or LHtml.Contains('1. 我说') or LHtml.Contains('card-i-said'), 'Must contain Layer 1 (I said)');
+    Assert.IsTrue(LHtml.Contains('User wants dark mode theme option'), 'Must display raw intent text');
+    Assert.IsTrue(LHtml.Contains('2. AI understood') or LHtml.Contains('2. AI 理解') or LHtml.Contains('card-ai-understood'), 'Must contain Layer 2 (AI understood)');
+    Assert.IsTrue(LHtml.Contains('3. Changes') or LHtml.Contains('3. 准备改变什么') or LHtml.Contains('card-changes'), 'Must contain Layer 3 (Changes)');
+    Assert.IsTrue(LHtml.Contains('4. Decision') or LHtml.Contains('4. 你的裁决') or LHtml.Contains('card-decision'), 'Must contain Layer 4 (Decision)');
+
+    // Human-readable source type check (NOT raw code tokens)
+    Assert.IsTrue(LHtml.Contains('Explicitly Requested') or LHtml.Contains('你明确提出') or LHtml.Contains('badge-source-explicit'),
+      'Must use human-readable source type (e.g. Explicitly Requested / 你明确提出)');
+
+    // 0..9 Universal Choice buttons & Clarify Form check
+    Assert.IsTrue(LHtml.Contains('btn-choice-opt'), 'Must have Choice.Option buttons');
+    Assert.IsTrue(LHtml.Contains('btn-choice-regen'), 'Must have Choice.Regenerate (8) button');
+    Assert.IsTrue(LHtml.Contains('btn-choice-input'), 'Must have Choice.Input (9) button');
+    Assert.IsTrue(LHtml.Contains('btn-choice-back'), 'Must have Choice.Back (0) button');
+    Assert.IsTrue(LHtml.Contains('clarify-panel'), 'Must have Clarify form panel');
+    Assert.IsTrue(LHtml.Contains('postMessage'), 'Must have JS Bridge postMessage handler');
+  finally
+    LRender.Free;
+    if TDirectory.Exists(LTempDir) then
+      TDirectory.Delete(LTempDir, True);
   end;
 end;
 

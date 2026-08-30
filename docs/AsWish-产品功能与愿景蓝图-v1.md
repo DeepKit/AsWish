@@ -422,6 +422,7 @@ Layer G  Evidence / Provenance       证据与追溯
 
 ```text
 init / scan / generate / validate / render / health / decisions / bundle / ingest
+intent / changeset
 ```
 
 **Protocol**
@@ -437,6 +438,16 @@ init / scan / generate / validate / render / health / decisions / bundle / inges
 
 **工程质量**
 当前已有完整测试与 CLI 验证基础。
+
+### 能力分层（已实现 / 下一步 / 未来）
+
+| 层级 | 内容 |
+|---|---|
+| **已实现** | 自然语言意图承载、结构化 Change Set 解释、四投影树与 Spec 存储、渲染与快照、通用决策机制、追问机制 |
+| **下一步**（First Closed Loop 范围） | Change Set 审阅与 Decisions 写回、协议冻结与证据链落盘、Accepted Visual Baseline、实现证据、差异、人类裁决、修订再验证 |
+| **未来**（明确推迟） | 团队协作、账号体系、SaaS 化、商业模式、CI / 自动验证、Agent 调度、Python / 跨平台扩展、社区生态 |
+
+> 每票的双闸门验收、依赖顺序与 Dogfood 要求，见 [`AsWish-工程路线与Dogfood验收-v1.md`](AsWish-工程路线与Dogfood验收-v1.md)；本文不复制。
 
 > 这些能力现在的任务不是继续无限扩张，而是被组织进真正的端到端产品闭环。
 
@@ -703,3 +714,252 @@ Human Intent → Specification → Agent → Software → Evidence → Verificat
 而 AsWish 的核心承诺可以压缩成：
 
 > **先让人和 Agent 对同一个东西达成可见的共识，再让 Agent 去做；做完以后，再证明它做的还是那个东西。**
+
+---
+
+## 二十一、当前工程阶段：First Contact → First Closed Loop
+
+```text
+Stage 1  First Contact     陌生开发者能下载、运行、理解、完成第一次实验
+   ↓
+Stage 2  First Closed Loop  AsWish 自己完成一次完整闭环
+```
+
+Stage 2 的第一目标不是"功能变多"，而是：
+
+> **让 AsWish 成为自己的第一个真实用户，亲自用 AsWish 完成一次完整闭环。**
+
+即：
+
+> **AsWish 自己开发 AsWish，同时使用 AsWish 验证 AsWish。**
+
+理由与验收：Stage 2 之前，主链后半段（实现证据 → 差异 → 人类裁决 → 修订）在代码层仍为空白；未跑通整条链，"Difference 被看见"就只是设计稿而非工程证据。由 AsWish 自己先承担第一次实验，失败成本最低、反例发现最早。
+
+### 双闸门
+
+工程推进不再以"代码完成 + 测试通过"为唯一放行条件：
+
+```text
+Engineering Green  +  Dogfood Green  →  方可进入下一票
+```
+
+| 闸门 | 回答的问题 |
+|---|---|
+| **Engineering Green** | 代码是否正确、可回归、可交付？ |
+| **Dogfood Green** | 该能力在真实使用中真的被用起来了吗？ |
+
+> 测试全绿只是 Engineering Green，**不是 Dogfood Green**。
+
+依赖顺序、每票双闸门验收与 Dogfood 要求见 [`AsWish-工程路线与Dogfood验收-v1.md`](AsWish-工程路线与Dogfood验收-v1.md)。
+
+---
+
+## 二十二、所见即所得的工程原则
+
+主链：
+
+```text
+显影 → 确认 → 建构 → 看见 → 生产 → 验证
+```
+
+完整闭环：
+
+```text
+Intent → Interpret → Confirm → Baseline → Agent → Evidence → Difference → Human Judgment → Revision → Rebuild → Re-verify
+```
+
+其中的 **See / 看见** 不是一个孤立阶段，而是一条贯穿性要求：
+
+> **每一次人类需要确认"这就是我要的东西"时，AsWish 都必须提供一个可直接观察的表现。**
+
+因此：
+
+> **SVG / Visual Representation 是闭环基础设施的一部分，而不是装饰性 UI。**
+
+### 正式表达（产品交互原则）
+
+> **凡是要求 Human 作判断的对象，都必须具有稳定、可观察、可重复查看的表现。**
+
+也就是说，AsWish 的"所见即所得"**不是传统 UI 意义上的即时渲染**。Visual Render / SVG 是当前阶段的工程实现载体——属于实现选择，**不等于产品定义**；实现载体未来可以替换，上述原则本身不变。
+
+分工：
+
+```text
+文本   负责表达
+结构   负责承载
+SVG    负责让人看见
+Human  负责判断
+```
+
+> **性质声明**：以上四条是**产品交互原则与工程设计原则**，**不是理论主张**，不构成对 Difference Monism / ASTO / ODD / CTF / PFM 的任何增强、削弱或重新解释。理论口径以 [`理论确权清单-v1.md`](理论确权清单-v1.md) 与 [`../NOTICE`](../NOTICE) 为准。
+
+---
+
+## 二十三、SVG / Visual Representation 的阶段
+
+SVG 不是每个阶段都重新生成一张图。**哪些阶段需要新的视觉基线，哪些只是复用已有 Render**，由 §二十四 的矩阵裁定。
+
+### 第一阶段：Problem / Current State
+
+人类描述问题后，把当前相关结构以可视方式呈现。
+
+目的不是美化，而是：
+
+> **让人看见当前对象，而不是只阅读 YAML / 文本。**
+
+### 第二阶段：Confirmed Understanding / Baseline
+
+当人确认"对，这就是我想要的"，必须形成**可重复查看的视觉基线**：
+
+```text
+Human → 看到 → 确认 → Baseline
+```
+
+Baseline 不等于 Spec 文本本身。它是：
+
+> **当前已确认理解的可见表现。**
+
+> 承载机制沿用现有 `SpecSnapshot` + 视觉绑定（view-tree 引用 + `renderer_version` + decision 引用），**不新建名为 `VisualState` 的实体**。
+
+### 第三阶段：After Agent Implementation
+
+Agent 实施后，再次把 Implementation Result 以可视形式呈现：
+
+```text
+Baseline SVG → Agent → Actual Result SVG
+```
+
+这样人才有条件回答：
+
+> "Agent 做出来的东西，看起来是不是刚才确认的那个东西？"
+
+> 依据：`Screenshot = Implementation Evidence`；`Visual Preview = Specification Representation`。实现结果是**证据**，不是规格渲染产物，因此不能由 Render 生成，必须采集。
+
+### 第四阶段：Difference View
+
+Difference v0 初期先做结构差异，至少需要一种：
+
+```text
+Baseline  vs  Actual Result
+```
+
+的视觉比较。目的不是宣布 Error，而是：
+
+> **让差异被看见。**
+
+判断仍由 Human 完成：
+
+```text
+No important difference / Acceptable difference / Unacceptable difference / Unresolved
+```
+
+### 第五阶段：Revision / Rebuild
+
+人类判断"这里不对，我要改"后，重新经过：
+
+```text
+Intent → Candidate → Confirm → Baseline → Agent
+```
+
+再次产生可视结果：
+
+```text
+Baseline v1 → Implementation v1 → Difference v1
+    ↓
+Human Revision
+    ↓
+Baseline / Confirmed Revision → Implementation v2 → Difference v2
+```
+
+整个循环都必须可以通过视觉结果观察。
+
+### 保真度边界（第一阶段）
+
+`TSpecNode` 无布局字段（layout / position / bounds 均缺），View Tree 是需求侧结构树。因此第一阶段 Visual Preview = **结构线框（wireframe）**，确定性渲染「页面 → 区域 → 组件 → 层级」，**不承诺相对位置与尺寸**。
+
+渲染必须确定性：
+
+```text
+相同 View Spec + Renderer Version → 相同 Preview
+```
+
+第一阶段为纯确定性映射渲染，**不引入 LLM 视觉解释**。若要表达位置 / 尺寸，需先扩展 View Spec 布局 schema（**另立协议票**）。
+
+---
+
+## 二十四、AsWish Visual Checkpoint Matrix v0
+
+### 关于 Current State 与 Confirmed Baseline 的语义差别
+
+两者**有可能视觉上完全相同，但语义不同**，必须在产品与工程上区分：
+
+```text
+Current State      = "现在是什么"
+Confirmed Baseline = "我们确认要的是什么"
+```
+
+相同的图像，前者是观察结果，后者是人类承诺。混淆二者会使 Difference 失去比较基准。
+
+### Visual Checkpoint Matrix v0
+
+| Checkpoint | Human 要看到什么 | Human 要判断什么 | 数据来源 | 是否形成稳定基线 | 是否参与 Difference |
+|---|---|---|---|---|---|
+| **VC-01 Current State** | 当前真实结构（view-tree 结构线框） | "现在是什么？" | 现有 Spec / Render（**复用**） | 否 | 否 |
+| **VC-02 Confirmed Baseline** | 已确认目标（与 VC-01 可能同图、语义不同） | "这就是我要的吗？" | Confirmed Understanding（经 Decision 固化） | **是**（固定 `renderer_version` 保证可复现） | **是**（作为比较基准） |
+| **VC-03 Implementation Result** | Agent 实际结果（截图 / 实际页面状态） | "做出来了吗？做成什么样？" | Implementation Evidence（**采集**，非 Render 生成） | 可复现保存 | **是** |
+| **VC-04 Difference** | Baseline vs Result 的可见变化 | "哪里不同？" | VC-02 vs VC-03 **比较**，不生成新图 | 否 | **是** |
+| **VC-05 Revised Result** | 修改后的结果 | "这次对了吗？" | Revision 重跑 VC-02 / 03 / 04 | 是 | 再比较 |
+
+> **不机械要求每个 checkpoint 新生成独立 SVG**。生成策略见下方结论；承载机制只复用现有 `Render` / `Snapshot` / `SpecStore`，**不新增** `VisualState` / `VisualObject` / 新 Baseline 实体。
+
+### 生成策略结论
+
+```text
+复用现有 Render             → VC-01 Current State
+复用现有 Snapshot + 视觉绑定  → VC-02 Confirmed Baseline（不新建 Baseline 实体）
+必须新增采集能力             → VC-03 Implementation Result（Render 生成不了证据）
+只比较，不生成新视觉          → VC-04 Difference
+零新机制，整轮复用           → VC-05 Revised Result
+```
+
+> 因此**不需要**"每个步骤一张新 SVG"。真正需要新增能力的只有 VC-03（采集）与 VC-04（比较）两处。
+
+---
+
+## 二十五、产品判断：不是更复杂的 Spec 编辑器
+
+AsWish 不应被做成：
+
+> 一个更加复杂的 Spec 编辑器。
+
+而应保持：
+
+> **人类用自然语言表达，AI 协助显影、理解、建构和实现；人类在关键节点通过"看见"来确认。**
+
+因此：
+
+```text
+Human 不会直接编辑 Spec
+Human 不会直接编辑复杂结构
+Human 主要通过自然语言 + 可见结果进行判断
+```
+
+这条判断直接约束工程实现：不提供 YAML 编辑器、不提供字段编辑器、不提供节点拖拽式编辑。所有规格变更都经 `CandidateIngest` 自然语言入口进入，经 `Decisions` 裁决后才写回。
+
+### 禁止新增的平行实体
+
+```text
+VisualState / Proposal / ParallelCandidate / ChangeObject
+NewDecisionSystem / NewImpactGraph
+VisualDecision / VisualApproval / VisualProposal / VisualReviewState
+独立 Baseline 实体 / 第二套状态机 / 第五棵树
+```
+
+优先复用：
+
+```text
+CandidateIngest / Decisions / SpecSnapshot / Render / TreeBuilder / SpecStore / Prompts
+现有 Semantic Bundles / gen_status / review_status
+```
+
+> 只有现有协议确实无法表达、且经主控裁定后，才允许新增最小结构。

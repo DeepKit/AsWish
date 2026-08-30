@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Commands
   ---------------------------------------------------------------------------
   Registers all AsWish commands into the desktop shell command manager.
@@ -24,6 +24,7 @@ implementation
 uses
   Vcl.FileCtrl,
   Vcl.Dialogs,
+  AsWish.Models,
   AsWish.Services.LLMConfig,
   AsWish.MainForm;
 
@@ -39,7 +40,7 @@ begin
     LForm.ShellText('aswish.cmd.open', 'Open Project'));
   LCmd.Category := 'File';
   LCmd.ShortcutText := 'Ctrl+O';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     var
       LDir: string;
@@ -59,7 +60,7 @@ begin
     LForm.ShellText('aswish.cmd.scan', 'Run Scan'));
   LCmd.Category := 'Run';
   LCmd.ShortcutText := 'F5';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     begin
       LForm.Controller.RunScan;
@@ -69,7 +70,7 @@ begin
   LCmd := TShellCommand.Make('aswish.spec.generate',
     LForm.ShellText('aswish.cmd.generate', 'Generate B'));
   LCmd.Category := 'Run';
-  LCmd.RiskLevel := rlMedium;
+  LCmd.RiskLevel := AsWish.UI.Types.rlMedium;
   LCmd.Handler := procedure
     begin
       LForm.Controller.GenerateB;
@@ -79,7 +80,7 @@ begin
   LCmd := TShellCommand.Make('aswish.html.render',
     LForm.ShellText('aswish.cmd.render', 'Render HTML'));
   LCmd.Category := 'View';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     begin
       LForm.Controller.RenderAll;
@@ -89,7 +90,7 @@ begin
   LCmd := TShellCommand.Make('aswish.html.refresh-from-yaml',
     LForm.ShellText('aswish.cmd.refresh', 'Refresh HTML from YAML'));
   LCmd.Category := 'View';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     begin
       LForm.Controller.RefreshFromYaml;
@@ -99,7 +100,7 @@ begin
   LCmd := TShellCommand.Make('aswish.decisions.promote',
     LForm.ShellText('aswish.cmd.promote', 'Promote Pending Decisions'));
   LCmd.Category := 'Tools';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     begin
       LForm.Controller.PromotePendingDecisions;
@@ -109,7 +110,7 @@ begin
   LCmd := TShellCommand.Make('aswish.prompt.export',
     LForm.ShellText('aswish.cmd.export', 'Export Prompt'));
   LCmd.Category := 'Tools';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     begin
       LForm.Controller.ExportPrompt;
@@ -119,7 +120,7 @@ begin
   LCmd := TShellCommand.Make('aswish.data.render',
     LForm.ShellText('aswish.cmd.renderdata', 'Render Data Tree'));
   LCmd.Category := 'View';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     begin
       LForm.Controller.RenderAll;
@@ -129,7 +130,7 @@ begin
   LCmd := TShellCommand.Make('aswish.llm.setup',
     LForm.ShellText('aswish.cmd.llmsetup', 'Setup LLM (ModelScope)'));
   LCmd.Category := 'Tools';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     var
       LApiKey, LModel: string;
@@ -165,7 +166,7 @@ begin
   LCmd := TShellCommand.Make('aswish.changeset.submit',
     LForm.ShellText('aswish.cmd.submitintent', 'Submit Natural Language Intent...'));
   LCmd.Category := 'Spec';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     var
       LNodeId, LIntent, LCSId: string;
@@ -186,7 +187,7 @@ begin
   LCmd := TShellCommand.Make('aswish.changeset.review',
     LForm.ShellText('aswish.cmd.reviewchangeset', 'Review Change Set...'));
   LCmd.Category := 'Spec';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     var
       LCSId, LReview: string;
@@ -201,7 +202,7 @@ begin
   LCmd := TShellCommand.Make('aswish.changeset.accept',
     LForm.ShellText('aswish.cmd.acceptchangeset', 'Accept Change Set...'));
   LCmd.Category := 'Spec';
-  LCmd.RiskLevel := rlMedium;
+  LCmd.RiskLevel := AsWish.UI.Types.rlMedium;
   LCmd.Handler := procedure
     var
       LCSId, LRationale: string;
@@ -218,7 +219,7 @@ begin
   LCmd := TShellCommand.Make('aswish.changeset.reject',
     LForm.ShellText('aswish.cmd.rejectchangeset', 'Reject Change Set...'));
   LCmd.Category := 'Spec';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     var
       LCSId, LRationale: string;
@@ -235,7 +236,7 @@ begin
   LCmd := TShellCommand.Make('aswish.changeset.clarify',
     LForm.ShellText('aswish.cmd.clarifychangeset', 'Clarify Change Set...'));
   LCmd.Category := 'Spec';
-  LCmd.RiskLevel := rlLow;
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
   LCmd.Handler := procedure
     var
       LCSId, LClarification: string;
@@ -246,6 +247,37 @@ begin
       InputQuery('Clarify Change Set', 'Clarification details:', LClarification);
       if LForm.Controller.ClarifyChangeSet(LCSId.Trim, LClarification.Trim) then
         ShowMessage('Clarification recorded for ChangeSet ' + LCSId + '. Canonical Spec remains untouched.');
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.intent.list',
+    LForm.ShellText('aswish.cmd.intentlist', 'List Candidate Intents...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
+  LCmd.Handler := procedure
+    var
+      LIntents: TArray<TCandidateIntent>;
+      LSb: TStringBuilder;
+      I: Integer;
+    begin
+      LIntents := LForm.Controller.ListCandidateIntents;
+      if Length(LIntents) = 0 then
+      begin
+        ShowMessage('No candidate intents found.');
+        Exit;
+      end;
+      LSb := TStringBuilder.Create;
+      try
+        LSb.AppendLine(Format('Found %d candidate intent(s):', [Length(LIntents)]));
+        for I := 0 to Length(LIntents) - 1 do
+        begin
+          LSb.AppendLine(Format('[%d] Node: %s | Author: %s', [I + 1, LIntents[I].NodeId, LIntents[I].Author]));
+          LSb.AppendLine('    Intent: ' + LIntents[I].UserIntent);
+        end;
+        ShowMessage(LSb.ToString);
+      finally
+        LSb.Free;
+      end;
     end;
   ACommands.RegisterCommand(LCmd);
 end;

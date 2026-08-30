@@ -1,0 +1,10 @@
+=== BUILD GUI ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\services\AsWish.Services.Context.pas(47) Hint: H2219 Private symbol 'EstimateTokens' declared but never used
+16923 lines, 2.38 seconds, 6404508 bytes code, 653968 bytes data.
+
+=== BUILD CLI ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+11673 lines, 1.34 seconds, 2937376 bytes code, 367552 bytes data.

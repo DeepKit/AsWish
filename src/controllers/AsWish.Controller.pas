@@ -108,6 +108,7 @@ type
       const ARationale: string = ''): Boolean;
     function ClarifyChangeSet(const AChangeSetId: string;
       const AClarificationText: string): Boolean;
+    function ListCandidateIntents: TArray<TCandidateIntent>;
 
     function IsProjectOpen: Boolean;
     property ProjectService: TAsWishProjectService read FProjectService;
@@ -464,6 +465,16 @@ begin
       finally
         LBundles.Free;
       end;
+    end;
+
+    // Render active ChangeSet review page if present
+    var LIngestR := TAsWishCandidateIngest.Create(FSpecStore);
+    try
+      var LCSR := LIngestR.LoadChangeSet(FProjectService.ProjectPath, '');
+      if LCSR.Id <> '' then
+        FRender.RenderChangeSetReviewPage(LCSR, FTreeBuilder.FunctionNodes, FProjectService.ProjectName);
+    finally
+      LIngestR.Free;
     end;
 
     FStatus.Info('AsWish.Render',
@@ -1143,6 +1154,9 @@ begin
       LChangePath := LIngest.SaveChangeSet(FProjectService.ProjectPath, LChangeSet);
       LPromptPath := FPrompts.WriteChangeInterpretPrompt(LIntent, LTargetNode, LBundles);
 
+      // Render the 4-layer review surface
+      FRender.RenderChangeSetReviewPage(LChangeSet, FTreeBuilder.FunctionNodes, FProjectService.ProjectName);
+
       Result := LCSId;
       FStatus.Info('AsWish.ChangeSet', Format('Created ChangeSet %s for %s; Prompt saved at %s',
         [LCSId, ANodeId, LPromptPath]));
@@ -1174,6 +1188,7 @@ begin
       Result := 'No change set found.';
       Exit;
     end;
+    FRender.RenderChangeSetReviewPage(LCS, FTreeBuilder.FunctionNodes, FProjectService.ProjectName);
     Result := LIngest.FormatChangeSetReviewSummary(LCS, FTreeBuilder.FunctionNodes);
   finally
     LIngest.Free;
@@ -1291,6 +1306,21 @@ begin
     FStatus.Info('AsWish.ChangeSet', Format('Clarification requested for %s -> Decision %s recorded',
       [LCS.Id, LDecId]));
     Result := True;
+  finally
+    LIngest.Free;
+  end;
+end;
+
+function TAsWishController.ListCandidateIntents: TArray<TCandidateIntent>;
+var
+  LIngest: TAsWishCandidateIngest;
+begin
+  SetLength(Result, 0);
+  if not FProjectService.IsOpen then Exit;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    Result := LIngest.ListCandidateIntents(FProjectService.ProjectPath);
   finally
     LIngest.Free;
   end;

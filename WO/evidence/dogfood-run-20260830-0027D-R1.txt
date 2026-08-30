@@ -1,0 +1,45 @@
+1. Scan Project:
+[scan] scanning D:\Temp\aswish_dogfood_0027d_r1_evidence
+[scan] 1 files, type=delphi_vcl
+[scan] trees: function 1 / module 3 / view 0 / data 0
+[scan] done -> D:\Temp\aswish_dogfood_0027d_r1_evidence\.AsWish\html\
+
+2. Submit Intent (func-app):
+[intent] saved candidate intent for func-app (function) to D:\Temp\aswish_dogfood_0027d_r1_evidence\.AsWish\llm\candidate-intent.yaml
+
+3. List Intents (intent list):
+Found 1 candidate intent(s):
+  [1] Node: func-app (function) | Author: human
+      Intent: Add dark mode theme support to main window
+
+4. Generate ChangeSet:
+[changeset] generated change set cs-func-app-01 for func-app (function)
+  saved change set: D:\Temp\aswish_dogfood_0027d_r1_evidence\.AsWish\llm\change-set-cs-func-app-01.yaml
+  saved prompt:     D:\Temp\aswish_dogfood_0027d_r1_evidence\.AsWish\prompts\change-interpret-func-app.md
+
+5. Review ChangeSet:
+================================================================
+ AsWish Change Set Review: cs-func-app-01
+================================================================
+Target Node:     func-app
+Projection:      function
+Raw User Intent: "Support high-contrast dark theme option"
+Author:          human
+Affected Projs:  function
+----------------------------------------------------------------
+Proposed Changes:
+  [1] Node: func-app (function) | Field: summary | Source: explicit
+      Before: (empty)
+      After:  Support high-contrast dark theme option
+      Reason: Interpreted from human user intent
+================================================================
+
+
+6. Clarify ChangeSet:
+[changeset] CLARIFIED cs-func-app-01 -> recorded Decision dec-0001 (Canonical Spec untouched)
+  Clarification detail: Only enable dark theme for main dashboard; keep side panels light
+
+7. Reject ChangeSet:
+[changeset] REJECTED cs-func-app-01 -> recorded Decision dec-0002 (Canonical Spec untouched)
+
+8. Canonical Spec Status: Untouched (verified).
