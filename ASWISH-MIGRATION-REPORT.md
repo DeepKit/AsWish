@@ -59,8 +59,9 @@ dcc64 (Delphi 13.1 / Win64) 全量：主程序 15193 行 ✅（仅 1 条迁移�
 | 区域 | 结果 |
 |---|---|
 | 活跃面（src/cli/tests/protocol/installer/根/docs 活跃） | **0 残留** |
-| 文件名残留 | 仅旧编译产物/缓存：150 个 `DeepSpec.*.dcu`、`bin/DeepSpec.exe`、`cli/bin/DeepSpec.CLI.exe`、1 个 `.pyc`（**删除被沙箱拦截，需老板手删**；已被 .gitignore 排除，不进仓库，不影响编译——新构建产物为 `AsWish.*` 同名覆盖） |
-| `DeepSpecConfig.db` | 仍在根目录（D4，待手删） |
+| 文件名残留 | **已清零**（老板委托外部 AI 删除：Continuity 整目录、DeepSpecConfig.db、旧 exe/dcu/pyc 全部清除，四项验证通过） |
+| `.deepspec` 目录终态 | 仅 2 处，均为**合规保留**：① 根 `.deepspec/autofix/`（外部 SPW 门禁工具 bgor 的约定路径，属外部工具边界，改名会导致门禁失配）；② `WO/evidence/runtime-generic-project/.deepspec/`（迁移前历史测试证据） |
+| 协议夹具 | conformance fixtures×2 + seed examples×4 的 `.deepspec` 已全部迁移为 `.AsWish`（commit `4b1aefa`） |
 | 历史区 | docs/ 32 篇 + WO/ 40 份（合法保留） |
 
 ## 10. 理论名称残留审计
@@ -73,10 +74,12 @@ dcc64 (Delphi 13.1 / Win64) 全量：主程序 15193 行 ✅（仅 1 条迁移�
 
 ## 12. 风险与未解决问题
 
-1. **老板手删两项**：`D:\_Progs\02Business\Continuity`（D2）、`AsWish\DeepSpecConfig.db` + 旧编译产物（D4，可选 `git clean -xdf` 之外的定向删除）。
+1. ~~老板手删两项~~ ✅ **已由老板委托外部 AI 清理完成**（Continuity 已删、DeepSpecConfig.db 与旧编译产物已清、四项验证通过）。
 2. 未完成工单（0027A-D/0028/001）中的 `DeepSpec.*` 代码路径需按 `AsWish.*` 映射执行。
 3. `AGENTS.md` 提及的 SPW H3 autofix 门禁脚本符号问题（遗留债务）未随本迁移处理。
-4. `.workbuddy/memory/` 工作日志随迁移进入仓库（工作记录，无密钥）。
+4. **既有问题（非迁移引入，已对照原项目验证同样存在）**：`protocol/conformance/run.py` 以 shell 方式调用 reader，但 `aswish_reader.py` 是库形态（无 CLI main），且 run.py 存在 `result.stderr` None 崩溃路径——conformance runner 需要单独修复工单。
+5. `protocol/examples` 内 HTML 渲染产物中可能存在旧渲染残留（由旧版本生成），重新 render 即可刷新。
+6. `.workbuddy/memory/` 工作日志随迁移进入仓库（工作记录，无密钥）。
 
 ## 13. 建议的下一步
 
