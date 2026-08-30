@@ -7,7 +7,7 @@
 
 AsWish defines a project-local specification workspace that humans and AI agents can both read. The workspace must make generated requirements traceable, reviewable, fallible, and usable as input to downstream coding agents.
 
-AsWish is not an agent orchestrator. It is a specification construction and quality gate layer.
+AsWish is not an agent orchestrator, an IDE, a coding agent, or a generic spec editor. It is Level 3 (engineering implementation) of the unified system (`Difference Monism → As We Wish → As I Wish → AsWish → .AsWish`), acting as the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**: it forms the confirmed representation before development and holds implementation evidence against it afterward. Product identity is defined in [`ASWISH-PRODUCT-IDENTITY.md`](ASWISH-PRODUCT-IDENTITY.md); documentation governance in [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](ASWISH-DOCUMENTATION-GOVERNANCE.md); this document is the protocol baseline only.
 
 ## 2. Workspace
 
@@ -172,16 +172,23 @@ Do not use `x-` for kind names.
 
 ## 11. Public Message
 
-Recommended public framing:
+Core research questions lead; the mechanism follows:
 
 ```text
-AsWish makes AI-generated specifications traceable, reviewable, and correctable.
+Are we still building the same thing?
+Where did the difference enter?
+
+AsWish keeps what humans and agents confirmed visible before development,
+and makes what was actually built comparable against it afterward —
+so every difference is visible, traceable, and judged by a human.
 ```
 
 Recommended comparison:
 
 ```text
 Symphony makes every task runnable by agents.
-AsWish makes every agent task specification reviewable.
+AsWish keeps every agent task answerable to the thing humans confirmed.
 ODD makes accepted outputs verifiable.
 ```
+
+Public framing follows the propagation order: real problem → real experiment → engineering method → theory (see [ASWISH-PRODUCT-IDENTITY.md](ASWISH-PRODUCT-IDENTITY.md)).

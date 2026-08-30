@@ -9,7 +9,7 @@
 
 #define MyAppName "AsWish"
 #define MyAppVersion "0.1.0.0"
-#define MyAppPublisher "DeepKit"
+#define MyAppPublisher "BetterCiv Contributors"
 #define MyAppExeName "AsWish.exe"
 
 [Setup]

@@ -1,49 +1,70 @@
 # GitHub Copilot / Coding Agent Instructions for AsWish
 
-AsWish turns messy human-AI requirement conversations into traceable, reviewable, fallible specifications for coding agents.
+> Authoritative product identity: [`ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md)  
+> Documentation governance: [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md)
 
-## Core Positioning
+AsWish is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**. It makes what should be built visible and confirmable before development, and makes what was built comparable against implementation evidence afterward.
 
-AsWish is not a generic code generator. It is a specification construction and review system.
+Core research questions:
+- **Are we still building the same thing?**
+- **Where did the difference enter?**
 
-Use this pipeline as the default mental model:
+---
+
+## 1. Product Hierarchy & Context
+
+AsWish is Level 3 of a single unified system:
 
 ```text
-Human intent / project facts / source code evidence
-        -> CTF: Construct, Trace, Falsify, Review, Freeze
-        -> SpecSnapshot / ContractCandidate
-        -> Agent task orchestration
-        -> ODD: Contract, Execute, Verify, Seal, Rework
+Level 0: Difference Monism (差异一元论 · Theory)
+        ↓
+Level 1: As We Wish (Co-construction & Shared Understanding · Theory/Method)
+        ↓
+Level 2: As I Wish (Product Concept: "Is it still what I really wanted?")
+        ↓
+Level 3: AsWish (Engineering Implementation, this repo)
+        ↓
+Project Workspace: .AsWish (Project Workspace / Protocol Carrier)
 ```
 
-## Non-Negotiable Principles
+Core main chain:
+$$\text{Manifest} \longrightarrow \text{Confirm} \longrightarrow \text{Construct} \longrightarrow \text{See} \longrightarrow \text{Build} \longrightarrow \text{Verify}$$
+$$(\text{显影} \longrightarrow \text{确认} \longrightarrow \text{建构} \longrightarrow \text{看见} \longrightarrow \text{生产} \longrightarrow \text{验证})$$
 
-- Preserve traceability: every generated node, relation, decision, and issue must point back to source evidence or an explicit human decision.
-- Preserve fallibility: no generated specification is permanently correct. Accepted nodes can become stale when evidence changes.
-- Keep states orthogonal: generation state, review state, evidence state, and execution state must not be collapsed into one field.
-- Prefer partial success: one failed tree, parser, LLM call, or validation pass must not block unrelated readable results.
-- Keep AI context least-privilege: each AI call should receive the smallest context sufficient for the current task.
-- Human judgment is not replaced: tooling should make human judgment more inspectable and consequential.
-- Do not turn AsWish into ODD. AsWish constructs and freezes specifications; ODD verifies implementation outputs against contracts.
+---
 
-## Architecture Expectations
+## 2. Human / AI Boundary (Non-Negotiable)
 
-- `.AsWish/` is the project-local specification workspace.
-- `protocol/` defines schemas, conformance rules, and reader expectations.
-- `src/core/` should stay independent from UI concerns.
-- `src/services/` coordinates parsing, storage, rendering, LLM calls, and decisions.
-- `src/app/`, `src/providers/`, and `src/controllers/` are application/UI integration layers.
+- **Human Responsibility**: Intent, judgment, decisions, difference evaluation (Accept / Reject / Uncertain), final confirmation. Humans communicate in natural language and **never directly edit raw spec trees**.
+- **AI Capability**: Discover, question, explain, generate, suggest, transform, check, and highlight differences. **AI never possesses final decision authority.**
+- **Difference ≠ Error**: A difference between specification and implementation is not automatically a defect; humans judge whether a difference is accepted, rejected, or uncertain. Do not attempt to force *Zero Difference*.
 
-## Required Checks Before Claiming Completion
+---
 
-- Validate changed JSON schemas if any schema file changed.
-- Run or describe relevant parser/store/validation checks for changed Delphi units.
-- Confirm no tokens, cookies, API keys, local paths with secrets, or private credentials are added.
-- Confirm changes do not weaken traceability, reviewability, or evidence requirements.
+## 3. Architecture & Workspace Expectations
 
-## Documentation Style
+- **`.AsWish/`** is the project-local specification workspace.
+- **`protocol/`** defines Schemas, state machines, invariants, and reader expectations.
+- **`src/core/`** must stay independent from UI concerns.
+- **`src/services/`** coordinates parsing, storage, rendering, LLM calls, candidate ingest, and decisions.
+- **`src/app/`**, **`src/providers/`**, and **`src/controllers/`** are application/UI integration layers.
 
-- README-level content should be short and practical.
-- CTF, ODD, TAT, OCGS, and theory background belong in `docs/` unless directly required for implementation.
-- Public-facing docs should explain the problem first, then the workflow, then the protocol.
-- Chinese and English may coexist, but keep public repo entry points understandable to non-Chinese developers.
+---
+
+## 4. Engineering Principles
+
+- **Traceability**: Every generated node, relation, decision, and issue must point back to source evidence or an explicit human decision.
+- **Fallibility**: No generated specification is permanently frozen; accepted nodes become stale when source evidence changes.
+- **Orthogonal States**: `gen_status` (pending/generated/failed) and `review_status` (pending/accepted/rejected/locked) must remain separated.
+- **Partial Success**: Failure in one parser, tree, LLM call, or validation step must not crash or block unrelated readable facts.
+- **Least-Privilege Context**: Provide the smallest sufficient context pack for AI operations; never dump entire workspaces into prompts unnecessarily.
+- **Stateless Deliverable**: Keep changes and deliverables clean, self-contained, and devoid of transient meta-commentary.
+
+---
+
+## 5. Required Checks Before Submitting Changes
+
+- Validate changed JSON schemas against `protocol/schemas/` if schemas were modified.
+- Run DUnitX test suite (`tests/_build_tests.bat && AsWish.Tests.exe`) when Delphi units are modified.
+- Confirm zero secrets, API keys, tokens, local credentials, or private project data are committed.
+- Confirm changes do not weaken traceability, evidence requirements, or documentation SSOT.

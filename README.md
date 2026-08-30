@@ -1,57 +1,123 @@
 # AsWish
 
-**As I Wish** is an open, free, theory-driven empirical system for AI-native software development. This repository is **AsWish** — its engineering implementation (Delphi/VCL Desktop + headless CLI), with **`.AsWish/`** as the project-level protocol workspace.
-
-Core research questions:
-
-> **Are we still building the same thing?**
+> **Are we still building the same thing?**  
 > **Where did the difference enter?**
 
-AI agents can build software faster than humans can continuously understand it. As I Wish makes what should be built visible *before* the agent builds it, and makes what was built directly comparable against what was confirmed *afterward*. Its goal is not to eliminate difference, but to make the key differences in software development **discoverable, perceivable, traceable, and confirmable**.
+**As I Wish** is an open, free, theory-driven empirical system for AI-native software development. This repository is **AsWish** — its reference engineering implementation (Delphi/VCL Desktop + Headless CLI), with **`.AsWish/`** as the project-level protocol workspace.
 
-It transforms project materials (code, documentation, user stories, UI forms) into structured, traceable, and verifiable multi-projection trees (`.AsWish/`) so humans and AI agents share a single source of truth before and during code generation.
+AsWish is **not** a spec tool, spec editor, or AI coding tool. It is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**.
 
-### Identity Layers
+> Authoritative product identity: [`ASWISH-PRODUCT-IDENTITY.md`](ASWISH-PRODUCT-IDENTITY.md)  
+> Documentation governance: [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](ASWISH-DOCUMENTATION-GOVERNANCE.md)  
+> Protocol specification: [`SPEC.md`](SPEC.md) · Theory attribution: [`NOTICE`](NOTICE)
+
+---
+
+## The Real-World Problem
+
+AI coding agents (Codex, Claude Code, Cursor, Gemini CLI, and others) can write and refactor code at superhuman speed. But software production speed has outpaced human comprehension:
+
+> *AI wrote the code, all tests pass — why is the delivered software still not what we actually wanted?*
+
+The critical breakdown is not whether the AI can generate syntax or follow an ambiguous PRD. The breakdown is:
+1. **Did humans and AI ever reach a shared, observable understanding of what was being built *before* code was generated?**
+2. **After code was generated, can humans verify whether the actual software matches that shared understanding, and where the differences entered?**
+
+AsWish makes what should be built visible and confirmable *before* development, and makes the actual software comparable against implementation evidence *afterward*.
+
+---
+
+## Identity Layers
+
+AsWish is Level 3 of a single, unified theory–product–engineering system (not four separate products):
 
 ```text
-Difference Monism        Theory
-        ↓ theory system
-As We Wish               narrative / co-construction engine
-        ↓ theory-derived
-As I Wish                empirical product
+Level 0
+Difference Monism (差异一元论)          Foundational ontology (Difference + Non-arbitrary constraint)
         ↓
-AsWish                   engineering implementation (this repo)
+Level 1
+As We Wish                           Theory / Method layer (Human-AI co-construction & shared understanding)
         ↓
-.AsWish/                 project workspace / protocol carrier
+Level 2
+As I Wish                            Product concept ("Is the delivered software still what I really wanted?")
         ↓
-Actual Software
+Level 3
+AsWish                               Engineering implementation (Delphi/VCL Desktop + Headless CLI, this repo)
+        ↓
+Project Workspace
+.AsWish                              Project-local traceable workspace / protocol carrier
 ```
 
-### Product Main Chain
+---
+
+## Core Product Pipeline
 
 ```text
-Problem Manifestation → Decision Confirmation → Shared Construction → Specification
-→ Visual Representation → Human Confirmation → Agent Development → Implementation
-→ Implementation Evidence → Difference Detection → Difference Confirmation → Feedback
+Problem Manifestation ──► Decision Confirmation ──► Co-construction ──► Specification
+         │
+         ▼
+Visual Baseline ──► Agent Development ──► Actual Implementation ──► Implementation Evidence
+         │
+         ▼
+    Difference ──► Human Confirmation ──► Revision / Feedback Loop
 ```
 
-Compressed: **显影 → 确认 → 建构 → 看见 → 生产 → 验证**
+Compressed workflow:
+
+$$\textbf{Manifest} \longrightarrow \textbf{Confirm} \longrightarrow \textbf{Construct} \longrightarrow \textbf{See} \longrightarrow \textbf{Build} \longrightarrow \textbf{Verify}$$
+$$(\text{显影} \longrightarrow \text{确认} \longrightarrow \text{建构} \longrightarrow \text{看见} \longrightarrow \text{生产} \longrightarrow \text{验证})$$
+
+---
+
+## Core Principles
+
+- **Human / AI Boundary**:
+  - **Humans** own intent, judgment, decisions, difference acceptance/rejection, and final confirmation. Humans communicate in natural language and *never* directly edit raw specification trees.
+  - **AI** discovers, questions, generates, transforms, and highlights differences. AI *never* possesses final decision authority.
+- **Difference ≠ Error**:
+  - A difference between initial understanding and final implementation is not automatically a bug. Humans may review a difference and conclude *"this is actually better"*.
+  - AsWish does not pursue *Zero Difference*. It pursues **Difference made visible, traceable, and judgeable**.
+- **Visual Baseline (WYSIWYG)**:
+  - What humans and agents confirm visually *before* development and the actual product produced *after* development are directly comparable through evidence. This is *not* a WYSIWYG spec editor.
+- **Local-First & Download-and-Run**:
+  - Windows Desktop / CLI out-of-the-box. Zero forced account registration, cloud sign-in, SaaS workspace, or SSO.
+- **Open Source Mission**:
+  - Open source here is not merely "free code". Its core message is:
+    $$\textbf{Test my claim.}$$
+    Empowering any third-party developer to download, run, inspect, replicate, challenge, and falsify the engineering and theoretical claims.
 
 ---
 
 ## Key Features
 
-- **Four Projections**: the same software intent projected across four dimensions — not four requirement documents:
+- **Four Projections**: The same intent projected across four weakly-coupled dimensions:
   - `function-tree`: What the system should do (behavior projection).
   - `module-tree`: Where the behavior lives (architecture projection).
   - `view-tree`: What users interact with (interface projection).
   - `data-tree`: What data exists, persists, moves, and migrates (data projection).
-- **Visual Continuity from intent to implementation**: the visual object confirmed before development and the actual product delivered after development should be directly comparable, with the human judging whether they are still the same thing. This is *not* a WYSIWYG editor — humans never directly edit the spec; they communicate in natural language.
-- **Fog of War Exploration (CTF Method)**: Clear separation between verified facts, AI-inferred candidates, and foggy/unknown requirement frontiers.
-- **Interactive Visualizer**: Built-in HTML renderer (WebView2) with responsive dashboards, interactive trees, and JS Bridge for human decision confirmation.
-- **Standalone & Lightweight**: Zero external database dependencies; configuration and state persist locally in standard JSON format.
-- **OpenAI-Compatible LLM Integration**: Directly connects to ModelScope, OpenAI, DeepSeek, Qwen, Ollama, and other compatible LLM endpoints.
-- **Headless CLI & VCL Desktop GUI**: Run scans, validation, and rendering headlessly in CI/CD or interactively on the desktop.
+- **CTF Semantic Bundles**: Cross-projection grouping binding the same requirement across all trees into a single reviewable unit.
+- **Fog of War & Frontier Exploration**: Explicit tracking of verified facts vs candidate inferences vs unmapped requirement frontiers (`clear`, `misty`, `foggy`, `unknown_unknowns`).
+- **Interactive Visualizer & Decision Capture**: Built-in WebView2 renderer with interactive tree inspection and JS Bridge writing decisions directly back to `.AsWish/decisions/`.
+- **Standalone & Lightweight**: Zero external database dependencies; local JSON/YAML persistence.
+- **OpenAI-Compatible LLM Integration**: Pluggable backend for ModelScope, OpenAI, DeepSeek, Qwen, Ollama, and compatible endpoints.
+- **Headless CLI & VCL Desktop GUI**: Run scans, validations, and renders in CI/CD headlessly or interactively on Windows.
+
+---
+
+## Target Users & First-Stage Goals
+
+### User Circles
+1. **Primary**: Heavy AI Coding Agent users (Codex, Claude Code, Cursor, Gemini CLI, etc.).
+2. **Secondary**: Indie developers and small teams.
+3. **Tertiary**: Product leads, engineering managers, and AI-SE researchers.
+4. **Quaternary**: Enterprise engineering teams (without adding enterprise complexity prematurely).
+
+### First-Stage Empirical Metrics
+The first stage focuses on empirical validation, not commercialization or star counts:
+- Developers who complete a first real experiment;
+- Real projects using `.AsWish/` workspaces;
+- Concrete difference cases discovered, tracked, and judged;
+- User-reported failures, counterexamples, and critiques to drive theory revision.
 
 ---
 
@@ -59,8 +125,11 @@ Compressed: **显影 → 确认 → 建构 → 看见 → 生产 → 验证**
 
 ```text
 LICENSE                           Apache-2.0 License
-README.md                         Public project documentation
+NOTICE                            Statutory theory attribution and copyright notice
+README.md                         Public project entry point
 SPEC.md                           AsWish protocol specification overview
+ASWISH-PRODUCT-IDENTITY.md        Authoritative product identity SSOT
+ASWISH-DOCUMENTATION-GOVERNANCE.md Authoritative documentation governance SSOT
 protocol/                         Machine-readable JSON Schemas and conformance tests
 src/                              Delphi/VCL desktop GUI and services implementation
   ├── app/                        Shell form, main window, commands, localization
@@ -72,37 +141,32 @@ src/                              Delphi/VCL desktop GUI and services implementa
 cli/                              Headless CLI executable (AsWish.CLI.dpr)
 tests/                            DUnitX automated test suite
 docs/                             Methodology, protocol, and design guides
+installer/                        Inno Setup packaging script
 ```
 
 ---
 
-## Desktop Application (Delphi / Win64)
+## Quick Start (Desktop & CLI)
 
-### Prerequisites
+### Desktop Application (Delphi / Win64)
 
-- Embarcadero Delphi / RAD Studio 13.1 (or 12.x / 11.x) with `dcc64` (Win64 target).
-- Microsoft Edge WebView2 Runtime (for interactive HTML preview).
+1. **Prerequisites**:
+   - Embarcadero Delphi / RAD Studio 13.1 (or 12.x / 11.x) with `dcc64`.
+   - Microsoft Edge WebView2 Runtime.
+2. **Build**:
+   ```bat
+   :: 1. Build Main GUI application -> bin\AsWish.exe
+   _build.bat
 
-### Build Instructions
+   :: 2. Build and run test suite
+   cd tests && _build_tests.bat && AsWish.Tests.exe
 
-```bat
-:: 1. Build Main GUI application -> bin\AsWish.exe
-_build.bat
+   :: 3. Build Headless CLI -> cli\bin\AsWish.CLI.exe
+   cd cli && _build_cli.bat
+   ```
+3. **First Run Guide**: Follow [`docs/AsWish-用户上手说明-v1.md`](docs/AsWish-用户上手说明-v1.md).
 
-:: 2. Build and run automated test suite
-cd tests && _build_tests.bat && AsWish.Tests.exe
-
-:: 3. Build Headless CLI -> cli\bin\AsWish.CLI.exe
-cd cli && _build_cli.bat
-```
-
-### First Run
-
-Follow [`docs/AsWish-用户上手说明-v1.md`](docs/AsWish-用户上手说明-v1.md) for the complete first-run path, LLM setup, four-projection review, and headless CLI workflow.
-
----
-
-## Headless CLI Usage
+### Headless CLI Commands
 
 ```bat
 AsWish.CLI init <dir>                      :: Initialize a fresh .AsWish directory
@@ -116,15 +180,9 @@ AsWish.CLI bundle apply <dir> <id> <act>   :: Batch accept or reject a bundle
 AsWish.CLI ingest <dir> <candidate.yaml>   :: Validate and merge candidate nodes
 ```
 
----
+### Standalone Cold-Start (Zero Delphi Dependencies)
 
-## Protocol & Specification (L0 Layer)
-
-The AsWish protocol is defined in `SPEC.md` and `protocol/`. It is licensed under Apache-2.0 and strictly language-agnostic. Any tool, editor, or autonomous agent can read, validate, or generate `.AsWish/` worktrees.
-
-### Standalone Cold-Environment Initialization
-
-In clean environments without Delphi compiler tools, initialize a conforming `.AsWish/` workspace directly using Python (standard library only, zero third-party dependencies):
+In environments without Delphi compiler tools, initialize a standard `.AsWish/` workspace directly using Python (standard library only):
 
 ```bash
 python protocol/tools/init_workspace.py /path/to/project --project-name "MyProject"
@@ -136,39 +194,30 @@ Python readers are available in `protocol/readers/python/` for programmatic tree
 
 ## Theoretical Foundations & Statutory Attribution
 
-**As I Wish is a theory-driven empirical product — it is not a proof of any theory.** Real usage, real projects, real failures, implementation deviations, and external feedback are all research evidence, and reality is allowed to challenge the theory back.
-
-### Identity Layers
-
-- **Difference Monism (DM)**: the theoretical body — difference, non-arbitrary constraint, structure, boundary, inherited traces.
-- **As We Wish**: the narrative / co-construction engine derived from DM. "述事" here means organizing human problems, intents, decisions, and shared understanding into structures that can keep being developed — not story generation.
-- **As I Wish**: the empirical product.
-- **AsWish / `.AsWish/`**: the engineering implementation and its project workspace.
+**AsWish is a theory-driven empirical engineering system — it is not a proof of any theory.** Real usage, real failures, and empirical deviations are valid research evidence that actively informs and challenges the theory.
 
 ### Theoretical Sources
+AsWish embodies theoretical achievements created and authored by **付毅 (Fuyi)**:
 
-AsWish and its `.AsWish/` specification protocol embody and implement proprietary theoretical architectures created and authored by **付毅 (Fuyi)**:
-
-- **Difference Monism (DM, 差异一元论)**: Foundational ontology of difference replacing substance ontology. Academic DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505).
-- **Attributive Set Transition Ontology (ASTO, 属集变迁存在论)**: Multi-state phase transitions, structural boundaries, and formal encoding. Academic DOI: [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467).
-- **Output-Driven Development (ODD, 产出物驱动开发)**: Engineering and governance discipline mandating frozen specification deliverables and deterministic gates before production. Academic DOI: [10.5281/zenodo.20024964](https://doi.org/10.5281/zenodo.20024964).
-- **Constructive Traceable Fallibilist Specification (CTF, 建构追溯可谬规格方法论)**: Pre-specification layer of ODD (theory source `ODD.P03`) converting unstable human-machine requirements into traceable, reviewable, defeasible, freezable specification snapshots. Academic DOI pending (preprint prepared 2026-08-29). Claim strength C2.
-- **Problem Manifestation Methodology (PFM, 前线显影层)**: Front-line intent modeling methodology that uncovers latent constraints and establishes verifiable acceptance criteria. Prior public record: [10.5281/zenodo.19856528](https://doi.org/10.5281/zenodo.19856528) (LMM v1.0, 2026-04-28).
+1. **Difference Monism (DM, 差异一元论)**: Foundational ontology replacing substance ontology with differential ontology. Academic DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505).
+2. **Attributive Set Transition Ontology (ASTO, 属集变迁存在论)**: Multi-state phase transitions, structural boundaries, and formal encoding. Academic DOI: [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467).
+3. **Output-Driven Development (ODD, 产出物驱动开发)**: Engineering discipline mandating frozen specification deliverables and deterministic gates before production. Academic DOI: [10.5281/zenodo.20024964](https://doi.org/10.5281/zenodo.20024964).
+4. **Constructive Traceable Fallibilist Specification (CTF, 建构追溯可谬规格方法论)**: Pre-specification layer of ODD (theory source `ODD.P03`) converting human-AI intent into traceable, reviewable, defeasible specification snapshots. Academic DOI pending (preprint prepared 2026-08-29). Claim strength **C2**.
+5. **Problem Manifestation Methodology (PFM, 前线显影层)**: Front-line intent modeling methodology uncovering latent constraints and acceptance criteria. Prior public record: [10.5281/zenodo.19856528](https://doi.org/10.5281/zenodo.19856528).
 
 Canonical Theory Source Repository: `D:\_Progs\一元论\`  
-Upstream Governance Contract: `PC-20260828-AsWish-OpenSource`
+Upstream Problem Contract: `PC-20260828-AsWish-OpenSource`
 
-### Terminology
-
-- **Decision Confirmation** is the product mechanism for resolving unresolved gaps one key decision at a time, evidence-first. External practices (Wayfinder / Grill-me) are inspirations and compatible working styles — not native theory of Difference Monism, and not the product's formal name for this mechanism.
-- `fog_state` remains a pending-attribution engineering construct; protocol `invariants` remain weakly anchored / pending confirmation.
+### Terminology Notes
+- **Decision Confirmation** is the native product mechanism for resolving gaps one decision at a time. External practices (Wayfinder / Grill-me) are external inspirations.
+- `fog_state` is a pending-attribution engineering construct; `invariants` remain weakly anchored.
 - Cross-projection links are carried by the **CTF Semantic Bundle** (full qualified term preserved).
 
-See [NOTICE](NOTICE) for complete statutory attribution and licensing terms under Apache License 2.0 Section 4(d).
+See [`NOTICE`](NOTICE) for complete statutory attribution and licensing terms under Apache License 2.0 Section 4(d).
 
 ---
 
 ## License
 
-AsWish is released under the [Apache-2.0 License](LICENSE).
+AsWish is released under the [Apache-2.0 License](LICENSE).  
 Copyright 2026 付毅 (Fuyi) and BetterCiv Contributors.

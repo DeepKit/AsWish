@@ -1,17 +1,20 @@
 # AsWish Docs
 
 > Current engineering entry: `../README.md`, `../SPEC.md`, and `CTF.md`.
+> Authoritative product identity: [`../ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md) · Documentation governance: [`../ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md).
 
 ## Authoritative Documents
 
 | File | Role |
 |---|---|
 | `../README.md` | Public project entry |
+| `../ASWISH-PRODUCT-IDENTITY.md` | Authoritative product identity (hierarchy, research questions, boundaries) |
+| `../ASWISH-DOCUMENTATION-GOVERNANCE.md` | Documentation governance (authority registry, conflict rules) |
 | `../SPEC.md` | Current v1.2-draft protocol and workflow baseline |
 | `CTF.md` | Engineering explanation of the CTF method |
 | `AsWish-用户上手说明-v1.md` | First-run, review, LLM, and CLI user path |
 | `AsWish-当前文档索引-v1.md` | Chinese document index and historical map |
-| `AsWish-文档优化审查报告-2026-05-20.md` | Current cleanup and optimization report |
+| `理论确权清单-v1.md` | Theory attribution, DOIs, claim strengths, pending items |
 
 ## Historical Documents
 

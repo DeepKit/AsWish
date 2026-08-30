@@ -5,7 +5,7 @@
 
 ## What Is This?
 
-AsWish Protocol defines a structured `.AsWish/` workspace that humans and AI coding agents can both read.
+AsWish Protocol defines a structured `.AsWish/` workspace that humans and AI coding agents can both read. Product identity and hierarchy: [`../ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md) · Documentation governance: [`../ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md).
 
 ```text
 Human intent / project files / code evidence

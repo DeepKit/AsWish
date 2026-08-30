@@ -9,11 +9,12 @@
 > **状态**：当前产品功能与愿景基线
 >
 > **与既有文档的关系**：
-> - 战略口径见 `AsWish-战略定稿-v1.md`（免费/付费边界、市场楔子、进入第二层门槛）
-> - 路线层次见 `AsWish-三层产品路线-v1.md`（需求可视化 → 需求所见即所得 → CLI 实现）
+> - 产品身份与层级的权威定义见根目录 [`../ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md)；本文与其冲突时以该文件为准
+> - 战略口径见历史文档 `DeepSpec-战略定稿-v1.md`（免费/付费边界、市场楔子、进入第二层门槛）
+> - 路线层次见历史文档 `DeepSpec-三层产品路线-v1.md`（需求可视化 → 需求所见即所得 → CLI 实现）
 > - 理论归属与确权状态见 `理论确权清单-v1.md`（含 fog_state 待确权口径）
-> - 方法论见 `AsWish-CTF方法论-v2.1.md`；Wayfinder 外部启发见 `wayfinder-对AsWish的启发.md`
-> - 工程基线以 `../SPEC.md`（v1.2-draft）为准
+> - 方法论见 [`CTF.md`](CTF.md)；历史方法论全文见 `DeepSpec-CTF方法论-v2.1.md`；Wayfinder 外部启发见 `wayfinder-对DeepSpec的启发.md`（历史讨论稿）
+> - 工程基线以 [`../SPEC.md`](../SPEC.md)（v1.2-draft）为准
 
 ---
 
@@ -24,6 +25,24 @@ AsWish 让人类与 AI Agent 在开发前看见、确认同一个软件应该是
 更完整的产品定义：
 
 AsWish 是 AI 原生软件开发的 **Specification Control Layer（规格控制层）**：它把模糊问题显影、关键决策确认后的共同理解固化为可追溯的规格，以视觉化对象交给开发 Agent，并在开发完成后用真实实现证据验证规格是否仍然成立。
+
+### 产品层级（正式口径）
+
+AsWish 不是一个孤立产品，而是同一个理论—产品—工程体系的 Level 3 层：
+
+```text
+Difference Monism   理论母体
+        ↓
+As We Wish          理论 / 方法层：人机共同理解的述事 / 建构机制
+        ↓
+As I Wish           产品概念：最终得到的是否仍然是我真正想要的
+        ↓
+AsWish              工程实现（本文档描述的对象）
+        ↓
+.AsWish             项目级可追踪工作空间 / 协议载体
+```
+
+层级定义、核心研究问题（Are we still building the same thing? / Where did the difference enter?）、人机边界与 Difference 战略地位的权威表述见 [`../ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md)，本文不复述。
 
 ---
 
@@ -526,6 +545,8 @@ code-first evidence gathering。
 
 ## 十七、商业化路线
 
+> **第一阶段纪律**：第一阶段不是商业化阶段。分层路线是长期结构参考，当前优先目标是让陌生开发者下载、运行、完成第一次真实实验并带入真实项目（First User → First Experiment → First Real Project → First Difference → First Case）。不为企业市场增加企业级复杂度；免费/付费边界的推进由真实使用证据决定。指标见 [`../ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md) §16。
+
 **第一层：Understand（免费）**
 
 帮助用户看见 AI 理解了什么、哪里不确定、哪里存在规格断口。
@@ -648,6 +669,12 @@ Protocol + SDK + CLI + Agent integrations
 AsWish 最终不是一个"AI 需求文档工具"，而应该成为：
 
 > **AI 原生软件开发中的规格控制层。**
+
+更根本的愿景（权威表述见 [`../ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md) §13）：
+
+> **让理论真正进入真实世界，形成一个可以被真实开发者使用、产生工程证据、接受第三方检验、发现失败和反例，并反过来推动理论修正的开放工程系统。**
+
+开源的核心传播是 **Test my claim**，而不是 Try my tool。核心原则：真实使用证据 > 功能数量；第三方反馈 > 内部自嗨；理论可证伪 > 理论包装；传播一个问题 > 宣传一堆功能。
 
 其最终闭环：
 

@@ -1,34 +1,50 @@
 # Contributing to AsWish
 
-AsWish is a specification construction and review system for human-AI software work.
+> Authoritative product identity: [`ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md)  
+> Documentation governance: [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md)
 
-## Contribution Priorities
+AsWish is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**. It keeps what humans and agents confirmed visible before development, and makes what was built comparable against it afterward — every difference is visible, traceable, and judged by a human.
 
-1. Make project facts easier to inspect.
-2. Make generated specifications more traceable.
-3. Make human review more meaningful.
-4. Make accepted specs safer to freeze, invalidate, and hand off to coding agents.
-5. Keep protocol readers simple and backward-compatible.
+AsWish is **not** a spec tool, spec editor, or coding agent.
 
-## Before You Start
+Core research questions:
+- **Are we still building the same thing?**
+- **Where did the difference enter?**
 
-- Read `docs/AsWish-CTF方法论-v1.md` for the method.
-- Read `protocol/README.md` for protocol expectations.
-- Prefer small changes with clear verification.
-- Do not mix broad theory rewrites with implementation changes.
+The open source mission is: **Test my claim.** (Empowering third-party developers to download, run, inspect, replicate, and challenge our engineering and theoretical claims).
 
-## CTF Boundary
+---
 
-AsWish constructs, reviews, and freezes specifications. It does not replace ODD-style implementation verification.
+## 1. Contribution Priorities
 
-A healthy contribution should make this chain clearer:
+1. **Make project facts easier to inspect**: improve scanners, parsers, and representations across four projections (`function`, `module`, `view`, `data`).
+2. **Make specifications more traceable**: improve evidence linking, hash checking, and CTF Semantic Bundles.
+3. **Make human review more consequential**: enhance visual review, natural language intent capture, and explicit decision write-backs.
+4. **Make accepted baselines verifiable**: advance difference detection between accepted visual/structural baselines and actual implementation outputs.
+5. **Keep protocol readers simple and robust**: ensure language-agnostic conformance and backward compatibility in `protocol/`.
 
-```text
-Evidence -> Spec Node -> Review Decision -> Spec Snapshot -> Agent Task / ODD Contract Candidate
-```
+---
 
-## Security and Privacy
+## 2. Before You Start
 
-Never commit API keys, cookies, private project data, database dumps, local credentials, or generated release packages.
+- Read [`ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md) for product identity and boundaries.
+- Read [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md) for document authority and single-source-of-truth rules.
+- Read [`SPEC.md`](../SPEC.md) and [`protocol/README.md`](../protocol/README.md) for protocol expectations.
+- Read [`docs/CTF.md`](../docs/CTF.md) for the CTF method.
+- Prefer small, well-verified pull requests over massive refactors.
+- Do not mix broad theoretical claims with routine engineering changes.
 
-If an example needs real-world flavor, anonymize it first.
+---
+
+## 3. Engineering & Boundary Guidelines
+
+- **Human / AI Boundary**: Humans judge and decide using natural language; humans never directly edit raw spec trees. AI assists and discovers, but never makes final decisions.
+- **Difference ≠ Error**: Do not assume differences are always defects; provide paths for human review (Accept / Reject / Uncertain).
+- **Stateless Deliverables**: Deliver clean, self-contained code and documents without temporary process notes.
+
+---
+
+## 4. Security & Privacy
+
+- Never commit API keys, cookies, tokens, private project data, local database files, or generated binaries.
+- If an example needs real-world context, anonymize all identifiers first.

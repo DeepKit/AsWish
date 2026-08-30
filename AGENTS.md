@@ -6,6 +6,25 @@
 
 > 规范指针：详见《非睿智轻量门禁规范-v1》（`08_元管理/BCW/docs/非睿智轻量门禁规范-v1.md`），所有非睿智工作流之下的常规项目 WP 必须遵守五项硬门禁（G1–G5）。
 
+# 项目身份第一入口（任何 AI 任务开始前必读）
+
+接手本仓库的任何 AI，禁止按旧 DeepSpec 时代认知理解项目，禁止把 AsWish 简化为 Spec Tool / Spec Editor / AI Requirement Tool / AI Coding Tool / WYSIWYG Spec Editor。
+
+正式产品层级（同一个理论—产品—工程体系的不同层级，不是四个独立产品）：
+
+```text
+Difference Monism → As We Wish → As I Wish → AsWish → .AsWish
+```
+
+核心研究问题：**Are we still building the same thing?** / **Where did the difference enter?**
+
+主链压缩口径：**显影 → 确认 → 建构 → 看见 → 生产 → 验证**。
+
+- 产品身份权威：[`ASWISH-PRODUCT-IDENTITY.md`](ASWISH-PRODUCT-IDENTITY.md)
+- 文档治理权威：[`ASWISH-DOCUMENTATION-GOVERNANCE.md`](ASWISH-DOCUMENTATION-GOVERNANCE.md)
+- 协议权威：[`SPEC.md`](SPEC.md) 与 [`protocol/`](protocol/)
+- 理论归因权威：[`NOTICE`](NOTICE) 与 [`docs/理论确权清单-v1.md`](docs/理论确权清单-v1.md)（不增强理论主张；CTF 用全称 CTF Semantic Bundle，主张强度 C2）
+
 你需要遵循下面的规则
 
 # 原则
