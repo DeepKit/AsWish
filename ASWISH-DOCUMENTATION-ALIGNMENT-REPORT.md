@@ -176,8 +176,9 @@ Step 5: 阅读 docs/AsWish-用户上手说明-v1.md    (掌握用户交互与运
 
 ---
 
-## 11. 验证与构建证据
+## 11. Git Commit Hash 与构建证据
 
+- **Git Commit Hash**：`5654259` (`docs: establish authoritative product identity and documentation governance SSOT`)
 - **自动化测试**：`tests/AsWish.Tests.exe` 运行通过，126/126 Tests Passed，0 Failed，0 Leaked，0 Errored。
 - **主程序构建**：`bin/AsWish.exe` 编译成功（0 Error / 0 Warning / 1 Hint）。
 - **CLI 构建**：`cli/bin/AsWish.CLI.exe` 编译成功（0 Error / 0 Warning）。
