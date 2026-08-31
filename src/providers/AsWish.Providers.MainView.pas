@@ -59,6 +59,10 @@ type
   TChangeSetActionProc = reference to procedure(
     const AAction, AChangeSetId, AParam: string);
 
+  /// <summary>JS Bridge callback for confirming Visual Baseline (WO-20260830-0028).</summary>
+  TVisualConfirmProc = reference to procedure(
+    const ARationale: string);
+
   /// <summary>
   /// Holds a target URL and navigates the browser when it becomes ready.
   /// Also handles incoming postMessage events from the page (JS Bridge).
@@ -73,6 +77,7 @@ type
     FOnBundleAction: TBundleActionProc;
     FOnSubmitIntent: TChangeSetSubmitProc;
     FOnChangeSetAction: TChangeSetActionProc;
+    FOnVisualConfirm: TVisualConfirmProc;
     procedure HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
     procedure HandleWebMessage(Sender: TCustomEdgeBrowser;
       Args: TWebMessageReceivedEventArgs);
@@ -85,7 +90,8 @@ type
       AOnExportOptPrompt: TExportOptPromptProc;
       AOnBundleAction: TBundleActionProc;
       AOnSubmitIntent: TChangeSetSubmitProc = nil;
-      AOnChangeSetAction: TChangeSetActionProc = nil);
+      AOnChangeSetAction: TChangeSetActionProc = nil;
+      AOnVisualConfirm: TVisualConfirmProc = nil);
   end;
 
   TAsWishMainViewProvider = class(TInterfacedObject, IShellMainViewProvider)
@@ -96,6 +102,7 @@ type
     FOnBundleAction: TBundleActionProc;
     FOnSubmitIntent: TChangeSetSubmitProc;
     FOnChangeSetAction: TChangeSetActionProc;
+    FOnVisualConfirm: TVisualConfirmProc;
     function GetIndexHtmlPath: string;
   public
     constructor Create(AProjectService: TAsWishProjectService;
@@ -103,7 +110,8 @@ type
       AOnExportOptPrompt: TExportOptPromptProc;
       AOnBundleAction: TBundleActionProc;
       AOnSubmitIntent: TChangeSetSubmitProc = nil;
-      AOnChangeSetAction: TChangeSetActionProc = nil);
+      AOnChangeSetAction: TChangeSetActionProc = nil;
+      AOnVisualConfirm: TVisualConfirmProc = nil);
     function ProviderId: string;
     function CanOpen(const ARef: TShellObjectRef): Boolean;
     function GetViewForObject(const ARef: TShellObjectRef): TShellViewInfo;
@@ -128,7 +136,8 @@ constructor TBrowserNavigator.CreateFor(AOwner: TComponent; const ATargetUrl: st
   AOnExportOptPrompt: TExportOptPromptProc;
   AOnBundleAction: TBundleActionProc;
   AOnSubmitIntent: TChangeSetSubmitProc;
-  AOnChangeSetAction: TChangeSetActionProc);
+  AOnChangeSetAction: TChangeSetActionProc;
+  AOnVisualConfirm: TVisualConfirmProc);
 begin
   inherited Create(AOwner);
   FTargetUrl := ATargetUrl;
@@ -138,6 +147,7 @@ begin
   FOnBundleAction := AOnBundleAction;
   FOnSubmitIntent := AOnSubmitIntent;
   FOnChangeSetAction := AOnChangeSetAction;
+  FOnVisualConfirm := AOnVisualConfirm;
 end;
 
 procedure TBrowserNavigator.HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
@@ -240,6 +250,17 @@ begin
         if TFile.Exists(LReviewPath) then
           Sender.Navigate('file:///' + LReviewPath.Replace('\', '/'));
       end;
+    end
+    else if LAction = 'visual-confirm' then
+    begin
+      var LRationale := LObj.GetValue<string>('rationale', '');
+      if Assigned(FOnVisualConfirm) then
+      begin
+        FOnVisualConfirm(LRationale);
+        var LVisualPath := TPath.Combine(FProjectService.AsWishPath, 'html\visual-preview.html');
+        if TFile.Exists(LVisualPath) then
+          Sender.Navigate('file:///' + LVisualPath.Replace('\', '/'));
+      end;
     end;
   finally
     LJson.Free;
@@ -290,7 +311,8 @@ end;
 constructor TAsWishMainViewProvider.Create(AProjectService: TAsWishProjectService;
   AOnCreateTicket: TCreateTicketProc; AOnExportOptPrompt: TExportOptPromptProc;
   AOnBundleAction: TBundleActionProc; AOnSubmitIntent: TChangeSetSubmitProc;
-  AOnChangeSetAction: TChangeSetActionProc);
+  AOnChangeSetAction: TChangeSetActionProc;
+  AOnVisualConfirm: TVisualConfirmProc);
 begin
   inherited Create;
   FProjectService := AProjectService;
@@ -299,6 +321,7 @@ begin
   FOnBundleAction := AOnBundleAction;
   FOnSubmitIntent := AOnSubmitIntent;
   FOnChangeSetAction := AOnChangeSetAction;
+  FOnVisualConfirm := AOnVisualConfirm;
 end;
 
 function TAsWishMainViewProvider.ProviderId: string;
@@ -348,7 +371,7 @@ begin
     // Navigator gets owned by the browser, freed automatically.
     LNavigator := TBrowserNavigator.CreateFor(LBrowser, LUrl, FProjectService,
       FOnCreateTicket, FOnExportOptPrompt, FOnBundleAction,
-      FOnSubmitIntent, FOnChangeSetAction);
+      FOnSubmitIntent, FOnChangeSetAction, FOnVisualConfirm);
     LBrowser.OnCreateWebViewCompleted := LNavigator.HandleCreated;
     LBrowser.OnWebMessageReceived := LNavigator.HandleWebMessage;
 

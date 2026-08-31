@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.SpecStore
 
   DUnitX tests for AsWish.Services.SpecStore persistence — focused on the

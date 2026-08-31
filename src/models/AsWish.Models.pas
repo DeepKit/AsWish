@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Models
 
@@ -283,6 +283,35 @@ type
     ChangeItemIndex: Integer;
   end;
 
+  /// <summary>Lineage linkage for Accepted Baseline (WO-20260830-0027E).</summary>
+  TBaselineLineage = record
+    ChangeSetId: string;
+    IntentId: string;
+    class function CreateNew(const AChangeSetId: string;
+      const AIntentId: string = ''): TBaselineLineage; static;
+  end;
+
+  /// <summary>
+  /// Immutable, hash-addressable Accepted Baseline (WO-20260830-0027E, WO-20260830-0028).
+  /// Binds Canonical Spec state, Decision lineage, ContentHash and RelationHash.
+  /// </summary>
+  TAsWishBaseline = record
+    BaselineId: string;      // e.g. "B-0001"
+    DecisionId: string;      // decision lineage reference (e.g. "dec-0001")
+    SnapshotName: string;    // snapshot subfolder name under .AsWish/snapshots/
+    TreeType: string;        // "function" / "view" / "all"
+    ContentHash: string;     // snapshot-level content hash (node summaries/purposes + content)
+    RelationHash: string;    // snapshot-level relation hash (parent_id hierarchy + relations)
+    CreatedAt: TDateTime;
+    Lineage: TBaselineLineage;
+    // Visual baseline metadata (WO-20260830-0028)
+    RendererVersion: string; // e.g. "wireframe-v1.0"
+    VisualBinding: string;   // e.g. "html/visual-preview.html" or view-tree ref
+    class function CreateNew(const AId, ADecisionId, ASnapshotName, ATreeType,
+      AContentHash, ARelationHash: string; const ALineage: TBaselineLineage;
+      const ARendererVersion: string = ''; const AVisualBinding: string = ''): TAsWishBaseline; static;
+  end;
+
   /// <summary>
   /// String conversion helpers for enum values matching protocol enum names.
   /// </summary>
@@ -427,6 +456,36 @@ begin
   if Result.Author = '' then
     Result.Author := 'human';
   Result.CreatedAt := Now;
+end;
+
+{ TBaselineLineage }
+
+class function TBaselineLineage.CreateNew(const AChangeSetId: string;
+  const AIntentId: string): TBaselineLineage;
+begin
+  Result := Default(TBaselineLineage);
+  Result.ChangeSetId := AChangeSetId;
+  Result.IntentId := AIntentId;
+end;
+
+{ TAsWishBaseline }
+
+class function TAsWishBaseline.CreateNew(const AId, ADecisionId, ASnapshotName,
+  ATreeType, AContentHash, ARelationHash: string;
+  const ALineage: TBaselineLineage; const ARendererVersion: string;
+  const AVisualBinding: string): TAsWishBaseline;
+begin
+  Result := Default(TAsWishBaseline);
+  Result.BaselineId := AId;
+  Result.DecisionId := ADecisionId;
+  Result.SnapshotName := ASnapshotName;
+  Result.TreeType := ATreeType;
+  Result.ContentHash := AContentHash;
+  Result.RelationHash := ARelationHash;
+  Result.CreatedAt := Now;
+  Result.Lineage := ALineage;
+  Result.RendererVersion := ARendererVersion;
+  Result.VisualBinding := AVisualBinding;
 end;
 
 { TSpecEnums }

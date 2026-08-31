@@ -5,7 +5,7 @@
 - 承接方：**甲（开发AI，AsWish 仓库）**
 - 工作仓库：`D:\_Progs\02Business\AsWish`（**本票起，新工单一律直接写 AsWish 仓库，不再沿用 DeepSpec 字面残留**；裁定依据：工程路线 §十六 C-2）
 - 优先级：P0
-- 依赖：`0027A/B/C/D` 已全部入 `main`（`Controller` 五方法可用：`SubmitUserIntent / ReviewChangeSet / AcceptChangeSet / RejectChangeSet / ClarifyChangeSet`）；无其他前置
+- 依赖：`0027A/B/C/D` 已全部入 `main`（`Controller` 五方法可用：`SubmitUserIntent / ReviewChangeSet / AcceptChangeSet / RejectChangeSet / ClarifyChangeSet`）；**新增前置：`DeepBase` 侧 `WO-20260830-005`（HB 0–9 选择控件 + 嵌套瀑布 + 信息粒度）交付后本票 UI 才可落地**
 - 门禁：非睿智轻量门禁；**双闸门（Engineering Green + Dogfood Green）**；单 commit ≤200 行；build/test 原始输出存档证据；主控 APPROVED/RETURNED，未过不得 CLOSE
 
 ---
@@ -38,18 +38,21 @@ Canonical Spec + Validation（已存在）
 
 1. **只做 GUI 表现层**：复用 Controller 五方法，**不新增业务逻辑、数据模型、状态机**。
 2. **复用 WebView2 JS Bridge**（`TAsWishMainViewProvider` / `TEdgeBrowser`）承载 Review 页面；前置勘察报告（`docs/WO-20260830-0027D-前置工程勘察报告.md`）判定"完全可以小步接入，无需重构"。
-3. **交互遵循 [`docs/AsWish-统一选择交互标准-v1.md`](../docs/AsWish-统一选择交互标准-v1.md)**：0–9 协议 + 语义色 Token（`Choice.Option / Regenerate / Input / Back`），深浅色主题各定义一套颜色值。
-4. **Review 页面的对象不是 ChangeSet YAML，而是"AI 对我的意图形成的当前理解"**——ChangeSet 只是它的工程承载物。
-5. **Review 页面四层信息模型**（不把 YAML 全部倒给用户）：
+3. **控件尽量用 DeepBase 的 HB 视觉系统**（老板指令 2026-08-30）：主题 / Tokens / `THbSummaryBar` / `THbStreamBlock` / `THbBadge` 等已可直接用；缺失三件——0–9 选择控件、嵌套瀑布、信息粒度——由 `DeepBase/WO-20260830-005` 交付后使用，**本票不在 AsWish 侧私造等价控件**。
+4. **交互遵循 [`docs/AsWish-统一选择交互标准-v1.md`](../docs/AsWish-统一选择交互标准-v1.md)**：0–9 协议 + 语义色 Token（`Choice.Option / Regenerate / Input / Back`），深浅色主题各定义一套颜色值；落地为 HB 预置控件 `THbChoiceDeck`。
+5. **瀑布式、可扩展、有包含关系**：Review 信息用 HB 嵌套瀑布呈现——大问题包中问题包小问题（总意图 → 各理解 → 各变更项 → 字段级）；父卡可展开 / 收起子卡。
+6. **随时可切信息粒度**：全局粒度开关 6 档（超粗 / 粗 / 适中 / 较细 / 细 / 极细），默认适中；瀑布按档位折叠到对应深度。**粒度只影响看多少，不影响数据真伪。**
+7. **Review 页面的对象不是 ChangeSet YAML，而是"AI 对我的意图形成的当前理解"**——ChangeSet 只是它的工程承载物。
+8. **Review 页面四层信息模型**（不把 YAML 全部倒给用户）：
    ```text
    ① I said          原始意图（用户自己刚说的）
    ② AI understood   AI 的理解（不是 Canonical Spec）
    ③ Changes         Before / After + Affected Projections
    ④ Decision        你是否同意这个理解（Accept / Reject / Clarify）
    ```
-6. **Clarify 是表单，不是聊天窗口**：`AI 述说不确定点 → 选项/输入 → 重新进入 Candidate → ChangeSet → Review`。Clarify 是让当前意图继续显影，不是开启聊天系统。
-7. **术语呈现纪律**：`explicit / inferred / unknown` 不得作为术语直接展示；呈现为"你明确提出 / AI 推断 / 尚未确定"。
-8. **禁止新增实体**：`VisualState` / `VisualProposal` / `VisualDecision` / `VisualReviewState` / 新 Baseline 实体 / 第二套状态机——一律禁止。
+9. **Clarify 是表单，不是聊天窗口**：`AI 述说不确定点 → 选项/输入 → 重新进入 Candidate → ChangeSet → Review`。Clarify 是让当前意图继续显影，不是开启聊天系统。
+10. **术语呈现纪律**：`explicit / inferred / unknown` 不得作为术语直接展示；呈现为"你明确提出 / AI 推断 / 尚未确定"。
+11. **禁止新增实体**：`VisualState` / `VisualProposal` / `VisualDecision` / `VisualReviewState` / 新 Baseline 实体 / 第二套状态机——一律禁止。
 
 ---
 

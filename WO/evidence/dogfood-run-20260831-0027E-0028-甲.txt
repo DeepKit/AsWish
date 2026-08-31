@@ -1,0 +1,87 @@
+=== Step 1: Scan Dogfood Project ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe scan d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual
+[scan] scanning d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual
+[scan] 2 files, type=delphi_vcl
+[scan] trees: function 1 / module 4 / view 5 / data 1
+[scan] done -> d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual\.AsWish\html\
+
+Exit code: 0
+
+=== Step 2: Submit Candidate User Intent and generate ChangeSet ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe changeset d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual func-001 function Add order processing validation
+[changeset] generated change set cs-func-001-01 for func-001 (function)
+  saved change set: d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual\.AsWish\llm\change-set-cs-func-001-01.yaml
+  saved prompt:     d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual\.AsWish\prompts\change-interpret-func-001.md
+
+Exit code: 0
+
+=== Step 3: Accept ChangeSet (Freezes Accepted Baseline B-0001) ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe changeset accept d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual Approved order validation change
+[changeset] ACCEPTED cs-func-001-01 -> recorded Decision dec-0001
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0001 (snapshot: 2026-08-31_121654-accepted-baseline-B-0001-dec-0001)
+
+Exit code: 0
+
+=== Step 4: List Accepted Baselines ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe baseline list d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual
+[baseline] found 1 Accepted Baseline(s):
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-08-31_121654-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 68f0db71fef076dab869bf07f927d665924c3eeb2c212146d9742d6efa668e0c | RelationHash: 962669708b1f3355c641425f8b0b7b518e4e9ad4ff03406a01864d9821231781
+    Lineage: ChangeSet=cs-func-001-01, Intent=func-001
+
+Exit code: 0
+
+=== Step 5: Verify Accepted Baseline B-0001 ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe baseline verify d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual B-0001
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+Exit code: 0
+
+=== Step 6: Render Visual Preview Wireframe ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe visual preview d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual
+[visual preview] rendered -> d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual\.AsWish\html\visual-preview.html
+
+Exit code: 0
+
+=== Step 7: Confirm Accepted Visual Baseline (Freezes B-0002) ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe visual confirm d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual Dogfood verified visual layout representation
+[visual confirm] created Accepted Visual Baseline B-0002 (decision: dec-0002, snapshot: 2026-08-31_121654-accepted-baseline-B-0002-dec-0002)
+
+Exit code: 0
+
+=== Step 8: List All Baselines (Functional + Visual) ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe baseline list d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual
+[baseline] found 2 Accepted Baseline(s):
+  - ID: B-0002 | Decision: dec-0002 | Snapshot: 2026-08-31_121654-accepted-baseline-B-0002-dec-0002 | Tree: view
+    ContentHash: 68f0db71fef076dab869bf07f927d665924c3eeb2c212146d9742d6efa668e0c | RelationHash: 962669708b1f3355c641425f8b0b7b518e4e9ad4ff03406a01864d9821231781
+    Renderer: wireframe-v1.0 | VisualBinding: html/visual-preview.html
+    Lineage: ChangeSet=cs-visual-baseline, Intent=root-view
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-08-31_121654-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 68f0db71fef076dab869bf07f927d665924c3eeb2c212146d9742d6efa668e0c | RelationHash: 962669708b1f3355c641425f8b0b7b518e4e9ad4ff03406a01864d9821231781
+    Lineage: ChangeSet=cs-func-001-01, Intent=func-001
+
+Exit code: 0
+
+=== Step 9: Verify Accepted Visual Baseline B-0002 ===
+Command: d:/_Progs/02Business/AsWish/cli/bin/AsWish.CLI.exe baseline verify d:/_Progs/02Business/AsWish/temp/dogfood-baseline-visual B-0002
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+Exit code: 0
+
+=== Verification of Generated Visual Preview File ===
+visual-preview.html size: 13805 bytes
+Preview snippet:
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>视觉规格基线预览（结构线框） - AsWish</title>
+  <style>
+    :root {
+      --bg-color: #ffffff; --text-color: #1e293b; --card-bg: #f8fafc; --card-border: #e2e8f0;
+      --choice-opt-bg: #eff6ff; --choice-opt-text: #1e40af; --choice-opt-border: #bfdbfe;
+      --choice-rec-border: #2563eb; --choice-regen-bg: #f5f3ff; --choice-regen-text: #6b21a8;
+      --choice-regen-border: #ddd6fe; --choice-input-bg: #ecfdf5; --choice-input-text: #065f46;
+      --choice-input-border: #a7f3d0; --choice-back-bg: #f8fafc; --choice-back-text: #475569;
+   ...

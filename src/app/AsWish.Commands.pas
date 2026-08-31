@@ -280,6 +280,89 @@ begin
       end;
     end;
   ACommands.RegisterCommand(LCmd);
+
+  // Accepted Baseline commands (WO-20260830-0027E)
+  LCmd := TShellCommand.Make('aswish.baseline.list',
+    LForm.ShellText('aswish.cmd.baselinelist', 'List Accepted Baselines...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
+  LCmd.Handler := procedure
+    var
+      LBaselines: TArray<TAsWishBaseline>;
+      LSb: TStringBuilder;
+      I: Integer;
+    begin
+      LBaselines := LForm.Controller.ListBaselines;
+      if Length(LBaselines) = 0 then
+      begin
+        ShowMessage('No Accepted Baselines found.');
+        Exit;
+      end;
+      LSb := TStringBuilder.Create;
+      try
+        LSb.AppendLine(Format('Found %d Accepted Baseline(s):', [Length(LBaselines)]));
+        for I := 0 to Length(LBaselines) - 1 do
+        begin
+          LSb.AppendLine(Format('[%s] Decision: %s | Snapshot: %s | Tree: %s',
+            [LBaselines[I].BaselineId, LBaselines[I].DecisionId, LBaselines[I].SnapshotName, LBaselines[I].TreeType]));
+          LSb.AppendLine(Format('    ContentHash: %s | Lineage CS: %s',
+            [Copy(LBaselines[I].ContentHash, 1, 12) + '...', LBaselines[I].Lineage.ChangeSetId]));
+        end;
+        ShowMessage(LSb.ToString);
+      finally
+        LSb.Free;
+      end;
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.baseline.verify',
+    LForm.ShellText('aswish.cmd.baselineverify', 'Verify Accepted Baseline...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
+  LCmd.Handler := procedure
+    var
+      LBaseId: string;
+      LValid: Boolean;
+    begin
+      LBaseId := '';
+      if not InputQuery('Verify Baseline', 'Baseline ID (e.g. B-0001):', LBaseId) or (LBaseId.Trim = '') then Exit;
+      LValid := LForm.Controller.VerifyBaseline(LBaseId.Trim);
+      if LValid then
+        ShowMessage(Format('Baseline %s verification PASSED. Content and Relation hashes match exactly.', [LBaseId.Trim]))
+      else
+        ShowMessage(Format('Baseline %s verification FAILED or not found.', [LBaseId.Trim]));
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  // Visual Baseline commands (WO-20260830-0028)
+  LCmd := TShellCommand.Make('aswish.visual.preview',
+    LForm.ShellText('aswish.cmd.visualpreview', 'Render Visual Preview (Wireframe)'));
+  LCmd.Category := 'View';
+  LCmd.RiskLevel := AsWish.UI.Types.rlLow;
+  LCmd.Handler := procedure
+    begin
+      LForm.Controller.RenderAll;
+      ShowMessage('Visual Preview rendered to .AsWish\html\visual-preview.html');
+    end;
+  ACommands.RegisterCommand(LCmd);
+
+  LCmd := TShellCommand.Make('aswish.visual.confirm',
+    LForm.ShellText('aswish.cmd.visualconfirm', 'Confirm Accepted Visual Baseline...'));
+  LCmd.Category := 'Spec';
+  LCmd.RiskLevel := AsWish.UI.Types.rlMedium;
+  LCmd.Handler := procedure
+    var
+      LRationale, LBaseId: string;
+    begin
+      LRationale := 'Human confirmed current View Spec representation.';
+      InputQuery('Confirm Visual Baseline', 'Rationale / Confirmation note:', LRationale);
+      LBaseId := LForm.Controller.ConfirmVisualBaseline(LRationale.Trim);
+      if LBaseId <> '' then
+        ShowMessage(Format('Accepted Visual Baseline %s successfully created and frozen.', [LBaseId]))
+      else
+        ShowMessage('Failed to create Visual Baseline (no View Spec nodes or project closed).');
+    end;
+  ACommands.RegisterCommand(LCmd);
 end;
 
 end.

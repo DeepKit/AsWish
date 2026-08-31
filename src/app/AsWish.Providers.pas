@@ -72,6 +72,11 @@ begin
           AController.RejectChangeSet(AChangeSetId, AParam)
         else if AAction = 'changeset-clarify' then
           AController.ClarifyChangeSet(AChangeSetId, AParam);
+      end,
+      // Visual Baseline confirmation -> Controller.ConfirmVisualBaseline
+      procedure(const ARationale: string)
+      begin
+        AController.ConfirmVisualBaseline(ARationale);
       end));
   AForm.RegisterInspectorProvider(
     TAsWishInspectorProvider.Create(

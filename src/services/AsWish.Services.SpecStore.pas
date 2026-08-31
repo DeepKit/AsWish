@@ -31,6 +31,7 @@ type
   public
     constructor Create;
     procedure Initialize(const AProjectPath: string);
+    procedure InitializeDirect(const ABasePath: string);
     procedure CreateDirectoryStructure;
     procedure WriteScanReport(AScanService: TAsWishScanService);
     procedure WriteProjectSpec(const AProjectName, AProjectType: string;
@@ -100,6 +101,11 @@ end;
 procedure TAsWishStoreService.Initialize(const AProjectPath: string);
 begin
   FBasePath := TPath.Combine(AProjectPath, '.AsWish');
+end;
+
+procedure TAsWishStoreService.InitializeDirect(const ABasePath: string);
+begin
+  FBasePath := ABasePath;
 end;
 
 procedure TAsWishStoreService.EnsureDirectory(const ARelPath: string);

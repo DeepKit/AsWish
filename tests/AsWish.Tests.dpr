@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Tests.dpr
 
   DUnitX console test runner for AsWish unit tests.
@@ -24,6 +24,9 @@ uses
   Test.AsWish.Render in 'Test.AsWish.Render.pas',
   Test.AsWish.Prompts in 'Test.AsWish.Prompts.pas',
   Test.AsWish.Controller in 'Test.AsWish.Controller.pas',
+  Test.AsWish.Snapshot in 'Test.AsWish.Snapshot.pas',
+  Test.AsWish.Baseline in 'Test.AsWish.Baseline.pas',
+  Test.AsWish.VisualBaseline in 'Test.AsWish.VisualBaseline.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Config in '..\src\core\AsWish.Config.pas',
@@ -41,6 +44,8 @@ uses
   AsWish.Services.Prompts in '..\src\services\AsWish.Services.Prompts.pas',
   AsWish.Services.Settings in '..\src\services\AsWish.Services.Settings.pas',
   AsWish.Services.LLM in '..\src\services\AsWish.Services.LLM.pas',
+  AsWish.Services.Snapshot in '..\src\services\AsWish.Services.Snapshot.pas',
+  AsWish.Services.Context in '..\src\services\AsWish.Services.Context.pas',
   AsWish.Controller in '..\src\controllers\AsWish.Controller.pas',
   AsWish.Services.CandidateIngest in '..\src\services\AsWish.Services.CandidateIngest.pas';
 

@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.TreeBuilder
 
   Verifies that a non-Delphi project receives a useful data projection and

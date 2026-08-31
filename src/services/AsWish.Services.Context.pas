@@ -24,6 +24,7 @@ type
     cskCodeStructure, // file listing / skeleton
     cskExistingTrees, // current tree YAML nodes
     cskDecisions,     // accepted decisions
+    cskVisualBaseline,// accepted visual baselines (WO-20260830-0028)
     cskIssues         // known issues
   );
 
@@ -44,13 +45,13 @@ type
   private
     FSources: TList<IContextSource>;
     FTokenBudget: Integer;
-    class function EstimateTokens(const AText: string): Integer; static;
   public
     constructor Create;
     destructor Destroy; override;
     procedure AddSource(const ASource: IContextSource);
     procedure SetTokenBudget(ATokenCount: Integer);
     function Assemble: string;
+    class function EstimateTokens(const AText: string): Integer; static;
     property TokenBudget: Integer read FTokenBudget write FTokenBudget;
   end;
 
@@ -71,6 +72,16 @@ type
     FDecisions: TList<TSpecDecision>;
   public
     constructor Create(ADecisions: TList<TSpecDecision>);
+    function Collect: TArray<TContextChunk>;
+  end;
+
+  TBaselineContextSource = class(TInterfacedObject, IContextSource)
+  private
+    FBaselines: TArray<TAsWishBaseline>;
+    FPriority: Integer;
+  public
+    constructor Create(const ABaselines: TArray<TAsWishBaseline>;
+      APriority: Integer = 2);
     function Collect: TArray<TContextChunk>;
   end;
 
@@ -216,7 +227,7 @@ begin
     LChunk.SourceKind := cskExistingTrees;
     LChunk.Label_ := FTreeLabel + ' (' + FNodes.Count.ToString + ' nodes)';
     LChunk.Content := LSb.ToString;
-    LChunk.TokenEstimate := Length(LChunk.Content) div 3;
+    LChunk.TokenEstimate := TContextAssembler.EstimateTokens(LChunk.Content);
     LChunk.Priority := FPriority;
     Result := TArray<TContextChunk>.Create(LChunk);
   finally
@@ -254,8 +265,48 @@ begin
     LChunk.SourceKind := cskDecisions;
     LChunk.Label_ := 'Accepted Decisions';
     LChunk.Content := LSb.ToString;
-    LChunk.TokenEstimate := Length(LChunk.Content) div 3;
+    LChunk.TokenEstimate := TContextAssembler.EstimateTokens(LChunk.Content);
     LChunk.Priority := 2; // high priority
+    Result := TArray<TContextChunk>.Create(LChunk);
+  finally
+    LSb.Free;
+  end;
+end;
+
+{ TBaselineContextSource }
+
+constructor TBaselineContextSource.Create(
+  const ABaselines: TArray<TAsWishBaseline>; APriority: Integer);
+begin
+  inherited Create;
+  FBaselines := ABaselines;
+  FPriority := APriority;
+end;
+
+function TBaselineContextSource.Collect: TArray<TContextChunk>;
+var
+  LSb: TStringBuilder;
+begin
+  if Length(FBaselines) = 0 then Exit(nil);
+
+  LSb := TStringBuilder.Create;
+  try
+    for var LB in FBaselines do
+    begin
+      LSb.AppendLine('- Baseline ' + LB.BaselineId + ' [Tree: ' + LB.TreeType + ']');
+      LSb.AppendLine('  Decision: ' + LB.DecisionId + ' | Snapshot: ' + LB.SnapshotName);
+      LSb.AppendLine('  ContentHash: ' + LB.ContentHash + ' | RelationHash: ' + LB.RelationHash);
+      if LB.RendererVersion <> '' then
+        LSb.AppendLine('  Renderer: ' + LB.RendererVersion + ' | VisualBinding: ' + LB.VisualBinding);
+      LSb.AppendLine('  Lineage: ChangeSet=' + LB.Lineage.ChangeSetId + ', Intent=' + LB.Lineage.IntentId);
+    end;
+
+    var LChunk: TContextChunk;
+    LChunk.SourceKind := cskVisualBaseline;
+    LChunk.Label_ := 'Accepted Baselines & Visual Baselines (' + Length(FBaselines).ToString + ')';
+    LChunk.Content := LSb.ToString;
+    LChunk.TokenEstimate := TContextAssembler.EstimateTokens(LChunk.Content);
+    LChunk.Priority := FPriority;
     Result := TArray<TContextChunk>.Create(LChunk);
   finally
     LSb.Free;
@@ -282,7 +333,7 @@ begin
   LChunk.SourceKind := FKind;
   LChunk.Label_ := FLabel_;
   LChunk.Content := FContent;
-  LChunk.TokenEstimate := Length(FContent) div 3;
+  LChunk.TokenEstimate := TContextAssembler.EstimateTokens(FContent);
   LChunk.Priority := FPriority;
   Result := TArray<TContextChunk>.Create(LChunk);
 end;

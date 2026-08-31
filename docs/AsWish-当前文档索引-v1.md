@@ -16,6 +16,8 @@
 | [`AsWish-用户上手说明-v1.md`](AsWish-用户上手说明-v1.md) | 首次运行、审阅、LLM 配置和 CLI 操作路径 |
 | [`AsWish-工程路线与Dogfood验收-v1.md`](AsWish-工程路线与Dogfood验收-v1.md) | 工程阶段、工单依赖顺序、双闸门（Engineering / Dogfood）验收与 First Closed Loop 验收 |
 | [`AsWish-统一选择交互标准-v1.md`](AsWish-统一选择交互标准-v1.md) | 0–9 统一选择交互协议（1–7 候选 / 8 重新生成 / 9 自然语言 / 0 返回）与语义色 Token，已冻结 |
+| [`AsWish-可见判断规范-OJP-v1.md`](AsWish-可见判断规范-OJP-v1.md) | 可见判断原则（Artifact / Observable / Judgment、VC-01～06、Difference 四层比较与插件系统） |
+| [`AsWish-双界面交互规范-DualSurface-v1.md`](AsWish-双界面交互规范-DualSurface-v1.md) | 双界面（Conversation 探索 / Decision 判断）切分与 0–9 的父框架 |
 | [`WO-20260830-0027D-前置工程勘察报告.md`](WO-20260830-0027D-前置工程勘察报告.md) | 0027D 前置工程勘察：GUI 现状盘点、0027A/B/C 能力映射与复用判断 |
 | [`../protocol/`](../protocol/) | JSON Schema、状态机、不变量和读者契约 |
 | [`理论确权清单-v1.md`](理论确权清单-v1.md) | 理论归因、DOI、主张强度与待确权项 |

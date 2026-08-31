@@ -902,27 +902,32 @@ Confirmed Baseline = "我们确认要的是什么"
 
 ### Visual Checkpoint Matrix v0
 
+> VC 编号以 [`AsWish-可见判断规范-OJP-v1.md`](AsWish-可见判断规范-OJP-v1.md) §十四为准（**6 个，覆盖历史 5 检查点版本**）。本节为速览，详细定义见 OJP。
+
 | Checkpoint | Human 要看到什么 | Human 要判断什么 | 数据来源 | 是否形成稳定基线 | 是否参与 Difference |
 |---|---|---|---|---|---|
 | **VC-01 Current State** | 当前真实结构（view-tree 结构线框） | "现在是什么？" | 现有 Spec / Render（**复用**） | 否 | 否 |
-| **VC-02 Confirmed Baseline** | 已确认目标（与 VC-01 可能同图、语义不同） | "这就是我要的吗？" | Confirmed Understanding（经 Decision 固化） | **是**（固定 `renderer_version` 保证可复现） | **是**（作为比较基准） |
-| **VC-03 Implementation Result** | Agent 实际结果（截图 / 实际页面状态） | "做出来了吗？做成什么样？" | Implementation Evidence（**采集**，非 Render 生成） | 可复现保存 | **是** |
-| **VC-04 Difference** | Baseline vs Result 的可见变化 | "哪里不同？" | VC-02 vs VC-03 **比较**，不生成新图 | 否 | **是** |
-| **VC-05 Revised Result** | 修改后的结果 | "这次对了吗？" | Revision 重跑 VC-02 / 03 / 04 | 是 | 再比较 |
+| **VC-02 Problem Manifestation** | 当前结构 + 问题标记（fog / unknown / 断口） | "这是不是我要解决的问题？" | VC-01 + Overlay（**不独立 SVG**） | 否 | 否 |
+| **VC-03 Confirmed Baseline** | 已确认目标（与 VC-01 可能同图、语义不同） | "这就是我要的吗？" | Confirmed Understanding（经 Decision 固化） | **是**（固定 `renderer_version` 保证可复现） | **是**（作为比较基准） |
+| **VC-04 Implementation Result** | Agent 实际结果（截图 / 实际页面状态） | "做出来了吗？做成什么样？" | Implementation Evidence（**采集**，非 Render 生成） | 可复现保存 | **是** |
+| **VC-05 Difference** | Baseline vs Result 的可见变化 | "哪里不同？" | VC-03 vs VC-04 **比较**，不生成新图 | 否 | **是** |
+| **VC-06 Revised Result** | 修改后的结果 | "这次对了吗？" | Revision 重跑 VC-03 / 04 / 05 | 是 | 再比较 |
 
+> Difference 的结构比较按**四层**（0 功能 / 1 实体 / 2 相对位置 / 3 配色，挂 OCGS），0/1 层平台无关用通用比较器、2/3 层用平台插件；详见 OJP §十九。
 > **不机械要求每个 checkpoint 新生成独立 SVG**。生成策略见下方结论；承载机制只复用现有 `Render` / `Snapshot` / `SpecStore`，**不新增** `VisualState` / `VisualObject` / 新 Baseline 实体。
 
 ### 生成策略结论
 
 ```text
 复用现有 Render             → VC-01 Current State
-复用现有 Snapshot + 视觉绑定  → VC-02 Confirmed Baseline（不新建 Baseline 实体）
-必须新增采集能力             → VC-03 Implementation Result（Render 生成不了证据）
-只比较，不生成新视觉          → VC-04 Difference
-零新机制，整轮复用           → VC-05 Revised Result
+复用现有 Render + Overlay   → VC-02 Problem Manifestation（不独立 SVG）
+复用现有 Snapshot + 视觉绑定  → VC-03 Confirmed Baseline（不新建 Baseline 实体）
+必须新增采集能力             → VC-04 Implementation Result（Render 生成不了证据）
+只比较，不生成新视觉          → VC-05 Difference（四层比较 0/1 通用、2/3 插件）
+零新机制，整轮复用           → VC-06 Revised Result
 ```
 
-> 因此**不需要**"每个步骤一张新 SVG"。真正需要新增能力的只有 VC-03（采集）与 VC-04（比较）两处。
+> 因此**不需要**"每个步骤一张新 SVG"。真正需要新增能力的只有 VC-04（采集）与 VC-05（比较）两处。
 
 ---
 

@@ -19,7 +19,9 @@
 | **协议与工作空间规范** | [`SPEC.md`](SPEC.md) + [`protocol/`](protocol/) | `.AsWish/` 工作空间规范、JSON Schemas、状态机、不变量（`invariants.md`）、读者契约与协议治理（`protocol/GOVERNANCE.md`） | 协议维护组 |
 | **产品功能蓝图** | [`docs/AsWish-产品功能与愿景蓝图-v1.md`](docs/AsWish-产品功能与愿景蓝图-v1.md) | 产品功能架构、七环闭环、所见即所得工程原则与 SVG / Visual Checkpoint Matrix；身份问题以 PRODUCT-IDENTITY 为准 | 产品负责人 |
 | **工程路线与 Dogfood 验收** | [`docs/AsWish-工程路线与Dogfood验收-v1.md`](docs/AsWish-工程路线与Dogfood验收-v1.md) | 工程阶段（First Contact → First Closed Loop）、工单依赖顺序、双闸门（Engineering Green / Dogfood Green）验收、Dogfood 任务原则与待裁定冲突登记；各票原始需求与 AC 仍以 `WO/` 工单原文为准 | 主控 |
-| **统一选择交互标准** | [`docs/AsWish-统一选择交互标准-v1.md`](docs/AsWish-统一选择交互标准-v1.md) | 0–9 Universal Choice 交互协议（1–7 候选 / 8 重新生成 / 9 自然语言 / 0 返回）、语义色 Token 与 Decision Semantics 分层；**已冻结，不再反复讨论** | 产品负责人 |
+| **统一选择交互标准** | [`docs/AsWish-统一选择交互标准-v1.md`](docs/AsWish-统一选择交互标准-v1.md) | 0–9 Universal Choice 交互协议（1–7 候选 / 8 重新生成 / 9 自然语言 / 0 返回）、语义色 Token 与 Decision Semantics 分层；**已冻结，不再反复讨论**；为双界面规范的子文档 | 产品负责人 |
+| **可见判断规范（OJP）** | [`docs/AsWish-可见判断规范-OJP-v1.md`](docs/AsWish-可见判断规范-OJP-v1.md) | 可见判断原则：Artifact / Observable / Judgment 边界、VC-01～06、Difference 四层比较与插件系统、OJP Acceptance；与双界面规范正交 | 产品负责人 |
+| **双界面交互规范** | [`docs/AsWish-双界面交互规范-DualSurface-v1.md`](docs/AsWish-双界面交互规范-DualSurface-v1.md) | 双界面（Conversation 探索 / Decision 判断）切分、0–9 的父框架、Canonical Boundary；0–9 语义以子规范为准 | 产品负责人 |
 | **CTF 工程方法** | [`docs/CTF.md`](docs/CTF.md) | CTF 方法在 AsWish 中的工程实现解释；理论主张强度以 NOTICE / 确权清单为准 | 架构师 |
 | **用户操作与快速上手** | [`docs/AsWish-用户上手说明-v1.md`](docs/AsWish-用户上手说明-v1.md) | 桌面端首次运行、四投影审阅、LLM 配置与 CLI 运行路径 | 开发组 |
 | **文档全景索引** | [`docs/AsWish-当前文档索引-v1.md`](docs/AsWish-当前文档索引-v1.md) | 全仓中文文档的导航定位与历史文档状态标识 | 文档维护者 |

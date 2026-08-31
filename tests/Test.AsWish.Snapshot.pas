@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.Snapshot
 
   DUnitX tests for AsWish.Services.Snapshot -- full-tree snapshot, listing

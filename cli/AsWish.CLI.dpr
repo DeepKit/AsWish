@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.CLI -- headless command-line entry (Phase 5 B-P0).
 
   Reuses the same src/ services as the desktop app (no DeepShell/GUI
@@ -36,6 +36,7 @@ uses
   AsWish.Services.Prompts in '..\src\services\AsWish.Services.Prompts.pas',
   AsWish.Services.Decisions in '..\src\services\AsWish.Services.Decisions.pas',
   AsWish.Services.CandidateIngest in '..\src\services\AsWish.Services.CandidateIngest.pas',
+  AsWish.Services.Snapshot in '..\src\services\AsWish.Services.Snapshot.pas',
   AsWish.Models in '..\src\models\AsWish.Models.pas',
   AsWish.Hash in '..\src\core\AsWish.Hash.pas',
   AsWish.Yaml.Writer in '..\src\core\AsWish.Yaml.Writer.pas',
@@ -793,12 +794,23 @@ begin
         LReport.Free;
       end;
 
+      // WO-20260830-0027E: Automatically freeze Accepted Baseline on Accept
+      var LSnap := TAsWishSnapshotService.Create(LStore);
+      var LBaseline: TAsWishBaseline;
+      var LBaseId: string;
+      try
+        LBaseId := LSnap.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, LBaseline);
+      finally
+        LSnap.Free;
+      end;
+
       if GJsonOutput then
       begin
         WriteJsonHeader('changeset_accept');
         WriteJsonKV('status', 'ok');
         WriteJsonKV('decision_id', LDecId);
         WriteJsonKV('change_set_id', LCS.Id);
+        WriteJsonKV('baseline_id', LBaseId);
         WriteJsonKVInt('updated_nodes', LStats.Merged);
         WriteJsonFooter;
       end
@@ -806,6 +818,7 @@ begin
       begin
         Writeln(Format('[changeset] ACCEPTED %s -> recorded Decision %s', [LCS.Id, LDecId]));
         Writeln(Format('  applied %d changes to Canonical Spec and validated', [LStats.Merged]));
+        Writeln(Format('  frozen Accepted Baseline %s (snapshot: %s)', [LBaseId, LBaseline.SnapshotName]));
       end;
     finally
       LData.Free;
@@ -1204,6 +1217,188 @@ begin
   end;
 end;
 
+procedure RunBaselineList(const ADir: string);
+var
+  LStore: TAsWishStoreService;
+  LSnap: TAsWishSnapshotService;
+  LBaselines: TArray<TAsWishBaseline>;
+  I: Integer;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[baseline] error: no .AsWish directory');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(ADir);
+    LSnap := TAsWishSnapshotService.Create(LStore);
+    try
+      LBaselines := LSnap.ListBaselines;
+      if Length(LBaselines) = 0 then
+      begin
+        Writeln('[baseline] no Accepted Baselines found');
+        Exit;
+      end;
+      Writeln(Format('[baseline] found %d Accepted Baseline(s):', [Length(LBaselines)]));
+      for I := 0 to Length(LBaselines) - 1 do
+      begin
+        Writeln(Format('  - ID: %s | Decision: %s | Snapshot: %s | Tree: %s',
+          [LBaselines[I].BaselineId, LBaselines[I].DecisionId, LBaselines[I].SnapshotName, LBaselines[I].TreeType]));
+        Writeln(Format('    ContentHash: %s | RelationHash: %s',
+          [LBaselines[I].ContentHash, LBaselines[I].RelationHash]));
+        if LBaselines[I].RendererVersion <> '' then
+          Writeln(Format('    Renderer: %s | VisualBinding: %s',
+            [LBaselines[I].RendererVersion, LBaselines[I].VisualBinding]));
+        Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s',
+          [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId]));
+      end;
+    finally
+      LSnap.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
+procedure RunBaselineVerify(const ADir, ABaselineId: string);
+var
+  LStore: TAsWishStoreService;
+  LSnap: TAsWishSnapshotService;
+  LValid: Boolean;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[baseline] error: no .AsWish directory');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(ADir);
+    LSnap := TAsWishSnapshotService.Create(LStore);
+    try
+      LValid := LSnap.VerifyBaseline(ABaselineId);
+      if LValid then
+        Writeln(Format('[baseline verify] PASS: %s integrity verified (content & relation hashes match)', [ABaselineId]))
+      else
+      begin
+        Writeln(Format('[baseline verify] FAIL: %s verification failed or baseline not found', [ABaselineId]));
+        Halt(1);
+      end;
+    finally
+      LSnap.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
+procedure RunVisualPreview(const ADir: string);
+var
+  LProject: TAsWishProjectService;
+  LStore: TAsWishStoreService;
+  LRender: TAsWishRenderService;
+  LView: TList<TSpecNode>;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[visual] error: no .AsWish directory');
+    Halt(1);
+  end;
+  LProject := TAsWishProjectService.Create;
+  LStore := TAsWishStoreService.Create;
+  LRender := TAsWishRenderService.Create;
+  LView := nil;
+  try
+    LProject.OpenProject(ADir);
+    LStore.Initialize(ADir);
+    LRender.Initialize(LProject.AsWishPath);
+    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
+    LRender.RenderVisualPreview(LView, LProject.ProjectName);
+    Writeln('[visual preview] rendered -> ' + TPath.Combine(LProject.AsWishPath, 'html\visual-preview.html'));
+  finally
+    LView.Free;
+    LRender.Free;
+    LStore.Free;
+    LProject.Free;
+  end;
+end;
+
+procedure RunVisualConfirm(const ADir, ARationale: string);
+var
+  LStore: TAsWishStoreService;
+  LDecService: TAsWishDecisionsService;
+  LSnap: TAsWishSnapshotService;
+  LFunc, LMod, LView, LData: TList<TSpecNode>;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LBaseline: TAsWishBaseline;
+  LBaseId, LDecId: string;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[visual] error: no .AsWish directory');
+    Halt(1);
+  end;
+  LStore := TAsWishStoreService.Create;
+  LDecService := TAsWishDecisionsService.Create;
+  LSnap := TAsWishSnapshotService.Create(LStore);
+  LFunc := nil; LMod := nil; LView := nil; LData := nil;
+  try
+    LStore.Initialize(ADir);
+    LDecService.Initialize(TPath.Combine(ADir, '.AsWish'));
+    LDecService.Load;
+
+    LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
+    LMod := LStore.ReadTreeFile('trees/module-tree.yaml');
+    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
+    if TFile.Exists(TPath.Combine(LStore.BasePath, 'trees\data-tree.yaml')) then
+      LData := LStore.ReadTreeFile('trees/data-tree.yaml');
+
+    if (LView = nil) or (LView.Count = 0) then
+    begin
+      Writeln('[visual confirm] error: no View Spec nodes to confirm');
+      Halt(1);
+    end;
+
+    var LViewIds: TList<string> := TList<string>.Create;
+    try
+      for var LN in LView do
+        LViewIds.Add(LN.Id);
+
+      var LRat := ARationale;
+      if LRat = '' then
+        LRat := 'CLI visual confirm.';
+
+      LDecId := LDecService.AddDecision(dtConfirm,
+        'Accepted Visual Baseline for View Spec',
+        'Human confirmed current View Spec representation (wireframe-v1.0) as Accepted Visual Baseline.',
+        LRat, LViewIds.ToArray);
+      LDecService.AcceptDecision(LDecId);
+      LDecService.Save;
+      LDec := LDecService.FindById(LDecId);
+    finally
+      LViewIds.Free;
+    end;
+
+    LCS := TChangeSet.CreateNew('cs-visual-baseline', 'root-view', ttView, 'Confirm Visual Baseline', 'human');
+
+    LBaseId := LSnap.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData,
+      LBaseline, 'wireframe-v1.0', 'html/visual-preview.html');
+
+    Writeln(Format('[visual confirm] created Accepted Visual Baseline %s (decision: %s, snapshot: %s)',
+      [LBaseId, LDecId, LBaseline.SnapshotName]));
+  finally
+    LData.Free;
+    LView.Free;
+    LMod.Free;
+    LFunc.Free;
+    LSnap.Free;
+    LDecService.Free;
+    LStore.Free;
+  end;
+end;
+
 var
   LCommand, LDir: string;
 begin
@@ -1222,6 +1417,11 @@ begin
     Writeln('  bundle apply <dir> <id> <accept|reject>');
     Writeln('  ingest <dir> <file.yaml>  validate + merge LLM candidate nodes');
     Writeln('  intent <dir> <id> <tree> <text> record candidate user intent');
+    Writeln('  intent list <dir>         list candidate intents');
+    Writeln('  baseline list <dir>       list Accepted Baselines');
+    Writeln('  baseline verify <dir> <id> verify integrity of Accepted Baseline');
+    Writeln('  visual preview <dir>      render Visual Preview wireframe');
+    Writeln('  visual confirm <dir> [txt] confirm Accepted Visual Baseline');
     Halt(2);
   end;
 
@@ -1363,6 +1563,56 @@ begin
         Halt(2);
       end;
       RunChangeSet(LDir, ParamStr(3), ParamStr(4), ParamStr(5));
+    end;
+  end
+  else if LCommand = 'baseline' then
+  begin
+    var LSub := LowerCase(ParamStr(2));
+    if LSub = 'list' then
+    begin
+      RunBaselineList(ParamStr(3));
+    end
+    else if LowerCase(ParamStr(3)) = 'list' then
+    begin
+      RunBaselineList(ParamStr(2));
+    end
+    else if LSub = 'verify' then
+    begin
+      if ParamCount < 4 then
+      begin
+        Writeln('AsWish.CLI baseline verify <project-dir> <baseline-id>');
+        Halt(2);
+      end;
+      RunBaselineVerify(ParamStr(3), ParamStr(4));
+    end
+    else
+    begin
+      Writeln('AsWish.CLI baseline list <project-dir>');
+      Writeln('  or: AsWish.CLI baseline verify <project-dir> <baseline-id>');
+      Halt(2);
+    end;
+  end
+  else if LCommand = 'visual' then
+  begin
+    var LSub := LowerCase(ParamStr(2));
+    if LSub = 'preview' then
+    begin
+      RunVisualPreview(ParamStr(3));
+    end
+    else if LowerCase(ParamStr(3)) = 'preview' then
+    begin
+      RunVisualPreview(ParamStr(2));
+    end
+    else if LSub = 'confirm' then
+    begin
+      var LRationale := ParamStr(4);
+      RunVisualConfirm(ParamStr(3), LRationale);
+    end
+    else
+    begin
+      Writeln('AsWish.CLI visual preview <project-dir>');
+      Writeln('  or: AsWish.CLI visual confirm <project-dir> [rationale]');
+      Halt(2);
     end;
   end
   else

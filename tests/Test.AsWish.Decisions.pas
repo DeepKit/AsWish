@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.Decisions
 
   DUnitX tests for AsWish.Services.Decisions — decision persistence and

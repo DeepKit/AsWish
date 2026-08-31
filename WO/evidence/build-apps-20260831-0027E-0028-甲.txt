@@ -1,0 +1,18 @@
+=== BUILD tests/_build_tests.bat in d:/_Progs/02Business/AsWish/tests ===
+
+'tests' 不是内部或外部命令，也不是可运行的程序
+或批处理文件。
+Exit code: 1
+
+=== BUILD cli/_build_cli.bat in d:/_Progs/02Business/AsWish/cli ===
+
+'cli' 不是内部或外部命令，也不是可运行的程序
+或批处理文件。
+Exit code: 1
+
+=== BUILD _build.bat in d:/_Progs/02Business/AsWish ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+18120 lines, 1.91 seconds, 6482620 bytes code, 658888 bytes data.
+
+Exit code: 0

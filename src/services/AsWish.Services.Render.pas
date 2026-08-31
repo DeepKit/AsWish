@@ -70,6 +70,10 @@ type
     ///  implementing 0-9 universal choice protocol and decision actions.</summary>
     procedure RenderChangeSetReviewPage(const AChangeSet: TChangeSet;
       ANodes: TList<TSpecNode>; const AProjectName: string = '');
+    /// <summary>Render deterministic View Spec Visual Preview (visual-preview.html)
+    ///  representing structural wireframes (Page -> Section -> Component -> Hierarchy, WO-20260830-0028).</summary>
+    procedure RenderVisualPreview(AViewNodes: TList<TSpecNode>;
+      const AProjectName: string; const ARendererVersion: string = 'wireframe-v1.0');
     /// <summary>Compute health metrics over 4 trees (+ optional issues).
     /// nil lists are treated as empty. Pure — no IO.</summary>
     class function ComputeHealthMetrics(AFunc, AModule, AView, AData: TList<TSpecNode>;
@@ -214,6 +218,17 @@ begin
     '    .status-success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }' + sLineBreak +
     '    .status-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }' + sLineBreak +
     '    .status-info { background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc; }' + sLineBreak +
+    '    .wireframe-canvas { display: flex; flex-direction: column; gap: 1.5em; }' + sLineBreak +
+    '    .wf-box { background: var(--bg-color); transition: all 0.2s ease; }' + sLineBreak +
+    '    .wf-page { border: 2px solid #334155; border-radius: 8px; padding: 1.2em; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }' + sLineBreak +
+    '    .wf-section { border: 2px dashed #64748b; border-radius: 6px; padding: 1em; margin: 0.8em 0; background: var(--card-bg); }' + sLineBreak +
+    '    .wf-component { border: 1.5px solid #94a3b8; border-radius: 4px; padding: 0.6em 0.8em; margin: 0.5em 0; }' + sLineBreak +
+    '    .wf-header { display: flex; align-items: center; gap: 0.6em; margin-bottom: 0.4em; }' + sLineBreak +
+    '    .wf-kind-badge { font-size: 0.75em; text-transform: uppercase; font-weight: bold; background: #e2e8f0; color: #334155; padding: 0.15em 0.4em; border-radius: 3px; }' + sLineBreak +
+    '    .wf-title { font-size: 1.05em; color: var(--text-color); }' + sLineBreak +
+    '    .wf-id { font-size: 0.85em; color: #64748b; font-family: monospace; }' + sLineBreak +
+    '    .wf-summary { font-size: 0.9em; color: #475569; margin: 0.3em 0; }' + sLineBreak +
+    '    .wf-children { margin-top: 0.8em; padding-left: 1.2em; border-left: 2px solid #cbd5e1; display: flex; flex-direction: column; gap: 0.6em; }' + sLineBreak +
     '    footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid var(--card-border);' + sLineBreak +
     '             color: #999; font-size: 0.85em; }' + sLineBreak +
     '  </style>' + sLineBreak +
@@ -382,6 +397,8 @@ begin
     LSb.AppendLine('  <li><a href="bundles.html">Bundles</a></li>');
     LSb.AppendLine('  <li><a href="changeset-review.html"><strong>' +
       T('ChangeSet Review (I said &rarr; AI understood &rarr; Decision)', '意图审阅与裁决（我说 &rarr; AI 理解 &rarr; 裁决）') + '</strong></a></li>');
+    LSb.AppendLine('  <li><a href="visual-preview.html"><strong>' +
+      T('Visual Preview (Wireframe / UI Representation)', '视觉规格基线预览（结构线框）') + '</strong></a></li>');
     LSb.AppendLine('  <li><a href="function-tree.html">Function Tree</a></li>');
     LSb.AppendLine('  <li><a href="module-tree.html">Module Tree</a></li>');
     LSb.AppendLine('  <li><a href="view-tree.html">View Tree</a></li>');
@@ -1690,6 +1707,210 @@ begin
     ScanRefs(AData);
   finally
     LAllIds.Free;
+  end;
+end;
+
+procedure TAsWishRenderService.RenderVisualPreview(
+  AViewNodes: TList<TSpecNode>; const AProjectName: string;
+  const ARendererVersion: string);
+var
+  LSb: TStringBuilder;
+  LVersion: string;
+
+  procedure RenderNodeWireframe(const ANode: TSpecNode; ALevel: Integer);
+  var
+    LChildren: TList<TSpecNode>;
+    LKindLower: string;
+    LBoxClass: string;
+  begin
+    LKindLower := LowerCase(ANode.Kind);
+    if (LKindLower = 'page') or (LKindLower = 'form') or (LKindLower = 'window') then
+      LBoxClass := 'wf-page'
+    else if (LKindLower = 'section') or (LKindLower = 'container') or (LKindLower = 'panel') or (LKindLower = 'group') then
+      LBoxClass := 'wf-section'
+    else
+      LBoxClass := 'wf-component';
+
+    LSb.AppendLine('<div class="wf-box ' + LBoxClass + '">');
+    LSb.AppendLine('  <div class="wf-header">');
+    LSb.AppendLine('    <span class="wf-kind-badge">' + HtmlEscape(ANode.Kind) + '</span>');
+    LSb.AppendLine('    <strong class="wf-title">' + HtmlEscape(ANode.Title) + '</strong>');
+    LSb.AppendLine('    <code class="wf-id">' + HtmlEscape(ANode.Id) + '</code>');
+    LSb.AppendLine('    <span class="badge">' + HtmlEscape(TSpecEnums.ConfidenceToStr(ANode.Confidence)) + '</span>');
+    LSb.AppendLine('  </div>');
+
+    if ANode.Summary <> '' then
+      LSb.AppendLine('  <div class="wf-summary">' + HtmlEscape(ANode.Summary) + '</div>');
+
+    // Find and render children
+    LChildren := TList<TSpecNode>.Create;
+    try
+      if AViewNodes <> nil then
+        for var LN in AViewNodes do
+          if LN.ParentId = ANode.Id then
+            LChildren.Add(LN);
+
+      if LChildren.Count > 0 then
+      begin
+        LSb.AppendLine('  <div class="wf-children">');
+        for var LChild in LChildren do
+          RenderNodeWireframe(LChild, ALevel + 1);
+        LSb.AppendLine('  </div>');
+      end;
+    finally
+      LChildren.Free;
+    end;
+
+    LSb.AppendLine('</div>');
+  end;
+
+var
+  LRoots: TList<TSpecNode>;
+begin
+  LVersion := ARendererVersion;
+  if LVersion = '' then LVersion := 'wireframe-v1.0';
+
+  LSb := TStringBuilder.Create;
+  try
+    LSb.Append(PageHeader(T('Visual Spec Preview (Wireframe)', '视觉规格基线预览（结构线框）')));
+
+    // Top Navigation & Renderer Meta
+    LSb.AppendLine('<div style="margin-bottom: 1.5em; display: flex; justify-content: space-between; align-items: center;">');
+    LSb.AppendLine('  <a href="index.html">&#8592; ' + T('Back to Project Dashboard', '返回项目概览') + '</a>');
+    LSb.AppendLine('  <div>');
+    LSb.AppendLine('    <span class="badge badge-ui">' + T('Renderer: ', '渲染引擎：') + HtmlEscape(LVersion) + '</span>');
+    LSb.AppendLine('    <span class="badge badge-doc">' + T('View Spec Representation', '视图规格表现层') + '</span>');
+    LSb.AppendLine('  </div>');
+    LSb.AppendLine('</div>');
+
+    LSb.AppendLine('<h1>' + T('Visual Specification Preview (Wireframe Baseline)', '视觉规格基线预览（结构线框）') + '</h1>');
+    LSb.AppendLine('<p style="color: #64748b; margin-top: -0.5em;">' +
+      T('Deterministic structural representation of View Spec (Page &rarr; Section &rarr; Component &rarr; Hierarchy).',
+        '根据 View Spec 确定性生成的结构线框（页面 &rarr; 区域 &rarr; 组件 &rarr; 层级结构）。') + '</p>');
+
+    // Visual Preview Canvas / Blueprint Container
+    LSb.AppendLine('<div class="card card-changes" style="background: #fafbfc; border: 1px solid #cbd5e1; padding: 1.5em;">');
+
+    if (AViewNodes = nil) or (AViewNodes.Count = 0) then
+    begin
+      LSb.AppendLine('  <div style="text-align: center; padding: 3em; color: #94a3b8;">');
+      LSb.AppendLine('    <p style="font-size: 1.2em;">' + T('No View Spec nodes available.', '当前视图规格树为空。') + '</p>');
+      LSb.AppendLine('    <p>' + T('Run project scan or ingest View nodes to preview wireframes.', '运行项目扫描或录入视图节点以生成结构线框。') + '</p>');
+      LSb.AppendLine('  </div>');
+    end
+    else
+    begin
+      // Identify root nodes (nodes whose parent_id is empty or not in view node list)
+      LRoots := TList<TSpecNode>.Create;
+      try
+        for var LNode in AViewNodes do
+        begin
+          var LHasParentInTree := False;
+          if LNode.ParentId <> '' then
+            for var LOther in AViewNodes do
+              if LOther.Id = LNode.ParentId then
+              begin
+                LHasParentInTree := True;
+                Break;
+              end;
+
+          if not LHasParentInTree then
+            LRoots.Add(LNode);
+        end;
+
+        LSb.AppendLine('  <div class="wireframe-canvas">');
+        for var LRoot in LRoots do
+          RenderNodeWireframe(LRoot, 0);
+        LSb.AppendLine('  </div>');
+      finally
+        LRoots.Free;
+      end;
+    end;
+
+    LSb.AppendLine('</div>');
+
+    // 0-9 Universal Choice Actions
+    LSb.AppendLine('<div class="card card-decision" style="margin-top: 1.5em;">');
+    LSb.AppendLine('  <h2>' + T('Visual Baseline Actions', '视觉规格基线操作') + '</h2>');
+    LSb.AppendLine('  <p>' + T('Confirm this View Spec representation as an Accepted Visual Baseline, or propose revisions:',
+      '将此视图表现确认为正式视觉规格基线（Accepted Visual Baseline），或提出自然语言修订：') + '</p>');
+
+    LSb.AppendLine('  <div class="choice-container">');
+    LSb.AppendLine('    <button id="btn-1" class="btn-choice btn-choice-opt btn-choice-rec" onclick="doConfirmVisualBaseline()">');
+    LSb.AppendLine('      <span class="choice-key">[1]</span> ' + T('Confirm as Accepted Visual Baseline', '确认为正式视觉规格基线 (Confirm)') + ' <span class="rec-badge">' + T('Recommended', '推荐') + '</span>');
+    LSb.AppendLine('    </button>');
+
+    LSb.AppendLine('    <button id="btn-9" class="btn-choice btn-choice-input" onclick="toggleRevisionForm()">');
+    LSb.AppendLine('      <span class="choice-key">[9]</span> ' + T('Propose Visual Revision in Natural Language', '提出自然语言修改意图 (Propose Revision)') + '');
+    LSb.AppendLine('    </button>');
+
+    LSb.AppendLine('    <button id="btn-0" class="btn-choice btn-choice-back" onclick="doBack()">');
+    LSb.AppendLine('      <span class="choice-key">[0]</span> ' + T('Back to Dashboard', '返回上一步 (Back)') + '');
+    LSb.AppendLine('    </button>');
+    LSb.AppendLine('  </div>');
+
+    // Revision inline form
+    LSb.AppendLine('  <div id="revision-panel" class="form-panel" style="display:none;">');
+    LSb.AppendLine('    <h3>' + T('Propose Visual Revision', '提出视图修改意向') + '</h3>');
+    LSb.AppendLine('    <textarea id="visual-revision-input" class="form-textarea" placeholder="' +
+      T('e.g., Move back button to bottom panel, add search bar in header...', '例如：将返回按钮移到底部面板，在顶部导航栏增加搜索框...') + '"></textarea>');
+    LSb.AppendLine('    <div class="form-actions">');
+    LSb.AppendLine('      <button class="btn-primary" onclick="submitVisualRevision()">' + T('Submit Revision Intent', '提交修改意图') + '</button>');
+    LSb.AppendLine('      <button class="btn-secondary" onclick="toggleRevisionForm()">' + T('Cancel', '取消') + '</button>');
+    LSb.AppendLine('    </div>');
+    LSb.AppendLine('  </div>');
+
+    LSb.AppendLine('  <div id="status-banner" class="status-banner" style="display:none;"></div>');
+    LSb.AppendLine('</div>');
+
+    // JavaScript Bridge & Keyboard Shortcuts
+    LSb.AppendLine('<script>');
+    LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('  function post(msg) {');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      try { window.chrome.webview.postMessage(JSON.stringify(msg)); }');
+    LSb.AppendLine('      catch (e) { console.error(e); }');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("Action: " + msg.action + " (WebView2 bridge offline)");');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('  function doConfirmVisualBaseline() {');
+    LSb.AppendLine('    post({ action: "visual-confirm", rationale: "Confirmed via Visual Preview UI" });');
+    LSb.AppendLine('    showBanner("Visual baseline confirmed and frozen.", "success");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('  function toggleRevisionForm() {');
+    LSb.AppendLine('    var p = document.getElementById("revision-panel");');
+    LSb.AppendLine('    p.style.display = (p.style.display === "none") ? "block" : "none";');
+    LSb.AppendLine('    if (p.style.display === "block") { document.getElementById("visual-revision-input").focus(); }');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('  function submitVisualRevision() {');
+    LSb.AppendLine('    var val = document.getElementById("visual-revision-input").value.trim();');
+    LSb.AppendLine('    if (!val) { alert("Please enter revision intent."); return; }');
+    LSb.AppendLine('    post({ action: "changeset-submit", node_id: "root-view", intent_text: val });');
+    LSb.AppendLine('    showBanner("Submitted visual revision intent. Interpreting...", "info");');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('  function doBack() { window.location.href = "index.html"; }');
+    LSb.AppendLine('  function showBanner(text, type) {');
+    LSb.AppendLine('    var b = document.getElementById("status-banner");');
+    LSb.AppendLine('    b.className = "status-banner status-" + type;');
+    LSb.AppendLine('    b.innerHTML = text;');
+    LSb.AppendLine('    b.style.display = "block";');
+    LSb.AppendLine('  }');
+    LSb.AppendLine('  document.addEventListener("keydown", function(e) {');
+    LSb.AppendLine('    var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : "";');
+    LSb.AppendLine('    if (tag === "INPUT" || tag === "TEXTAREA") return;');
+    LSb.AppendLine('    if (e.key === "1") doConfirmVisualBaseline();');
+    LSb.AppendLine('    else if (e.key === "9") toggleRevisionForm();');
+    LSb.AppendLine('    else if (e.key === "0") doBack();');
+    LSb.AppendLine('  });');
+    LSb.AppendLine('</script>');
+
+    LSb.Append(PageFooter);
+
+    TFile.WriteAllText(TPath.Combine(FBasePath, 'visual-preview.html'),
+      LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
   end;
 end;
 

@@ -25,6 +25,7 @@ uses
   AsWish.Services.LLM,
   AsWish.Services.Settings,
   AsWish.Services.CandidateIngest,
+  AsWish.Services.Snapshot,
   AsWish.Models;
 
 type
@@ -39,6 +40,7 @@ type
     FDecisions: TAsWishDecisionsService;
     FLLM: TAsWishLLMService;
     FSettings: TAsWishSettingsService;
+    FSnapshot: TAsWishSnapshotService;
     FStatus: IShellStatusManager;
     FContext: IShellContextManager;
     FBus: IShellEventBus;
@@ -110,6 +112,12 @@ type
       const AClarificationText: string): Boolean;
     function ListCandidateIntents: TArray<TCandidateIntent>;
 
+    // Accepted Baseline & Visual Baseline (WO-20260830-0027E, WO-20260830-0028)
+    function VerifyBaseline(const ABaselineId: string): Boolean;
+    function ListBaselines: TArray<TAsWishBaseline>;
+    function ConfirmVisualBaseline(const ARationale: string = ''): string;
+
+    destructor Destroy; override;
     function IsProjectOpen: Boolean;
     property ProjectService: TAsWishProjectService read FProjectService;
     property ScanService: TAsWishScanService read FScanService;
@@ -117,6 +125,7 @@ type
     property Decisions: TAsWishDecisionsService read FDecisions;
     property LLM: TAsWishLLMService read FLLM;
     property Settings: TAsWishSettingsService read FSettings;
+    property SnapshotService: TAsWishSnapshotService read FSnapshot;
     property DocsFiles: TArray<string> read FDocsFiles;
   end;
 
@@ -153,9 +162,16 @@ begin
   FDecisions := ADecisions;
   FLLM := ALLM;
   FSettings := ASettings;
+  FSnapshot := TAsWishSnapshotService.Create(FSpecStore);
   FStatus := AStatus;
   FContext := AContext;
   FBus := ABus;
+end;
+
+destructor TAsWishController.Destroy;
+begin
+  FSnapshot.Free;
+  inherited;
 end;
 
 function TAsWishController.IsProjectOpen: Boolean;
@@ -476,6 +492,9 @@ begin
     finally
       LIngestR.Free;
     end;
+
+    // Render deterministic Visual Preview wireframe (WO-20260830-0028)
+    FRender.RenderVisualPreview(FTreeBuilder.ViewNodes, FProjectService.ProjectName);
 
     FStatus.Info('AsWish.Render',
       'Re-rendered HTML to ' + FProjectService.AsWishPath + '\html\');
@@ -1234,11 +1253,17 @@ begin
     FSpecStore.WriteTreeFile('trees/view-tree.yaml', ttView, FTreeBuilder.ViewNodes);
     FSpecStore.WriteTreeFile('trees/data-tree.yaml', ttData, FTreeBuilder.DataNodes);
 
+    // Freeze resulting Canonical Spec state into immutable Accepted Baseline (WO-20260830-0027E)
+    var LBaseline: TAsWishBaseline;
+    var LBaseId := FSnapshot.CreateBaseline(LDec, LCS,
+      FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+      FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LBaseline);
+
     // Re-render
     RenderAll;
 
-    FStatus.Info('AsWish.ChangeSet', Format('Accepted %s -> Decision %s recorded; %d nodes updated in Canonical Spec',
-      [LCS.Id, LDecId, LStats.Merged]));
+    FStatus.Info('AsWish.ChangeSet', Format('Accepted %s -> Decision %s recorded; Baseline %s frozen; %d nodes updated in Canonical Spec',
+      [LCS.Id, LDecId, LBaseId, LStats.Merged]));
     Result := True;
   finally
     LIngest.Free;
@@ -1324,6 +1349,72 @@ begin
   finally
     LIngest.Free;
   end;
+end;
+
+function TAsWishController.VerifyBaseline(const ABaselineId: string): Boolean;
+begin
+  Result := FSnapshot.VerifyBaseline(ABaselineId);
+end;
+
+function TAsWishController.ListBaselines: TArray<TAsWishBaseline>;
+begin
+  Result := FSnapshot.ListBaselines;
+end;
+
+function TAsWishController.ConfirmVisualBaseline(const ARationale: string): string;
+var
+  LDecId: string;
+  LDec: TSpecDecision;
+  LBaseline: TAsWishBaseline;
+  LCS: TChangeSet;
+  LViewIds: TList<string>;
+begin
+  Result := '';
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+
+  if (FTreeBuilder.ViewNodes = nil) or (FTreeBuilder.ViewNodes.Count = 0) then
+  begin
+    FStatus.Warning('AsWish.VisualBaseline', 'No View Spec nodes to confirm');
+    Exit;
+  end;
+
+  // Collect affected view IDs
+  LViewIds := TList<string>.Create;
+  try
+    for var LN in FTreeBuilder.ViewNodes do
+      LViewIds.Add(LN.Id);
+
+    var LRat := ARationale;
+    if LRat = '' then
+      LRat := 'Visual preview confirmed via UI / Decision.';
+
+    LDecId := FDecisions.AddDecision(dtConfirm,
+      'Accepted Visual Baseline for View Spec',
+      'Human confirmed current View Spec representation (wireframe-v1.0) as Accepted Visual Baseline.',
+      LRat, LViewIds.ToArray);
+    FDecisions.AcceptDecision(LDecId);
+    FDecisions.Save;
+    LDec := FDecisions.FindById(LDecId);
+  finally
+    LViewIds.Free;
+  end;
+
+  // Synthesize ChangeSet lineage for baseline
+  LCS := TChangeSet.CreateNew('cs-visual-baseline', 'root-view', ttView, 'Confirm Visual Baseline', 'human');
+
+  Result := FSnapshot.CreateBaseline(LDec, LCS,
+    FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
+    FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes,
+    LBaseline, 'wireframe-v1.0', 'html/visual-preview.html');
+
+  RenderAll;
+
+  FStatus.Info('AsWish.VisualBaseline', Format('Accepted Visual Baseline %s created (decision: %s, snapshot: %s)',
+    [Result, LDecId, LBaseline.SnapshotName]));
 end;
 
 end.

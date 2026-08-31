@@ -120,17 +120,17 @@ Git diff     变更范围与本票声明一致，无越界修改
   ↓
 0027D-R1   GUI Review Surface（建议票，待裁定立票）
   ↓
-0028   Accepted Visual Baseline
+0027E   Accepted Baseline v0（数据层：快照冻结 + hash + lineage）  ◐ 已立票
   ↓
-Implementation Evidence v0
+0028   Accepted Visual Baseline（视觉层，依赖 0027E）
   ↓
-Difference v0
+0027F   Implementation Evidence v0（待立票）
+  ↓
+0027G   Structural Difference v0（待立票）
   ↓
 Human Confirmation
   ↓
-Revision
-  ↓
-First Closed Loop 验收
+0027H   Revision / First Closed Loop 验收（待立票）
 ```
 
 当前测试基线：DUnitX **149 / 149 全绿**（证据：`WO/evidence/test-run-20260830-0027D.txt`）。
@@ -409,6 +409,7 @@ Decisions TAsWishDecisionsService.RecordChangeSetDecision（Decision 关联 Chan
 | 8. 完成后进入 | 0028 |
 
 > 术语呈现纪律：`explicit / inferred / unknown` 不得作为术语直接展示给用户（呈现为"你明确提出 / AI 推断 / 尚未确定"）。
+> 控件实现：尽量用 DeepBase HB 视觉系统；0-9 选择控件、嵌套瀑布、信息粒度三件缺失，由 `DeepBase/WO-20260830-005` 交付后使用（本票新增前置依赖）。
 > Review 页面的对象不是 ChangeSet 本身，而是**"AI 对我的意图形成的当前理解"**——ChangeSet 只是它的工程承载物。
 
 ---
@@ -569,10 +570,10 @@ Human 看一眼
 ### 下一步（First Closed Loop 范围内）
 
 ```text
-0027D-R1（GUI Review Surface，建议票待裁定）→ 0028 → Evidence v0 → Difference v0 → Human Confirmation → Revision
+0027D-R1（GUI Review Surface，建议票待裁定）→ 0027E（Accepted Baseline，已立票）→ 0028（视觉层）→ 0027F Evidence → 0027G Difference → 0027H Revision
 ```
 
-其中 0027D-R1 为 A 线建议的补口小票（见 §6.11）；Evidence v0 / Difference v0 / Human Confirmation / Revision **当前无工单，需立票**。
+其中 0027D-R1 为 A 线建议的补口小票（见 §6.11）；0027E 已立票（`WO/WO-20260830-0027E-甲-AcceptedBaseline工单.md`）；0027F / 0027G / 0027H **当前无工单，需立票**。
 
 工程状态纪律：本表只记"票的能力语义与验收标准"；commit 号与测试数仅为登记时快照，**当前真实进展一律以 `git log` 与 `WO/evidence/` 为准**。
 
@@ -654,8 +655,8 @@ gen_status / review_status（现有状态字段）
 | 6 Visual Baseline               | 确认后的 View Spec                 | 确定性渲染结构线框                             | 看着它说"对，这就是我要的"                                           | 可重复查看的视觉基线                        | Accepted Visual Baseline（SpecSnapshot + 视觉绑定） | 相同输入渲染一致；与 Decision / Snapshot 可追溯                       | Baseline 不可复现 / 被静默覆盖 |
 | 7 Agent Development             | Baseline + Spec + Decisions 导出 | 组装 context-pack 交付；外部 Agent 实施        | 选择并启动 Agent                                              | 交付内容与实施边界可见                       | Agent 交接记录                                    | Agent 按已确认内容实施                                           | Agent 收到未确认或矛盾信息      |
 | 8 Implementation Evidence       | Agent 实际产出                     | **采集事实记录**（不是 AI 自我评价）                | 提供、确认实施事实                                                | "Agent 实际做了什么"的原始记录               | `evidence/` 落盘                                | 事实可复现查看                                                  | 只有 AI 声称，无可查记录        |
-| 9 Implementation Result         | Evidence                       | 呈现实际结果                                | 查看实际结果                                                   | 实际结果的可视呈现（VC-03）                  | Implementation Result                         | 人能看到结果                                                   | 结果不可见、不可复现            |
-| 10 Difference                   | Baseline vs Result             | 计算并呈现结构差异（**不判对错**）                   | 看见差异清单                                                   | 差异被看见（VC-04）                      | Difference v0 记录                              | 差异可复现、可定位到节点                                             | 差异被自动定义为 Error / 被隐藏  |
+| 9 Implementation Result         | Evidence                       | 呈现实际结果                                | 查看实际结果                                                   | 实际结果的可视呈现（VC-04）                  | Implementation Result                         | 人能看到结果                                                   | 结果不可见、不可复现            |
+| 10 Difference                   | Baseline vs Result             | 计算并呈现结构差异（**不判对错**）                   | 看见差异清单                                                   | 差异被看见（VC-05）                      | Difference v0 记录                              | 差异可复现、可定位到节点                                             | 差异被自动定义为 Error / 被隐藏  |
 | 11 Human Judgment               | Difference                     | 呈现证据，不代替判断                            | 给出：No important / Acceptable / Unacceptable / Unresolved | 判断选项与后果可见                         | 人类判断记录                                        | 判断被记录并关联差异项                                              | AI 代替人做最终判断           |
 | 12 Revision                     | 人类判断                           | 接收修订意图（= 回到 Stage 1）                  | 用自然语言提出要怎么改                                              | 修订意图被承载                           | 新 `candidate-intent`                          | 重新进入既有流程                                                 | 建立第二套修改机制             |
 | 13 Rebuild                      | Revision 意图链                   | 重跑 Stage 3 → 9                        | 再确认、再实施                                                  | 第二轮产物（v2）                         | Baseline v2 / Implementation v2               | 第二轮真实发生                                                  | 复用第一轮结果冒充             |
@@ -771,10 +772,10 @@ CLI / GUI
 | 5  | 哪些决定 Human 必须拥有？                | 本文 §十二（Human owns）                           |
 | 6  | 哪些事情 AI 禁止做？                    | 本文 §十二（AI must not）                          |
 | 7  | 什么东西必须被看见？                      | 蓝图 §二十二、§二十三                                 |
-| 8  | SVG 在哪里出现？                      | 蓝图 §二十三、§二十四（VC-01～05）                       |
+| 8  | SVG 在哪里出现？                      | 蓝图 §二十四（VC-01～06）、OJP §十四                       |
 | 9  | 什么叫 Visual Baseline？            | 蓝图 §八.3 / §二十三第二阶段；0028 工单                   |
 | 10 | 什么叫 Implementation Evidence？    | 蓝图 §十；本文 §6.7；0028 §六（Screenshot = Evidence） |
-| 11 | 什么叫 Difference v0？              | 本文 §6.8；蓝图 §二十四（VC-04）                       |
+| 11 | 什么叫 Difference v0？              | 本文 §6.8；蓝图 §二十四（VC-05）、OJP §十九                       |
 | 12 | 什么条件下可以宣布 First Closed Loop 成功？ | 本文 §八（硬性条件 + 不完成条件）                          |
 
 ---

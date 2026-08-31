@@ -13,6 +13,7 @@ interface
 uses
   System.SysUtils,
   System.Classes,
+  System.Generics.Collections,
   System.Hash,
   AsWish.Models;
 
@@ -33,24 +34,35 @@ type
 
     /// <summary>
     /// Compute content_hash for a node per protocol §4.3.
-    /// Includes: id, title, kind, parent_id, summary, status, confidence,
+    /// Includes: id, title, kind, summary, status, confidence,
     /// source_refs (sorted by ref_id), source_layer, acceptance_criteria,
-    /// not_doing.
+    /// not_doing. (parent_id is in RelationHash for clean separation).
     /// </summary>
     class function NodeContentHash(const ANode: TSpecNode): string; static;
 
     /// <summary>
     /// Compute relation_hash for a node per protocol §4.3.
-    /// Includes: decision_refs, issue_refs, related_*, tags.
+    /// Includes: parent_id, decision_refs, issue_refs, related_*, tags.
     /// </summary>
     class function NodeRelationHash(const ANode: TSpecNode): string; static;
+
+    /// <summary>
+    /// Compute snapshot-level ContentHash across tree node lists (deterministic, sorted by ID).
+    /// </summary>
+    class function SnapshotContentHash(ANodes: TList<TSpecNode>): string; overload; static;
+    class function SnapshotContentHash(AFunc, AMod, AView, AData: TList<TSpecNode>): string; overload; static;
+
+    /// <summary>
+    /// Compute snapshot-level RelationHash across tree node lists (deterministic, sorted by ID).
+    /// </summary>
+    class function SnapshotRelationHash(ANodes: TList<TSpecNode>): string; overload; static;
+    class function SnapshotRelationHash(AFunc, AMod, AView, AData: TList<TSpecNode>): string; overload; static;
   end;
 
 implementation
 
 uses
   System.IOUtils,
-  System.Generics.Collections,
   System.Generics.Defaults;
 
 class function TSpecHash.Sha256Hex(const AInput: string): string;
@@ -86,7 +98,6 @@ begin
     LSb.Append('id=').Append(ANode.Id).Append('|');
     LSb.Append('title=').Append(ANode.Title).Append('|');
     LSb.Append('kind=').Append(ANode.Kind).Append('|');
-    LSb.Append('parent_id=').Append(ANode.ParentId).Append('|');
     LSb.Append('summary=').Append(ANode.Summary).Append('|');
     LSb.Append('status=').Append(TSpecEnums.NodeStatusToStr(ANode.Status)).Append('|');
     LSb.Append('confidence=').Append(TSpecEnums.ConfidenceToStr(ANode.Confidence)).Append('|');
@@ -139,6 +150,8 @@ var
 begin
   LSb := TStringBuilder.Create;
   try
+    LSb.Append('parent_id=').Append(ANode.ParentId).Append('|');
+
     LSb.Append('decision_refs=[');
     for var I := 0 to High(ANode.DecisionRefs) do
     begin
@@ -190,6 +203,96 @@ begin
     Result := Sha256Hex(LSb.ToString);
   finally
     LSb.Free;
+  end;
+end;
+
+class function TSpecHash.SnapshotContentHash(ANodes: TList<TSpecNode>): string;
+var
+  LSb: TStringBuilder;
+  LSorted: TList<TSpecNode>;
+begin
+  if (ANodes = nil) or (ANodes.Count = 0) then
+    Exit(Sha256Hex(''));
+
+  LSorted := TList<TSpecNode>.Create;
+  LSb := TStringBuilder.Create;
+  try
+    LSorted.AddRange(ANodes);
+    LSorted.Sort(TComparer<TSpecNode>.Construct(
+      function(const A, B: TSpecNode): Integer
+      begin
+        Result := CompareStr(A.Id, B.Id);
+      end));
+
+    for var LNode in LSorted do
+      LSb.Append(LNode.Id).Append(':').Append(NodeContentHash(LNode)).Append(';');
+
+    Result := Sha256Hex(LSb.ToString);
+  finally
+    LSb.Free;
+    LSorted.Free;
+  end;
+end;
+
+class function TSpecHash.SnapshotContentHash(AFunc, AMod, AView,
+  AData: TList<TSpecNode>): string;
+var
+  LAll: TList<TSpecNode>;
+begin
+  LAll := TList<TSpecNode>.Create;
+  try
+    if AFunc <> nil then LAll.AddRange(AFunc);
+    if AMod <> nil then LAll.AddRange(AMod);
+    if AView <> nil then LAll.AddRange(AView);
+    if AData <> nil then LAll.AddRange(AData);
+    Result := SnapshotContentHash(LAll);
+  finally
+    LAll.Free;
+  end;
+end;
+
+class function TSpecHash.SnapshotRelationHash(ANodes: TList<TSpecNode>): string;
+var
+  LSb: TStringBuilder;
+  LSorted: TList<TSpecNode>;
+begin
+  if (ANodes = nil) or (ANodes.Count = 0) then
+    Exit(Sha256Hex(''));
+
+  LSorted := TList<TSpecNode>.Create;
+  LSb := TStringBuilder.Create;
+  try
+    LSorted.AddRange(ANodes);
+    LSorted.Sort(TComparer<TSpecNode>.Construct(
+      function(const A, B: TSpecNode): Integer
+      begin
+        Result := CompareStr(A.Id, B.Id);
+      end));
+
+    for var LNode in LSorted do
+      LSb.Append(LNode.Id).Append(':').Append(NodeRelationHash(LNode)).Append(';');
+
+    Result := Sha256Hex(LSb.ToString);
+  finally
+    LSb.Free;
+    LSorted.Free;
+  end;
+end;
+
+class function TSpecHash.SnapshotRelationHash(AFunc, AMod, AView,
+  AData: TList<TSpecNode>): string;
+var
+  LAll: TList<TSpecNode>;
+begin
+  LAll := TList<TSpecNode>.Create;
+  try
+    if AFunc <> nil then LAll.AddRange(AFunc);
+    if AMod <> nil then LAll.AddRange(AMod);
+    if AView <> nil then LAll.AddRange(AView);
+    if AData <> nil then LAll.AddRange(AData);
+    Result := SnapshotRelationHash(LAll);
+  finally
+    LAll.Free;
   end;
 end;
 
