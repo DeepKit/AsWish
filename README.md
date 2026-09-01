@@ -144,6 +144,7 @@ docs/                             Current documents (9 files, NN.分类-文件�
   ├── 13.治理-文档治理与工程纪律.md           Doc governance / discipline / doc index
   ├── 15.参考-工程与外部参考资料.md           Non-UI impl / external practice / survey reports
   ├── 17.产品-开发随心的六脉神剑与用户价值.md  Product philosophy / six abilities / user value
+  ├── AsWish-公众价值层与差异社区理念-v1.md     Future ecosystem (Difference Commons, VISION, unnumbered)
   └── 归档/                                 Pre-consolidation originals (retained, not deleted)
 src/                              Delphi/VCL desktop GUI and services implementation
   ├── app/                        Shell form, main window, commands, localization
