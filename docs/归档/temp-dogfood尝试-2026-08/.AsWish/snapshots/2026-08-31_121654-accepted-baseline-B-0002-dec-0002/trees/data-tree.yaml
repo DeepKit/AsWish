@@ -1,0 +1,35 @@
+﻿version: "1.0"
+tree: data
+generated_at: "2026-08-31T12:16:54+08:00"
+generator: "aswish-treebuilder"
+
+nodes:
+  - id: "data-entity-tmainform"
+    tree: data
+    title: "TMainForm"
+    kind: entity
+    parent_id: null
+    content_hash: "d14a4d9d58ef3085ea38012ea6d7ec50fba639133e9c57090590f49bf0d5a7c7"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "Data entity from class TMainForm in src/App.Main.pas"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-pas"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+    field_constraints: []
+    valid_states: []

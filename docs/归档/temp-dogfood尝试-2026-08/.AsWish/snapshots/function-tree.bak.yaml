@@ -1,0 +1,34 @@
+﻿version: "1.0"
+tree: function
+generated_at: "2026-08-31T12:16:54+08:00"
+generator: "aswish-treebuilder"
+
+nodes:
+  - id: "func-dogfood-baseline-visual"
+    tree: function
+    title: "dogfood-baseline-visual"
+    kind: capability
+    parent_id: null
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    content_hash: "5d86029579ddc44c7b7ba818395236f9af6d9f92a0581869e4ea3843de3922be"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "Project root capability (stub - run LLM generation for semantic content)"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    fog_state: unknown_unknowns
+    source_layer: ai_inferred
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

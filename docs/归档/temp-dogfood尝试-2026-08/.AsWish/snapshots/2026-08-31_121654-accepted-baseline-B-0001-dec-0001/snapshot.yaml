@@ -1,0 +1,20 @@
+﻿version: "1.0"
+label: "accepted-baseline-B-0001-dec-0001"
+created_at: "2026-08-31T12:16:54"
+files:
+  - "trees/data-tree.yaml"
+  - "trees/function-tree.yaml"
+  - "trees/module-tree.yaml"
+  - "trees/view-tree.yaml"
+  - "issues/doc-issues.yaml"
+baseline:
+  baseline_id: "B-0001"
+  decision_id: "dec-0001"
+  snapshot_name: "2026-08-31_121654-accepted-baseline-B-0001-dec-0001"
+  tree_type: "function"
+  content_hash: "68f0db71fef076dab869bf07f927d665924c3eeb2c212146d9742d6efa668e0c"
+  relation_hash: "962669708b1f3355c641425f8b0b7b518e4e9ad4ff03406a01864d9821231781"
+  created_at: "2026-08-31T12:16:54.272+08:00"
+  lineage:
+    change_set_id: "cs-func-001-01"
+    intent_id: "func-001"

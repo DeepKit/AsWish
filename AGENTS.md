@@ -20,10 +20,10 @@ Difference Monism → As We Wish → As I Wish → AsWish → .AsWish
 
 主链压缩口径：**显影 → 确认 → 建构 → 看见 → 生产 → 验证**。
 
-- 产品身份权威：[`ASWISH-PRODUCT-IDENTITY.md`](ASWISH-PRODUCT-IDENTITY.md)
-- 文档治理权威：[`ASWISH-DOCUMENTATION-GOVERNANCE.md`](ASWISH-DOCUMENTATION-GOVERNANCE.md)
-- 协议权威：[`SPEC.md`](SPEC.md) 与 [`protocol/`](protocol/)
-- 理论归因权威：[`NOTICE`](NOTICE) 与 [`docs/理论确权清单-v1.md`](docs/理论确权清单-v1.md)（不增强理论主张；CTF 用全称 CTF Semantic Bundle，主张强度 C2）
+- 产品身份权威：[`docs/01.产品-AsWish产品身份与愿景蓝图.md`](docs/01.产品-AsWish产品身份与愿景蓝图.md)
+- 文档治理权威：[`docs/13.治理-文档治理与工程纪律.md`](docs/13.治理-文档治理与工程纪律.md)
+- 协议权威：[`docs/05.协议-AsWish协议基线.md`](docs/05.协议-AsWish协议基线.md) 与 [`protocol/`](protocol/)
+- 理论归因权威：[`NOTICE`](NOTICE) 与 [`docs/11.理论-理论归因与CTF.md`](docs/11.理论-理论归因与CTF.md)（不增强理论主张；CTF 用全称 CTF Semantic Bundle，主张强度 C2）
 
 你需要遵循下面的规则
 

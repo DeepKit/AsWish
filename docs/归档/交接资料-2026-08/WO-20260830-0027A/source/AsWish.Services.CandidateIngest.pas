@@ -1,0 +1,615 @@
+
+{ ============================================================================
+  AsWish.Services.CandidateIngest
+
+  Strongly-typed sandbox for LLM-generated candidate YAML. The LLM output is
+  unreliable, so before a single byte of it touches the live spec trees it is
+  parsed into TSpecNode lists and validated field-by-field (id prefix, parent_id
+  foreign key, enum legality, ...). Only nodes that pass become candidates for
+  MergeInto. Constraints come from Delphi types + runtime checks, not from
+  trusting the LLM to be well-behaved.
+
+  See bugfix.md BUG-8 / docs/wayfinder-对AsWish的启发.md (gap 2).
+  ============================================================================ }
+
+unit AsWish.Services.CandidateIngest;
+
+interface
+
+uses
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections,
+  AsWish.Models,
+  AsWish.Services.SpecStore;
+
+type
+  TMergeStats = record
+    Merged: Integer;     // nodes whose fields were updated in-place
+    Added: Integer;      // nodes appended (id did not exist)
+    FogCleared: Integer; // function roots whose fog_state converged one step
+  end;
+
+  TCandidateIngestResult = record
+    /// <summary>Validated nodes ready for MergeInto. Caller does NOT own the
+    /// lists inside — they are owned by the TAsWishCandidateIngest instance
+    /// that produced this result (see OwnershipNote below). Copy what you need
+    /// before dropping the reference.</summary>
+    Accepted: TList<TSpecNode>;
+    Rejected: Integer;
+    Warnings: TStringList;
+    Errors: TStringList;
+    /// <summary>Per-tree accepted lists, pre-routed by the node's Tree field.
+    /// Owned by the instance.</summary>
+    FuncNodes: TList<TSpecNode>;
+    ModNodes: TList<TSpecNode>;
+    ViewNodes: TList<TSpecNode>;
+    DataNodes: TList<TSpecNode>;
+    procedure Init;
+    procedure FreeOwned;
+  end;
+
+  TAsWishCandidateIngest = class(TObject)
+  private
+    FSpecStore: TAsWishStoreService;
+    procedure ValidateNode(var ANode: TSpecNode;
+      AAllKnownIds: TDictionary<string, Boolean>;
+      var AResult: TCandidateIngestResult);
+  public
+    constructor Create(ASpecStore: TAsWishStoreService);
+
+    /// <summary>Split a multi-document YAML stream on `---` markers into
+    /// individual document strings. Blank segments are dropped. A leading
+    /// `---` does not produce an empty first segment.</summary>
+    class function SplitDocuments(const AYaml: string): TArray<string>; static;
+
+    /// <summary>Parse + validate candidate YAML. Existing tree lists supply
+    /// the known id set for parent_id foreign-key checks. Returns accepted
+    /// nodes (also pre-routed into the four projection lists) plus counts and
+    /// diagnostic lists. The instance owns the returned lists.</summary>
+    function Ingest(const ACandidateYaml: string;
+      AExistingFunc, AExistingMod, AExistingView: TList<TSpecNode>): TCandidateIngestResult; overload;
+    function Ingest(const ACandidateYaml: string;
+      AExistingFunc, AExistingMod, AExistingView, AExistingData: TList<TSpecNode>): TCandidateIngestResult; overload;
+
+    /// <summary>Merge accepted candidate nodes into the live tree lists.
+    /// Existing nodes matched by id have their mutable fields overwritten
+    /// (review_status / decision_refs are preserved — human decisions must
+    /// survive LLM regeneration); gen_status advances to gsGenerated; the
+    /// function root whose Summary actually changed converges fog_state one
+    /// step (fsUnknownUnknowns -> fsFoggy) via CanTransitionFog. Data-tree
+    /// fields use the same mutable merge path; human review fields are kept.
+    /// New ids are appended. Returns counts.</summary>
+    function MergeInto(AAccepted: TList<TSpecNode>;
+      AFunc, AMod, AView: TList<TSpecNode>): TMergeStats; overload;
+    function MergeInto(AAccepted: TList<TSpecNode>;
+      AFunc, AMod, AView, AData: TList<TSpecNode>): TMergeStats; overload;
+
+    /// <summary>Format human natural language candidate intent into YAML string (WO-20260830-0027A).</summary>
+    class function FormatCandidateIntentYaml(const AIntent: TCandidateIntent): string; static;
+    /// <summary>Parse YAML string into TCandidateIntent record (WO-20260830-0027A).</summary>
+    class function ParseCandidateIntentYaml(const AYaml: string): TCandidateIntent; static;
+
+    /// <summary>Persist human natural language candidate intent to .AsWish/llm/candidate-intent.yaml (WO-20260830-0027A).</summary>
+    function SaveCandidateIntent(const AProjectPath: string; const AIntent: TCandidateIntent): string;
+    /// <summary>Load candidate intent from .AsWish/llm/candidate-intent.yaml (WO-20260830-0027A).</summary>
+    function LoadCandidateIntent(const AProjectPath: string): TCandidateIntent;
+
+    /// <summary>Check if natural language intent has sufficient clarity for LLM interpretation.
+    /// If insufficient (empty/vague), constructs a grilling_ticket issue for human clarification (AC-03).</summary>
+    function CheckIntentClarity(const AIntent: TCandidateIntent; out AIssue: TSpecIssue): Boolean;
+  end;
+
+implementation
+
+uses
+  System.IOUtils,
+  System.StrUtils,
+  AsWish.Yaml.Parser;
+
+{ TCandidateIngestResult }
+
+procedure TCandidateIngestResult.Init;
+begin
+  Accepted := TList<TSpecNode>.Create;
+  FuncNodes := TList<TSpecNode>.Create;
+  ModNodes := TList<TSpecNode>.Create;
+  ViewNodes := TList<TSpecNode>.Create;
+  DataNodes := TList<TSpecNode>.Create;
+  Warnings := TStringList.Create;
+  Errors := TStringList.Create;
+  Rejected := 0;
+end;
+
+procedure TCandidateIngestResult.FreeOwned;
+begin
+  Accepted.Free;
+  FuncNodes.Free;
+  ModNodes.Free;
+  ViewNodes.Free;
+  DataNodes.Free;
+  Warnings.Free;
+  Errors.Free;
+end;
+
+{ TAsWishCandidateIngest }
+
+constructor TAsWishCandidateIngest.Create(ASpecStore: TAsWishStoreService);
+begin
+  inherited Create;
+  FSpecStore := ASpecStore;
+end;
+
+class function TAsWishCandidateIngest.SplitDocuments(
+  const AYaml: string): TArray<string>;
+var
+  LLines: TArray<string>;
+  LSb: TStringBuilder;
+  LResults: TList<string>;
+  I: Integer;
+  LTrim: string;
+begin
+  Result := nil;
+  if AYaml = '' then Exit;
+  LLines := AYaml.Split([#10]);
+
+  LSb := TStringBuilder.Create;
+  LResults := TList<string>.Create;
+  try
+    for I := 0 to High(LLines) do
+    begin
+      LTrim := LLines[I].Trim;
+      // A line whose trimmed content is exactly `---` starts a new document.
+      // (`...` end marker also terminates a document — treat the same.)
+      if (LTrim = '---') or (LTrim = '...') then
+      begin
+        if LSb.Length > 0 then
+          LResults.Add(LSb.ToString);
+        LSb.Clear;
+      end
+      else
+      begin
+        if LSb.Length > 0 then
+          LSb.AppendLine;
+        LSb.Append(LLines[I]);
+      end;
+    end;
+    if LSb.Length > 0 then
+      LResults.Add(LSb.ToString);
+    Result := LResults.ToArray;
+  finally
+    LSb.Free;
+    LResults.Free;
+  end;
+end;
+
+function TAsWishCandidateIngest.Ingest(const ACandidateYaml: string;
+  AExistingFunc, AExistingMod, AExistingView: TList<TSpecNode>): TCandidateIngestResult;
+begin
+  Result := Ingest(ACandidateYaml, AExistingFunc, AExistingMod, AExistingView, nil);
+end;
+
+function TAsWishCandidateIngest.Ingest(const ACandidateYaml: string;
+  AExistingFunc, AExistingMod, AExistingView, AExistingData: TList<TSpecNode>): TCandidateIngestResult;
+var
+  LDocs: TArray<string>;
+  LAllKnownIds: TDictionary<string, Boolean>;
+  LParser: TYamlParser;
+  LRoot: TYamlNode;
+  LDefaultTree: TTreeType;
+  LParsed: TList<TSpecNode>;
+  LNode: TSpecNode;
+  LDocIndex: Integer;
+begin
+  Result.Init;
+  if ACandidateYaml = '' then Exit;
+
+  // Build the set of ids the LLM may legally reference as parent_id: every
+  // node already in the live trees plus every node accepted so far in this
+  // ingest pass (so a candidate document may reference siblings defined in an
+  // earlier document of the same stream).
+  LAllKnownIds := TDictionary<string, Boolean>.Create;
+  try
+    if AExistingFunc <> nil then
+      for var L in AExistingFunc do LAllKnownIds.AddOrSetValue(L.Id, True);
+    if AExistingMod <> nil then
+      for var L in AExistingMod do LAllKnownIds.AddOrSetValue(L.Id, True);
+    if AExistingView <> nil then
+      for var L in AExistingView do LAllKnownIds.AddOrSetValue(L.Id, True);
+    if AExistingData <> nil then
+      for var L in AExistingData do LAllKnownIds.AddOrSetValue(L.Id, True);
+
+    LParser := TYamlParser.Create;
+    try
+      LDocs := SplitDocuments(ACandidateYaml);
+      for LDocIndex := 0 to High(LDocs) do
+      begin
+        LRoot := LParser.Parse(LDocs[LDocIndex]);
+        if LRoot = nil then
+        begin
+          Result.Errors.Add(Format('Document %d: unparseable YAML, skipped',
+            [LDocIndex + 1]));
+          Continue;
+        end;
+        try
+          LDefaultTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('tree', ''));
+          // Reject documents that fail to declare a tree — without it we
+          // cannot route nodes, and silent misrouting would corrupt trees.
+          if not LRoot.Has('tree') then
+          begin
+            Result.Errors.Add(Format('Document %d: missing tree field, skipped',
+              [LDocIndex + 1]));
+            Continue;
+          end;
+
+          LParsed := FSpecStore.ParseTreeNodes(LRoot, LDefaultTree);
+          try
+            // Validate each parsed node in place (index access — for-in gives
+            // a value copy, which would discard our reject markers). Accepted
+            // nodes are added to the known-id set so later documents/siblings
+            // can reference them as parent_id.
+            for var J := 0 to LParsed.Count - 1 do
+            begin
+              LNode := LParsed[J];
+              ValidateNode(LNode, LAllKnownIds, Result);
+              LParsed[J] := LNode; // write back so the accept check sees changes
+
+              // ValidateNode zeroes Id on reject — skip those.
+              if LNode.Id = '' then
+                Continue;
+
+              Result.Accepted.Add(LNode);
+              LAllKnownIds.AddOrSetValue(LNode.Id, True);
+              case LNode.Tree of
+                ttFunction: Result.FuncNodes.Add(LNode);
+                ttModule:   Result.ModNodes.Add(LNode);
+                ttView:     Result.ViewNodes.Add(LNode);
+                ttData:     Result.DataNodes.Add(LNode);
+              end;
+            end;
+          finally
+            LParsed.Free;
+          end;
+        finally
+          LRoot.Free;
+        end;
+      end;
+    finally
+      LParser.Free;
+    end;
+  finally
+    LAllKnownIds.Free;
+  end;
+end;
+
+procedure TAsWishCandidateIngest.ValidateNode(var ANode: TSpecNode;
+  AAllKnownIds: TDictionary<string, Boolean>;
+  var AResult: TCandidateIngestResult);
+
+  function IdPrefixMatches(const AId: string; ATree: TTreeType): Boolean;
+  const
+    // Index aligns with TTreeType = (ttFunction, ttModule, ttView, ttData).
+    CPREFIX: array [TTreeType] of string = ('func-', 'mod-', 'view-', 'data-');
+  begin
+    Result := AId.StartsWith(CPREFIX[ATree]);
+  end;
+
+var
+  LId: string;
+begin
+  LId := ANode.Id;
+
+  // id: non-empty + prefix matches its tree. On failure, zero the id so the
+  // caller's accept loop skips this node (can't trust routing it).
+  if (LId = '') or not IdPrefixMatches(LId, ANode.Tree) then
+  begin
+    AResult.Errors.Add(Format(
+      'Node id "%s" does not match prefix for tree %s; rejected',
+      [LId, TSpecEnums.TreeTypeToStr(ANode.Tree)]));
+    Inc(AResult.Rejected);
+    ANode.Id := '';
+    Exit;
+  end;
+
+  // kind: non-empty. Warn but keep (callers tolerate empty kind).
+  if ANode.Kind = '' then
+    AResult.Warnings.Add(Format('Node %s: empty kind', [LId]));
+
+  // parent_id: a node may omit it (root) but if present it must reference a
+  // known node (existing live tree or an already-accepted candidate). This
+  // is the foreign-key constraint that keeps the tree acyclic & connected.
+  if ANode.ParentId <> '' then
+    if not AAllKnownIds.ContainsKey(ANode.ParentId) then
+    begin
+      AResult.Errors.Add(Format(
+        'Node %s: parent_id "%s" not found in known nodes; rejected',
+        [LId, ANode.ParentId]));
+      Inc(AResult.Rejected);
+      ANode.Id := '';
+      Exit;
+    end;
+
+  // source_layer: LLM must not claim human_decision provenance.
+  if ANode.SourceLayer = slHumanDecision then
+  begin
+    AResult.Warnings.Add(Format(
+      'Node %s: source_layer=human_decision not allowed for LLM output; forced to ai_inferred',
+      [LId]));
+    ANode.SourceLayer := slAiInferred;
+  end;
+
+  // gen_status: LLM-generated content is at most gsGenerated; never confirmed
+  // (confirmation is a human/UI action). Force-confirming would bypass review.
+  if ANode.GenStatus = gsConfirmed then
+  begin
+    AResult.Warnings.Add(Format(
+      'Node %s: gen_status=confirmed not allowed for LLM output; forced to generated',
+      [LId]));
+    ANode.GenStatus := gsGenerated;
+  end;
+
+  // review_status: LLM has no review authority. Drop any non-unreviewed value.
+  if ANode.ReviewStatus <> rsUnreviewed then
+  begin
+    AResult.Warnings.Add(Format(
+      'Node %s: review_status=%s not allowed for LLM output; forced to unreviewed',
+      [LId, TSpecEnums.ReviewStatusToStr(ANode.ReviewStatus)]));
+    ANode.ReviewStatus := rsUnreviewed;
+  end;
+end;
+
+function TAsWishCandidateIngest.MergeInto(AAccepted: TList<TSpecNode>;
+  AFunc, AMod, AView: TList<TSpecNode>): TMergeStats;
+begin
+  Result := MergeInto(AAccepted, AFunc, AMod, AView, nil);
+end;
+
+function TAsWishCandidateIngest.MergeInto(AAccepted: TList<TSpecNode>;
+  AFunc, AMod, AView, AData: TList<TSpecNode>): TMergeStats;
+
+  procedure MergeOne(ATarget: TList<TSpecNode>; const ACand: TSpecNode);
+  var
+    LFound: Integer;
+    LExisting: TSpecNode;
+    LIdx: Integer;
+  begin
+    LFound := -1;
+    for LIdx := 0 to ATarget.Count - 1 do
+      if ATarget[LIdx].Id = ACand.Id then
+      begin
+        LFound := LIdx;
+        Break;
+      end;
+
+    if LFound >= 0 then
+    begin
+      LExisting := ATarget[LFound];
+      // Snapshot the old summary to detect whether this merge actually
+      // advances the function root out of its stub — that is the trigger
+      // for fog convergence.
+      var LOldSummary := LExisting.Summary;
+
+      // Overwrite mutable semantic fields. These describe what the node IS,
+      // and the LLM is the authority for them (post-validation).
+      LExisting.Title := ACand.Title;
+      LExisting.Kind := ACand.Kind;
+      if ACand.Summary <> '' then
+        LExisting.Summary := ACand.Summary;
+      LExisting.ParentId := ACand.ParentId;
+      LExisting.SourceLayer := ACand.SourceLayer;
+      if Length(ACand.SourceRefs) > 0 then
+        LExisting.SourceRefs := ACand.SourceRefs;
+      LExisting.RelatedFunctions := ACand.RelatedFunctions;
+      LExisting.RelatedModules := ACand.RelatedModules;
+      LExisting.RelatedViews := ACand.RelatedViews;
+      LExisting.RelatedData := ACand.RelatedData;
+      LExisting.Children := ACand.Children;
+      LExisting.Tags := ACand.Tags;
+      LExisting.AcceptanceCriteria := ACand.AcceptanceCriteria;
+      LExisting.NotDoing := ACand.NotDoing;
+      if ACand.UserIntent <> '' then
+        LExisting.UserIntent := ACand.UserIntent;
+
+      // Data metadata is part of the node contract. An omitted optional field
+      // must not erase a known schema fact, while presence flags preserve
+      // explicit false values such as nullable=false or has_rollback=false.
+      if ACand.Tree = ttData then
+      begin
+        if ACand.HasRiskScore then
+        begin
+          LExisting.HasRiskScore := True;
+          LExisting.RiskScore := ACand.RiskScore;
+        end;
+        if ACand.DataType <> '' then
+          LExisting.DataType := ACand.DataType;
+        if ACand.HasNullable then
+        begin
+          LExisting.HasNullable := True;
+          LExisting.Nullable := ACand.Nullable;
+        end;
+        if ACand.DefaultValue <> '' then
+          LExisting.DefaultValue := ACand.DefaultValue;
+        if Length(ACand.FieldConstraints) > 0 then
+          LExisting.FieldConstraints := ACand.FieldConstraints;
+        if ACand.Persistence <> '' then
+          LExisting.Persistence := ACand.Persistence;
+        if ACand.SourceEntity <> '' then
+          LExisting.SourceEntity := ACand.SourceEntity;
+        if ACand.TargetEntity <> '' then
+          LExisting.TargetEntity := ACand.TargetEntity;
+        if ACand.Cardinality <> '' then
+          LExisting.Cardinality := ACand.Cardinality;
+        if ACand.Cascade <> '' then
+          LExisting.Cascade := ACand.Cascade;
+        if Length(ACand.ValidStates) > 0 then
+          LExisting.ValidStates := ACand.ValidStates;
+        if Length(ACand.Transitions) > 0 then
+          LExisting.Transitions := ACand.Transitions;
+        if ACand.HasBackwardCompatible then
+        begin
+          LExisting.HasBackwardCompatible := True;
+          LExisting.BackwardCompatible := ACand.BackwardCompatible;
+        end;
+        if ACand.HasHasRollback then
+        begin
+          LExisting.HasHasRollback := True;
+          LExisting.HasRollback := ACand.HasRollback;
+        end;
+        if ACand.Scope <> '' then
+          LExisting.Scope := ACand.Scope;
+        if ACand.Enforcement <> '' then
+          LExisting.Enforcement := ACand.Enforcement;
+      end;
+
+      // gen_status: advance to generated (never regress). Review status and
+      // decision_refs are PRESERVED — human decisions survive regeneration.
+      if TSpecEnums.CanTransitionGen(LExisting.GenStatus, gsGenerated) then
+        LExisting.GenStatus := gsGenerated;
+
+      // Fog convergence: if this is a function root whose summary actually
+      // changed (stub -> real semantic content), nudge fog one step toward
+      // clear. One round of LLM generation does not fully clear the fog.
+      if (ACand.Tree = ttFunction) and LExisting.HasFogState and
+         (LOldSummary <> LExisting.Summary) and
+         TSpecEnums.CanTransitionFog(LExisting.FogState, fsFoggy) then
+      begin
+        LExisting.FogState := fsFoggy;
+        Inc(Result.FogCleared);
+      end;
+
+      ATarget[LFound] := LExisting;
+      Inc(Result.Merged);
+    end
+    else
+    begin
+      // New id: append. It is already validated & defaulted by Ingest.
+      ATarget.Add(ACand);
+      Inc(Result.Added);
+    end;
+  end;
+
+begin
+  Result := Default(TMergeStats);
+  if AAccepted = nil then Exit;
+  for var L in AAccepted do
+  begin
+    case L.Tree of
+      ttFunction: if AFunc <> nil then MergeOne(AFunc, L);
+      ttModule:   if AMod <> nil then MergeOne(AMod, L);
+      ttView:     if AView <> nil then MergeOne(AView, L);
+      ttData:     if AData <> nil then MergeOne(AData, L);
+    end;
+  end;
+end;
+
+class function TAsWishCandidateIngest.FormatCandidateIntentYaml(
+  const AIntent: TCandidateIntent): string;
+var
+  LSb: TStringBuilder;
+  LEscapedIntent: string;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LSb.AppendLine('version: "1.2"');
+    LSb.AppendLine('tree: ' + TSpecEnums.TreeTypeToStr(AIntent.Tree));
+    LSb.AppendLine('node_id: "' + AIntent.NodeId + '"');
+    LEscapedIntent := AIntent.UserIntent.Replace('\', '\\').Replace('"', '\"').Replace(#13, '\r').Replace(#10, '\n');
+    LSb.AppendLine('user_intent: "' + LEscapedIntent + '"');
+    LSb.AppendLine('author: "' + AIntent.Author + '"');
+    if AIntent.CreatedAt <> 0 then
+      LSb.AppendLine('created_at: "' + FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', AIntent.CreatedAt) + '"')
+    else
+      LSb.AppendLine('created_at: "' + FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"+08:00"', Now) + '"');
+    Result := LSb.ToString;
+  finally
+    LSb.Free;
+  end;
+end;
+
+class function TAsWishCandidateIngest.ParseCandidateIntentYaml(
+  const AYaml: string): TCandidateIntent;
+var
+  LParser: TYamlParser;
+  LRoot: TYamlNode;
+begin
+  Result := Default(TCandidateIntent);
+  if AYaml = '' then Exit;
+  LParser := TYamlParser.Create;
+  try
+    LRoot := LParser.Parse(AYaml);
+    if LRoot <> nil then
+    begin
+      try
+        Result.Tree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('tree', ''));
+        Result.NodeId := LRoot.GetString('node_id', '');
+        Result.UserIntent := LRoot.GetString('user_intent', '');
+        Result.Author := LRoot.GetString('author', 'human');
+        Result.CreatedAt := Now;
+      finally
+        LRoot.Free;
+      end;
+    end;
+  finally
+    LParser.Free;
+  end;
+end;
+
+function TAsWishCandidateIngest.SaveCandidateIntent(
+  const AProjectPath: string; const AIntent: TCandidateIntent): string;
+var
+  LLlmDir: string;
+  LFilePath: string;
+  LYaml: string;
+begin
+  LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
+  if not TDirectory.Exists(LLlmDir) then
+    TDirectory.CreateDirectory(LLlmDir);
+  LFilePath := TPath.Combine(LLlmDir, 'candidate-intent.yaml');
+  LYaml := FormatCandidateIntentYaml(AIntent);
+  TAsWishStoreService.AtomicWriteTextFile(LFilePath, LYaml);
+  Result := LFilePath;
+end;
+
+function TAsWishCandidateIngest.LoadCandidateIntent(
+  const AProjectPath: string): TCandidateIntent;
+var
+  LFilePath: string;
+begin
+  Result := Default(TCandidateIntent);
+  LFilePath := TPath.Combine(TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm'), 'candidate-intent.yaml');
+  if TFile.Exists(LFilePath) then
+    Result := ParseCandidateIntentYaml(TFile.ReadAllText(LFilePath, TEncoding.UTF8));
+end;
+
+function TAsWishCandidateIngest.CheckIntentClarity(
+  const AIntent: TCandidateIntent; out AIssue: TSpecIssue): Boolean;
+var
+  LTrimmed: string;
+begin
+  AIssue := Default(TSpecIssue);
+  LTrimmed := AIntent.UserIntent.Trim;
+  // If intent is blank or too short (< 4 chars) or generic words, trigger grilling ticket
+  if (LTrimmed.Length < 4) or SameText(LTrimmed, 'fix') or SameText(LTrimmed, 'change') or
+     SameText(LTrimmed, 'update') or SameText(LTrimmed, 'todo') or
+     (LTrimmed = #$4FEE#$6539) or (LTrimmed = #$6539#$4E00#$4E0B) or (LTrimmed = #$4F18#$5316) then
+  begin
+    AIssue.Id := 'issue-grill-' + FormatDateTime('yyyymmdd-hhnnss', Now);
+    AIssue.IssueType := itGrillingTicket;
+    AIssue.Severity := isHigh;
+    AIssue.Status := issOpen;
+    AIssue.Title := 'Clarify intent for node: ' + AIntent.NodeId;
+    AIssue.Description := 'Human user intent input is insufficient or ambiguous ("' + LTrimmed +
+      '"), clarification via grilling ticket is required for target, boundary, and acceptance criteria.';
+    AIssue.RequiresHuman := True;
+    AIssue.AffectedNodes := TArray<string>.Create(AIntent.NodeId);
+    AIssue.SuggestedAction := 'Clarify user intent via grilling prompt';
+    AIssue.SuggestedPrompt := 'Clarify specific outcome, constraints, and acceptance criteria for node ' + AIntent.NodeId;
+    AIssue.CreatedAt := Now;
+    AIssue.UpdatedAt := Now;
+    Result := False;
+  end
+  else
+    Result := True;
+end;
+
+end.

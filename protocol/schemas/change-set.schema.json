@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aswish.dev/schemas/v1/change-set.schema.json",
+  "title": "AsWish Change Set",
+  "description": "Schema for .AsWish/llm/change-set.yaml. Structured interpretation of human intent; does NOT mutate Canonical Spec until approved by Decision (WO-20260830-0027B).",
+  "type": "object",
+  "required": ["version", "change_set_id", "intent_node_id", "intent_tree", "raw_user_intent", "author", "created_at", "affected_projections", "items"],
+  "properties": {
+    "version": { "type": "string", "const": "1.2" },
+    "change_set_id": { "type": "string" },
+    "intent_node_id": { "type": "string" },
+    "intent_tree": {
+      "type": "string",
+      "enum": ["function", "module", "view", "data"]
+    },
+    "raw_user_intent": { "type": "string", "minLength": 1 },
+    "author": { "type": "string", "default": "human" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "affected_projections": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["function", "module", "view", "data"] },
+      "default": []
+    },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/change_item" },
+      "default": []
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "change_source_type": {
+      "type": "string",
+      "enum": ["explicit", "inferred", "unknown"]
+    },
+    "change_item": {
+      "type": "object",
+      "required": ["target_node_id", "target_projection", "field", "before", "after", "source_type"],
+      "properties": {
+        "target_node_id": { "type": "string" },
+        "target_projection": {
+          "type": "string",
+          "enum": ["function", "module", "view", "data"]
+        },
+        "field": { "type": "string" },
+        "before": { "type": "string" },
+        "after": { "type": "string" },
+        "source_type": { "$ref": "#/$defs/change_source_type" },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}

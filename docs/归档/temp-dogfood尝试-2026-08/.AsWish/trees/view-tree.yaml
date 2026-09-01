@@ -1,0 +1,142 @@
+﻿version: "1.0"
+tree: view
+generated_at: "2026-08-31T12:16:54+08:00"
+generator: "aswish-treebuilder"
+
+nodes:
+  - id: "view-dogfood-baseline-visual"
+    tree: view
+    title: "dogfood-baseline-visual Views"
+    kind: application
+    parent_id: null
+    content_hash: "2625c7507def69c14754de0b2b8184acb050e285bfd670060f29f55bb4f5c5ad"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "UI structure derived from UI files"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "view-app-main"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "view-app-main"
+    tree: view
+    title: "App.Main"
+    kind: window
+    parent_id: "view-dogfood-baseline-visual"
+    content_hash: "829a447739799c7a7ef48bf8ea430a141e596c23b1cc33fd4fc044b8d153cb30"
+    relation_hash: "78d9bdb4dce980a0afee6ee9939f6a6528824c5204e3285fcd9a594c289537a9"
+    revision: 1
+    summary: "View defined in src/App.Main.dfm"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-dfm"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "view-ctrl-pnlheader"
+    tree: view
+    title: "pnlHeader"
+    kind: control
+    parent_id: "view-form-mainform"
+    content_hash: "2e471f5f6a19efaba738ea7e0677fd5f39765be0e6fb76582f4161374f9c3294"
+    relation_hash: "4b04c0d62665e0bed7c88d675a9991087d3b01adb3c237b3a2443d43dc752fa8"
+    revision: 1
+    summary: "TPanel: \"Header Bar\""
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-dfm"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "view-ctrl-btnsubmit"
+    tree: view
+    title: "btnSubmit"
+    kind: control
+    parent_id: "view-form-mainform"
+    content_hash: "1020b8953ec93d91cd8ea13f30075c2cff8cf5cd3cd784bc7a17453870aca18b"
+    relation_hash: "4b04c0d62665e0bed7c88d675a9991087d3b01adb3c237b3a2443d43dc752fa8"
+    revision: 1
+    summary: "TButton: \"Submit\""
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-dfm"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "view-form-mainform"
+    tree: view
+    title: "MainForm"
+    kind: window
+    parent_id: null
+    content_hash: "4bc8ea47ece05846e2adec8e773d2dc0d85c6939dd817778a5a790c60385880b"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "Form: Main Application"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-dfm"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "view-ctrl-pnlheader"
+      - "view-ctrl-btnsubmit"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

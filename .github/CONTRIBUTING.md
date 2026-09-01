@@ -1,7 +1,7 @@
 # Contributing to AsWish
 
-> Authoritative product identity: [`ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md)  
-> Documentation governance: [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md)
+> Authoritative product identity: [`docs/01.产品-AsWish产品身份与愿景蓝图.md`](../docs/01.产品-AsWish产品身份与愿景蓝图.md)  
+> Documentation governance: [`docs/13.治理-文档治理与工程纪律.md`](../docs/13.治理-文档治理与工程纪律.md)
 
 AsWish is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**. It keeps what humans and agents confirmed visible before development, and makes what was built comparable against it afterward — every difference is visible, traceable, and judged by a human.
 
@@ -27,8 +27,8 @@ The open source mission is: **Test my claim.** (Empowering third-party developer
 
 ## 2. Before You Start
 
-- Read [`ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md) for product identity and boundaries.
-- Read [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md) for document authority and single-source-of-truth rules.
+- Read [`docs/01.产品-AsWish产品身份与愿景蓝图.md`](../docs/01.产品-AsWish产品身份与愿景蓝图.md) for product identity and boundaries.
+- Read [`docs/13.治理-文档治理与工程纪律.md`](../docs/13.治理-文档治理与工程纪律.md) for document authority and single-source-of-truth rules.
 - Read [`SPEC.md`](../SPEC.md) and [`protocol/README.md`](../protocol/README.md) for protocol expectations.
 - Read [`docs/CTF.md`](../docs/CTF.md) for the CTF method.
 - Prefer small, well-verified pull requests over massive refactors.

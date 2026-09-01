@@ -1,0 +1,14 @@
+### git status --short ###
+?? _handoff/
+
+### git branch --show-current ###
+main
+
+### git log -5 --oneline --decorate ###
+27c268d (HEAD -> main) feat(candidate): implement WO-20260830-0027A natural language user intent entry
+75c8973 docs: complete AsWish strategic closure audit (READY WITH CONDITIONS)
+e1bfed0 docs: finalize alignment report with commit hash
+5654259 docs: establish authoritative product identity and documentation governance SSOT
+62cb7ff Update migration report: cleanup verified, fixture migration, conformance runner pre-existing issue recorded
+
+### note: '_handoff/' is the handoff deliverable created by this audit; it is untracked by design. ###

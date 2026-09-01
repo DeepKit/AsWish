@@ -1,0 +1,83 @@
+=====================================================================
+03 - BUILD / TEST EVIDENCE (READ-ONLY AUDIT)
+Repository: D:\_Progs\02Business\AsWish
+Generated: 2026-08-30
+=====================================================================
+
+---------------------------------------------------------------------
+A. Build / Compiler availability check (no build executed)
+---------------------------------------------------------------------
+Command:
+  where dcc64
+  ls "D:\Program Files (x86)\Embarcadero\Studio\37.0\bin\dcc64.exe"
+
+Result:
+  D:\Program Files (x86)\Embarcadero\Studio\37.0\bin\dcc64.exe  (FOUND)
+  D:\Program Files (x86)\Embarcadero\Studio\37.0\bin64\dcc64.exe (FOUND)
+
+Conclusion:
+  Embarcadero Delphi / RAD Studio 13.1 (Studio 37.0) Win64 compiler
+  IS installed and available. Full rebuild of AsWish.dpr / AsWish.CLI.dpr /
+  AsWish.Tests.dpr is technically possible.
+
+Build decision (READ-ONLY constraint):
+  A full rebuild was NOT executed. The task mandate is strictly read-only
+  ("不要修改任何代码 / 不要运行会产生写入副作用的迁移、格式化、代码生成；
+  编译/测试命令，但仅限不会修改源文件和工程状态的验证"). A `dcc64 -B` build
+  regenerates dcu/ and bin/ artifacts, i.e. it mutates build state. To honor
+  the zero-modification rule, this audit used the PREBUILT test binary
+  (tests/AsWish.Tests.exe) which already exists in the working tree, and ran
+  it without touching any source or artifact files.
+
+Prebuilt binaries found in working tree:
+  tests/AsWish.Tests.exe        (10,251,776 bytes)  -> used for test evidence
+  cli/bin/AsWish.CLI.exe        ( 3,361,792 bytes)
+  bin/AsWish.exe                (GUI, present)
+
+---------------------------------------------------------------------
+B. Test execution (read-only, prebuilt binary)
+---------------------------------------------------------------------
+Command:
+  cd D:\_Progs\02Business\AsWish\tests
+  D:\_Progs\02Business\AsWish\tests\AsWish.Tests.exe -b
+  (output redirected to evidence\test-run.log)
+
+Raw tail of output:
+  DUnitX - [AsWish.Tests.exe] - Starting Tests.
+  ...................................................................
+      (134 dots = 134 test cases executed)
+  Tests Found   : 134
+  Tests Ignored : 0
+  Tests Passed  : 134
+  Tests Leaked  : 0
+  Tests Failed  : 0
+  Tests Errored : 0
+
+Exit code: 0
+
+Full raw log: evidence\test-run.log (captured during this audit).
+
+---------------------------------------------------------------------
+C. Interpretation
+---------------------------------------------------------------------
+- DUnitX suite: 134 tests, ALL GREEN (0 failed / 0 errored / 0 leaked).
+- This supersedes the earlier widely-cited "126/126" figure: the
+  WO-20260830-0027A implementation added new test cases (see
+  Test.AsWish.CandidateIngest.pas), bringing the total to 134.
+- CandidateIngest-related tests: present and passing
+  (tests\Test.AsWish.CandidateIngest.pas in this handoff).
+- Decisions-related tests: present and passing
+  (tests\Test.AsWish.Decisions.pas).
+- Prompts-related tests: present and passing
+  (tests\Test.AsWish.Prompts.pas).
+- Controller-related tests: present and passing
+  (tests\Test.AsWish.Controller.pas).
+
+---------------------------------------------------------------------
+D. If a fresh build is required by the next engineer
+---------------------------------------------------------------------
+Do NOT run it as part of this handoff (read-only). The documented
+build commands (for reference only, NOT executed here):
+  _build.bat                       -> bin\AsWish.exe
+  cd tests && _build_tests.bat    -> tests\AsWish.Tests.exe
+  cd cli && _build_cli.bat        -> cli\bin\AsWish.CLI.exe

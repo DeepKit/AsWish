@@ -1,0 +1,68 @@
+﻿version: "1.0"
+
+evidence:
+  - id: "ev-src-app-main-pas"
+    source_layer: parsed_from_a
+    path: "src/App.Main.pas"
+    lines: null
+    excerpt: "Directory: src"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-main-dfm"
+    source_layer: parsed_from_a
+    path: "src/App.Main.dfm"
+    lines: null
+    excerpt: "File: src/App.Main.dfm"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-main-pas"
+    source_layer: parsed_from_a
+    path: "src/App.Main.pas"
+    lines: null
+    excerpt: "unit App.Main;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-main-dfm"
+    source_layer: parsed_from_a
+    path: "src/App.Main.dfm"
+    lines: null
+    excerpt: "object MainForm: TMainForm"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-main-pas"
+    source_layer: parsed_from_a
+    path: "src/App.Main.pas"
+    lines: null
+    excerpt: "File: src/App.Main.pas"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []

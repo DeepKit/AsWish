@@ -1,0 +1,17 @@
+﻿version: "1.2"
+change_set_id: "cs-func-001-01"
+intent_node_id: "func-001"
+intent_tree: function
+raw_user_intent: "Add order processing validation"
+author: "human"
+created_at: "2026-08-31T12:16:54+08:00"
+affected_projections:
+  - function
+items:
+  - target_node_id: "func-001"
+    target_projection: function
+    field: "summary"
+    before: ""
+    after: "Add order processing validation"
+    source_type: explicit
+    reason: "Interpreted from human user intent"

@@ -1,0 +1,121 @@
+﻿version: "1.0"
+tree: module
+generated_at: "2026-08-31T12:16:54+08:00"
+generator: "aswish-treebuilder"
+
+nodes:
+  - id: "mod-dogfood-baseline-visual"
+    tree: module
+    title: "dogfood-baseline-visual Modules"
+    kind: package
+    parent_id: null
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    content_hash: "fe412d4da7cb748218ee3c450aa3c74e117b59eb4557cbca037445493e2f8c55"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "Module structure derived from directory layout"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "mod-src"
+    tree: module
+    title: "src"
+    kind: package
+    parent_id: "mod-dogfood-baseline-visual"
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    content_hash: "acebc15b2a1a4b22acc4be43e1d70f32e379303a51ded8adf410ddacd40cd0d5"
+    relation_hash: "154f50e20574e97bf5fcfd63b8c47a61c61411d06032da45ca5929f81e81d123"
+    revision: 1
+    summary: "Module rooted at src/"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: medium
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-pas"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "mod-class-tmainform"
+    tree: module
+    title: "TMainForm"
+    kind: class
+    parent_id: "mod-unit-app-main"
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    content_hash: "0d9dd0371f69547369a72223a1691048111ab0fc74058c31d75b2beea8a608b8"
+    relation_hash: "050df44c2805736c4b0e1882557195cd6e68b4d72498be420e967b8abcccd650"
+    revision: 1
+    summary: "TMainForm declaration in App.Main"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-pas"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "mod-unit-app-main"
+    tree: module
+    title: "App.Main"
+    kind: unit
+    parent_id: null
+    created_at: "2026-08-31T12:16:54+08:00"
+    updated_at: "2026-08-31T12:16:54+08:00"
+    content_hash: "d5d34f6ea5e4d8bfbb2918d27902fe046f13cf93bc728a76c42c59222af833ec"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "Pascal unit declared in src/App.Main.pas"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: high
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-src-app-main-pas"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children:
+      - "mod-class-tmainform"
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

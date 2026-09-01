@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aswish.dev/schemas/v1/candidate-intent.schema.json",
+  "title": "AsWish Candidate Intent",
+  "description": "Schema for .AsWish/llm/candidate-intent.yaml. Raw human intent captured without mutating Canonical Spec (WO-20260830-0027A).",
+  "type": "object",
+  "required": ["version", "tree", "node_id", "user_intent", "author", "created_at"],
+  "properties": {
+    "version": { "type": "string", "const": "1.2" },
+    "tree": {
+      "type": "string",
+      "enum": ["function", "module", "view", "data"]
+    },
+    "node_id": { "type": "string" },
+    "user_intent": { "type": "string", "minLength": 1 },
+    "author": { "type": "string", "default": "human" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "source_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

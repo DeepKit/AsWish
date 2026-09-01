@@ -7,9 +7,11 @@
 
 AsWish is **not** a spec tool, spec editor, or AI coding tool. It is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**.
 
-> Authoritative product identity: [`ASWISH-PRODUCT-IDENTITY.md`](ASWISH-PRODUCT-IDENTITY.md)  
-> Documentation governance: [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](ASWISH-DOCUMENTATION-GOVERNANCE.md)  
-> Protocol specification: [`SPEC.md`](SPEC.md) · Theory attribution: [`NOTICE`](NOTICE)
+> **开发随心 · 六脉神剑**：AsWish 不帮你「避免一切差异」，而是让你在差异恒常存在的 AI Coding 世界里，**自由地开发、清楚地看见、自己地判断、随时地调整**。六脉（显影 → 对齐 → 结构化 → 差异 → 调整 → 积累）见 [`docs/17.产品-开发随心的六脉神剑与用户价值.md`](docs/17.产品-开发随心的六脉神剑与用户价值.md)。
+
+> Authoritative product identity: [`docs/01.产品-AsWish产品身份与愿景蓝图.md`](docs/01.产品-AsWish产品身份与愿景蓝图.md)  
+> Documentation governance: [`docs/13.治理-文档治理与工程纪律.md`](docs/13.治理-文档治理与工程纪律.md)  
+> Protocol specification: [`docs/05.协议-AsWish协议基线.md`](docs/05.协议-AsWish协议基线.md) · Theory attribution: [`NOTICE`](NOTICE)
 
 ---
 
@@ -88,19 +90,22 @@ $$(\text{显影} \longrightarrow \text{确认} \longrightarrow \text{建构} \lo
 
 ---
 
-## Key Features
+## 开发随心的六脉（能力，不是功能模块）
 
-- **Four Projections**: The same intent projected across four weakly-coupled dimensions:
-  - `function-tree`: What the system should do (behavior projection).
-  - `module-tree`: Where the behavior lives (architecture projection).
-  - `view-tree`: What users interact with (interface projection).
-  - `data-tree`: What data exists, persists, moves, and migrates (data projection).
-- **CTF Semantic Bundles**: Cross-projection grouping binding the same requirement across all trees into a single reviewable unit.
-- **Fog of War & Frontier Exploration**: Explicit tracking of verified facts vs candidate inferences vs unmapped requirement frontiers (`clear`, `misty`, `foggy`, `unknown_unknowns`).
-- **Interactive Visualizer & Decision Capture**: Built-in WebView2 renderer with interactive tree inspection and JS Bridge writing decisions directly back to `.AsWish/decisions/`.
-- **Standalone & Lightweight**: Zero external database dependencies; local JSON/YAML persistence.
-- **OpenAI-Compatible LLM Integration**: Pluggable backend for ModelScope, OpenAI, DeepSeek, Qwen, Ollama, and compatible endpoints.
-- **Headless CLI & VCL Desktop GUI**: Run scans, validations, and renders in CI/CD headlessly or interactively on Windows.
+六脉是六种「随心开发能力」，不是六个软件模块。状态标注：**[FACT]** 已实现 · **[PLAN]** 计划中 · **[VISION]** 愿景。
+
+| 六脉 | 你获得的能力 | 状态 |
+|---|---|---|
+| ① 显影 | 想说就说，不必先想清楚——「这里感觉不太对」也能被承载并逐渐显形 | [FACT] |
+| ② 对齐 | 所见即所想——你说「简单一点」，AsWish 把它变成能看的东西供你确认 | [FACT] |
+| ③ 结构化 | 机器承接的是你确认过的东西，不是你的只言片语 | [FACT] |
+| ④ 差异 | 开发完看见「实际做的」与「你确认的」之间发生了什么变化，而不是猜 | [PLAN] 0027G |
+| ⑤ 调整 | 差异出现，你可以说「我喜欢，不改」，或往别处调——主动权在你 | [PLAN] 0027H |
+| ⑥ 积累 | 走过的路留下来，成为下一次的剑；别人的路也能帮你提前看清前路 | [VISION] |
+
+底层工程事实 **[FACT]**：四投影树（function/module/view/data）、CTF Semantic Bundles、Fog 状态追踪（`clear`/`misty`/`foggy`/`unknown_unknowns`）、Decision 写回 `.AsWish/decisions/`、Accepted Baseline（内容/关系哈希）、Accepted Visual Baseline（结构线框）、Headless CLI + VCL Desktop GUI、Local-first 无账号、零外部数据库依赖。
+
+> 能力与工程状态的权威对照见 [`docs/17.产品-开发随心的六脉神剑与用户价值.md`](docs/17.产品-开发随心的六脉神剑与用户价值.md) 与 [`docs/07.工程-工程路线与Dogfood验收.md`](docs/07.工程-工程路线与Dogfood验收.md)。
 
 ---
 
@@ -127,10 +132,19 @@ The first stage focuses on empirical validation, not commercialization or star c
 LICENSE                           Apache-2.0 License
 NOTICE                            Statutory theory attribution and copyright notice
 README.md                         Public project entry point
-SPEC.md                           AsWish protocol specification overview
-ASWISH-PRODUCT-IDENTITY.md        Authoritative product identity SSOT
-ASWISH-DOCUMENTATION-GOVERNANCE.md Authoritative documentation governance SSOT
+AGENTS.md                         AI engineering discipline entry point
 protocol/                         Machine-readable JSON Schemas and conformance tests
+docs/                             Current documents (9 files, NN.分类-文件名.md, odd numbering)
+  ├── 01.产品-AsWish产品身份与愿景蓝图.md    Product identity / vision blueprint / first run
+  ├── 03.规范-可见判断与交互规范.md          OJP / Dual-Surface / 0-9 interaction
+  ├── 05.协议-AsWish协议基线.md              Protocol baseline (SPEC)
+  ├── 07.工程-工程路线与Dogfood验收.md        Engineering roadmap / dual gates / work-order index
+  ├── 09.实证-实证设施规程.md                Empirical facility (Test my claim)
+  ├── 11.理论-理论归因与CTF.md               Theory attribution / CTF
+  ├── 13.治理-文档治理与工程纪律.md           Doc governance / discipline / doc index
+  ├── 15.参考-工程与外部参考资料.md           Non-UI impl / external practice / survey reports
+  ├── 17.产品-开发随心的六脉神剑与用户价值.md  Product philosophy / six abilities / user value
+  └── 归档/                                 Pre-consolidation originals (retained, not deleted)
 src/                              Delphi/VCL desktop GUI and services implementation
   ├── app/                        Shell form, main window, commands, localization
   ├── controllers/                Workflow coordination and state transitions
@@ -164,7 +178,7 @@ installer/                        Inno Setup packaging script
    :: 3. Build Headless CLI -> cli\bin\AsWish.CLI.exe
    cd cli && _build_cli.bat
    ```
-3. **First Run Guide**: Follow [`docs/AsWish-用户上手说明-v1.md`](docs/AsWish-用户上手说明-v1.md).
+3. **First Run Guide**: Follow [`docs/01.产品-AsWish产品身份与愿景蓝图.md`](docs/01.产品-AsWish产品身份与愿景蓝图.md).
 
 ### Headless CLI Commands
 
@@ -178,6 +192,11 @@ AsWish.CLI health <dir> [--json]           :: Output health metrics snapshot
 AsWish.CLI decisions apply <dir>           :: Promote pending decisions to formal tree states
 AsWish.CLI bundle apply <dir> <id> <act>   :: Batch accept or reject a bundle
 AsWish.CLI ingest <dir> <candidate.yaml>   :: Validate and merge candidate nodes
+AsWish.CLI intent <dir> <node-id> <tree> <text>       :: Submit natural-language intent (0027A)
+AsWish.CLI changeset <dir> <node-id> <tree> <intent>  :: Generate structured change set (0027B)
+AsWish.CLI changeset accept <dir> <reason>            :: Accept change set, freeze Accepted Baseline (0027E)
+AsWish.CLI baseline list <dir> / verify <dir> <id>    :: List / verify Accepted Baseline (0027E)
+AsWish.CLI visual preview <dir> / confirm <dir> <note>:: Wireframe preview / confirm visual baseline (0028)
 ```
 
 ### Standalone Cold-Start (Zero Delphi Dependencies)

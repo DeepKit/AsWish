@@ -1,7 +1,7 @@
 # GitHub Copilot / Coding Agent Instructions for AsWish
 
-> Authoritative product identity: [`ASWISH-PRODUCT-IDENTITY.md`](../ASWISH-PRODUCT-IDENTITY.md)  
-> Documentation governance: [`ASWISH-DOCUMENTATION-GOVERNANCE.md`](../ASWISH-DOCUMENTATION-GOVERNANCE.md)
+> Authoritative product identity: [`docs/01.产品-AsWish产品身份与愿景蓝图.md`](../docs/01.产品-AsWish产品身份与愿景蓝图.md)  
+> Documentation governance: [`docs/13.治理-文档治理与工程纪律.md`](../docs/13.治理-文档治理与工程纪律.md)
 
 AsWish is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**. It makes what should be built visible and confirmable before development, and makes what was built comparable against implementation evidence afterward.
 

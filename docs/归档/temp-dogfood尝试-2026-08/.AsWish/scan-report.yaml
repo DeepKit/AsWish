@@ -1,0 +1,25 @@
+﻿version: "1.0"
+scan_time: "2026-08-31T12:16:54+08:00"
+project_path: "."
+project_type: "unknown"
+
+file_classification:
+  documents:
+  code:
+    - "src/App.Main.pas"
+  ui:
+    - "src/App.Main.dfm"
+  config:
+  ai_rules:
+  ignored:
+
+stats:
+  total_files: 2
+  documents: 0
+  code: 1
+  ui: 1
+  config: 0
+  ai_rules: 0
+  ignored: 0
+
+warnings: []

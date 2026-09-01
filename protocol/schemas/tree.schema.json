@@ -16,8 +16,8 @@
   "$defs": {
     "tree_type": {"type": "string", "enum": ["function", "module", "view", "data"]},
     "legacy_node_status": {"type": "string", "enum": ["candidate", "confirmed", "uncertain", "rejected", "superseded"], "description": "Deprecated combined status. Readers may map it to gen_status/review_status."},
-    "gen_status": {"type": "string", "enum": ["pending", "generated", "failed"], "default": "generated"},
-    "review_status": {"type": "string", "enum": ["pending", "accepted", "rejected", "locked"], "default": "pending"},
+    "gen_status": {"type": "string", "enum": ["pending", "generated", "failed"], "default": "generated", "description": "PENDING ARBITRATION (C-5): code TGenStatus uses draft/generated/confirmed/skipped instead. Do not unify without ruling. See docs/07-工程路线 §16 C-5, docs/05-协议 §4, protocol/state-machine.md."},
+    "review_status": {"type": "string", "enum": ["pending", "accepted", "rejected", "locked"], "default": "pending", "description": "PENDING ARBITRATION (C-5): code TReviewStatus uses unreviewed/accepted/rejected/deferred instead. Do not unify without ruling. See docs/07-工程路线 §16 C-5, docs/05-协议 §4, protocol/state-machine.md."},
     "confidence_level": {"type": "string", "enum": ["low", "medium", "high"]},
     "fog_state": {"type": "string", "enum": ["clear", "misty", "foggy", "unknown_unknowns"], "description": "How clear the requirement endpoint is. Converges one-way: unknown_unknowns -> foggy -> misty -> clear. See protocol §Fog."},
     "source_layer": {"type": "string", "enum": ["parsed_from_a", "human_decision", "ai_inferred", "generated_summary"]},

@@ -39,7 +39,7 @@ Canonical Spec + Validation（已存在）
 1. **只做 GUI 表现层**：复用 Controller 五方法，**不新增业务逻辑、数据模型、状态机**。
 2. **复用 WebView2 JS Bridge**（`TAsWishMainViewProvider` / `TEdgeBrowser`）承载 Review 页面；前置勘察报告（`docs/WO-20260830-0027D-前置工程勘察报告.md`）判定"完全可以小步接入，无需重构"。
 3. **控件尽量用 DeepBase 的 HB 视觉系统**（老板指令 2026-08-30）：主题 / Tokens / `THbSummaryBar` / `THbStreamBlock` / `THbBadge` 等已可直接用；缺失三件——0–9 选择控件、嵌套瀑布、信息粒度——由 `DeepBase/WO-20260830-005` 交付后使用，**本票不在 AsWish 侧私造等价控件**。
-4. **交互遵循 [`docs/AsWish-统一选择交互标准-v1.md`](../docs/AsWish-统一选择交互标准-v1.md)**：0–9 协议 + 语义色 Token（`Choice.Option / Regenerate / Input / Back`），深浅色主题各定义一套颜色值；落地为 HB 预置控件 `THbChoiceDeck`。
+4. **交互遵循 [`docs/03.规范-可见判断与交互规范.md`](../docs/03.规范-可见判断与交互规范.md)**：0–9 协议 + 语义色 Token（`Choice.Option / Regenerate / Input / Back`），深浅色主题各定义一套颜色值；落地为 HB 预置控件 `THbChoiceDeck`。
 5. **瀑布式、可扩展、有包含关系**：Review 信息用 HB 嵌套瀑布呈现——大问题包中问题包小问题（总意图 → 各理解 → 各变更项 → 字段级）；父卡可展开 / 收起子卡。
 6. **随时可切信息粒度**：全局粒度开关 6 档（超粗 / 粗 / 适中 / 较细 / 细 / 极细），默认适中；瀑布按档位折叠到对应深度。**粒度只影响看多少，不影响数据真伪。**
 7. **Review 页面的对象不是 ChangeSet YAML，而是"AI 对我的意图形成的当前理解"**——ChangeSet 只是它的工程承载物。

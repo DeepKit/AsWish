@@ -1,0 +1,226 @@
+# 01 - READONLY AUDIT (engineering facts only — no proposal)
+
+Scope: `D:\_Progs\02Business\AsWish`. Read-only; no source/doc/config/test/`.AsWish/`
+modification. Deliverable for the next engineering AI who will implement/verify
+WO-20260830-0027A.
+
+---
+
+## 1. Current repository state
+
+- Working tree clean except the intentionally-created `_handoff/` dir.
+- Branch: `main`.
+- HEAD commit: `27c268d (HEAD -> main) feat(candidate): implement WO-20260830-0027A natural language user intent entry`.
+- Preceding commits: strategic closure audit, identity/governance SSOT, migration cleanup.
+- DUnitX: **134 tests found, 134 passed, 0 failed** (prebuilt `tests/AsWish.Tests.exe`,
+  executed read-only for evidence; see `03-BUILD-TEST-EVIDENCE.txt`).
+- Compiler available (Studio 37.0 `dcc64`), but build was NOT re-run (read-only).
+
+> Important fact: **WO-20260830-0027A is already implemented and committed
+> (HEAD `27c268d`).** This handoff therefore documents the *current implemented
+> state*, not a greenfield. The next engineer should verify/extend rather than
+> assume it is unstarted.
+
+## 2. WO-20260830-0027A core requirements (from ticket)
+
+- Goal: let users submit natural-language corrections/additions at any Spec node,
+  routed into existing `CandidateIngest`.
+- Principle: no new "Proposal" entity; `CandidateIngest = human NL candidate input`.
+- Boundary (A↔B): NL raw text is persisted as `user_intent` field + target context
+  (`node_id`/`projection`); ticket only *carries*, does NOT interpret/generate nodes.
+  LLM interpretation → Change Set is out of scope (0027B).
+- Reuse `grilling_ticket` for insufficient input (no new questioning system).
+- AC-01..AC-07: submit NL / persist as user_intent / grilling reuse / no Canonical
+  Spec modification / no new proposal lifecycle / regression pass / build+test evidence.
+
+> Note: the ticket header still says "工作仓库：D:\_Progs\02Business\DeepSpec".
+> The implementation actually landed in the AsWish repo (HEAD `27c268d`). See §13.
+
+## 3. CandidateIngest current implementation
+
+File: `src/services/AsWish.Services.CandidateIngest.pas`.
+
+Existing (pre-0027A) core:
+- `TAsWishCandidateIngest.Ingest(candidateYaml, existingFunc/Mod/View[/Data])` →
+  `TCandidateIngestResult` (parsed + validated nodes, routed into 4 projection lists).
+- `MergeInto(accepted, Func/Mod/View[/Data])` → `TMergeStats` (Merged/Added/FogCleared).
+  Preserves human `review_status`/`decision_refs`; advances `gen_status` to generated;
+  nudges `fog_state` one step on function-root summary change.
+- Strong validation: id prefix, parent_id FK, forbids `human_decision` source_layer,
+  forces `gen_status<=generated` and `review_status=unreviewed` for LLM output.
+
+Added for 0027A (clearly tagged in code):
+- `TCandidateIntent` record (defined in `src/models/AsWish.Models.pas:151`):
+  `NodeId, Tree, UserIntent, CreatedAt, Author, SourceRefs`.
+  `TCandidateIntent.CreateNew(...)` factory at `AsWish.Models.pas:347`.
+- `FormatCandidateIntentYaml(const AIntent)` — serializes intent to YAML
+  (`version/tree/node_id/user_intent/author/created_at`).
+- `ParseCandidateIntentYaml(const AYaml)` — parses it back.
+- `SaveCandidateIntent(AProjectPath, AIntent)` → writes
+  `.AsWish/llm/candidate-intent.yaml` (via `TAsWishStoreService.AtomicWriteTextFile`).
+- `LoadCandidateIntent(AProjectPath)` → reads it back.
+- `CheckIntentClarity(AIntent, out AIssue)` → if intent too short/generic, builds a
+  `grilling_ticket` `TSpecIssue` (id `issue-grill-<ts>`); otherwise returns True.
+- `TSpecNode.UserIntent: string` field added (models:139); parsed in
+  `SpecStore.pas:487`; written in `Yaml.Writer.pas:221-222`.
+
+## 4. Decisions current implementation
+
+File: `src/services/AsWish.Services.Decisions.pas`.
+- `TAsWishDecisionsService`: `AddDecision / FindById / GetAccepted / AcceptDecision /
+  RejectDecision / PromotePending / ApplyNodeStatusTransitions`.
+- `TSpecDecision` record: `Id, DecisionType, Title, DecisionText, Rationale,
+  TargetNodes, ..., Status, DecidedBy, ...` (models:223).
+- `PromotePending` reads `pending-decisions.yaml` (from WebView2 JS Bridge) → formal
+  decisions. `ApplyNodeStatusTransitions` mutates tree node states.
+- **Relationship to 0027A**: candidate → decision flow exists generally, but the
+  0027A `user_intent` persistence path does NOT yet create/consume any Decision.
+  AC-04 (no Canonical Spec modification) is satisfied structurally; there is no
+  decision linking the persisted intent.
+
+## 5. Prompts current implementation
+
+File: `src/services/AsWish.Services.Prompts.pas`.
+- `WriteContextPack`, `WriteGenerationPrompt`, `WriteNodePrompt`,
+  `WriteDecisionRewritePrompt`, `WriteGrillingPrompt`.
+- `WriteGrillingPrompt(AIssue, ANodes)` produces a human-facing grilling clarification
+  prompt (target: Claude Code / Cursor / Codex). 0027A's `CheckIntentClarity`
+  produces a `grilling_ticket` issue; the prompt text for it can be generated by this
+  existing method — reuse path, no new prompting entity needed.
+- No dedicated "user_intent → structured result" prompt exists yet (out of scope for
+  0027A; belongs to 0027B).
+
+## 6. Controller current implementation
+
+File: `src/controllers/AsWish.Controller.pas`.
+- LLM generation loop already calls `TAsWishCandidateIngest.Create → Ingest →
+  MergeInto` to close the loop (around line 722–807): writes
+  `.AsWish/llm/candidate-output.yaml`, ingests, merges into live trees.
+- This is the A→B (LLM generates candidate → ingest) path, NOT the human NL intent
+  entry. No call to `SaveCandidateIntent` / `CheckIntentClarity` from the Controller.
+
+## 7. CLI / GUI current entry points
+
+CLI: `cli/AsWish.CLI.dpr`.
+- `ingest <dir> <file.yaml>` → `RunIngest` → `Ingest` + `MergeInto` (lines ~409–515).
+- `intent <dir> <id> <tree> <text>` → `RunIntent` (~521–562): builds
+  `TCandidateIntent.CreateNew(id, tree, text, 'human')`, calls `CheckIntentClarity`
+  (grilling issue if unclear), then `SaveCandidateIntent`. **This is the 0027A NL
+  entry, fully wired in the CLI.**
+- CLI help lists both `ingest` and `intent`.
+
+GUI: `src/app/AsWish.Commands.pas`, `src/app/AsWish.MainForm.pas`.
+- Command table: File/Open, Run/Scan, Generate B, View/Render, Tools (Promote
+  Pending Decisions, Export Prompt, Setup LLM). **No command for NL intent entry /
+  no "submit user_intent" dialog found.** Grep for `Intent|Candidate|Ingest` in
+  `AsWish.Commands.pas`/`AsWish.MainForm.pas` returned no 0027A wiring.
+- WebView2 JS Bridge (`src/providers/AsWish.Providers.MainView.pas`) handles
+  accept/reject decisions; no NL-intent surface identified there either.
+
+> Conclusion: 0027A NL entry exists in **CLI only**; **GUI has no NL entry** (AC-01
+> "用户可在 Spec 节点上下文提交自然语言修订" is partially met — CLI path yes, GUI no).
+
+## 8. Related tests
+
+- `tests/Test.AsWish.CandidateIngest.pas` — covers Ingest/MergeInto and (per HEAD)
+  0027A intent methods.
+- `tests/Test.AsWish.Decisions.pas`, `Test.AsWish.Prompts.pas`,
+  `Test.AsWish.Controller.pas`, `Test.AsWish.Models.pas` — cover adjacent units.
+- Suite total 134, all green. Test project: DUnitX; entry `tests/AsWish.Tests.dpr`
+  (prebuilt `tests/AsWish.Tests.exe`). `tests/` contains 11 `.pas` test units.
+
+## 9. Related protocol
+
+Schemas copied to `protocol/`:
+- `decisions.schema.json` — required fields `id,type,title,decision,rationale,
+  target_nodes,decided_by,status`; defines decision_type/decision_status.
+- `review-decision.schema.json` — `decision_action ∈ {accept,reject,request_changes,
+  lock,unlock}`; `required: id, decision_action, target_nodes, created_at, reviewer`.
+- `tree.schema.json` — node schema; has `legacy_node_status`, `revision`,
+  `decision_refs`; **does NOT define `user_intent`** field.
+- `project-spec.schema.json`, `agent-result.schema.json` — context only.
+
+> Protocol gap: `user_intent` (persisted at `.AsWish/llm/candidate-intent.yaml`)
+> and `TCandidateIntent` are **not described by any protocol schema** in
+> `protocol/schemas/`. `candidate-intent.yaml` location is also outside the
+> `SPEC.md §2` `.AsWish/` layout. There is **no Change Set / patch / revision
+> delta** schema (user change semantics not yet modeled — consistent with 0027A
+> only carrying, not interpreting).
+
+## 10. Actual call chain (facts)
+
+```
+[CLI]  AsWish.CLI.dpr :: RunIntent(dir,id,tree,text)
+        │  TCandidateIntent.CreateNew(id, tree, text, 'human')
+        ▼
+[Models] TCandidateIntent (record)
+        │
+        ▼
+[Service] TAsWishCandidateIngest.CheckIntentClarity(intent, out issue)
+        │  ├─ unclear (<=3 chars / generic) → builds TSpecIssue(itGrillingTicket)
+        │  └─ clear → returns True
+        ▼
+[Service] TAsWishCandidateIngest.SaveCandidateIntent(dir, intent)
+        │  FormatCandidateIntentYaml → .AsWish/llm/candidate-intent.yaml
+        ▼
+   (persisted; NOT merged into trees; NOT turned into nodes — AC-02/AC-04)
+   (LLM interpretation → Change Set = UNKNOWN / out of scope 0027B)
+
+[Separate, pre-existing] LLM generation path:
+[Controller] Run Scan / "Generate B"
+        → .AsWish/llm/candidate-output.yaml
+        → TAsWishCandidateIngest.Ingest → MergeInto → live trees
+        (Candidate → Trees, not via user_intent)
+```
+
+Decision linkage: `user_intent` → (no Decision created). `Candidate` (YAML nodes)
+→ `Decisions` via `DecisionsService` generally, but the 0027A intent path does not
+invoke it.
+
+## 11. Existing capabilities (0027A)
+
+- `TCandidateIntent` type + `CreateNew` factory — `AsWish.Models.pas:151/347`.
+- `Format/Parse/Load/SaveCandidateIntent` — `AsWish.Services.CandidateIngest.pas`.
+- `CheckIntentClarity` → grilling issue — `AsWish.Services.CandidateIngest.pas:584`.
+- `SaveCandidateIntent` writes `.AsWish/llm/candidate-intent.yaml`.
+- CLI `intent` subcommand fully wired — `cli/AsWish.CLI.dpr:521-562`.
+- `TSpecNode.UserIntent` field persisted through `SpecStore` + `Yaml.Writer`.
+- `grilling_ticket` issue type + `WriteGrillingPrompt` reuse path exists.
+- Test coverage present and green (134/134).
+
+## 12. Missing / uncertain capabilities (0027A)
+
+- **GUI NL entry is absent** (AC-01 only met via CLI).
+- **No protocol schema** for `user_intent` / `candidate-intent.yaml` (§9 gap).
+- **No Decision is created** from a persisted intent (no accept/reject of intent).
+- **No LLM interpretation / Change Set** from `user_intent` (explicitly 0027B).
+- **Uncertain**: whether `Test.AsWish.CandidateIngest.pas` actually asserts the new
+  0027A methods (not read line-by-line here; flagged for the next engineer to verify
+  that AC-06 regression + AC-07 evidence are covered).
+- **Uncertain**: whether the old DeepSpec repo still contains a divergent copy of
+  this work (ticket header points there). Not read (read-only on old repo per mandate).
+
+## 13. Open / unresolved items (facts, not decisions)
+
+- Ticket header "工作仓库：DeepSpec" vs implementation in AsWish repo (`27c268d`).
+  Need owner confirmation of which repo is canonical for 0027A.
+- `.AsWish/llm/candidate-intent.yaml` not in `SPEC.md §2` layout → protocol update
+  may be required before public release (the readiness report flags this class of
+  "residue" as a First Contact risk).
+- No GUI surface for intent entry — must be decided whether AC-01 requires GUI.
+
+---
+
+## Existing / Missing / Reusable / Maybe-new (four-column summary)
+
+| 维度 | 已有能力 (file:class.method) | 缺失能力 | 可直接复用 | 可能需新增 |
+|---|---|---|---|---|
+| NL 入口 | CLI `intent` (`AsWish.CLI.dpr:RunIntent`) | GUI NL 入口 | `TCandidateIntent.CreateNew` | GUI 对话框/命令 |
+| Intent 持久化 | `SaveCandidateIntent` → `.AsWish/llm/candidate-intent.yaml` | 协议 schema | `TAsWishStoreService.AtomicWriteTextFile` | candidate-intent schema |
+| 清晰度检查 | `CheckIntentClarity` → grilling issue | — | `WriteGrillingPrompt` | — |
+| Node 字段 | `TSpecNode.UserIntent` (Models/SpecStore/Yaml.Writer) | — | Yaml round-trip | — |
+| Candidate 合并 | `Ingest` / `MergeInto` | — | 现有流程 | — |
+| Decision 关联 | `TAsWishDecisionsService` | intent→decision 链接 | `AddDecision`/`PromotePending` | 视决定而定 |
+| LLM 解释 | — | Change Set 生成 | — | 0027B（非本票） |
+
+No implementation proposal is made here. This document is evidence for the next engineer.
