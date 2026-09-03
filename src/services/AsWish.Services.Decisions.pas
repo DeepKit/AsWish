@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.Decisions
 
@@ -47,6 +47,13 @@ type
     function RecordChangeSetDecision(const AChangeSet: TChangeSet;
       AAction: TReviewStatus; const ARationale: string = '';
       AItemIndex: Integer = -1): string;
+
+    /// <summary>
+    /// Record a formal Human Decision for Structural Difference (WO-20260903-0027H).
+    /// Actions: 'acceptable', 'unacceptable', 'unresolved'.
+    /// </summary>
+    function RecordDifferenceDecision(const AReport: TSpecDifferenceReport;
+      const AAction: string; const ARationale: string = ''): string;
 
     /// <summary>
     /// Read pending-decisions.yaml (produced by the WebView2 JS Bridge),
@@ -334,6 +341,64 @@ begin
   FDecisions.Add(LDec);
   Result := LDec.Id;
   Save;
+end;
+
+function TAsWishDecisionsService.RecordDifferenceDecision(
+  const AReport: TSpecDifferenceReport; const AAction: string;
+  const ARationale: string): string;
+var
+  LDec: TSpecDecision;
+  LActionLower: string;
+  LTargetNodes: TList<string>;
+begin
+  LDec := Default(TSpecDecision);
+  LDec.Id := GenerateNextId;
+  LDec.CreatedAt := Now;
+  LDec.UpdatedAt := Now;
+  LDec.DecidedBy := dbHuman;
+  LDec.Confidence := clHigh;
+  LDec.ChangeSetId := AReport.BaselineId;
+  LDec.Rationale := ARationale;
+
+  LTargetNodes := TList<string>.Create;
+  try
+    for var LItem in AReport.Items do
+      if LItem.NodeId <> '' then
+        LTargetNodes.Add(LItem.NodeId);
+    LDec.TargetNodes := LTargetNodes.ToArray;
+  finally
+    LTargetNodes.Free;
+  end;
+
+  LActionLower := LowerCase(AAction.Trim);
+  if (LActionLower = 'acceptable') or (LActionLower = 'accept') then
+  begin
+    LDec.DecisionType := dtAcceptDifference;
+    LDec.Status := dsAccepted;
+    LDec.Title := 'Accept Difference for Baseline ' + AReport.BaselineId;
+    LDec.DecisionText := Format('Accept structural differences (%d items) against baseline %s',
+      [Length(AReport.Items), AReport.BaselineId]);
+  end
+  else if (LActionLower = 'unacceptable') or (LActionLower = 'reject') then
+  begin
+    LDec.DecisionType := dtReject;
+    LDec.Status := dsRejected;
+    LDec.Title := 'Reject Difference for Baseline ' + AReport.BaselineId;
+    LDec.DecisionText := Format('Reject structural differences (%d items) against baseline %s',
+      [Length(AReport.Items), AReport.BaselineId]);
+  end
+  else
+  begin
+    LDec.DecisionType := dtClarify;
+    LDec.Status := dsProposed;
+    LDec.Title := 'Unresolved Difference for Baseline ' + AReport.BaselineId;
+    LDec.DecisionText := Format('Unresolved structural differences (%d items) against baseline %s',
+      [Length(AReport.Items), AReport.BaselineId]);
+  end;
+
+  FDecisions.Add(LDec);
+  Save;
+  Result := LDec.Id;
 end;
 
 function TAsWishDecisionsService.PromotePending: Integer;
