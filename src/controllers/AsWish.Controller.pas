@@ -1163,7 +1163,7 @@ begin
 
       LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
 
-      LCSId := 'cs-' + ANodeId + '-01';
+      LCSId := LIngest.GenerateNextChangeSetId(FProjectService.ProjectPath, ANodeId);
       LChangeSet := TChangeSet.CreateNew(LCSId, ANodeId, ATree, AIntentText, 'human');
       LChangeSet.AffectedProjections := LAffected;
 

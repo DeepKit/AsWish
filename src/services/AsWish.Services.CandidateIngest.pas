@@ -106,6 +106,8 @@ type
     /// <summary>Parse YAML string into TChangeSet record (WO-20260830-0027B).</summary>
     class function ParseChangeSetYaml(const AYaml: string): TChangeSet; static;
 
+    /// <summary>Generate monotonic unique Change Set ID for a node (e.g. cs-func-root-01, cs-func-root-02).</summary>
+    function GenerateNextChangeSetId(const AProjectPath, ANodeId: string): string;
     /// <summary>Persist structured Change Set to .AsWish/llm/change-set.yaml (WO-20260830-0027B).</summary>
     function SaveChangeSet(const AProjectPath: string; const AChangeSet: TChangeSet): string;
     /// <summary>Load structured Change Set from .AsWish/llm/ (WO-20260830-0027B).</summary>
@@ -800,6 +802,24 @@ begin
     end;
   finally
     LParser.Free;
+  end;
+end;
+
+function TAsWishCandidateIngest.GenerateNextChangeSetId(
+  const AProjectPath, ANodeId: string): string;
+var
+  LLlmDir, LCandidateId, LFilePath: string;
+  LSeq: Integer;
+begin
+  LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
+  LSeq := 1;
+  while True do
+  begin
+    LCandidateId := Format('cs-%s-%.2d', [ANodeId, LSeq]);
+    LFilePath := TPath.Combine(LLlmDir, 'change-set-' + LCandidateId + '.yaml');
+    if not TFile.Exists(LFilePath) then
+      Exit(LCandidateId);
+    Inc(LSeq);
   end;
 end;
 

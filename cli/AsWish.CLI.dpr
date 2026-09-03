@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.CLI -- headless command-line entry (Phase 5 B-P0).
 
   Reuses the same src/ services as the desktop app (no DeepShell/GUI
@@ -659,7 +659,8 @@ begin
 
         LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
 
-        LChangeSet := TChangeSet.CreateNew('cs-' + ANodeId + '-01', ANodeId, LTree, AUserIntent, 'human');
+        var LCSId := LIngest.GenerateNextChangeSetId(ADir, ANodeId);
+        LChangeSet := TChangeSet.CreateNew(LCSId, ANodeId, LTree, AUserIntent, 'human');
         LChangeSet.AffectedProjections := LAffected;
 
         LItem := TChangeItem.CreateItem(ANodeId, LTree, 'summary', LTargetNode.Summary, AUserIntent, cstExplicit, 'Interpreted from human user intent');
@@ -1539,16 +1540,17 @@ begin
         try
           LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
           LDecisions.Load;
-          LDecId := LDecisions.RecordDifferenceDecision(LReport, 'acceptable', ANote);
-          LDec := LDecisions.FindById(LDecId);
 
           LCS := Default(TChangeSet);
-          LCS.Id := 'cs-evolve-' + LDecId;
+          LCS.Id := 'cs-evolve-' + ABaselineId;
           if LReport.TreeType = 'view' then LCS.IntentTree := ttView
           else if LReport.TreeType = 'module' then LCS.IntentTree := ttModule
           else if LReport.TreeType = 'data' then LCS.IntentTree := ttData
           else LCS.IntentTree := ttFunction;
           LCS.IntentNodeId := 'diff-evolve';
+
+          LDecId := LDecisions.RecordDifferenceDecision(LReport, 'acceptable', ANote, LCS.Id);
+          LDec := LDecisions.FindById(LDecId);
 
           LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
           LMod := LStore.ReadTreeFile('trees/module-tree.yaml');

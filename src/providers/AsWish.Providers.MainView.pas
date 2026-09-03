@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Providers.MainView
   ---------------------------------------------------------------------------
   Main view provider - hosts a TEdgeBrowser (WebView2) for HTML rendering.
@@ -220,7 +220,6 @@ begin
     begin
       var LIntentText := LObj.GetValue<string>('intent_text', '');
       var LTreeStr := LObj.GetValue<string>('tree', '');
-      if LTreeStr = '' then LTreeStr := 'function';
       var LTree: TTreeType;
       if not TSpecEnums.TryTreeTypeFromStr(LTreeStr, LTree) then
         raise Exception.CreateFmt('Invalid tree type for changeset-submit: "%s"', [LTreeStr]);
@@ -251,7 +250,6 @@ begin
     begin
       var LIntentText := LObj.GetValue<string>('intent_text', '');
       var LTreeStr := LObj.GetValue<string>('tree', '');
-      if LTreeStr = '' then LTreeStr := 'function';
       var LTree: TTreeType;
       if not TSpecEnums.TryTreeTypeFromStr(LTreeStr, LTree) then
         raise Exception.CreateFmt('Invalid tree type for changeset-regenerate: "%s"', [LTreeStr]);

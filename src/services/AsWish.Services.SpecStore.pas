@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Services.SpecStore
 
@@ -294,27 +294,35 @@ begin
     'generator: "aswish-scan"' + sLineBreak +
     'nodes: []' + sLineBreak;
 
-  WriteYamlFile('trees/function-tree.yaml', Format(LTemplate, ['function']));
-  WriteYamlFile('trees/module-tree.yaml', Format(LTemplate, ['module']));
-  WriteYamlFile('trees/view-tree.yaml', Format(LTemplate, ['view']));
-  WriteYamlFile('trees/data-tree.yaml', Format(LTemplate, ['data']));
+  if not TFile.Exists(TPath.Combine(FBasePath, 'trees\function-tree.yaml')) then
+    WriteYamlFile('trees/function-tree.yaml', Format(LTemplate, ['function']));
+  if not TFile.Exists(TPath.Combine(FBasePath, 'trees\module-tree.yaml')) then
+    WriteYamlFile('trees/module-tree.yaml', Format(LTemplate, ['module']));
+  if not TFile.Exists(TPath.Combine(FBasePath, 'trees\view-tree.yaml')) then
+    WriteYamlFile('trees/view-tree.yaml', Format(LTemplate, ['view']));
+  if not TFile.Exists(TPath.Combine(FBasePath, 'trees\data-tree.yaml')) then
+    WriteYamlFile('trees/data-tree.yaml', Format(LTemplate, ['data']));
 
-  WriteYamlFile('relations/requirement-relations.yaml',
-    'version: "1.0"' + sLineBreak +
-    'generated_at: "' + LNow + '"' + sLineBreak +
-    'relations: []' + sLineBreak);
+  if not TFile.Exists(TPath.Combine(FBasePath, 'relations\requirement-relations.yaml')) then
+    WriteYamlFile('relations/requirement-relations.yaml',
+      'version: "1.0"' + sLineBreak +
+      'generated_at: "' + LNow + '"' + sLineBreak +
+      'relations: []' + sLineBreak);
 
-  WriteYamlFile('evidence/source-evidence.yaml',
-    'version: "1.0"' + sLineBreak +
-    'evidence: []' + sLineBreak);
+  if not TFile.Exists(TPath.Combine(FBasePath, 'evidence\source-evidence.yaml')) then
+    WriteYamlFile('evidence/source-evidence.yaml',
+      'version: "1.0"' + sLineBreak +
+      'evidence: []' + sLineBreak);
 
-  WriteYamlFile('issues/doc-issues.yaml',
-    'version: "1.0"' + sLineBreak +
-    'issues: []' + sLineBreak);
+  if not TFile.Exists(TPath.Combine(FBasePath, 'issues\doc-issues.yaml')) then
+    WriteYamlFile('issues/doc-issues.yaml',
+      'version: "1.0"' + sLineBreak +
+      'issues: []' + sLineBreak);
 
-  WriteYamlFile('decisions/requirement-decisions.yaml',
-    'version: "1.0"' + sLineBreak +
-    'decisions: []' + sLineBreak);
+  if not TFile.Exists(TPath.Combine(FBasePath, 'decisions\requirement-decisions.yaml')) then
+    WriteYamlFile('decisions/requirement-decisions.yaml',
+      'version: "1.0"' + sLineBreak +
+      'decisions: []' + sLineBreak);
 end;
 
 procedure TAsWishStoreService.WriteGitIgnore;

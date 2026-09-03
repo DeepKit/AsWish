@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Services.Decisions
 
@@ -49,11 +49,12 @@ type
       AItemIndex: Integer = -1): string;
 
     /// <summary>
-    /// Record a formal Human Decision for Structural Difference (WO-20260903-0027H).
+    /// Record a formal Human Decision for Structural Difference (WO-20260903-0027H, WO-20260903-2336-0027R2).
     /// Actions: 'acceptable', 'unacceptable', 'unresolved'.
     /// </summary>
     function RecordDifferenceDecision(const AReport: TSpecDifferenceReport;
-      const AAction: string; const ARationale: string = ''): string;
+      const AAction: string; const ARationale: string = '';
+      const AChangeSetId: string = ''): string;
 
     /// <summary>
     /// Read pending-decisions.yaml (produced by the WebView2 JS Bridge),
@@ -345,7 +346,7 @@ end;
 
 function TAsWishDecisionsService.RecordDifferenceDecision(
   const AReport: TSpecDifferenceReport; const AAction: string;
-  const ARationale: string): string;
+  const ARationale: string; const AChangeSetId: string): string;
 var
   LDec: TSpecDecision;
   LActionLower: string;
@@ -357,7 +358,7 @@ begin
   LDec.UpdatedAt := Now;
   LDec.DecidedBy := dbHuman;
   LDec.Confidence := clHigh;
-  LDec.ChangeSetId := AReport.BaselineId;
+  LDec.ChangeSetId := AChangeSetId;
   LDec.Rationale := ARationale;
 
   LTargetNodes := TList<string>.Create;
