@@ -1,0 +1,31 @@
+======================================================================
+AsWish Build Gate Evidence (WO-20260903-2336-0027R2-甲)
+======================================================================
+
+--- Build 1: Desktop App (AsWish.exe) ---
+Command: cmd.exe /c _build.bat
+Cwd: D:\_Progs\02Business\AsWish
+Exit code: 0
+Output:
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+18426 lines, 1.88 seconds, 6498228 bytes code, 659136 bytes data.
+
+--- Build 2: CLI App (AsWish.CLI.exe) ---
+Command: cmd.exe /c _build_cli.bat
+Cwd: D:\_Progs\02Business\AsWish\cli
+Exit code: 0
+Output:
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+14033 lines, 1.38 seconds, 3103272 bytes code, 379208 bytes data.
+
+--- Build 3: Test Suite (AsWish.Tests.exe) ---
+Command: cmd.exe /c _build_tests.bat
+Cwd: D:\_Progs\02Business\AsWish\tests
+Exit code: 0
+Output:
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+22809 lines, 2.25 seconds, 9057760 bytes code, 828504 bytes data.
+

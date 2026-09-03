@@ -1,0 +1,392 @@
+
+========================================================
+[Step 1.1: Init workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe init D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[init] initialized: D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish
+
+========================================================
+[Step 1.3: Scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+[scan] 11 files, type=delphi_vcl
+[scan] trees: function 1 / module 4 / view 0 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\html\
+
+========================================================
+[Step 2.1: Express Intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\dogfood_r2_site_final func-root function Add search functionality with filtering and pagination
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[Step 2.2: Generate ChangeSet]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\dogfood_r2_site_final func-root function Add search functionality with filtering and pagination
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-01 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\llm\change-set-cs-func-root-01.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[Step 2.3: Accept ChangeSet & Freeze B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\dogfood_r2_site_final cs-func-root-01 Baseline B-0001 approved by human architect
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-01 -> recorded Decision dec-0001
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0001 (snapshot: 2026-09-03_234231-accepted-baseline-B-0001-dec-0001)
+
+========================================================
+[Step 2.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[baseline] found 1 Accepted Baseline(s):
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 043d1bd37722d92e675f90b849d6ac02b8a9d2c4a5443951bb61ca6ab2f7eeb4 | RelationHash: 576bbdd653dfea864152e49c20fd489b81cbff1d9fe85f39eb504e576db2c045
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[Step 2.5: Verify B-0001 integrity]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0001
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+========================================================
+[Step 3: Collect implementation evidence for B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0001
+Exit code: 0
+Output:
+Collected 1 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: src/TodoApp.pas (lines: , hash: 69861dab6012)
+
+========================================================
+[Step 5: Re-scan workspace to update live trees]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+[scan] 35 files, type=delphi_vcl
+[scan] trees: function 22 / module 4 / view 7 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\html\
+
+========================================================
+[Step 6: Re-collect evidence (shows changed file hash)]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0001
+Exit code: 0
+Output:
+Collected 1 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: src/TodoApp.pas (lines: , hash: c2f768e361d4)
+
+========================================================
+[Step 7: Compute structural difference against B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0001
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0001" (tree: function):
+  Found 21 structural difference(s):
+  - [extra] node: func-5-interpretation-rules (baseline: , live/ev: 4303df72)
+  - [extra] node: func-process (baseline: , live/ev: d0d3ba15)
+  - [extra] node: func-quality-bar (baseline: , live/ev: 37d0b881)
+  - [extra] node: func-1-raw-human-user-intent (baseline: , live/ev: afb19bc9)
+  - [extra] node: func-aswish-llm-interpretation-candidate-user (baseline: , live/ev: 29f1259a)
+  - [extra] node: func-2-current-node-context (baseline: , live/ev: e86bc5dc)
+  - [extra] node: func-2-file-statistics (baseline: , live/ev: 69992716)
+  - [extra] node: func-5-code-structure-sample (baseline: , live/ev: a602908e)
+  - [extra] node: func-3-affected-projections-via-semantic-bund (baseline: , live/ev: fcf26d2f)
+  - [extra] node: func-context-pack (baseline: , live/ev: bf5ddf7b)
+  - [extra] node: func-output-files (baseline: , live/ev: 2cfd6235)
+  - [extra] node: func-a-b-generation-prompt (baseline: , live/ev: ad6fb55a)
+  - [extra] node: func-1-project (baseline: , live/ev: 8537f3e0)
+  - [extra] node: func-8-output-format (baseline: , live/ev: cb093c94)
+  - [extra] node: func-4-ai-rules-files (baseline: , live/ev: 37e0fa55)
+  - [extra] node: func-file-trees-function-tree-yaml (baseline: , live/ev: 7ed1c0da)
+  - [extra] node: func-6-task (baseline: , live/ev: 270ba5d1)
+  - [extra] node: func-file-trees-module-tree-yaml (baseline: , live/ev: 27662edd)
+  - [extra] node: func-4-required-output-format (baseline: , live/ev: ed8adf83)
+  - [extra] node: func-7-constraints (baseline: , live/ev: b6138479)
+  - [extra] node: func-3-key-documents (baseline: , live/ev: d3392d1d)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[Step 8: Human Judgment (Unacceptable - trigger Revision)]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0001 unacceptable Search signature is missing pagination and sorting; reject for Revision
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0002" (unacceptable) for baseline B-0001 (21 difference items).
+
+========================================================
+[Step 9: Express Revision Intent via B' entry point]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\dogfood_r2_site_final func-root function Revise search specification to include pagination and sorting parameters
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[Step 10: Generate Revision ChangeSet]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\dogfood_r2_site_final func-root function Revise search specification to include pagination and sorting parameters
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-02 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\llm\change-set-cs-func-root-02.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[Step 10.2: Accept Revision ChangeSet & Freeze B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\dogfood_r2_site_final cs-func-root-02 Revision accepted; freeze updated baseline B-0002
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-02 -> recorded Decision dec-0003
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0002 (snapshot: 2026-09-03_234231-accepted-baseline-B-0002-dec-0003)
+
+========================================================
+[Step 11.1: List baselines after Round 2 Revision]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[baseline] found 2 Accepted Baseline(s):
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: d144b2f08cecefdd0aedb77bebe38ca2093cac84f2d4e843a372caaad8af4a94 | RelationHash: ad5a51631a98873f2587144c8177768bc27b064e96f7ad1f2aeb2b2ed9d81f90
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 043d1bd37722d92e675f90b849d6ac02b8a9d2c4a5443951bb61ca6ab2f7eeb4 | RelationHash: 576bbdd653dfea864152e49c20fd489b81cbff1d9fe85f39eb504e576db2c045
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[Step 11.2: Verify B-0002 integrity]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0002
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+========================================================
+[Step 12.1: Re-scan workspace for Evolution (detects new export module & docs)]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+[scan] 45 files, type=delphi_vcl
+[scan] trees: function 23 / module 5 / view 7 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\html\
+
+========================================================
+[Step 12.2: Collect evidence for B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0002
+Exit code: 0
+Output:
+Collected 10 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: .AsWish/prompts/change-interpret-func-root.md (lines: , hash: 46e357184ec5)
+  - ev-impl-0002: .AsWish/prompts/context-pack.md (lines: , hash: 361652fd1f64)
+  - ev-impl-0003: .AsWish/prompts/doc-optimization-prompt.md (lines: , hash: b376f74ddced)
+  - ev-impl-0004: src/TodoApp.pas (lines: , hash: c2f768e361d4)
+  - ev-impl-0005: .AsWish/html/function-tree.html (lines: , hash: d1dc313431db)
+  - ev-impl-0006: .AsWish/html/index.html (lines: , hash: 4ea6ef6d72ec)
+  - ev-impl-0007: .AsWish/html/module-tree.html (lines: , hash: 0151d9108f25)
+  - ev-impl-0008: .AsWish/html/problems.html (lines: , hash: 19437152aed4)
+  - ev-impl-0009: .AsWish/html/scan-report.html (lines: , hash: 9057f1c85aa5)
+  - ev-impl-0010: .AsWish/html/view-tree.html (lines: , hash: 8d731f7bbe27)
+
+========================================================
+[Step 12.3: Compute difference against B-0002 (must be non-empty)]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0002
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0002" (tree: function):
+  Found 1 structural difference(s):
+  - [extra] node: func-export-feature (baseline: , live/ev: a2cb2450)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[Step 13.1: Human Judgment (Acceptable)]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0002 acceptable Export feature and documentation are approved additions; accept difference
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0004" (acceptable) for baseline B-0002 (1 difference items).
+
+========================================================
+[Step 13.2: Evolve to B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0002 Evolution to Baseline B-0003 from implementation reality
+Exit code: 0
+Output:
+Evolved new Accepted Baseline "B-0003" (snapshot: 2026-09-03_234231-accepted-baseline-B-0003-dec-0005) from current implementation reality.
+  - Decision ID: dec-0005
+  - Content Hash: 59c2a49b10c04051
+  - Relation Hash: c3fc6268fe922537
+
+========================================================
+[Step 14.1: List baselines after Evolution]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood_r2_site_final
+Exit code: 0
+Output:
+[baseline] found 3 Accepted Baseline(s):
+  - ID: B-0003 | Decision: dec-0005 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0003-dec-0005 | Tree: function
+    ContentHash: 59c2a49b10c04051153dc8cf47dd8d436ac6b6cabf8893005a2c7ad2b8f82c50 | RelationHash: c3fc6268fe9225378c55868277bdaf6b9526233329a897447c9b7a035ec67f70
+    Lineage: ChangeSet=cs-evolve-B-0002, Intent=diff-evolve
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: d144b2f08cecefdd0aedb77bebe38ca2093cac84f2d4e843a372caaad8af4a94 | RelationHash: ad5a51631a98873f2587144c8177768bc27b064e96f7ad1f2aeb2b2ed9d81f90
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 043d1bd37722d92e675f90b849d6ac02b8a9d2c4a5443951bb61ca6ab2f7eeb4 | RelationHash: 576bbdd653dfea864152e49c20fd489b81cbff1d9fe85f39eb504e576db2c045
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[Step 14.2: Verify B-0003 integrity]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood_r2_site_final B-0003
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0003 integrity verified (content & relation hashes match)
+
+========================================================
+Dogfood R2 First Closed Loop Execution Verification:
+
+--- Decisions File (D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\decisions\requirement-decisions.yaml) ---
+﻿version: "1.0"
+
+decisions:
+  - id: "dec-0001"
+    type: confirm
+    title: "Accept ChangeSet: cs-func-root-01"
+    decision: "Accept interpreted changes for node func-root based on intent: Add search functionality with filtering and pagination"
+    rationale: "Baseline B-0001 approved by human architect"
+    target_nodes:
+      - "func-root"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_set_id: "cs-func-root-01"
+  - id: "dec-0002"
+    type: reject
+    title: "Reject Difference for Baseline B-0001"
+    decision: "Reject structural differences (21 items) against baseline B-0001"
+    rationale: "Search signature is missing pagination and sorting; reject for Revision"
+    target_nodes:
+      - "func-5-interpretation-rules"
+      - "func-process"
+      - "func-quality-bar"
+      - "func-1-raw-human-user-intent"
+      - "func-aswish-llm-interpretation-candidate-user"
+      - "func-2-current-node-context"
+      - "func-2-file-statistics"
+      - "func-5-code-structure-sample"
+      - "func-3-affected-projections-via-semantic-bund"
+      - "func-context-pack"
+      - "func-output-files"
+      - "func-a-b-generation-prompt"
+      - "func-1-project"
+      - "func-8-output-format"
+      - "func-4-ai-rules-files"
+      - "func-file-trees-function-tree-yaml"
+      - "func-6-task"
+      - "func-file-trees-module-tree-yaml"
+      - "func-4-required-output-format"
+      - "func-7-constraints"
+      - "func-3-key-documents"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: rejected
+    superseded_by: null
+    supersedes: []
+    change_item_index: 0
+  - id: "dec-0003"
+    type: confirm
+    title: "Accept ChangeSet: cs-func-root-02"
+    decision: "Accept interpreted changes for node func-root based on intent: Revise search specification to include pagination and sorting parameters"
+    rationale: "Revision accepted; freeze updated baseline B-0002"
+    target_nodes:
+      - "func-root"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_set_id: "cs-func-root-02"
+  - id: "dec-0004"
+    type: accept_difference
+    title: "Accept Difference for Baseline B-0002"
+    decision: "Accept structural differences (1 items) against baseline B-0002"
+    rationale: "Export feature and documentation are approved additions; accept difference"
+    target_nodes:
+      - "func-export-feature"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_item_index: 0
+  - id: "dec-0005"
+    type: accept_difference
+    title: "Accept Difference for Baseline B-0002"
+    decision: "Accept structural differences (1 items) against baseline B-0002"
+    rationale: "Evolution to Baseline B-0003 from implementation reality"
+    target_nodes:
+      - "func-export-feature"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    created_at: "2026-09-03T23:42:31+08:00"
+    updated_at: "2026-09-03T23:42:31+08:00"
+    decided_by: human
+    confidence: high
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_set_id: "cs-evolve-B-0002"
+    change_item_index: 0
+All 5 decisions (dec-0001..dec-0005) present in decisions file!
+Both ChangeSets coexist:
+  - D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\llm\change-set-cs-func-root-01.yaml
+  - D:\_Progs\02Business\AsWish\dogfood_r2_site_final\.AsWish\llm\change-set-cs-func-root-02.yaml
+
+Dogfood R2 First Closed Loop Completed Successfully!
+Site preserved at: D:\_Progs\02Business\AsWish\dogfood_r2_site_final
