@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Providers
   ---------------------------------------------------------------------------
   Registers AsWish providers (Structure, MainView, Inspector) into the shell.
@@ -59,9 +59,9 @@ begin
         AController.ApplyBundleDecisions(AAction, ABundleId);
       end,
       // Natural language intent submit -> Controller.SubmitUserIntent
-      procedure(const ANodeId, AIntentText: string)
+      procedure(const ANodeId: string; ATree: TTreeType; const AIntentText: string)
       begin
-        AController.SubmitUserIntent(ANodeId, AIntentText);
+        AController.SubmitUserIntent(ANodeId, ATree, AIntentText);
       end,
       // ChangeSet decisions -> Controller.Accept/Reject/Clarify
       procedure(const AAction, AChangeSetId, AParam: string)

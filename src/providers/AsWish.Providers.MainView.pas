@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Providers.MainView
   ---------------------------------------------------------------------------
   Main view provider - hosts a TEdgeBrowser (WebView2) for HTML rendering.
@@ -27,6 +27,7 @@ uses
   Vcl.Controls,
   Vcl.StdCtrls,
   Vcl.Edge,
+  AsWish.Models,
   AsWish.UI.Intf,
   AsWish.UI.Types,
   AsWish.Services.Project;
@@ -53,7 +54,7 @@ type
 
   /// <summary>JS Bridge callback for submitting natural language intent from GUI.</summary>
   TChangeSetSubmitProc = reference to procedure(
-    const ANodeId, AIntentText: string);
+    const ANodeId: string; ATree: TTreeType; const AIntentText: string);
 
   /// <summary>JS Bridge callback for ChangeSet decisions (accept/reject/clarify).</summary>
   TChangeSetActionProc = reference to procedure(
@@ -218,9 +219,15 @@ begin
     else if LAction = 'changeset-submit' then
     begin
       var LIntentText := LObj.GetValue<string>('intent_text', '');
+      var LTreeStr := LObj.GetValue<string>('tree', '');
+      if LTreeStr = '' then LTreeStr := 'function';
+      var LTree: TTreeType;
+      if not TSpecEnums.TryTreeTypeFromStr(LTreeStr, LTree) then
+        raise Exception.CreateFmt('Invalid tree type for changeset-submit: "%s"', [LTreeStr]);
+
       if Assigned(FOnSubmitIntent) then
       begin
-        FOnSubmitIntent(LNodeId, LIntentText);
+        FOnSubmitIntent(LNodeId, LTree, LIntentText);
         var LReviewPath := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');
         if TFile.Exists(LReviewPath) then
           Sender.Navigate('file:///' + LReviewPath.Replace('\', '/'));
@@ -243,9 +250,15 @@ begin
     else if LAction = 'changeset-regenerate' then
     begin
       var LIntentText := LObj.GetValue<string>('intent_text', '');
+      var LTreeStr := LObj.GetValue<string>('tree', '');
+      if LTreeStr = '' then LTreeStr := 'function';
+      var LTree: TTreeType;
+      if not TSpecEnums.TryTreeTypeFromStr(LTreeStr, LTree) then
+        raise Exception.CreateFmt('Invalid tree type for changeset-regenerate: "%s"', [LTreeStr]);
+
       if Assigned(FOnSubmitIntent) then
       begin
-        FOnSubmitIntent(LNodeId, LIntentText);
+        FOnSubmitIntent(LNodeId, LTree, LIntentText);
         var LReviewPath := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');
         if TFile.Exists(LReviewPath) then
           Sender.Navigate('file:///' + LReviewPath.Replace('\', '/'));

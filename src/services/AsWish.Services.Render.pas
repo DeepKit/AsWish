@@ -408,12 +408,49 @@ begin
       LSb.AppendLine('  <li><a href="data-tree.html">Data Tree</a></li>');
     LSb.AppendLine('</ul>');
 
+    // B' GUI Entry Point (Q4 Candidate B'): Express New Intent from blank / arbitrary node
+    LSb.AppendLine('<div class="card card-i-said" style="margin-top:2em; border-left: 4px solid #3b82f6; padding: 1.2em; background: #f8fafc; border-radius: 6px;">');
+    LSb.AppendLine('  <h2>' + T('Express New Intent (B'' Direct Entry Point)', '表达新意图（B'' 直达入口）') + '</h2>');
+    LSb.AppendLine('  <p>' + T('Propose a new intent or revision to start the next iteration loop:', '提出新意图或修订诉求，开启下一轮迭代闭环：') + '</p>');
+    LSb.AppendLine('  <div style="display:flex; gap: 10px; margin-bottom: 8px;">');
+    LSb.AppendLine('    <input id="new-intent-node-id" type="text" placeholder="' + T('Target Node ID (or blank for root/new)', '目标节点 ID（或留空代表根/新建）') + '" style="flex:1; padding:6px; border:1px solid #cbd5e1; border-radius:4px;" />');
+    LSb.AppendLine('    <select id="new-intent-tree" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px;">');
+    LSb.AppendLine('      <option value="function">Function Tree</option>');
+    LSb.AppendLine('      <option value="view">View Tree</option>');
+    LSb.AppendLine('      <option value="module">Module Tree</option>');
+    LSb.AppendLine('      <option value="data">Data Tree</option>');
+    LSb.AppendLine('    </select>');
+    LSb.AppendLine('  </div>');
+    LSb.AppendLine('  <textarea id="index-new-intent-input" class="form-textarea" style="width:100%; height:70px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;" placeholder="' + T('Type your intent in natural language...', '使用自然语言输入意图...') + '"></textarea>');
+    LSb.AppendLine('  <div style="margin-top:8px;">');
+    LSb.AppendLine('    <button class="btn-choice btn-choice-input" style="background:#3b82f6; color:#fff; padding:6px 14px; border:none; border-radius:4px; cursor:pointer;" onclick="submitIndexNewIntent()">');
+    LSb.AppendLine('      <span class="choice-key">[9]</span> ' + T('Submit New Intent', '提交新意图') + '');
+    LSb.AppendLine('    </button>');
+    LSb.AppendLine('  </div>');
+    LSb.AppendLine('</div>');
+
     // JS Bridge: forward export-optimization-prompt clicks to the WebView2 host.
     // (Index page has no other data-action buttons, so a focused script suffices.
     // Falls back to a visible alert when opened in a regular browser.)
     LSb.AppendLine('<script>');
     LSb.AppendLine('(function() {');
     LSb.AppendLine('  var hasBridge = !!(window.chrome && window.chrome.webview && window.chrome.webview.postMessage);');
+    LSb.AppendLine('  window.submitIndexNewIntent = function() {');
+    LSb.AppendLine('    var txt = document.getElementById("index-new-intent-input").value.trim();');
+    LSb.AppendLine('    if (!txt) { alert("Please enter your intent."); return; }');
+    LSb.AppendLine('    var nodeId = document.getElementById("new-intent-node-id").value.trim();');
+    LSb.AppendLine('    var tree = document.getElementById("new-intent-tree").value;');
+    LSb.AppendLine('    if (hasBridge) {');
+    LSb.AppendLine('      window.chrome.webview.postMessage(JSON.stringify({');
+    LSb.AppendLine('        action: "changeset-submit",');
+    LSb.AppendLine('        node_id: nodeId || "root",');
+    LSb.AppendLine('        tree: tree,');
+    LSb.AppendLine('        intent_text: txt');
+    LSb.AppendLine('      }));');
+    LSb.AppendLine('    } else {');
+    LSb.AppendLine('      alert("Action: changeset-submit for " + (nodeId || "root") + " (" + tree + ")");');
+    LSb.AppendLine('    }');
+    LSb.AppendLine('  };');
     LSb.AppendLine('  document.addEventListener("click", function(e) {');
     LSb.AppendLine('    var t = e.target;');
     LSb.AppendLine('    if (!(t instanceof HTMLElement)) return;');
@@ -1282,6 +1319,7 @@ begin
     LSb.AppendLine('      window.chrome.webview.postMessage(JSON.stringify({');
     LSb.AppendLine('        action: "changeset-submit",');
     LSb.AppendLine('        node_id: ' + YamlEscape(ANode.Id) + ',');
+    LSb.AppendLine('        tree: ' + YamlEscape(TSpecEnums.TreeTypeToStr(ANode.Tree)) + ',');
     LSb.AppendLine('        intent_text: txt');
     LSb.AppendLine('      }));');
     LSb.AppendLine('    } else {');
@@ -1557,7 +1595,7 @@ begin
     LSb.AppendLine('  }');
     LSb.AppendLine('');
     LSb.AppendLine('  function doRegenerate() {');
-    LSb.AppendLine('    post({ action: "changeset-regenerate", node_id: targetNodeId, intent_text: rawIntent });');
+    LSb.AppendLine('    post({ action: "changeset-regenerate", node_id: targetNodeId, tree: ' + YamlEscape(TSpecEnums.TreeTypeToStr(AChangeSet.IntentTree)) + ', intent_text: rawIntent });');
     LSb.AppendLine('    showBanner("Re-generating interpretation with AI...", "info");');
     LSb.AppendLine('  }');
     LSb.AppendLine('');
@@ -1570,7 +1608,7 @@ begin
     LSb.AppendLine('  function submitNewIntent() {');
     LSb.AppendLine('    var val = document.getElementById("new-intent-input").value.trim();');
     LSb.AppendLine('    if (!val) { alert("Please enter your intent."); return; }');
-    LSb.AppendLine('    post({ action: "changeset-submit", node_id: targetNodeId, intent_text: val });');
+    LSb.AppendLine('    post({ action: "changeset-submit", node_id: targetNodeId, tree: ' + YamlEscape(TSpecEnums.TreeTypeToStr(AChangeSet.IntentTree)) + ', intent_text: val });');
     LSb.AppendLine('    showBanner("Submitted new intent. Interpreting...", "info");');
     LSb.AppendLine('  }');
     LSb.AppendLine('');
