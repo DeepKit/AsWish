@@ -2,49 +2,38 @@
 
 > Status: v1.2-draft
 >
-> ### ⚠ 待裁定冲突标注（C-5）：本文状态定义 ≠ 代码实现
->
-> **本文定义的 `gen_status` / `review_status` 与 `src/models/AsWish.Models.pas` 的实际枚举不一致，冲突待裁定。禁止在裁定前按任一侧擅自统一，也禁止新增第三套状态机。**
->
-> | 项 | 本文（协议侧） | 代码（Models.pas） |
-> |---|---|---|
-> | gen | `pending \| generated \| failed` | `draft \| generated \| confirmed \| skipped` |
-> | review | `pending \| accepted \| rejected \| locked` | `unreviewed \| accepted \| rejected \| deferred` |
->
-> 差异：`confirmed` / `skipped` 只存在于代码；`failed` / `locked` 只存在于协议。`locked`（INV-7：锁定节点防 AI 覆盖）在代码中无对应实现。
->
-> **裁定方向二选一**：(a) 协议追认代码（改本文 + `docs/05.协议-AsWish协议基线.md` §4 + `schemas/tree.schema.json`）；(b) 代码补齐协议语义（加 `failed` / `locked`）。
->
-> 详见 `docs/07.工程-工程路线与Dogfood验收.md` §十六 · **C-5**。
+> **C-5 已裁定（2026-09-03，方向 (a) 协议追认代码）**：本文枚举与转移规则以代码 `src/models/AsWish.Models.pas`（`TGenStatus` / `TReviewStatus` / `TSpecEnums`）为准，与其保持一致。`failed` / `locked` 为预留语义（未实现），将来经 `protocol/GOVERNANCE.md` 治理流程按需加回。裁定记录见 `docs/07.工程-工程路线与Dogfood验收.md` §十六 · C-5。
 
 AsWish separates generation state from review state.
 
 ## Generation State
 
 ```text
-pending -> generated
-pending -> failed
-failed  -> pending
-generated -> pending    when source evidence changes or regeneration is requested
+draft -> generated
+draft -> skipped
+generated -> confirmed
+generated -> skipped
+confirmed    terminal
+skipped      terminal
 ```
 
 ## Review State
 
 ```text
-pending -> accepted
-pending -> rejected
-pending -> locked
-accepted -> pending     when evidence becomes stale or content_hash changes
-accepted -> locked
-rejected -> pending     when regenerated with different content
-locked -> unlocked/pending only by human decision
+unreviewed -> accepted
+unreviewed -> rejected
+unreviewed -> deferred
+deferred -> accepted
+deferred -> rejected
+accepted    terminal
+rejected    terminal
 ```
 
 ## Legacy Mapping
 
 ```text
-candidate  -> generated + pending
-uncertain  -> generated + pending
+candidate  -> generated + unreviewed
+uncertain  -> generated + unreviewed
 confirmed  -> generated + accepted
 rejected   -> generated + rejected
 superseded -> generated + rejected

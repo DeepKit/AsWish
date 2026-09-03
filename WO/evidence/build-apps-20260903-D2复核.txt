@@ -1,0 +1,19 @@
+=== D2 复核：重跑三个 build（2026-09-03，复核 20260831 证据与报告矛盾）===
+=== BUILD tests/_build_tests.bat in d:/_Progs/02Business/AsWish ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+20475 lines, 2.22 seconds, 8927984 bytes code, 818872 bytes data.
+
+Exit code: 0
+=== BUILD cli/_build_cli.bat in d:/_Progs/02Business/AsWish ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+12867 lines, 1.22 seconds, 3017940 bytes code, 372792 bytes data.
+
+Exit code: 0
+=== BUILD _build.bat in d:/_Progs/02Business/AsWish ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+18120 lines, 1.86 seconds, 6482620 bytes code, 658888 bytes data.
+
+Exit code: 0

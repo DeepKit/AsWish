@@ -19,6 +19,8 @@ These invariants define what a valid `.AsWish/` workspace must preserve.
 | INV-9 | `data-tree` nodes that describe migrations should state rollback and compatibility when known. | validate |
 | INV-10 | Unknown `x_` fields are ignored by readers; unknown core fields produce warnings, not crashes. | read |
 
+> INV-7 注记：`locked` 为预留语义（C-5 裁定 2026-09-03，见 `docs/07.工程-工程路线与Dogfood验收.md` §十六），当前代码无对应实现，本不变量暂无 enforcement；实现经 `protocol/GOVERNANCE.md` 治理流程加回后生效。
+
 ## Failure Behavior
 
 Validation failure should not destroy readable facts. AsWish should mark affected nodes or files, preserve the last readable snapshot, and allow unrelated trees to remain usable.
