@@ -42,6 +42,8 @@ type
       ANodes: System.Generics.Collections.TList<AsWish.Models.TSpecNode>);
     procedure WriteEvidenceFile(const ARelPath: string;
       AEvidence: System.Generics.Collections.TList<AsWish.Models.TSpecEvidence>);
+    /// <summary>Read evidence YAML file (e.g. source-evidence.yaml or evidence/implementation-evidence.yaml). Caller owns the returned list.</summary>
+    function ReadEvidenceFile(const ARelPath: string): TList<TSpecEvidence>;
 
     /// <summary>
     /// Read a tree YAML file produced by WriteTreeFile and return the
@@ -136,36 +138,7 @@ begin
   if not TDirectory.Exists(LDir) then
     TDirectory.CreateDirectory(LDir);
 
-  // Unique temp name: fixed ".tmp" suffixes collide under concurrency and
-  // trip some AV heuristics (multi-LLM review finding).
-  var LTempPath := AFullPath + '.tmp-' + TGuid.NewGuid.ToString.Substring(1, 8);
-  TFile.WriteAllText(LTempPath, AContent, TEncoding.UTF8);
-
-  if TFile.Exists(AFullPath) then
-  begin
-    // Atomic replace on NTFS via ReplaceFileW with NO backup (nil).
-    // NOTE: TFile.Replace(..., '') is broken here — the RTL runs
-    // TPath.DoGetFullPath('') on the backup name and raises
-    // EInOutArgumentException "Path is empty". First scans always took
-    // the TFile.Move branch, so re-scans of an existing project crashed
-    // (observed headless via AsWish.CLI scan; GUI re-scan hit the same).
-    if not Winapi.Windows.ReplaceFile(PChar(AFullPath), PChar(LTempPath),
-      nil, REPLACEFILE_WRITE_THROUGH or REPLACEFILE_IGNORE_MERGE_ERRORS,
-      nil, nil) then
-    begin
-      // Fallback: MoveFileExW REPLACE_EXISTING — never delete the target
-      // first (a failed delete+move would lose the original file;
-      // multi-LLM review HIGH finding).
-      if not Winapi.Windows.MoveFileExW(PChar(LTempPath), PChar(AFullPath),
-        MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH) then
-      begin
-        // Last resort: in-place move; keep original intact on failure.
-        TFile.Move(LTempPath, AFullPath);
-      end;
-    end;
-  end
-  else
-    TFile.Move(LTempPath, AFullPath);
+  TFile.WriteAllText(AFullPath, AContent, TEncoding.UTF8);
 end;
 
 procedure TAsWishStoreService.BackupTreeFileIfExisting(const ARelPath: string);
@@ -362,7 +335,8 @@ begin
     'prompts/claude-draft.md' + sLineBreak +
     'prompts/cursor-rules-draft.md' + sLineBreak;
 
-  WriteYamlFile('.gitignore', LContent);
+  if not TFile.Exists(TPath.Combine(FBasePath, '.gitignore')) then
+    WriteYamlFile('.gitignore', LContent);
 end;
 
 procedure TAsWishStoreService.WriteTreeFile(const ARelPath: string;
@@ -723,6 +697,75 @@ begin
           LIssue.RequiresHuman := LItem.GetBoolean('requires_human', False);
         end;
         Result.Add(LIssue);
+      end;
+    finally
+      LRoot.Free;
+    end;
+  finally
+    LParser.Free;
+  end;
+end;
+
+function TAsWishStoreService.ReadEvidenceFile(
+  const ARelPath: string): TList<TSpecEvidence>;
+
+  function StringList(ANode: TYamlNode): TArray<string>;
+  begin
+    Result := nil;
+    if (ANode = nil) or (ANode.Kind <> ykSequence) then Exit;
+    SetLength(Result, ANode.SeqCount);
+    for var I := 0 to ANode.SeqCount - 1 do
+    begin
+      var LSubItem := ANode.SeqItem(I);
+      if LSubItem <> nil then
+        Result[I] := LSubItem.AsString;
+    end;
+  end;
+
+var
+  LFullPath, LYaml: string;
+  LParser: TYamlParser;
+  LRoot, LEvSeq, LItem: TYamlNode;
+  LEv: TSpecEvidence;
+begin
+  Result := TList<TSpecEvidence>.Create;
+  LFullPath := TPath.Combine(FBasePath, ARelPath);
+  if not TFile.Exists(LFullPath) then Exit;
+
+  LYaml := TFile.ReadAllText(LFullPath, TEncoding.UTF8);
+  LParser := TYamlParser.Create;
+  try
+    LRoot := LParser.Parse(LYaml);
+    if LRoot = nil then Exit;
+    try
+      LEvSeq := LRoot.Get('evidence');
+      if (LEvSeq = nil) or (LEvSeq.Kind <> ykSequence) then Exit;
+
+      for var I := 0 to LEvSeq.SeqCount - 1 do
+      begin
+        LItem := LEvSeq.SeqItem(I);
+        if (LItem = nil) or (LItem.Kind <> ykMap) then Continue;
+
+        LEv := Default(TSpecEvidence);
+        LEv.Id := LItem.GetString('id', '');
+        if LEv.Id = '' then Continue;
+        LEv.SourceLayer := TSpecEnums.SourceLayerFromStr(LItem.GetString('source_layer', ''));
+        LEv.Path := LItem.GetString('path', '');
+        LEv.Lines := LItem.GetString('lines', '');
+        LEv.Excerpt := LItem.GetString('excerpt', '');
+        LEv.ExcerptTruncated := LItem.GetBoolean('excerpt_truncated', False);
+        LEv.Note := LItem.GetString('note', '');
+        LEv.Confidence := TSpecEnums.ConfidenceFromStr(LItem.GetString('confidence', ''));
+        if LItem.Has('created_at') then
+          LEv.CreatedAt := ISO8601ToDate(LItem.GetString('created_at', ''), False);
+        if LItem.Has('updated_at') then
+          LEv.UpdatedAt := ISO8601ToDate(LItem.GetString('updated_at', ''), False);
+        LEv.ContentHash := LItem.GetString('content_hash', '');
+        LEv.SourceFileHash := LItem.GetString('source_file_hash', '');
+        LEv.IsStale := LItem.GetBoolean('is_stale', False);
+        LEv.ReferencedBy := StringList(LItem.Get('referenced_by'));
+
+        Result.Add(LEv);
       end;
     finally
       LRoot.Free;

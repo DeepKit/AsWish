@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Models
 
@@ -26,7 +26,8 @@ type
 
   TConfidenceLevel = (clLow, clMedium, clHigh);
 
-  TSourceLayer = (slParsedFromA, slHumanDecision, slAiInferred, slGeneratedSummary);
+  TSourceLayer = (slParsedFromA, slHumanDecision, slAiInferred, slGeneratedSummary,
+    slImplementation);
 
   TFunctionKind = (fkFeature, fkCapability, fkUserStory, fkUseCase,
     fkRule, fkConstraint, fkNonFunctional, fkIntegration, fkExtended);
@@ -62,7 +63,7 @@ type
 
   TDecisionType = (dtConfirm, dtReject, dtClarify, dtGapFill, dtResolveConflict,
     dtScope, dtPriority, dtTerminology, dtViewMapping, dtModuleMapping,
-    dtPermission, dtRule);
+    dtPermission, dtRule, dtAcceptDifference);
 
   TDecisionStatus = (dsProposed, dsAccepted, dsRejected, dsSuperseded,
     dsRolledBack, dsWithdrawn);
@@ -232,6 +233,25 @@ type
     ReferencedBy: TArray<string>;
   end;
 
+  TDifferenceKind = (dkMissing, dkExtra, dkChanged);
+  TDifferenceAspect = (daNone, daContent, daRelation, daBoth);
+
+  TSpecDifferenceItem = record
+    NodeId: string;
+    Kind: TDifferenceKind;
+    ChangedAspect: TDifferenceAspect;
+    BaselineHash: string;
+    EvidenceHash: string;
+    Note: string;
+  end;
+
+  TSpecDifferenceReport = record
+    BaselineId: string;
+    TreeType: string;
+    ComputedAt: TDateTime;
+    Items: TArray<TSpecDifferenceItem>;
+  end;
+
   TSpecIssue = record
     Id: string;
     Severity: TIssueSeverity;
@@ -283,12 +303,13 @@ type
     ChangeItemIndex: Integer;
   end;
 
-  /// <summary>Lineage linkage for Accepted Baseline (WO-20260830-0027E).</summary>
+  /// <summary>Lineage linkage for Accepted Baseline (WO-20260830-0027E, WO-20260903-0027H).</summary>
   TBaselineLineage = record
     ChangeSetId: string;
     IntentId: string;
+    ParentBaselineId: string;
     class function CreateNew(const AChangeSetId: string;
-      const AIntentId: string = ''): TBaselineLineage; static;
+      const AIntentId: string = ''; const AParentBaselineId: string = ''): TBaselineLineage; static;
   end;
 
   /// <summary>
@@ -335,6 +356,8 @@ type
 
     class function TreeTypeFromStr(const AValue: string;
       ADefault: TTreeType = ttFunction): TTreeType; static;
+    class function TryTreeTypeFromStr(const AValue: string;
+      out ATree: TTreeType): Boolean; static;
     class function NodeStatusFromStr(const AValue: string;
       ADefault: TNodeStatus = nsCandidate): TNodeStatus; static;
     class function ConfidenceFromStr(const AValue: string;
@@ -364,6 +387,12 @@ type
     class function ChangeSourceTypeToStr(AValue: TChangeSourceType): string; static;
     class function ChangeSourceTypeFromStr(const AValue: string;
       ADefault: TChangeSourceType = cstExplicit): TChangeSourceType; static;
+    class function DifferenceKindToStr(AValue: TDifferenceKind): string; static;
+    class function DifferenceKindFromStr(const AValue: string;
+      ADefault: TDifferenceKind = dkMissing): TDifferenceKind; static;
+    class function DifferenceAspectToStr(AValue: TDifferenceAspect): string; static;
+    class function DifferenceAspectFromStr(const AValue: string;
+      ADefault: TDifferenceAspect = daNone): TDifferenceAspect; static;
 
     /// <summary>Validate GenStatus transition. Returns True if allowed.</summary>
     class function CanTransitionGen(AFrom, ATo: TGenStatus): Boolean; static;
@@ -461,11 +490,12 @@ end;
 { TBaselineLineage }
 
 class function TBaselineLineage.CreateNew(const AChangeSetId: string;
-  const AIntentId: string): TBaselineLineage;
+  const AIntentId: string; const AParentBaselineId: string): TBaselineLineage;
 begin
   Result := Default(TBaselineLineage);
   Result.ChangeSetId := AChangeSetId;
   Result.IntentId := AIntentId;
+  Result.ParentBaselineId := AParentBaselineId;
 end;
 
 { TAsWishBaseline }
@@ -523,10 +553,11 @@ end;
 class function TSpecEnums.SourceLayerToStr(AValue: TSourceLayer): string;
 begin
   case AValue of
-    slParsedFromA:     Result := 'parsed_from_a';
-    slHumanDecision:   Result := 'human_decision';
-    slAiInferred:      Result := 'ai_inferred';
+    slParsedFromA:      Result := 'parsed_from_a';
+    slHumanDecision:    Result := 'human_decision';
+    slAiInferred:       Result := 'ai_inferred';
     slGeneratedSummary: Result := 'generated_summary';
+    slImplementation:   Result := 'implementation';
   end;
 end;
 
@@ -600,18 +631,19 @@ end;
 class function TSpecEnums.DecisionTypeToStr(AValue: TDecisionType): string;
 begin
   case AValue of
-    dtConfirm:         Result := 'confirm';
-    dtReject:          Result := 'reject';
-    dtClarify:         Result := 'clarify';
-    dtGapFill:         Result := 'gap_fill';
-    dtResolveConflict: Result := 'resolve_conflict';
-    dtScope:           Result := 'scope';
-    dtPriority:        Result := 'priority';
-    dtTerminology:     Result := 'terminology';
-    dtViewMapping:     Result := 'view_mapping';
-    dtModuleMapping:   Result := 'module_mapping';
-    dtPermission:      Result := 'permission';
-    dtRule:            Result := 'rule';
+    dtConfirm:          Result := 'confirm';
+    dtReject:           Result := 'reject';
+    dtClarify:          Result := 'clarify';
+    dtGapFill:          Result := 'gap_fill';
+    dtResolveConflict:  Result := 'resolve_conflict';
+    dtScope:            Result := 'scope';
+    dtPriority:         Result := 'priority';
+    dtTerminology:      Result := 'terminology';
+    dtViewMapping:      Result := 'view_mapping';
+    dtModuleMapping:    Result := 'module_mapping';
+    dtPermission:       Result := 'permission';
+    dtRule:             Result := 'rule';
+    dtAcceptDifference: Result := 'accept_difference';
   end;
 end;
 
@@ -619,7 +651,7 @@ class function TSpecEnums.DecisionTypeFromStr(const AValue: string;
   ADefault: TDecisionType): TDecisionType;
 begin
   Result := ADefault;
-  var LValue := LowerCase(AValue);
+  var LValue := LowerCase(AValue.Trim);
   if LValue = 'confirm' then Result := dtConfirm
   else if LValue = 'reject' then Result := dtReject
   else if LValue = 'clarify' then Result := dtClarify
@@ -631,7 +663,8 @@ begin
   else if LValue = 'view_mapping' then Result := dtViewMapping
   else if LValue = 'module_mapping' then Result := dtModuleMapping
   else if LValue = 'permission' then Result := dtPermission
-  else if LValue = 'rule' then Result := dtRule;
+  else if LValue = 'rule' then Result := dtRule
+  else if LValue = 'accept_difference' then Result := dtAcceptDifference;
 end;
 
 class function TSpecEnums.DecisionStatusToStr(AValue: TDecisionStatus): string;
@@ -670,6 +703,20 @@ begin
   else if LLower = 'view' then Result := ttView
   else if LLower = 'data' then Result := ttData
   else Result := ADefault;
+end;
+
+class function TSpecEnums.TryTreeTypeFromStr(const AValue: string;
+  out ATree: TTreeType): Boolean;
+var
+  LLower: string;
+begin
+  Result := True;
+  LLower := LowerCase(AValue.Trim);
+  if LLower = 'function' then ATree := ttFunction
+  else if LLower = 'module' then ATree := ttModule
+  else if LLower = 'view' then ATree := ttView
+  else if LLower = 'data' then ATree := ttData
+  else Result := False;
 end;
 
 class function TSpecEnums.NodeStatusFromStr(const AValue: string;
@@ -757,6 +804,7 @@ begin
   else if LLower = 'human_decision' then Result := slHumanDecision
   else if LLower = 'ai_inferred' then Result := slAiInferred
   else if LLower = 'generated_summary' then Result := slGeneratedSummary
+  else if LLower = 'implementation' then Result := slImplementation
   else Result := ADefault;
 end;
 
@@ -865,6 +913,45 @@ begin
   if LLower = 'explicit' then Result := cstExplicit
   else if LLower = 'inferred' then Result := cstInferred
   else if LLower = 'unknown' then Result := cstUnknown
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.DifferenceKindToStr(AValue: TDifferenceKind): string;
+begin
+  case AValue of
+    dkMissing: Result := 'missing';
+    dkExtra:   Result := 'extra';
+    dkChanged: Result := 'changed';
+  end;
+end;
+
+class function TSpecEnums.DifferenceKindFromStr(const AValue: string;
+  ADefault: TDifferenceKind): TDifferenceKind;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'missing' then Result := dkMissing
+  else if LLower = 'extra' then Result := dkExtra
+  else if LLower = 'changed' then Result := dkChanged
+  else Result := ADefault;
+end;
+
+class function TSpecEnums.DifferenceAspectToStr(AValue: TDifferenceAspect): string;
+begin
+  case AValue of
+    daNone:     Result := 'none';
+    daContent:  Result := 'content';
+    daRelation: Result := 'relation';
+    daBoth:     Result := 'both';
+  end;
+end;
+
+class function TSpecEnums.DifferenceAspectFromStr(const AValue: string;
+  ADefault: TDifferenceAspect): TDifferenceAspect;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if LLower = 'content' then Result := daContent
+  else if LLower = 'relation' then Result := daRelation
+  else if LLower = 'both' then Result := daBoth
   else Result := ADefault;
 end;
 
