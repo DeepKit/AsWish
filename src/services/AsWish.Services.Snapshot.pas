@@ -180,6 +180,8 @@ begin
       LSb.AppendLine('  lineage:');
       LSb.AppendLine('    change_set_id: "' + ABaseline.Lineage.ChangeSetId + '"');
       LSb.AppendLine('    intent_id: "' + ABaseline.Lineage.IntentId + '"');
+      if ABaseline.Lineage.ParentBaselineId <> '' then
+        LSb.AppendLine('    parent_baseline_id: "' + ABaseline.Lineage.ParentBaselineId + '"');
     end;
 
     TAsWishStoreService.AtomicWriteTextFile(
@@ -330,14 +332,29 @@ begin
   LDst := SnapshotDir(LName);
   TDirectory.CreateDirectory(LDst);
 
-  LContentHash := TSpecHash.SnapshotContentHash(AFunc, AMod, AView, AData);
-  LRelationHash := TSpecHash.SnapshotRelationHash(AFunc, AMod, AView, AData);
-
   LTreeType := 'all';
   if AChangeSet.IntentTree = ttFunction then LTreeType := 'function'
   else if AChangeSet.IntentTree = ttView then LTreeType := 'view'
   else if AChangeSet.IntentTree = ttModule then LTreeType := 'module'
   else if AChangeSet.IntentTree = ttData then LTreeType := 'data';
+
+  // P2 Fix (2026-09-03): Baseline hash computed at single-tree granularity for triggering tree
+  var LTargetTreeNodes: TList<TSpecNode> := nil;
+  if LTreeType = 'function' then LTargetTreeNodes := AFunc
+  else if LTreeType = 'view' then LTargetTreeNodes := AView
+  else if LTreeType = 'module' then LTargetTreeNodes := AMod
+  else if LTreeType = 'data' then LTargetTreeNodes := AData;
+
+  if LTargetTreeNodes = nil then
+  begin
+    if AFunc <> nil then LTargetTreeNodes := AFunc
+    else if AView <> nil then LTargetTreeNodes := AView
+    else if AMod <> nil then LTargetTreeNodes := AMod
+    else if AData <> nil then LTargetTreeNodes := AData;
+  end;
+
+  LContentHash := TSpecHash.SnapshotContentHash(LTargetTreeNodes);
+  LRelationHash := TSpecHash.SnapshotRelationHash(LTargetTreeNodes);
 
   LLineage := TBaselineLineage.CreateNew(AChangeSet.Id, AChangeSet.IntentNodeId);
   ABaseline := TAsWishBaseline.CreateNew(LBaseId, ADecision.Id, LName, LTreeType,
@@ -388,6 +405,7 @@ var
   LFunc, LMod, LView, LData: TList<TSpecNode>;
   LCompContentHash, LCompRelationHash: string;
   LTempStore: TAsWishStoreService;
+  LTargetTreeNodes: TList<TSpecNode>;
 begin
   Result := False;
   if not LoadBaseline(ABaselineId, LBaseline) then Exit;
@@ -416,8 +434,21 @@ begin
       if TFile.Exists(LDataFile) then
         LData := LTempStore.ReadTreeFile('trees/data-tree.yaml');
 
-      LCompContentHash := TSpecHash.SnapshotContentHash(LFunc, LMod, LView, LData);
-      LCompRelationHash := TSpecHash.SnapshotRelationHash(LFunc, LMod, LView, LData);
+      LTargetTreeNodes := nil;
+      if LBaseline.TreeType = 'function' then LTargetTreeNodes := LFunc
+      else if LBaseline.TreeType = 'view' then LTargetTreeNodes := LView
+      else if LBaseline.TreeType = 'module' then LTargetTreeNodes := LMod
+      else if LBaseline.TreeType = 'data' then LTargetTreeNodes := LData
+      else
+      begin
+        if LFunc <> nil then LTargetTreeNodes := LFunc
+        else if LView <> nil then LTargetTreeNodes := LView
+        else if LMod <> nil then LTargetTreeNodes := LMod
+        else if LData <> nil then LTargetTreeNodes := LData;
+      end;
+
+      LCompContentHash := TSpecHash.SnapshotContentHash(LTargetTreeNodes);
+      LCompRelationHash := TSpecHash.SnapshotRelationHash(LTargetTreeNodes);
 
       Result := (LCompContentHash = LBaseline.ContentHash) and
                 (LCompRelationHash = LBaseline.RelationHash);
@@ -510,7 +541,9 @@ begin
         if LTrim.StartsWith('change_set_id:') then
           Result.Lineage.ChangeSetId := LTrim.Substring(14).Trim.Trim(['"'])
         else if LTrim.StartsWith('intent_id:') then
-          Result.Lineage.IntentId := LTrim.Substring(10).Trim.Trim(['"']);
+          Result.Lineage.IntentId := LTrim.Substring(10).Trim.Trim(['"'])
+        else if LTrim.StartsWith('parent_baseline_id:') then
+          Result.Lineage.ParentBaselineId := LTrim.Substring(19).Trim.Trim(['"']);
       end
       else
       begin
