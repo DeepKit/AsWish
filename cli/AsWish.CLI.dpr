@@ -44,6 +44,8 @@ uses
   AsWish.Validation in '..\src\core\AsWish.Validation.pas',
   AsWish.Delphi.DfmParser in '..\src\core\AsWish.Delphi.DfmParser.pas',
   AsWish.Delphi.PasParser in '..\src\core\AsWish.Delphi.PasParser.pas',
+  AsWish.Services.EvidenceCollector in '..\src\services\AsWish.Services.EvidenceCollector.pas',
+  AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas',
   System.JSON;
 
 function DetectProjectType(AScan: TAsWishScanService): string;
@@ -1399,6 +1401,186 @@ begin
   end;
 end;
 
+procedure RunEvidenceCollect(const AProjectDir, ABaselineId: string);
+var
+  LStore: TAsWishStoreService;
+  LSnapshot: TAsWishSnapshotService;
+  LCollector: TAsWishEvidenceCollectorService;
+  LEvidences: TArray<TSpecEvidence>;
+begin
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(AProjectDir);
+    LSnapshot := TAsWishSnapshotService.Create(LStore);
+    try
+      LCollector := TAsWishEvidenceCollectorService.Create(LStore, LSnapshot);
+      try
+        LEvidences := LCollector.CollectImplementationEvidence(AProjectDir, ABaselineId);
+        Writeln(Format('Collected %d implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml',
+          [Length(LEvidences)]));
+        for var LEv in LEvidences do
+          Writeln(Format('  - %s: %s (lines: %s, hash: %s)',
+            [LEv.Id, LEv.Path, LEv.Lines, Copy(LEv.SourceFileHash, 1, 12)]));
+      finally
+        LCollector.Free;
+      end;
+    finally
+      LSnapshot.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
+procedure RunDifference(const AProjectDir, ABaselineId: string);
+var
+  LStore: TAsWishStoreService;
+  LSnapshot: TAsWishSnapshotService;
+  LDifference: TAsWishDifferenceService;
+  LReport: TSpecDifferenceReport;
+begin
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(AProjectDir);
+    LSnapshot := TAsWishSnapshotService.Create(LStore);
+    try
+      LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+      try
+        LReport := LDifference.ComputeDifference(AProjectDir, ABaselineId);
+        Writeln(Format('Computed difference report against baseline "%s" (tree: %s):',
+          [LReport.BaselineId, LReport.TreeType]));
+        if Length(LReport.Items) = 0 then
+          Writeln('  No structural differences found (0 items).')
+        else
+        begin
+          Writeln(Format('  Found %d structural difference(s):', [Length(LReport.Items)]));
+          for var LItem in LReport.Items do
+          begin
+            var LAspectStr := '';
+            if LItem.Kind = dkChanged then
+              LAspectStr := ' (' + TSpecEnums.DifferenceAspectToStr(LItem.ChangedAspect) + ')';
+            Writeln(Format('  - [%s%s] node: %s (baseline: %s, live/ev: %s)',
+              [TSpecEnums.DifferenceKindToStr(LItem.Kind), LAspectStr, LItem.NodeId,
+               Copy(LItem.BaselineHash, 1, 8), Copy(LItem.EvidenceHash, 1, 8)]));
+          end;
+        end;
+        Writeln('Saved difference report to .AsWish/difference.yaml');
+      finally
+        LDifference.Free;
+      end;
+    finally
+      LSnapshot.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
+procedure RunJudge(const AProjectDir, ABaselineId, AAction, ANote: string);
+var
+  LStore: TAsWishStoreService;
+  LSnapshot: TAsWishSnapshotService;
+  LDifference: TAsWishDifferenceService;
+  LDecisions: TAsWishDecisionsService;
+  LReport: TSpecDifferenceReport;
+  LDecId: string;
+begin
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(AProjectDir);
+    LSnapshot := TAsWishSnapshotService.Create(LStore);
+    try
+      LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+      try
+        LReport := LDifference.ComputeDifference(AProjectDir, ABaselineId);
+        LDecisions := TAsWishDecisionsService.Create;
+        try
+          LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+          LDecisions.Load;
+          LDecId := LDecisions.RecordDifferenceDecision(LReport, AAction, ANote);
+          Writeln(Format('Recorded human judgment decision "%s" (%s) for baseline %s (%d difference items).',
+            [LDecId, AAction, ABaselineId, Length(LReport.Items)]));
+        finally
+          LDecisions.Free;
+        end;
+      finally
+        LDifference.Free;
+      end;
+    finally
+      LSnapshot.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
+procedure RunEvolve(const AProjectDir, ABaselineId, ANote: string);
+var
+  LStore: TAsWishStoreService;
+  LSnapshot: TAsWishSnapshotService;
+  LDifference: TAsWishDifferenceService;
+  LDecisions: TAsWishDecisionsService;
+  LReport: TSpecDifferenceReport;
+  LDecId, LNewBaseId: string;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LNewBaseline: TAsWishBaseline;
+  LFunc, LMod, LView, LData: TList<TSpecNode>;
+begin
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(AProjectDir);
+    LSnapshot := TAsWishSnapshotService.Create(LStore);
+    try
+      LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+      try
+        LReport := LDifference.ComputeDifference(AProjectDir, ABaselineId);
+        LDecisions := TAsWishDecisionsService.Create;
+        try
+          LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+          LDecisions.Load;
+          LDecId := LDecisions.RecordDifferenceDecision(LReport, 'acceptable', ANote);
+          LDec := LDecisions.FindById(LDecId);
+
+          LCS := Default(TChangeSet);
+          LCS.Id := 'cs-evolve-' + LDecId;
+          if LReport.TreeType = 'view' then LCS.IntentTree := ttView
+          else if LReport.TreeType = 'module' then LCS.IntentTree := ttModule
+          else if LReport.TreeType = 'data' then LCS.IntentTree := ttData
+          else LCS.IntentTree := ttFunction;
+          LCS.IntentNodeId := 'diff-evolve';
+
+          LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
+          LMod := LStore.ReadTreeFile('trees/module-tree.yaml');
+          LView := LStore.ReadTreeFile('trees/view-tree.yaml');
+          LData := LStore.ReadTreeFile('trees/data-tree.yaml');
+          try
+            LNewBaseId := LSnapshot.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, LNewBaseline);
+            Writeln(Format('Evolved new Accepted Baseline "%s" (snapshot: %s) from current implementation reality.',
+              [LNewBaseId, LNewBaseline.SnapshotName]));
+            Writeln(Format('  - Decision ID: %s', [LDecId]));
+            Writeln(Format('  - Content Hash: %s', [Copy(LNewBaseline.ContentHash, 1, 16)]));
+            Writeln(Format('  - Relation Hash: %s', [Copy(LNewBaseline.RelationHash, 1, 16)]));
+          finally
+            LData.Free;
+            LView.Free;
+            LMod.Free;
+            LFunc.Free;
+          end;
+        finally
+          LDecisions.Free;
+        end;
+      finally
+        LDifference.Free;
+      end;
+    finally
+      LSnapshot.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
 var
   LCommand, LDir: string;
 begin
@@ -1420,6 +1602,10 @@ begin
     Writeln('  intent list <dir>         list candidate intents');
     Writeln('  baseline list <dir>       list Accepted Baselines');
     Writeln('  baseline verify <dir> <id> verify integrity of Accepted Baseline');
+    Writeln('  evidence collect <dir> [baseline-id] collect implementation evidence');
+    Writeln('  difference <dir> <baseline-id> compute structural difference');
+    Writeln('  judge <dir> <baseline-id> <acceptable|unacceptable|unresolved> [note]');
+    Writeln('  evolve <dir> <baseline-id> [note] freeze new baseline from implementation reality');
     Writeln('  visual preview <dir>      render Visual Preview wireframe');
     Writeln('  visual confirm <dir> [txt] confirm Accepted Visual Baseline');
     Halt(2);
@@ -1591,6 +1777,51 @@ begin
       Writeln('  or: AsWish.CLI baseline verify <project-dir> <baseline-id>');
       Halt(2);
     end;
+  end
+  else if LCommand = 'evidence' then
+  begin
+    var LSub := LowerCase(ParamStr(2));
+    if LSub = 'collect' then
+    begin
+      if ParamCount < 3 then
+      begin
+        Writeln('AsWish.CLI evidence collect <project-dir> [baseline-id]');
+        Halt(2);
+      end;
+      RunEvidenceCollect(ParamStr(3), ParamStr(4));
+    end
+    else
+    begin
+      Writeln('AsWish.CLI evidence collect <project-dir> [baseline-id]');
+      Halt(2);
+    end;
+  end
+  else if (LCommand = 'difference') or (LCommand = 'diff') then
+  begin
+    if ParamCount < 3 then
+    begin
+      Writeln('AsWish.CLI difference <project-dir> <baseline-id>');
+      Halt(2);
+    end;
+    RunDifference(ParamStr(2), ParamStr(3));
+  end
+  else if LCommand = 'judge' then
+  begin
+    if ParamCount < 4 then
+    begin
+      Writeln('AsWish.CLI judge <project-dir> <baseline-id> <acceptable|unacceptable|unresolved> [note]');
+      Halt(2);
+    end;
+    RunJudge(ParamStr(2), ParamStr(3), ParamStr(4), ParamStr(5));
+  end
+  else if LCommand = 'evolve' then
+  begin
+    if ParamCount < 3 then
+    begin
+      Writeln('AsWish.CLI evolve <project-dir> <baseline-id> [note]');
+      Halt(2);
+    end;
+    RunEvolve(ParamStr(2), ParamStr(3), ParamStr(4));
   end
   else if LCommand = 'visual' then
   begin
