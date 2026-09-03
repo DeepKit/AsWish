@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Tests.dpr
 
   DUnitX console test runner for AsWish unit tests.
@@ -27,6 +27,9 @@ uses
   Test.AsWish.Snapshot in 'Test.AsWish.Snapshot.pas',
   Test.AsWish.Baseline in 'Test.AsWish.Baseline.pas',
   Test.AsWish.VisualBaseline in 'Test.AsWish.VisualBaseline.pas',
+  Test.AsWish.Evidence in 'Test.AsWish.Evidence.pas',
+  Test.AsWish.Difference in 'Test.AsWish.Difference.pas',
+  Test.AsWish.RevisionEvolution in 'Test.AsWish.RevisionEvolution.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Config in '..\src\core\AsWish.Config.pas',
@@ -47,7 +50,9 @@ uses
   AsWish.Services.Snapshot in '..\src\services\AsWish.Services.Snapshot.pas',
   AsWish.Services.Context in '..\src\services\AsWish.Services.Context.pas',
   AsWish.Controller in '..\src\controllers\AsWish.Controller.pas',
-  AsWish.Services.CandidateIngest in '..\src\services\AsWish.Services.CandidateIngest.pas';
+  AsWish.Services.CandidateIngest in '..\src\services\AsWish.Services.CandidateIngest.pas',
+  AsWish.Services.EvidenceCollector in '..\src\services\AsWish.Services.EvidenceCollector.pas',
+  AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas';
 
 var
   LRunner: ITestRunner;
