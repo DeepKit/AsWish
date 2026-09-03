@@ -30,6 +30,7 @@ uses
   AsWish.Services.Decisions,
   AsWish.Services.EvidenceCollector,
   AsWish.Services.Difference,
+  AsWish.Services.CandidateIngest,
   AsWish.Services.Render;
 
 type
@@ -70,6 +71,10 @@ type
     procedure Test08_MissingDifferenceFile_FailClosed;
     [Test]
     procedure Test09_BPrimeTreeTypeParsing_FailClosed;
+    [Test]
+    procedure Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds;
+    [Test]
+    procedure Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite;
   end;
 
 implementation
@@ -450,6 +455,150 @@ begin
   Assert.IsFalse(TSpecEnums.TryTreeTypeFromStr('', LTree), 'Empty tree must return false');
   Assert.IsFalse(TSpecEnums.TryTreeTypeFromStr('invalid_tree', LTree), 'Invalid tree must return false');
   Assert.IsFalse(TSpecEnums.TryTreeTypeFromStr('unknown', LTree), 'Unknown tree must return false');
+end;
+
+procedure TTestAsWishRevisionEvolution.Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds;
+var
+  LCS1, LCS2: TChangeSet;
+  LRep1, LRep2: TSpecDifferenceReport;
+  LItem1, LItem2, LItem3: TSpecDifferenceItem;
+  LDec1, LDec2, LDec3, LDec4, LDec5: string;
+  LVerifier: TAsWishDecisionsService;
+  LDec: TSpecDecision;
+begin
+  // Sequence of 5 commands in Dogfood:
+  // 1. Accept ChangeSet 1 (dec-0001)
+  LCS1 := TChangeSet.CreateNew('cs-func-root-01', 'func-root', ttFunction, 'initial intent', 'human');
+  LDec1 := FDecisions.RecordChangeSetDecision(LCS1, rsAccepted, 'accept round 1');
+  Assert.AreEqual('dec-0001', LDec1);
+
+  // Simulate scan (WriteEmptyTrees) -> must NOT wipe decisions!
+  FStore.WriteEmptyTrees;
+
+  // 2. Judge Unacceptable on diff report 1 (dec-0002)
+  LRep1 := Default(TSpecDifferenceReport);
+  LRep1.BaselineId := 'B-0001';
+  LRep1.TreeType := 'function';
+  LItem1 := Default(TSpecDifferenceItem);
+  LItem1.NodeId := 'diff-node-1';
+  LItem1.Kind := dkExtra;
+  LItem2 := Default(TSpecDifferenceItem);
+  LItem2.NodeId := 'diff-node-2';
+  LItem2.Kind := dkChanged;
+  LRep1.Items := [LItem1, LItem2];
+
+  FDecisions.Load;
+  LDec2 := FDecisions.RecordDifferenceDecision(LRep1, 'unacceptable', 'reject round 1', '');
+  Assert.AreEqual('dec-0002', LDec2);
+
+  // 3. Accept ChangeSet 2 (dec-0003)
+  LCS2 := TChangeSet.CreateNew('cs-func-root-02', 'func-root', ttFunction, 'revision intent', 'human');
+  FDecisions.Load;
+  LDec3 := FDecisions.RecordChangeSetDecision(LCS2, rsAccepted, 'accept round 2');
+  Assert.AreEqual('dec-0003', LDec3);
+
+  // 4. Judge Acceptable on diff report 2 (dec-0004)
+  LRep2 := Default(TSpecDifferenceReport);
+  LRep2.BaselineId := 'B-0002';
+  LRep2.TreeType := 'function';
+  LItem3 := Default(TSpecDifferenceItem);
+  LItem3.NodeId := 'diff-node-3';
+  LItem3.Kind := dkExtra;
+  LRep2.Items := [LItem3];
+
+  FDecisions.Load;
+  LDec4 := FDecisions.RecordDifferenceDecision(LRep2, 'acceptable', 'judge acceptable round 2', '');
+  Assert.AreEqual('dec-0004', LDec4);
+
+  // 5. Evolve on diff report 2 (dec-0005)
+  FDecisions.Load;
+  LDec5 := FDecisions.RecordDifferenceDecision(LRep2, 'acceptable', 'evolve round 2', 'cs-evolve-B-0002');
+  Assert.AreEqual('dec-0005', LDec5);
+
+  // Verify all 5 decisions are persisted on disk and non-colliding
+  LVerifier := TAsWishDecisionsService.Create;
+  try
+    LVerifier.Initialize(TPath.Combine(FTestDir, '.AsWish'));
+    LVerifier.Load;
+
+    Assert.AreEqual<Integer>(5, LVerifier.Decisions.Count, 'All 5 decisions must persist on disk');
+
+    // Verify dec-0001 (Accept CS1)
+    LDec := LVerifier.FindById('dec-0001');
+    Assert.AreEqual('dec-0001', LDec.Id);
+    Assert.AreEqual('cs-func-root-01', LDec.ChangeSetId);
+    Assert.AreEqual(TDecisionType.dtConfirm, LDec.DecisionType);
+    Assert.AreEqual(TDecisionStatus.dsAccepted, LDec.Status);
+
+    // Verify dec-0002 (Unacceptable diff)
+    LDec := LVerifier.FindById('dec-0002');
+    Assert.AreEqual('dec-0002', LDec.Id);
+    Assert.AreEqual('', LDec.ChangeSetId);
+    Assert.AreEqual(TDecisionType.dtReject, LDec.DecisionType);
+    Assert.AreEqual(TDecisionStatus.dsRejected, LDec.Status);
+    Assert.AreEqual<Integer>(2, Length(LDec.TargetNodes));
+    Assert.AreEqual('diff-node-1', LDec.TargetNodes[0]);
+    Assert.AreEqual('diff-node-2', LDec.TargetNodes[1]);
+
+    // Verify dec-0003 (Accept CS2)
+    LDec := LVerifier.FindById('dec-0003');
+    Assert.AreEqual('dec-0003', LDec.Id);
+    Assert.AreEqual('cs-func-root-02', LDec.ChangeSetId);
+    Assert.AreEqual(TDecisionType.dtConfirm, LDec.DecisionType);
+    Assert.AreEqual(TDecisionStatus.dsAccepted, LDec.Status);
+
+    // Verify dec-0004 (Judge Acceptable)
+    LDec := LVerifier.FindById('dec-0004');
+    Assert.AreEqual('dec-0004', LDec.Id);
+    Assert.AreEqual('', LDec.ChangeSetId);
+    Assert.AreEqual(TDecisionType.dtAcceptDifference, LDec.DecisionType);
+    Assert.AreEqual(TDecisionStatus.dsAccepted, LDec.Status);
+
+    // Verify dec-0005 (Evolve)
+    LDec := LVerifier.FindById('dec-0005');
+    Assert.AreEqual('dec-0005', LDec.Id);
+    Assert.AreEqual('cs-evolve-B-0002', LDec.ChangeSetId);
+    Assert.AreEqual(TDecisionType.dtAcceptDifference, LDec.DecisionType);
+    Assert.AreEqual(TDecisionStatus.dsAccepted, LDec.Status);
+  finally
+    LVerifier.Free;
+  end;
+end;
+
+procedure TTestAsWishRevisionEvolution.Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite;
+var
+  LIngest: TAsWishCandidateIngest;
+  LId1, LId2, LId3: string;
+  LCS1, LCS2: TChangeSet;
+  LPath1, LPath2: string;
+begin
+  LIngest := TAsWishCandidateIngest.Create(FStore);
+  try
+    // 1st generation
+    LId1 := LIngest.GenerateNextChangeSetId(FTestDir, 'func-root');
+    Assert.AreEqual('cs-func-root-01', LId1);
+    LCS1 := TChangeSet.CreateNew(LId1, 'func-root', ttFunction, 'intent 1', 'human');
+    LPath1 := LIngest.SaveChangeSet(FTestDir, LCS1);
+    Assert.IsTrue(TFile.Exists(LPath1));
+
+    // 2nd generation
+    LId2 := LIngest.GenerateNextChangeSetId(FTestDir, 'func-root');
+    Assert.AreEqual('cs-func-root-02', LId2);
+    LCS2 := TChangeSet.CreateNew(LId2, 'func-root', ttFunction, 'intent 2', 'human');
+    LPath2 := LIngest.SaveChangeSet(FTestDir, LCS2);
+    Assert.IsTrue(TFile.Exists(LPath2));
+
+    // 3rd generation query
+    LId3 := LIngest.GenerateNextChangeSetId(FTestDir, 'func-root');
+    Assert.AreEqual('cs-func-root-03', LId3);
+
+    // Verify both files coexist and neither was overwritten
+    Assert.AreNotEqual(LPath1, LPath2);
+    Assert.IsTrue(TFile.Exists(LPath1), 'cs-func-root-01 must coexist');
+    Assert.IsTrue(TFile.Exists(LPath2), 'cs-func-root-02 must coexist');
+  finally
+    LIngest.Free;
+  end;
 end;
 
 initialization
