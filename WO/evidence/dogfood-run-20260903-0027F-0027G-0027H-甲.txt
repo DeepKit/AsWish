@@ -1,0 +1,54 @@
+[Step 1] Initializing Dogfood Workspace...
+[init] initialized: D:\_Progs\02Business\AsWish\scratch_dogfood\.AsWish
+[Step 2] Creating Source Code File...
+[Step 3] Scanning Workspace...
+[scan] scanning D:\_Progs\02Business\AsWish\scratch_dogfood
+[scan] 11 files, type=delphi_vcl
+[scan] trees: function 1 / module 4 / view 0 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\scratch_dogfood\.AsWish\html\
+[Step 4] Proposing Human Intent...
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\scratch_dogfood\.AsWish\llm\candidate-intent.yaml
+[Step 5] Ingesting and Generating ChangeSet...
+[changeset] generated change set cs-func-root-01 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\scratch_dogfood\.AsWish\llm\change-set-cs-func-root-01.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\scratch_dogfood\.AsWish\prompts\change-interpret-func-root.md
+[Step 6] Accepting ChangeSet to Freeze Baseline B-0001...
+[changeset] ACCEPTED cs-func-root-01 -> recorded Decision dec-0001
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0001 (snapshot: 2026-09-03_213239-accepted-baseline-B-0001-dec-0001)
+[Step 7] Listing Baselines...
+[baseline] found 1 Accepted Baseline(s):
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-03_213239-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: f7af3ecbcab8607e90a76df6e3921f8ec2b4222500338406fab0db511a4888dc | RelationHash: 8d2ea6d39ae774509198d4a77dee937cbb927c3aecfdb9615074be731a40dbfd
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+[Step 8] Verifying Baseline B-0001...
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+[Step 9] Collecting Implementation Evidence...
+Collected 1 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: src/TodoApp.pas (lines: , hash: a65cc748eecb)
+[Step 10] Simulating Implementation Evolution (modifying TodoApp.pas and live spec)...
+[Step 11] Re-collecting Evidence after implementation change...
+Collected 1 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: src/TodoApp.pas (lines: , hash: a7d68a0ae23f)
+[Step 12] Computing Structural Difference against Baseline B-0001...
+Computed difference report against baseline "B-0001" (tree: function):
+  No structural differences found (0 items).
+Saved difference report to .AsWish/difference.yaml
+[Step 13] Human Judgment: Acceptable...
+Recorded human judgment decision "dec-0002" (acceptable) for baseline B-0001 (0 difference items).
+[Step 14] Evolution Exit: Freezing New Baseline B-0002...
+Evolved new Accepted Baseline "B-0002" (snapshot: 2026-09-03_213239-accepted-baseline-B-0002-dec-0003) from current implementation reality.
+  - Decision ID: dec-0003
+  - Content Hash: f7af3ecbcab8607e
+  - Relation Hash: 8d2ea6d39ae77450
+[Step 15] Listing Baselines after Evolution...
+[baseline] found 2 Accepted Baseline(s):
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-03_213239-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: f7af3ecbcab8607e90a76df6e3921f8ec2b4222500338406fab0db511a4888dc | RelationHash: 8d2ea6d39ae774509198d4a77dee937cbb927c3aecfdb9615074be731a40dbfd
+    Lineage: ChangeSet=cs-evolve-dec-0003, Intent=diff-evolve
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-03_213239-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: f7af3ecbcab8607e90a76df6e3921f8ec2b4222500338406fab0db511a4888dc | RelationHash: 8d2ea6d39ae774509198d4a77dee937cbb927c3aecfdb9615074be731a40dbfd
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+[Step 16] Verifying Baseline B-0002...
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+[Dogfood Complete]
