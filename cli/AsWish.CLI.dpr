@@ -1253,8 +1253,12 @@ begin
         if LBaselines[I].RendererVersion <> '' then
           Writeln(Format('    Renderer: %s | VisualBinding: %s',
             [LBaselines[I].RendererVersion, LBaselines[I].VisualBinding]));
-        Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s',
-          [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId]));
+        if LBaselines[I].Lineage.ParentBaselineId <> '' then
+          Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s, ParentBaseline=%s',
+            [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId, LBaselines[I].Lineage.ParentBaselineId]))
+        else
+          Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s',
+            [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId]));
       end;
     finally
       LSnap.Free;
@@ -1557,7 +1561,7 @@ begin
           LView := LStore.ReadTreeFile('trees/view-tree.yaml');
           LData := LStore.ReadTreeFile('trees/data-tree.yaml');
           try
-            LNewBaseId := LSnapshot.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, LNewBaseline);
+            LNewBaseId := LSnapshot.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, LNewBaseline, '', '', ABaselineId);
             Writeln(Format('Evolved new Accepted Baseline "%s" (snapshot: %s) from current implementation reality.',
               [LNewBaseId, LNewBaseline.SnapshotName]));
             Writeln(Format('  - Decision ID: %s', [LDecId]));

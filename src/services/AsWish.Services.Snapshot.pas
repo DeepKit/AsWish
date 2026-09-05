@@ -34,7 +34,8 @@ type
       AFunc, AMod, AView, AData: TList<TSpecNode>;
       out ABaseline: TAsWishBaseline;
       const ARendererVersion: string = '';
-      const AVisualBinding: string = ''): string;
+      const AVisualBinding: string = '';
+      const AParentBaselineId: string = ''): string;
     function LoadBaseline(const ABaselineId: string;
       out ABaseline: TAsWishBaseline): Boolean;
     function VerifyBaseline(const ABaselineId: string): Boolean;
@@ -298,7 +299,8 @@ function TAsWishSnapshotService.CreateBaseline(
   const ADecision: TSpecDecision; const AChangeSet: TChangeSet;
   AFunc, AMod, AView, AData: TList<TSpecNode>;
   out ABaseline: TAsWishBaseline; const ARendererVersion: string;
-  const AVisualBinding: string): string;
+  const AVisualBinding: string;
+  const AParentBaselineId: string): string;
 var
   LFiles: TStringList;
   LName, LDst, LLabel, LBaseId, LTreeType: string;
@@ -356,7 +358,7 @@ begin
   LContentHash := TSpecHash.SnapshotContentHash(LTargetTreeNodes);
   LRelationHash := TSpecHash.SnapshotRelationHash(LTargetTreeNodes);
 
-  LLineage := TBaselineLineage.CreateNew(AChangeSet.Id, AChangeSet.IntentNodeId);
+  LLineage := TBaselineLineage.CreateNew(AChangeSet.Id, AChangeSet.IntentNodeId, AParentBaselineId);
   ABaseline := TAsWishBaseline.CreateNew(LBaseId, ADecision.Id, LName, LTreeType,
     LContentHash, LRelationHash, LLineage, ARendererVersion, AVisualBinding);
 

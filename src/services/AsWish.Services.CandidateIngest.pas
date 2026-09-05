@@ -827,7 +827,7 @@ function TAsWishCandidateIngest.SaveChangeSet(
   const AProjectPath: string; const AChangeSet: TChangeSet): string;
 var
   LLlmDir: string;
-  LFilePath, LLatestPath: string;
+  LFilePath: string;
   LYaml: string;
 begin
   LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
@@ -839,10 +839,6 @@ begin
     LFilePath := TPath.Combine(LLlmDir, 'change-set.yaml');
   LYaml := FormatChangeSetYaml(AChangeSet);
   TAsWishStoreService.AtomicWriteTextFile(LFilePath, LYaml);
-
-  // Also write/update change-set.yaml as latest active pointer
-  LLatestPath := TPath.Combine(LLlmDir, 'change-set.yaml');
-  TAsWishStoreService.AtomicWriteTextFile(LLatestPath, LYaml);
 
   Result := LFilePath;
 end;

@@ -75,6 +75,12 @@ type
     procedure Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds;
     [Test]
     procedure Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite;
+    [Test]
+    procedure Test12_EvolveBaseline_SnapshotLineage_ContainsParentBaselineId;
+    [Test]
+    procedure Test13_NonEvolveBaseline_SnapshotLineage_OmitsParentBaselineId;
+    [Test]
+    procedure Test14_SingleChangeSetPersistence_NoRedundantDefaultYaml;
   end;
 
 implementation
@@ -596,6 +602,134 @@ begin
     Assert.AreNotEqual(LPath1, LPath2);
     Assert.IsTrue(TFile.Exists(LPath1), 'cs-func-root-01 must coexist');
     Assert.IsTrue(TFile.Exists(LPath2), 'cs-func-root-02 must coexist');
+  finally
+    LIngest.Free;
+  end;
+end;
+
+procedure TTestAsWishRevisionEvolution.Test12_EvolveBaseline_SnapshotLineage_ContainsParentBaselineId;
+var
+  LBaseNodes, LLiveNodes: TList<TSpecNode>;
+  LCS1, LCSEvolve: TChangeSet;
+  LDec1, LDecEvolve: TSpecDecision;
+  LBase1, LBase2, LLoaded: TAsWishBaseline;
+  LBaseId1, LBaseId2, LDecEvolveId, LSnapshotYamlPath, LYamlContent: string;
+  LReport: TSpecDifferenceReport;
+begin
+  LBaseNodes := TList<TSpecNode>.Create;
+  LLiveNodes := TList<TSpecNode>.Create;
+  try
+    LBaseNodes.Add(MakeTestNode('func-01', 'Feature 1', 'feature', '', 'Spec v1'));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LBaseNodes);
+
+    LDec1 := Default(TSpecDecision);
+    LDec1.Id := 'dec-0001';
+    LDec1.DecisionType := dtConfirm;
+    LDec1.Status := dsAccepted;
+
+    LCS1 := Default(TChangeSet);
+    LCS1.Id := 'cs-0001';
+    LCS1.IntentTree := ttFunction;
+    LCS1.IntentNodeId := 'func-01';
+
+    LBaseId1 := FSnapshot.CreateBaseline(LDec1, LCS1, LBaseNodes, nil, nil, nil, LBase1);
+
+    // Evolve live state
+    LLiveNodes.Add(MakeTestNode('func-01', 'Feature 1', 'feature', '', 'Spec v2 evolved'));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LLiveNodes);
+    WriteMockEvidenceFile('func-01');
+
+    LReport := FDifference.ComputeDifference(FTestDir, LBaseId1);
+    LDecEvolveId := FDecisions.RecordDifferenceDecision(LReport, 'acceptable', 'Evolve v2', 'cs-evolve-' + LBaseId1);
+    LDecEvolve := FDecisions.FindById(LDecEvolveId);
+
+    LCSEvolve := Default(TChangeSet);
+    LCSEvolve.Id := 'cs-evolve-' + LBaseId1;
+    LCSEvolve.IntentTree := ttFunction;
+    LCSEvolve.IntentNodeId := 'func-01';
+
+    // Call CreateBaseline with parent_baseline_id = LBaseId1 ('B-0001')
+    LBaseId2 := FSnapshot.CreateBaseline(LDecEvolve, LCSEvolve, LLiveNodes, nil, nil, nil, LBase2, '', '', LBaseId1);
+
+    // 1. In-memory baseline lineage check
+    Assert.AreEqual('B-0001', LBase2.Lineage.ParentBaselineId);
+
+    // 2. On-disk snapshot.yaml verification
+    LSnapshotYamlPath := TPath.Combine(TPath.Combine(TPath.Combine(FTestDir, '.AsWish'), 'snapshots'),
+      TPath.Combine(LBase2.SnapshotName, 'snapshot.yaml'));
+    Assert.IsTrue(TFile.Exists(LSnapshotYamlPath), 'Snapshot yaml must exist on disk');
+    LYamlContent := TFile.ReadAllText(LSnapshotYamlPath, TEncoding.UTF8);
+    Assert.IsTrue(LYamlContent.Contains('parent_baseline_id: "B-0001"'), 'snapshot.yaml must contain parent_baseline_id: "B-0001"');
+
+    // 3. LoadBaseline from disk verification
+    Assert.IsTrue(FSnapshot.LoadBaseline(LBaseId2, LLoaded));
+    Assert.AreEqual('B-0001', LLoaded.Lineage.ParentBaselineId);
+  finally
+    LLiveNodes.Free;
+    LBaseNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishRevisionEvolution.Test13_NonEvolveBaseline_SnapshotLineage_OmitsParentBaselineId;
+var
+  LBaseNodes: TList<TSpecNode>;
+  LCS: TChangeSet;
+  LDec: TSpecDecision;
+  LBase, LLoaded: TAsWishBaseline;
+  LBaseId, LSnapshotYamlPath, LYamlContent: string;
+begin
+  LBaseNodes := TList<TSpecNode>.Create;
+  try
+    LBaseNodes.Add(MakeTestNode('func-01', 'Feature 1', 'feature', '', 'Original spec'));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LBaseNodes);
+
+    LDec := Default(TSpecDecision);
+    LDec.Id := 'dec-0001';
+    LDec.DecisionType := dtConfirm;
+    LDec.Status := dsAccepted;
+
+    LCS := Default(TChangeSet);
+    LCS.Id := 'cs-0001';
+    LCS.IntentTree := ttFunction;
+    LCS.IntentNodeId := 'func-01';
+
+    // Non-evolve path (default AParentBaselineId = '')
+    LBaseId := FSnapshot.CreateBaseline(LDec, LCS, LBaseNodes, nil, nil, nil, LBase);
+
+    // 1. In-memory baseline lineage check
+    Assert.AreEqual('', LBase.Lineage.ParentBaselineId);
+
+    // 2. On-disk snapshot.yaml verification: must NOT contain parent_baseline_id
+    LSnapshotYamlPath := TPath.Combine(TPath.Combine(TPath.Combine(FTestDir, '.AsWish'), 'snapshots'),
+      TPath.Combine(LBase.SnapshotName, 'snapshot.yaml'));
+    Assert.IsTrue(TFile.Exists(LSnapshotYamlPath));
+    LYamlContent := TFile.ReadAllText(LSnapshotYamlPath, TEncoding.UTF8);
+    Assert.IsFalse(LYamlContent.Contains('parent_baseline_id'), 'Non-evolve snapshot.yaml must omit parent_baseline_id');
+
+    // 3. LoadBaseline from disk verification
+    Assert.IsTrue(FSnapshot.LoadBaseline(LBaseId, LLoaded));
+    Assert.AreEqual('', LLoaded.Lineage.ParentBaselineId);
+  finally
+    LBaseNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishRevisionEvolution.Test14_SingleChangeSetPersistence_NoRedundantDefaultYaml;
+var
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LPath, LRedundantPath: string;
+begin
+  LIngest := TAsWishCandidateIngest.Create(FStore);
+  try
+    LCS := TChangeSet.CreateNew('cs-func-root-01', 'func-root', ttFunction, 'single test intent', 'human');
+    LPath := LIngest.SaveChangeSet(FTestDir, LCS);
+
+    Assert.IsTrue(TFile.Exists(LPath), 'ID-named change set file must exist');
+    Assert.IsTrue(LPath.EndsWith('change-set-cs-func-root-01.yaml'));
+
+    LRedundantPath := TPath.Combine(TPath.Combine(FTestDir, '.AsWish'), 'llm\change-set.yaml');
+    Assert.IsFalse(TFile.Exists(LRedundantPath), 'Redundant change-set.yaml must NOT be written when ID is present');
   finally
     LIngest.Free;
   end;
