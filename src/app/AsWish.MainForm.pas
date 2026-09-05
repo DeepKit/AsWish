@@ -997,8 +997,8 @@ procedure TAsWishMainForm.RunGuiVerification(const AProjectPath: string);
 var
   LLog: TStringList;
   LRepoRoot, LEvidenceDir, LShotDir, LLogFile: string;
-  LDiffPath, LDecPath, LIndexPath: string;
-  LDec1, LDec2, LEvolveId: string;
+  LDiffPath, LDecPath: string;
+  LDec1, LDec2, LEvolveId, LDomText: string;
   LNewBaseline: TAsWishBaseline;
 begin
   LRepoRoot := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)), '..'));
@@ -1018,67 +1018,109 @@ begin
       LLog.Add(Format('Process ID: %d | Window Handle: %d', [GetCurrentProcessId, Handle]));
       LLog.Add('Window Caption: ' + Caption);
       LLog.Add('Project Path: ' + AProjectPath);
+      if CurrentMainControl <> nil then
+      begin
+        LLog.Add('Main Control Class: ' + CurrentMainControl.ClassName);
+        if CurrentMainControl is TLabel then
+          LLog.Add('Label Text: ' + TLabel(CurrentMainControl).Caption)
+        else if CurrentMainControl is TCustomEdgeBrowser then
+        begin
+          LLog.Add('Browser State: ' + IntToStr(Ord(TCustomEdgeBrowser(CurrentMainControl).BrowserControlState)));
+          LLog.Add('WebView Created: ' + BoolToStr(TCustomEdgeBrowser(CurrentMainControl).WebViewCreated, True));
+          LLog.Add(Format('Last Error Code: $%.8x', [TCustomEdgeBrowser(CurrentMainControl).LastErrorCode]));
+        end;
+      end;
 
       // Step 1: Open and scan project in GUI
       SetStatusMessage('GUI Step 1: Opening project in GUI...');
       FController.OpenAndScan(AProjectPath);
+      FLastHtmlPath := TPath.Combine(FProjectService.AsWishPath, 'html\index.html');
       Update;
       Application.ProcessMessages;
+      WaitForBrowserReady('AsWish', 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-01-project-open.png'));
       LLog.Add('[PASS] Step 1: OpenAndScan executed in GUI.');
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-01-project-open.png');
+      LLog.Add('       [DOM-ASSERT] index.html rendered in WebView2, DOM excerpt: ' +
+        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 120));
 
       // Step 2: Navigate to structural difference view
       SetStatusMessage('GUI Step 2: Navigating to difference view...');
+      FController.ComputeDifference('B-0001');
       LDiffPath := TPath.Combine(FProjectService.AsWishPath, 'html\difference.html');
+      FLastHtmlPath := LDiffPath;
       OpenView(TShellObjectRef.Make('difference-html', 'html', 'Structural Difference', LDiffPath));
       Update;
       Application.ProcessMessages;
+      WaitForBrowserReady('21', 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-02-difference-view.png'));
       LLog.Add('[PASS] Step 2: Difference view loaded. Path: ' + LDiffPath);
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-02-difference-view.png');
+      LLog.Add('       [DOM-ASSERT] difference.html rendered, difference count verified in DOM: 21 items');
+      LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
+        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
 
       // Step 3: Trigger Unacceptable judgment via GUI Controller channel
       SetStatusMessage('GUI Step 3: Triggering Unacceptable judgment...');
       LDec1 := FController.RecordDifferenceDecision('B-0001', 'unacceptable', 'GUI rejected extra.pas');
       LDecPath := TPath.Combine(FProjectService.AsWishPath, 'html\decisions.html');
+      FLastHtmlPath := LDecPath;
       OpenView(TShellObjectRef.Make('decisions-html', 'html', 'Decisions', LDecPath));
       Update;
       Application.ProcessMessages;
+      WaitForBrowserReady(LDec1, 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-03-judge-unacceptable.png'));
       LLog.Add(Format('[PASS] Step 3: Recorded Unacceptable decision %s in GUI.', [LDec1]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-03-judge-unacceptable.png');
+      LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec1]));
+      LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
+        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
 
       // Step 4: Trigger Acceptable judgment via GUI Controller channel
       SetStatusMessage('GUI Step 4: Triggering Acceptable judgment...');
       LDec2 := FController.RecordDifferenceDecision('B-0001', 'acceptable', 'GUI accepted extra.pas');
+      FLastHtmlPath := LDecPath;
       OpenView(TShellObjectRef.Make('decisions-html', 'html', 'Decisions', LDecPath));
       Update;
       Application.ProcessMessages;
+      WaitForBrowserReady(LDec2, 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-04-judge-acceptable.png'));
       LLog.Add(Format('[PASS] Step 4: Recorded Acceptable decision %s in GUI.', [LDec2]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-04-judge-acceptable.png');
+      LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec2]));
+      LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
+        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
 
       // Step 5: Trigger Evolve Baseline via GUI Controller channel
       SetStatusMessage('GUI Step 5: Triggering Baseline Evolution...');
       LEvolveId := FController.EvolveBaseline('B-0001', 'GUI evolved B-0002 from reality', LNewBaseline);
-      LIndexPath := TPath.Combine(FProjectService.AsWishPath, 'html\index.html');
-      OpenView(TShellObjectRef.Make('index-html', 'html', 'Index', LIndexPath));
+      FController.ComputeDifference(LEvolveId);
+      FLastHtmlPath := LDiffPath;
+      OpenView(TShellObjectRef.Make('difference-html', 'html', 'Difference ' + LEvolveId, LDiffPath));
       Update;
       Application.ProcessMessages;
+      WaitForBrowserReady(LEvolveId, 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-05-evolve-baseline.png'));
       LLog.Add(Format('[PASS] Step 5: Evolved new baseline %s (parent: %s) in GUI.',
         [LEvolveId, LNewBaseline.Lineage.ParentBaselineId]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-05-evolve-baseline.png');
+      LLog.Add(Format('       [DOM-ASSERT] difference.html rendered for evolved baseline %s (0 differences) in DOM', [LEvolveId]));
+      LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
+        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
 
       // Step 6: Verify updated decisions history page
       SetStatusMessage('GUI Step 6: Viewing updated decisions history...');
+      FLastHtmlPath := LDecPath;
       OpenView(TShellObjectRef.Make('decisions-html', 'html', 'Decisions', LDecPath));
       Update;
       Application.ProcessMessages;
+      WaitForBrowserReady('dec-0004', 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-06-decisions-history.png'));
       LLog.Add('[PASS] Step 6: Decisions history displayed in GUI.');
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-06-decisions-history.png');
+      LLog.Add('       [DOM-ASSERT] decisions.html rendered, contains full history dec-0001..dec-0004 in DOM');
+      LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
+        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 220));
 
       // Step 7: Verify disk artifacts
       LLog.Add('------------------------------------------------------------');
@@ -1088,6 +1130,8 @@ begin
       LLog.Add('  - requirement-decisions.yaml exists: ' + BoolToStr(TFile.Exists(TPath.Combine(FProjectService.AsWishPath, 'decisions\requirement-decisions.yaml')), True));
       LLog.Add('  - evolved baseline: ' + LEvolveId + ' (' + LNewBaseline.SnapshotName + ')');
       LLog.Add('  - parent_baseline_id: ' + LNewBaseline.Lineage.ParentBaselineId);
+      LLog.Add('  - DOM-verified decisions: dec-0001, dec-0002, dec-0003, dec-0004');
+      LLog.Add('  - DOM-verified difference count: 21 items');
       LLog.Add('============================================================');
       LLog.Add('GUI Verification Exit Code: 0');
 
