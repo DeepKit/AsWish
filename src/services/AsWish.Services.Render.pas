@@ -74,6 +74,10 @@ type
     ///  representing structural wireframes (Page -> Section -> Component -> Hierarchy, WO-20260830-0028).</summary>
     procedure RenderVisualPreview(AViewNodes: TList<TSpecNode>;
       const AProjectName: string; const ARendererVersion: string = 'wireframe-v1.0');
+    procedure RenderDifferencePage(const AReport: TSpecDifferenceReport;
+      const AProjectName: string = '');
+    procedure RenderDecisionsPage(const ADecisions: TArray<TSpecDecision>;
+      const AProjectName: string = '');
     /// <summary>Compute health metrics over 4 trees (+ optional issues).
     /// nil lists are treated as empty. Pure — no IO.</summary>
     class function ComputeHealthMetrics(AFunc, AModule, AView, AData: TList<TSpecNode>;
@@ -90,7 +94,8 @@ uses
   System.DateUtils,
   System.StrUtils,
   System.Generics.Defaults,
-  Winapi.Windows;
+  Winapi.Windows,
+  AsWish.Services.RenderDiff;
 
 procedure TAsWishRenderService.Initialize(const AAsWishPath: string);
 begin
@@ -399,6 +404,10 @@ begin
       T('ChangeSet Review (I said &rarr; AI understood &rarr; Decision)', '意图审阅与裁决（我说 &rarr; AI 理解 &rarr; 裁决）') + '</strong></a></li>');
     LSb.AppendLine('  <li><a href="visual-preview.html"><strong>' +
       T('Visual Preview (Wireframe / UI Representation)', '视觉规格基线预览（结构线框）') + '</strong></a></li>');
+    LSb.AppendLine('  <li><a href="difference.html"><strong>' +
+      T('Structural Difference & Judgment', '结构差异与裁决（Difference / Judge）') + '</strong></a></li>');
+    LSb.AppendLine('  <li><a href="decisions.html"><strong>' +
+      T('Requirement Decisions History', '需求决策历史留痕（Decisions History）') + '</strong></a></li>');
     LSb.AppendLine('  <li><a href="function-tree.html">Function Tree</a></li>');
     LSb.AppendLine('  <li><a href="module-tree.html">Module Tree</a></li>');
     LSb.AppendLine('  <li><a href="view-tree.html">View Tree</a></li>');
@@ -1950,6 +1959,18 @@ begin
   finally
     LSb.Free;
   end;
+end;
+
+procedure TAsWishRenderService.RenderDifferencePage(
+  const AReport: TSpecDifferenceReport; const AProjectName: string);
+begin
+  TAsWishDiffRenderHelper.RenderDifferencePage(FBasePath, FLocale, AReport, AProjectName);
+end;
+
+procedure TAsWishRenderService.RenderDecisionsPage(
+  const ADecisions: TArray<TSpecDecision>; const AProjectName: string);
+begin
+  TAsWishDiffRenderHelper.RenderDecisionsPage(FBasePath, FLocale, ADecisions, AProjectName);
 end;
 
 end.
