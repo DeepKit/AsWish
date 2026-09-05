@@ -1,0 +1,794 @@
+######################################################################
+AsWish Batch Dogfood Suite (WO-20260905-1130-0029-甲)
+Start Time: 2026-09-05T11:35:53+08:00
+Target BaseDir: D:\_Progs\02Business\AsWish\batch_dogfood
+CLI Executable: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe
+######################################################################
+
+>>> Starting Project: proj_calc_tool <<<
+
+========================================================
+[proj_calc_tool - 1.1: Init workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe init D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[init] initialized: D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish
+
+========================================================
+[proj_calc_tool - 1.2: Scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+[scan] 12 files, type=delphi_vcl
+[scan] trees: function 2 / module 3 / view 0 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\html\
+
+========================================================
+[proj_calc_tool - 2.1: Express intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool func-root function Add safe integer division with DivZero validation
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[proj_calc_tool - 2.2: Generate changeset]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool func-root function Add safe integer division with DivZero validation
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-01 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\llm\change-set-cs-func-root-01.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[proj_calc_tool - 2.3: Accept changeset & Freeze B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool cs-func-root-01 Approved initial baseline B-0001
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-01 -> recorded Decision dec-0001
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0001 (snapshot: 2026-09-05_113554-accepted-baseline-B-0001-dec-0001)
+
+========================================================
+[proj_calc_tool - 2.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[baseline] found 1 Accepted Baseline(s):
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113554-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: e6f52b1f996945c7f5d14a0146c36d0403d7d1a340ad2b0fe3f34310181614d4 | RelationHash: 60d7647608eabcc30ce8ae7f02ff938b9fb90a56d29f555d8c22ee9eacd1ff1f
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_calc_tool - 2.5: Verify B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0001
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+========================================================
+[proj_calc_tool - 3.1: Collect evidence for B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0001
+Exit code: 0
+Output:
+Collected 2 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: docs/Overview.md (lines: , hash: a49babb3e01f)
+  - ev-impl-0002: src/CalcEngine.pas (lines: , hash: 1c6634effb85)
+
+========================================================
+[proj_calc_tool - 4.1: Re-scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+[scan] 35 files, type=delphi_vcl
+[scan] trees: function 23 / module 3 / view 7 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\html\
+
+========================================================
+[proj_calc_tool - 4.2: Re-collect evidence]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0001
+Exit code: 0
+Output:
+Collected 2 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: docs/Overview.md (lines: , hash: a49babb3e01f)
+  - ev-impl-0002: src/CalcEngine.pas (lines: , hash: f7ab69bb8abb)
+
+========================================================
+[proj_calc_tool - 4.3: Compute difference against B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0001
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0001" (tree: function):
+  Found 21 structural difference(s):
+  - [extra] node: func-5-interpretation-rules (baseline: , live/ev: 4303df72)
+  - [extra] node: func-process (baseline: , live/ev: d0d3ba15)
+  - [extra] node: func-quality-bar (baseline: , live/ev: 37d0b881)
+  - [extra] node: func-1-raw-human-user-intent (baseline: , live/ev: afb19bc9)
+  - [extra] node: func-aswish-llm-interpretation-candidate-user (baseline: , live/ev: 29f1259a)
+  - [extra] node: func-2-current-node-context (baseline: , live/ev: e86bc5dc)
+  - [extra] node: func-2-file-statistics (baseline: , live/ev: 69992716)
+  - [extra] node: func-5-code-structure-sample (baseline: , live/ev: a602908e)
+  - [extra] node: func-3-affected-projections-via-semantic-bund (baseline: , live/ev: fcf26d2f)
+  - [extra] node: func-context-pack (baseline: , live/ev: bf5ddf7b)
+  - [extra] node: func-output-files (baseline: , live/ev: 2cfd6235)
+  - [extra] node: func-a-b-generation-prompt (baseline: , live/ev: ad6fb55a)
+  - [extra] node: func-1-project (baseline: , live/ev: 8537f3e0)
+  - [extra] node: func-8-output-format (baseline: , live/ev: cb093c94)
+  - [extra] node: func-4-ai-rules-files (baseline: , live/ev: 37e0fa55)
+  - [extra] node: func-file-trees-function-tree-yaml (baseline: , live/ev: 7ed1c0da)
+  - [extra] node: func-6-task (baseline: , live/ev: 270ba5d1)
+  - [extra] node: func-file-trees-module-tree-yaml (baseline: , live/ev: 27662edd)
+  - [extra] node: func-4-required-output-format (baseline: , live/ev: ed8adf83)
+  - [extra] node: func-7-constraints (baseline: , live/ev: b6138479)
+  - [extra] node: func-3-key-documents (baseline: , live/ev: d3392d1d)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[proj_calc_tool - 5.1: Judge Unacceptable]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0001 unacceptable Missing DivZero error handling; reject for Revision
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0002" (unacceptable) for baseline B-0001 (21 difference items).
+
+========================================================
+[proj_calc_tool - 6.1: Revision intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool func-root function Revise division specification to explicitly require EDivByZero check
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[proj_calc_tool - 6.2: Generate revision changeset]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool func-root function Revise division specification to explicitly require EDivByZero check
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-02 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\llm\change-set-cs-func-root-02.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[proj_calc_tool - 6.3: Accept revision changeset & Freeze B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool cs-func-root-02 Revision accepted for B-0002
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-02 -> recorded Decision dec-0003
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0002 (snapshot: 2026-09-05_113554-accepted-baseline-B-0002-dec-0003)
+
+========================================================
+[proj_calc_tool - 6.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[baseline] found 2 Accepted Baseline(s):
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-05_113554-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: 5f3ff6eb36bbece57aa93f41498436c1a619dd014a57506724aefe8451b268b3 | RelationHash: ce4ffd316e9ca01294b0ae38721a7984ffe23140585aeb30c5dafb9d242939ef
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113554-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: e6f52b1f996945c7f5d14a0146c36d0403d7d1a340ad2b0fe3f34310181614d4 | RelationHash: 60d7647608eabcc30ce8ae7f02ff938b9fb90a56d29f555d8c22ee9eacd1ff1f
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_calc_tool - 6.5: Verify B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0002
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+========================================================
+[proj_calc_tool - 7.1: Re-scan for Evolution]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+[scan] 45 files, type=delphi_vcl
+[scan] trees: function 24 / module 4 / view 7 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool\.AsWish\html\
+
+========================================================
+[proj_calc_tool - 7.2: Collect evidence for B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0002
+Exit code: 0
+Output:
+Collected 11 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: .AsWish/prompts/change-interpret-func-root.md (lines: , hash: ae2446260d6b)
+  - ev-impl-0002: .AsWish/prompts/context-pack.md (lines: , hash: 091237d16d59)
+  - ev-impl-0003: .AsWish/prompts/doc-optimization-prompt.md (lines: , hash: 81bc00cf7800)
+  - ev-impl-0004: docs/Overview.md (lines: , hash: a49babb3e01f)
+  - ev-impl-0005: src/CalcEngine.pas (lines: , hash: f7ab69bb8abb)
+  - ev-impl-0006: .AsWish/html/function-tree.html (lines: , hash: 75ae7a9f8db4)
+  - ev-impl-0007: .AsWish/html/index.html (lines: , hash: 74e6fb9aef7a)
+  - ev-impl-0008: .AsWish/html/module-tree.html (lines: , hash: 3e66d90f7be3)
+  - ev-impl-0009: .AsWish/html/problems.html (lines: , hash: cbcd4a17fa2d)
+  - ev-impl-0010: .AsWish/html/scan-report.html (lines: , hash: b8e2c2ab54ba)
+  - ev-impl-0011: .AsWish/html/view-tree.html (lines: , hash: 39506882732d)
+
+========================================================
+[proj_calc_tool - 7.3: Compute difference against B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0002
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0002" (tree: function):
+  Found 1 structural difference(s):
+  - [extra] node: func-scientific-extension (baseline: , live/ev: de58760e)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[proj_calc_tool - 7.4: Judge Acceptable]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0002 acceptable Scientific calculations and documentation approved
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0004" (acceptable) for baseline B-0002 (1 difference items).
+
+========================================================
+[proj_calc_tool - 7.5: Evolve to B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0002 Evolution to Baseline B-0003 from reality
+Exit code: 0
+Output:
+Evolved new Accepted Baseline "B-0003" (snapshot: 2026-09-05_113555-accepted-baseline-B-0003-dec-0005) from current implementation reality.
+  - Decision ID: dec-0005
+  - Content Hash: 3d44216de6b11b19
+  - Relation Hash: f6886467a1033ac1
+
+========================================================
+[proj_calc_tool - 7.6: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool
+Exit code: 0
+Output:
+[baseline] found 3 Accepted Baseline(s):
+  - ID: B-0003 | Decision: dec-0005 | Snapshot: 2026-09-05_113555-accepted-baseline-B-0003-dec-0005 | Tree: function
+    ContentHash: 3d44216de6b11b1910eb4e1b0aa2e6109457564e955325468489d55b5f0aeb09 | RelationHash: f6886467a1033ac1e4c8bce39487d7487012cb3c63c1d46f61ce3add3c04a9e8
+    Lineage: ChangeSet=cs-evolve-B-0002, Intent=diff-evolve, ParentBaseline=B-0002
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-05_113554-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: 5f3ff6eb36bbece57aa93f41498436c1a619dd014a57506724aefe8451b268b3 | RelationHash: ce4ffd316e9ca01294b0ae38721a7984ffe23140585aeb30c5dafb9d242939ef
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113554-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: e6f52b1f996945c7f5d14a0146c36d0403d7d1a340ad2b0fe3f34310181614d4 | RelationHash: 60d7647608eabcc30ce8ae7f02ff938b9fb90a56d29f555d8c22ee9eacd1ff1f
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_calc_tool - 7.7: Verify B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_calc_tool B-0003
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0003 integrity verified (content & relation hashes match)
+[ASSERT PASS] proj_calc_tool contains dec-0001
+[ASSERT PASS] proj_calc_tool contains dec-0002 (unacceptable)
+[ASSERT PASS] proj_calc_tool contains dec-0003
+[ASSERT PASS] proj_calc_tool contains dec-0004
+[ASSERT PASS] proj_calc_tool contains dec-0005 (evolve)
+[ASSERT PASS] proj_calc_tool B-0003 snapshot has parent_baseline_id: B-0002
+[ASSERT PASS] proj_calc_tool cs-01 exists
+[ASSERT PASS] proj_calc_tool cs-02 exists
+
+>>> Starting Project: proj_task_service <<<
+
+========================================================
+[proj_task_service - 1.1: Init workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe init D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[init] initialized: D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish
+
+========================================================
+[proj_task_service - 1.2: Scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+[scan] 14 files, type=delphi_vcl
+[scan] trees: function 2 / module 9 / view 0 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\html\
+
+========================================================
+[proj_task_service - 2.1: Express intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service func-root function Implement task priority levels and tag filtering
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[proj_task_service - 2.2: Generate changeset]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service func-root function Implement task priority levels and tag filtering
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-01 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\llm\change-set-cs-func-root-01.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[proj_task_service - 2.3: Accept changeset & Freeze B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service cs-func-root-01 Approved initial baseline B-0001
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-01 -> recorded Decision dec-0001
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0001 (snapshot: 2026-09-05_113556-accepted-baseline-B-0001-dec-0001)
+
+========================================================
+[proj_task_service - 2.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[baseline] found 1 Accepted Baseline(s):
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113556-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 78aac7e7f796991743dfbb79d81b378503687ec2a9a8406227453880b9e0c877 | RelationHash: c5b52f2f6b5115e0ef5f62a9f9d9a6b4a0e858a5f36096b532eeb44f69946cfe
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_task_service - 2.5: Verify B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0001
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+========================================================
+[proj_task_service - 3.1: Collect evidence for B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0001
+Exit code: 0
+Output:
+Collected 4 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: docs/Architecture.md (lines: , hash: 776a940185ff)
+  - ev-impl-0002: src/models/TaskItem.pas (lines: , hash: b12868bd1f5d)
+  - ev-impl-0003: src/storage/TaskStore.pas (lines: , hash: 5e7526c566ff)
+  - ev-impl-0004: src/services/TaskManager.pas (lines: , hash: 35cba0de1e80)
+
+========================================================
+[proj_task_service - 4.1: Re-scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+[scan] 37 files, type=delphi_vcl
+[scan] trees: function 23 / module 8 / view 7 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\html\
+
+========================================================
+[proj_task_service - 4.2: Re-collect evidence]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0001
+Exit code: 0
+Output:
+Collected 4 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: docs/Architecture.md (lines: , hash: 776a940185ff)
+  - ev-impl-0002: src/models/TaskItem.pas (lines: , hash: 28be6e68ff21)
+  - ev-impl-0003: src/storage/TaskStore.pas (lines: , hash: 5e7526c566ff)
+  - ev-impl-0004: src/services/TaskManager.pas (lines: , hash: 35cba0de1e80)
+
+========================================================
+[proj_task_service - 4.3: Compute difference against B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0001
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0001" (tree: function):
+  Found 21 structural difference(s):
+  - [extra] node: func-5-interpretation-rules (baseline: , live/ev: 4303df72)
+  - [extra] node: func-process (baseline: , live/ev: d0d3ba15)
+  - [extra] node: func-quality-bar (baseline: , live/ev: 37d0b881)
+  - [extra] node: func-1-raw-human-user-intent (baseline: , live/ev: afb19bc9)
+  - [extra] node: func-aswish-llm-interpretation-candidate-user (baseline: , live/ev: 29f1259a)
+  - [extra] node: func-2-current-node-context (baseline: , live/ev: e86bc5dc)
+  - [extra] node: func-2-file-statistics (baseline: , live/ev: 69992716)
+  - [extra] node: func-5-code-structure-sample (baseline: , live/ev: a602908e)
+  - [extra] node: func-3-affected-projections-via-semantic-bund (baseline: , live/ev: fcf26d2f)
+  - [extra] node: func-context-pack (baseline: , live/ev: bf5ddf7b)
+  - [extra] node: func-output-files (baseline: , live/ev: 2cfd6235)
+  - [extra] node: func-a-b-generation-prompt (baseline: , live/ev: ad6fb55a)
+  - [extra] node: func-1-project (baseline: , live/ev: 8537f3e0)
+  - [extra] node: func-8-output-format (baseline: , live/ev: cb093c94)
+  - [extra] node: func-4-ai-rules-files (baseline: , live/ev: 37e0fa55)
+  - [extra] node: func-file-trees-function-tree-yaml (baseline: , live/ev: 7ed1c0da)
+  - [extra] node: func-6-task (baseline: , live/ev: 270ba5d1)
+  - [extra] node: func-7-constraints (baseline: , live/ev: b6138479)
+  - [extra] node: func-4-required-output-format (baseline: , live/ev: ed8adf83)
+  - [extra] node: func-file-trees-module-tree-yaml (baseline: , live/ev: 27662edd)
+  - [extra] node: func-3-key-documents (baseline: , live/ev: d3392d1d)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[proj_task_service - 5.1: Judge Unacceptable]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0001 unacceptable Tag filtering is completely missing; reject for Revision
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0002" (unacceptable) for baseline B-0001 (21 difference items).
+
+========================================================
+[proj_task_service - 6.1: Revision intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service func-root function Add tag list field and filter query parameters to task domain
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[proj_task_service - 6.2: Generate revision changeset]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service func-root function Add tag list field and filter query parameters to task domain
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-02 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\llm\change-set-cs-func-root-02.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[proj_task_service - 6.3: Accept revision changeset & Freeze B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service cs-func-root-02 Revision accepted for B-0002
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-02 -> recorded Decision dec-0003
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0002 (snapshot: 2026-09-05_113556-accepted-baseline-B-0002-dec-0003)
+
+========================================================
+[proj_task_service - 6.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[baseline] found 2 Accepted Baseline(s):
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-05_113556-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: e79fc899807d88012d4de0f268f1bcb6167ed88565ac7c20aa8e51cf0514ede9 | RelationHash: 9226a5306cbd32e1254d21a7a934059be22f425c4dc39c2d70f395d822fb5528
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113556-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 78aac7e7f796991743dfbb79d81b378503687ec2a9a8406227453880b9e0c877 | RelationHash: c5b52f2f6b5115e0ef5f62a9f9d9a6b4a0e858a5f36096b532eeb44f69946cfe
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_task_service - 6.5: Verify B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0002
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+========================================================
+[proj_task_service - 7.1: Re-scan for Evolution]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+[scan] 47 files, type=delphi_vcl
+[scan] trees: function 24 / module 9 / view 7 / data 0
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service\.AsWish\html\
+
+========================================================
+[proj_task_service - 7.2: Collect evidence for B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0002
+Exit code: 0
+Output:
+Collected 13 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: .AsWish/prompts/change-interpret-func-root.md (lines: , hash: b4623deeb8a9)
+  - ev-impl-0002: .AsWish/prompts/context-pack.md (lines: , hash: e7a288b86ee9)
+  - ev-impl-0003: .AsWish/prompts/doc-optimization-prompt.md (lines: , hash: c172f038ecb3)
+  - ev-impl-0004: docs/Architecture.md (lines: , hash: 776a940185ff)
+  - ev-impl-0005: src/models/TaskItem.pas (lines: , hash: 28be6e68ff21)
+  - ev-impl-0006: src/storage/TaskStore.pas (lines: , hash: 5e7526c566ff)
+  - ev-impl-0007: src/services/TaskManager.pas (lines: , hash: 35cba0de1e80)
+  - ev-impl-0008: .AsWish/html/function-tree.html (lines: , hash: 127a7699baf8)
+  - ev-impl-0009: .AsWish/html/index.html (lines: , hash: bbc8c2ae7214)
+  - ev-impl-0010: .AsWish/html/module-tree.html (lines: , hash: 362540696750)
+  - ev-impl-0011: .AsWish/html/problems.html (lines: , hash: 053f397ce1f5)
+  - ev-impl-0012: .AsWish/html/scan-report.html (lines: , hash: feca7b53ebf9)
+  - ev-impl-0013: .AsWish/html/view-tree.html (lines: , hash: 97c1d8762bee)
+
+========================================================
+[proj_task_service - 7.3: Compute difference against B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0002
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0002" (tree: function):
+  Found 1 structural difference(s):
+  - [extra] node: func-task-export-spec (baseline: , live/ev: d3c7fd5f)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[proj_task_service - 7.4: Judge Acceptable]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0002 acceptable Task export service and documentation approved
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0004" (acceptable) for baseline B-0002 (1 difference items).
+
+========================================================
+[proj_task_service - 7.5: Evolve to B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0002 Evolution to Baseline B-0003 from reality
+Exit code: 0
+Output:
+Evolved new Accepted Baseline "B-0003" (snapshot: 2026-09-05_113557-accepted-baseline-B-0003-dec-0005) from current implementation reality.
+  - Decision ID: dec-0005
+  - Content Hash: 45e5d6acbf3b37d2
+  - Relation Hash: fc60d80e3b5835b9
+
+========================================================
+[proj_task_service - 7.6: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service
+Exit code: 0
+Output:
+[baseline] found 3 Accepted Baseline(s):
+  - ID: B-0003 | Decision: dec-0005 | Snapshot: 2026-09-05_113557-accepted-baseline-B-0003-dec-0005 | Tree: function
+    ContentHash: 45e5d6acbf3b37d2a628a86aec00bf56f8252b8218143ce35036c1bae2ba25a8 | RelationHash: fc60d80e3b5835b9c454e28bdf313e1bc1f7898069e9804162134eb85200bea4
+    Lineage: ChangeSet=cs-evolve-B-0002, Intent=diff-evolve, ParentBaseline=B-0002
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-05_113556-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: e79fc899807d88012d4de0f268f1bcb6167ed88565ac7c20aa8e51cf0514ede9 | RelationHash: 9226a5306cbd32e1254d21a7a934059be22f425c4dc39c2d70f395d822fb5528
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113556-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 78aac7e7f796991743dfbb79d81b378503687ec2a9a8406227453880b9e0c877 | RelationHash: c5b52f2f6b5115e0ef5f62a9f9d9a6b4a0e858a5f36096b532eeb44f69946cfe
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_task_service - 7.7: Verify B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_task_service B-0003
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0003 integrity verified (content & relation hashes match)
+[ASSERT PASS] proj_task_service contains dec-0001
+[ASSERT PASS] proj_task_service contains dec-0002 (unacceptable)
+[ASSERT PASS] proj_task_service contains dec-0003
+[ASSERT PASS] proj_task_service contains dec-0004
+[ASSERT PASS] proj_task_service contains dec-0005 (evolve)
+[ASSERT PASS] proj_task_service B-0003 snapshot has parent_baseline_id: B-0002
+[ASSERT PASS] proj_task_service cs-01 exists
+[ASSERT PASS] proj_task_service cs-02 exists
+
+>>> Starting Project: proj_data_pipeline <<<
+
+========================================================
+[proj_data_pipeline - 1.1: Init workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe init D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[init] initialized: D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish
+
+========================================================
+[proj_data_pipeline - 1.2: Scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+[scan] 14 files, type=delphi_vcl
+[scan] trees: function 2 / module 8 / view 5 / data 1
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\html\
+
+========================================================
+[proj_data_pipeline - 2.1: Express intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline func-root function Add automatic retry policy with exponential backoff
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[proj_data_pipeline - 2.2: Generate changeset]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline func-root function Add automatic retry policy with exponential backoff
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-01 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\llm\change-set-cs-func-root-01.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[proj_data_pipeline - 2.3: Accept changeset & Freeze B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline cs-func-root-01 Approved initial baseline B-0001
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-01 -> recorded Decision dec-0001
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0001 (snapshot: 2026-09-05_113557-accepted-baseline-B-0001-dec-0001)
+
+========================================================
+[proj_data_pipeline - 2.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[baseline] found 1 Accepted Baseline(s):
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113557-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: e9256470334eee97d51d467c19e4109900644d6fdc083191ef232895e878e7a4 | RelationHash: c298b0b52c09ed6f91d2e01d64f4bfe29d6c6f439737e18f5c245d0386297d8f
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_data_pipeline - 2.5: Verify B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0001
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+========================================================
+[proj_data_pipeline - 3.1: Collect evidence for B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0001
+Exit code: 0
+Output:
+Collected 4 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: docs/PipelineSpec.md (lines: , hash: 17a17108318a)
+  - ev-impl-0002: src/data/PipelineSchema.pas (lines: , hash: 08245788dada)
+  - ev-impl-0003: src/views/DashboardForm.pas (lines: , hash: b557ac079ec6)
+  - ev-impl-0004: src/views/DashboardForm.dfm (lines: , hash: 0f17041ab691)
+
+========================================================
+[proj_data_pipeline - 4.1: Re-scan workspace]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+[scan] 38 files, type=delphi_vcl
+[scan] trees: function 23 / module 7 / view 12 / data 1
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\html\
+
+========================================================
+[proj_data_pipeline - 4.2: Re-collect evidence]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0001
+Exit code: 0
+Output:
+Collected 4 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: docs/PipelineSpec.md (lines: , hash: 17a17108318a)
+  - ev-impl-0002: src/data/PipelineSchema.pas (lines: , hash: 2786b0ab1ffe)
+  - ev-impl-0003: src/views/DashboardForm.pas (lines: , hash: b557ac079ec6)
+  - ev-impl-0004: src/views/DashboardForm.dfm (lines: , hash: 0f17041ab691)
+
+========================================================
+[proj_data_pipeline - 4.3: Compute difference against B-0001]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0001
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0001" (tree: function):
+  Found 21 structural difference(s):
+  - [extra] node: func-5-interpretation-rules (baseline: , live/ev: 4303df72)
+  - [extra] node: func-process (baseline: , live/ev: d0d3ba15)
+  - [extra] node: func-quality-bar (baseline: , live/ev: 37d0b881)
+  - [extra] node: func-1-raw-human-user-intent (baseline: , live/ev: afb19bc9)
+  - [extra] node: func-aswish-llm-interpretation-candidate-user (baseline: , live/ev: 29f1259a)
+  - [extra] node: func-2-current-node-context (baseline: , live/ev: e86bc5dc)
+  - [extra] node: func-2-file-statistics (baseline: , live/ev: 69992716)
+  - [extra] node: func-5-code-structure-sample (baseline: , live/ev: a602908e)
+  - [extra] node: func-3-affected-projections-via-semantic-bund (baseline: , live/ev: fcf26d2f)
+  - [extra] node: func-context-pack (baseline: , live/ev: bf5ddf7b)
+  - [extra] node: func-output-files (baseline: , live/ev: 2cfd6235)
+  - [extra] node: func-a-b-generation-prompt (baseline: , live/ev: ad6fb55a)
+  - [extra] node: func-1-project (baseline: , live/ev: 8537f3e0)
+  - [extra] node: func-8-output-format (baseline: , live/ev: cb093c94)
+  - [extra] node: func-4-ai-rules-files (baseline: , live/ev: 37e0fa55)
+  - [extra] node: func-file-trees-function-tree-yaml (baseline: , live/ev: 7ed1c0da)
+  - [extra] node: func-6-task (baseline: , live/ev: 270ba5d1)
+  - [extra] node: func-file-trees-module-tree-yaml (baseline: , live/ev: 27662edd)
+  - [extra] node: func-4-required-output-format (baseline: , live/ev: ed8adf83)
+  - [extra] node: func-7-constraints (baseline: , live/ev: b6138479)
+  - [extra] node: func-3-key-documents (baseline: , live/ev: d3392d1d)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[proj_data_pipeline - 5.1: Judge Unacceptable]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0001 unacceptable Exponential backoff calculation missing; reject for Revision
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0002" (unacceptable) for baseline B-0001 (21 difference items).
+
+========================================================
+[proj_data_pipeline - 6.1: Revision intent]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline func-root function Add MaxRetries and BackoffBaseSeconds parameters to retry policy
+Exit code: 0
+Output:
+[intent] saved candidate intent for func-root (function) to D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\llm\candidate-intent.yaml
+
+========================================================
+[proj_data_pipeline - 6.2: Generate revision changeset]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline func-root function Add MaxRetries and BackoffBaseSeconds parameters to retry policy
+Exit code: 0
+Output:
+[changeset] generated change set cs-func-root-02 for func-root (function)
+  saved change set: D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\llm\change-set-cs-func-root-02.yaml
+  saved prompt:     D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\prompts\change-interpret-func-root.md
+
+========================================================
+[proj_data_pipeline - 6.3: Accept revision changeset & Freeze B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline cs-func-root-02 Revision accepted for B-0002
+Exit code: 0
+Output:
+[changeset] ACCEPTED cs-func-root-02 -> recorded Decision dec-0003
+  applied 0 changes to Canonical Spec and validated
+  frozen Accepted Baseline B-0002 (snapshot: 2026-09-05_113558-accepted-baseline-B-0002-dec-0003)
+
+========================================================
+[proj_data_pipeline - 6.4: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[baseline] found 2 Accepted Baseline(s):
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-05_113558-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: cb0a24fc83b282e4ed32baa2b13eb75df8312eab9ff5c01f39afec32e259462e | RelationHash: 75c378cb29154d22bd217d85b16f114ce23ff0a4bb362df971649f528129cbbe
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113557-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: e9256470334eee97d51d467c19e4109900644d6fdc083191ef232895e878e7a4 | RelationHash: c298b0b52c09ed6f91d2e01d64f4bfe29d6c6f439737e18f5c245d0386297d8f
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_data_pipeline - 6.5: Verify B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0002
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+========================================================
+[proj_data_pipeline - 7.1: Re-scan for Evolution]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[scan] scanning D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+[scan] 48 files, type=delphi_vcl
+[scan] trees: function 24 / module 8 / view 12 / data 1
+[scan] done -> D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline\.AsWish\html\
+
+========================================================
+[proj_data_pipeline - 7.2: Collect evidence for B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0002
+Exit code: 0
+Output:
+Collected 14 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: .AsWish/prompts/change-interpret-func-root.md (lines: , hash: 000ae1977743)
+  - ev-impl-0002: .AsWish/prompts/context-pack.md (lines: , hash: 4804b299ed6e)
+  - ev-impl-0003: .AsWish/prompts/doc-optimization-prompt.md (lines: , hash: 710ad824b8e2)
+  - ev-impl-0004: docs/PipelineSpec.md (lines: , hash: 17a17108318a)
+  - ev-impl-0005: src/data/PipelineSchema.pas (lines: , hash: 2786b0ab1ffe)
+  - ev-impl-0006: src/views/DashboardForm.pas (lines: , hash: b557ac079ec6)
+  - ev-impl-0007: .AsWish/html/data-tree.html (lines: , hash: 5af82f0400ac)
+  - ev-impl-0008: .AsWish/html/function-tree.html (lines: , hash: 3d785606e6fa)
+  - ev-impl-0009: .AsWish/html/index.html (lines: , hash: 4a70ca536af0)
+  - ev-impl-0010: .AsWish/html/module-tree.html (lines: , hash: 5ab664ef8f34)
+  - ev-impl-0011: .AsWish/html/problems.html (lines: , hash: e91e257c3e44)
+  - ev-impl-0012: .AsWish/html/scan-report.html (lines: , hash: d6e9b32f91c9)
+  - ev-impl-0013: .AsWish/html/view-tree.html (lines: , hash: e7df2203e591)
+  - ev-impl-0014: src/views/DashboardForm.dfm (lines: , hash: 0f17041ab691)
+
+========================================================
+[proj_data_pipeline - 7.3: Compute difference against B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0002
+Exit code: 0
+Output:
+Computed difference report against baseline "B-0002" (tree: function):
+  Found 1 structural difference(s):
+  - [extra] node: func-throughput-spec (baseline: , live/ev: ddca4abe)
+Saved difference report to .AsWish/difference.yaml
+
+========================================================
+[proj_data_pipeline - 7.4: Judge Acceptable]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0002 acceptable Throughput metrics UI and documentation approved
+Exit code: 0
+Output:
+Recorded human judgment decision "dec-0004" (acceptable) for baseline B-0002 (1 difference items).
+
+========================================================
+[proj_data_pipeline - 7.5: Evolve to B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0002 Evolution to Baseline B-0003 from reality
+Exit code: 0
+Output:
+Evolved new Accepted Baseline "B-0003" (snapshot: 2026-09-05_113559-accepted-baseline-B-0003-dec-0005) from current implementation reality.
+  - Decision ID: dec-0005
+  - Content Hash: 6fd506c8630da146
+  - Relation Hash: c6a03d7b77d68cfd
+
+========================================================
+[proj_data_pipeline - 7.6: List baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline
+Exit code: 0
+Output:
+[baseline] found 3 Accepted Baseline(s):
+  - ID: B-0003 | Decision: dec-0005 | Snapshot: 2026-09-05_113559-accepted-baseline-B-0003-dec-0005 | Tree: function
+    ContentHash: 6fd506c8630da1460adf21050bbb96f74308bde92cbfd9165d05075a5c73dfb7 | RelationHash: c6a03d7b77d68cfd0a020dc9328e35adb4ae788a39a95944f7dc9890e4924745
+    Lineage: ChangeSet=cs-evolve-B-0002, Intent=diff-evolve, ParentBaseline=B-0002
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-05_113558-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: cb0a24fc83b282e4ed32baa2b13eb75df8312eab9ff5c01f39afec32e259462e | RelationHash: 75c378cb29154d22bd217d85b16f114ce23ff0a4bb362df971649f528129cbbe
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-05_113557-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: e9256470334eee97d51d467c19e4109900644d6fdc083191ef232895e878e7a4 | RelationHash: c298b0b52c09ed6f91d2e01d64f4bfe29d6c6f439737e18f5c245d0386297d8f
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[proj_data_pipeline - 7.7: Verify B-0003]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\batch_dogfood\proj_data_pipeline B-0003
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0003 integrity verified (content & relation hashes match)
+[ASSERT PASS] proj_data_pipeline contains dec-0001
+[ASSERT PASS] proj_data_pipeline contains dec-0002 (unacceptable)
+[ASSERT PASS] proj_data_pipeline contains dec-0003
+[ASSERT PASS] proj_data_pipeline contains dec-0004
+[ASSERT PASS] proj_data_pipeline contains dec-0005 (evolve)
+[ASSERT PASS] proj_data_pipeline B-0003 snapshot has parent_baseline_id: B-0002
+[ASSERT PASS] proj_data_pipeline cs-01 exists
+[ASSERT PASS] proj_data_pipeline cs-02 exists
+
+========================================================
+BATCH DOGFOOD COMPLETED: All 3 projects passed with 100% integrity!
+End Time: 2026-09-05T11:35:59+08:00
