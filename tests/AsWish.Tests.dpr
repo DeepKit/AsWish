@@ -30,6 +30,7 @@ uses
   Test.AsWish.Evidence in 'Test.AsWish.Evidence.pas',
   Test.AsWish.Difference in 'Test.AsWish.Difference.pas',
   Test.AsWish.RevisionEvolution in 'Test.AsWish.RevisionEvolution.pas',
+  Test.AsWish.GUIDecisions in 'Test.AsWish.GUIDecisions.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Config in '..\src\core\AsWish.Config.pas',
