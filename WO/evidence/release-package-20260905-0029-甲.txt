@@ -1,0 +1,69 @@
+============================================================
+ AsWish Release Packaging Pipeline
+============================================================
+Target Version: 0.1.0
+
+[1/5] Building Desktop Application (AsWish.exe)...
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+19522 lines, 2.20 seconds, 6588644 bytes code, 665752 bytes data.
+  -> Desktop build OK: D:\_Progs\02Business\AsWish\bin\AsWish.exe
+
+[2/5] Building Headless CLI (AsWish.CLI.exe)...
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+14320 lines, 1.76 seconds, 3124136 bytes code, 379520 bytes data.
+  -> CLI build OK: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe
+
+[3/5] Building and Running Tests Suite...
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+23633 lines, 2.56 seconds, 9106048 bytes code, 830144 bytes data.
+**********************************************************************
+*        DUnitX - (c) 2015-2026 Vincent Parrett & Contributors       *
+*                                                                    *
+*        License - http://www.apache.org/licenses/LICENSE-2.0        *
+**********************************************************************
+
+DUnitX - [AsWish.Tests.exe] - Starting Tests.
+
+............................................................................................................................................................................................................................................................
+
+Tests Found   : 206
+Tests Ignored : 0
+Tests Passed  : 206
+Tests Leaked  : 0
+Tests Failed  : 0
+Tests Errored : 0
+  -> All tests PASSED (Exit code: 0)
+
+[4/5] Verifying CLI --version output...
+  Output: AsWish v0.1.0
+  -> CLI version verified OK
+
+[5/5] Packaging Release Bundle...
+  + Copied AsWish.exe (7789 KB)
+  + Copied AsWish.CLI.exe (3651 KB)
+  + Copied README.md (16.4 KB)
+  + Copied LICENSE (10.1 KB)
+  + Copied NOTICE (3.2 KB)
+  + Copied CHANGELOG.md (4 KB)
+
+============================================================
+ Release Packaging Completed Successfully!
+ Archive:   D:\_Progs\02Business\AsWish\dist\AsWish-v0.1.0-win64.zip
+ Size:      3.54 MB (3708294 bytes)
+ SHA-256:   A660D06E46594E0D2E3B29621CF12BF651791D071297DE0E84F80E0C32686458
+ Package Contents:
+
+Name            Length
+----            ------
+AsWish.CLI.exe 3738624
+AsWish.exe     7975936
+CHANGELOG.md      4087
+LICENSE          10301
+NOTICE            3319
+README.md        16808
+
+============================================================
+Exit code: 0

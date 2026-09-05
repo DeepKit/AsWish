@@ -1,0 +1,29 @@
+=== Desktop Build (_build.bat) ===
+Exit code: 0
+STDOUT:
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+19522 lines, 2.14 seconds, 6588644 bytes code, 665752 bytes data.
+
+STDERR:
+
+
+=== CLI Build (cli\_build_cli.bat) ===
+Exit code: 0
+STDOUT:
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+14320 lines, 1.44 seconds, 3124136 bytes code, 379520 bytes data.
+
+STDERR:
+
+
+=== Tests Build (tests\_build_tests.bat) ===
+Exit code: 0
+STDOUT:
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+23633 lines, 2.53 seconds, 9106048 bytes code, 830144 bytes data.
+
+STDERR:
+
