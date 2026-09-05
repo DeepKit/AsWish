@@ -126,6 +126,9 @@ type
     [Test] procedure Test_ChangeSet_EndToEnd_Accept;
     [Test] procedure Test_ChangeSet_EndToEnd_Reject;
     [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
+    [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
+    [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
+    [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
   end;
 
 implementation
@@ -713,6 +716,87 @@ begin
   finally
     LDiskNodes.Free;
   end;
+end;
+
+procedure TTestAsWishController.Test_ComputeDifference_GeneratesReportAndHtml;
+var
+  LFuncId, LCSId: string;
+  LReport: TSpecDifferenceReport;
+  LHtml: string;
+begin
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Initial function spec');
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept initial baseline B-0001'));
+
+  // Collect initial evidence and modify source file
+  TFile.WriteAllText(TPath.Combine(FDir, 'app.py'),
+    'def hello():' + sLineBreak + '    return 42' + sLineBreak +
+    'def world():' + sLineBreak + '    return 100' + sLineBreak,
+    TEncoding.UTF8);
+  FController.RunScan;
+
+  LReport := FController.ComputeDifference('B-0001');
+  Assert.AreEqual('B-0001', LReport.BaselineId);
+  Assert.IsTrue(Length(LReport.Items) > 0, 'Difference items must be detected');
+
+  // Verify difference.html was generated
+  LHtml := TFile.ReadAllText(TPath.Combine(FStore.BasePath, 'html\difference.html'), TEncoding.UTF8);
+  Assert.IsTrue(LHtml.Contains('B-0001'), 'difference.html must contain baseline ID');
+  Assert.IsTrue(LHtml.Contains('difference-judge'), 'difference.html must contain judgment action bridge');
+end;
+
+procedure TTestAsWishController.Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
+var
+  LFuncId, LCSId, LDecId, LHtml: string;
+  LDec: TSpecDecision;
+begin
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Base feature spec');
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
+
+  // Alter code to cause structural diff
+  TFile.WriteAllText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);
+  FController.RunScan;
+
+  LDecId := FController.RecordDifferenceDecision('B-0001', 'unacceptable', 'Feature rejected for revision');
+  Assert.IsNotEmpty(LDecId, 'Decision ID must be returned');
+
+  LDec := FDecisions.FindById(LDecId);
+  Assert.AreEqual(dsRejected, LDec.Status, 'Decision status must be rejected');
+  Assert.IsTrue(Length(LDec.TargetNodes) > 0, 'Decision must target difference nodes');
+
+  // Verify decisions.html was rendered
+  LHtml := TFile.ReadAllText(TPath.Combine(FStore.BasePath, 'html\decisions.html'), TEncoding.UTF8);
+  Assert.IsTrue(LHtml.Contains(LDecId), 'decisions.html must contain decision ID');
+end;
+
+procedure TTestAsWishController.Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
+var
+  LFuncId, LCSId, LNewBaseId, LSnapText: string;
+  LNewBaseline: TAsWishBaseline;
+  LSnapFile: string;
+begin
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Baseline evolution test');
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
+
+  // Add new implementation
+  TFile.WriteAllText(TPath.Combine(FDir, 'service.py'), 'def serve(): return True' + sLineBreak, TEncoding.UTF8);
+  FController.RunScan;
+
+  LNewBaseId := FController.EvolveBaseline('B-0001', 'Evolve B-0002 from reality', LNewBaseline);
+  Assert.AreEqual('B-0002', LNewBaseId, 'Evolved baseline must be B-0002');
+  Assert.AreEqual('B-0001', LNewBaseline.Lineage.ParentBaselineId, 'Parent baseline must be B-0001');
+
+  // Verify snapshot file on disk contains parent_baseline_id
+  LSnapFile := TPath.Combine(FStore.BasePath, 'snapshots\' + LNewBaseline.SnapshotName + '\snapshot.yaml');
+  Assert.IsTrue(TFile.Exists(LSnapFile), 'Snapshot file must exist on disk');
+  LSnapText := TFile.ReadAllText(LSnapFile, TEncoding.UTF8);
+  Assert.IsTrue(LSnapText.Contains('parent_baseline_id: "B-0001"'), 'Snapshot must contain parent_baseline_id');
+
+  // Verify dual gates
+  Assert.IsTrue(FController.VerifyBaseline('B-0001'), 'B-0001 must verify');
+  Assert.IsTrue(FController.VerifyBaseline('B-0002'), 'B-0002 must verify');
 end;
 
 initialization
