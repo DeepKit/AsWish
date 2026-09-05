@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.CLI -- headless command-line entry (Phase 5 B-P0).
 
   Reuses the same src/ services as the desktop app (no DeepShell/GUI
@@ -46,6 +46,7 @@ uses
   AsWish.Delphi.PasParser in '..\src\core\AsWish.Delphi.PasParser.pas',
   AsWish.Services.EvidenceCollector in '..\src\services\AsWish.Services.EvidenceCollector.pas',
   AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas',
+  AsWish.Version in '..\src\core\AsWish.Version.pas',
   System.JSON;
 
 function DetectProjectType(AScan: TAsWishScanService): string;
@@ -1589,12 +1590,25 @@ end;
 
 var
   LCommand, LDir: string;
+  I: Integer;
+  LOpt: string;
 begin
+  for I := 1 to ParamCount do
+  begin
+    LOpt := LowerCase(ParamStr(I));
+    if (LOpt = '--version') or (LOpt = '-v') or (LOpt = 'version') or (LOpt = '/v') then
+    begin
+      Writeln(ASWISH_BANNER);
+      Halt(0);
+    end;
+  end;
+
   ParseCliOptions;
 
   if ParamCount < 2 then
   begin
-    Writeln('AsWish.CLI [--json] <command> <project-dir>');
+    Writeln(ASWISH_BANNER + ' - Headless CLI');
+    Writeln('Usage: AsWish.CLI [--version] [--json] <command> <project-dir>');
     Writeln('  init              create .AsWish structure');
     Writeln('  scan              scan + build trees + render + prompts');
     Writeln('  generate          export prompts (LLM call runs in the GUI)');

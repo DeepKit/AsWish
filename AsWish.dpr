@@ -46,7 +46,8 @@ uses
   AsWish.Controller in 'src\controllers\AsWish.Controller.pas',
   AsWish.Providers.Structure in 'src\providers\AsWish.Providers.Structure.pas',
   AsWish.Providers.MainView in 'src\providers\AsWish.Providers.MainView.pas',
-  AsWish.Providers.Inspector in 'src\providers\AsWish.Providers.Inspector.pas';
+  AsWish.Providers.Inspector in 'src\providers\AsWish.Providers.Inspector.pas',
+  AsWish.Version in 'src\core\AsWish.Version.pas';
 
 {$R *.res}
 
@@ -57,7 +58,7 @@ begin
   TAutoFixVclHook.Install;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.Title := 'AsWish';
+  Application.Title := ASWISH_BANNER;
 
   try
     Application.CreateForm(TAsWishMainForm, AsWishMainForm);

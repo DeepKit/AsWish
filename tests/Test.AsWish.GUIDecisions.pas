@@ -1,4 +1,4 @@
-﻿unit Test.AsWish.GUIDecisions;
+unit Test.AsWish.GUIDecisions;
 
 interface
 
@@ -22,6 +22,7 @@ uses
   AsWish.Services.Snapshot,
   AsWish.Services.Difference,
   AsWish.Services.EvidenceCollector,
+  AsWish.Version,
   AsWish.Controller;
 
 type
@@ -78,6 +79,7 @@ type
     [TearDown] procedure TearDown;
 
     [Test] procedure Test_GUI_Decision_Workflow_EndToEnd;
+    [Test] procedure Test_Version_Constant_Defined;
   end;
 
 implementation
@@ -194,6 +196,12 @@ begin
 
   // 8. Verify HTML decisions table
   Assert.IsTrue(TFile.Exists(TPath.Combine(FDir, '.AsWish\html\decisions.html')));
+end;
+
+procedure TTestAsWishGUIDecisions.Test_Version_Constant_Defined;
+begin
+  Assert.AreEqual('0.1.0', ASWISH_VERSION);
+  Assert.AreEqual('AsWish v0.1.0', ASWISH_BANNER);
 end;
 
 initialization

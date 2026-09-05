@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Shell.Form
   ---------------------------------------------------------------------------
   Reusable standalone VCL Desktop Shell Form for AsWish.
@@ -25,7 +25,8 @@ uses
   AsWish.UI.Intf,
   AsWish.Services.Storage,
   AsWish.Localization,
-  AsWish.Config;
+  AsWish.Config,
+  AsWish.Version;
 
 type
   TAsWishShellForm = class(TForm)
@@ -486,7 +487,7 @@ end;
 
 procedure TAsWishShellForm.SetupShellUI;
 begin
-  Caption := 'AsWish';
+  Caption := ASWISH_BANNER;
   Position := poScreenCenter;
   Width := 1280;
   Height := 800;

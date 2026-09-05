@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.MainForm
   ---------------------------------------------------------------------------
   Main form for AsWish - inherits TAsWishShellForm.
@@ -36,6 +36,7 @@ uses
   AsWish.Services.Decisions,
   AsWish.Services.LLM,
   AsWish.Services.Settings,
+  AsWish.Version,
   AsWish.Models;
 
 type
@@ -231,7 +232,7 @@ procedure TAsWishMainForm.InitializeShell;
 
 begin
   inherited InitializeShell;
-  Caption := 'AsWish';
+  Caption := ASWISH_BANNER;
 
   FProjectService := nil;
   FScanService := nil;
