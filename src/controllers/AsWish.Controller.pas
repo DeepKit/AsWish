@@ -26,6 +26,8 @@ uses
   AsWish.Services.Settings,
   AsWish.Services.CandidateIngest,
   AsWish.Services.Snapshot,
+  AsWish.Services.Difference,
+  AsWish.Services.EvidenceCollector,
   AsWish.Models;
 
 type
@@ -116,6 +118,14 @@ type
     function VerifyBaseline(const ABaselineId: string): Boolean;
     function ListBaselines: TArray<TAsWishBaseline>;
     function ConfirmVisualBaseline(const ARationale: string = ''): string;
+
+    // Structural Difference, Human Judgment & Evolution (WO-20260905-0029)
+    function CollectEvidence(const ABaselineId: string = ''): TArray<TSpecEvidence>;
+    function ComputeDifference(const ABaselineId: string): TSpecDifferenceReport;
+    function RecordDifferenceDecision(const ABaselineId, AAction, ARationale: string): string;
+    function EvolveBaseline(const ABaselineId, ANote: string;
+      out ANewBaseline: TAsWishBaseline): string;
+    function ListDecisions: TArray<TSpecDecision>;
 
     destructor Destroy; override;
     function IsProjectOpen: Boolean;
@@ -495,6 +505,9 @@ begin
 
     // Render deterministic Visual Preview wireframe (WO-20260830-0028)
     FRender.RenderVisualPreview(FTreeBuilder.ViewNodes, FProjectService.ProjectName);
+
+    // Render requirement decisions history page (WO-20260905-0029)
+    FRender.RenderDecisionsPage(ListDecisions, FProjectService.ProjectName);
 
     FStatus.Info('AsWish.Render',
       'Re-rendered HTML to ' + FProjectService.AsWishPath + '\html\');
@@ -1415,6 +1428,117 @@ begin
 
   FStatus.Info('AsWish.VisualBaseline', Format('Accepted Visual Baseline %s created (decision: %s, snapshot: %s)',
     [Result, LDecId, LBaseline.SnapshotName]));
+end;
+
+function TAsWishController.CollectEvidence(const ABaselineId: string): TArray<TSpecEvidence>;
+var
+  LCollector: TAsWishEvidenceCollectorService;
+begin
+  if not FProjectService.IsOpen then
+    raise Exception.Create('No project open');
+  LCollector := TAsWishEvidenceCollectorService.Create(FSpecStore, FSnapshot);
+  try
+    Result := LCollector.CollectImplementationEvidence(FProjectService.ProjectPath, ABaselineId);
+    FStatus.Info('AsWish.Evidence', Format('Collected %d evidence items for baseline %s',
+      [Length(Result), ABaselineId]));
+  finally
+    LCollector.Free;
+  end;
+end;
+
+function TAsWishController.ComputeDifference(const ABaselineId: string): TSpecDifferenceReport;
+var
+  LDifference: TAsWishDifferenceService;
+  LEvidencePath: string;
+begin
+  if not FProjectService.IsOpen then
+    raise Exception.Create('No project open');
+
+  LEvidencePath := TPath.Combine(FProjectService.AsWishPath, 'evidence\implementation-evidence.yaml');
+  if not TFile.Exists(LEvidencePath) then
+    CollectEvidence(ABaselineId);
+
+  LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
+  try
+    Result := LDifference.ComputeDifference(FProjectService.ProjectPath, ABaselineId);
+    FRender.RenderDifferencePage(Result, FProjectService.ProjectName);
+    FStatus.Info('AsWish.Difference', Format('Computed %d differences against baseline %s',
+      [Length(Result.Items), ABaselineId]));
+  finally
+    LDifference.Free;
+  end;
+end;
+
+function TAsWishController.RecordDifferenceDecision(const ABaselineId, AAction, ARationale: string): string;
+var
+  LReport: TSpecDifferenceReport;
+begin
+  if not FProjectService.IsOpen then
+    raise Exception.Create('No project open');
+  LReport := ComputeDifference(ABaselineId);
+  FDecisions.Initialize(FProjectService.AsWishPath);
+  FDecisions.Load;
+  Result := FDecisions.RecordDifferenceDecision(LReport, AAction, ARationale);
+  FRender.RenderDecisionsPage(ListDecisions, FProjectService.ProjectName);
+  FStatus.Info('AsWish.Difference', Format('Recorded decision %s (%s) for baseline %s',
+    [Result, AAction, ABaselineId]));
+end;
+
+function TAsWishController.EvolveBaseline(const ABaselineId, ANote: string;
+  out ANewBaseline: TAsWishBaseline): string;
+var
+  LReport: TSpecDifferenceReport;
+  LDecId: string;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LFunc, LMod, LView, LData: TList<TSpecNode>;
+begin
+  ANewBaseline := Default(TAsWishBaseline);
+  if not FProjectService.IsOpen then
+    raise Exception.Create('No project open');
+  LReport := ComputeDifference(ABaselineId);
+  FDecisions.Initialize(FProjectService.AsWishPath);
+  FDecisions.Load;
+
+  LCS := Default(TChangeSet);
+  LCS.Id := 'cs-evolve-' + ABaselineId;
+  if LReport.TreeType = 'view' then LCS.IntentTree := ttView
+  else if LReport.TreeType = 'module' then LCS.IntentTree := ttModule
+  else if LReport.TreeType = 'data' then LCS.IntentTree := ttData
+  else LCS.IntentTree := ttFunction;
+  LCS.IntentNodeId := 'diff-evolve';
+
+  LDecId := FDecisions.RecordDifferenceDecision(LReport, 'acceptable', ANote, LCS.Id);
+  LDec := FDecisions.FindById(LDecId);
+
+  LFunc := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
+  LMod := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
+  LView := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
+  LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
+  try
+    Result := FSnapshot.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, ANewBaseline, '', '', ABaselineId);
+    RenderAll;
+    FRender.RenderDecisionsPage(ListDecisions, FProjectService.ProjectName);
+    FStatus.Info('AsWish.Evolve', Format('Evolved new Accepted Baseline %s (snapshot: %s, parent: %s)',
+      [Result, ANewBaseline.SnapshotName, ABaselineId]));
+  finally
+    LData.Free;
+    LView.Free;
+    LMod.Free;
+    LFunc.Free;
+  end;
+end;
+
+function TAsWishController.ListDecisions: TArray<TSpecDecision>;
+begin
+  if not FProjectService.IsOpen then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+  FDecisions.Initialize(FProjectService.AsWishPath);
+  FDecisions.Load;
+  Result := FDecisions.Decisions.ToArray;
 end;
 
 end.

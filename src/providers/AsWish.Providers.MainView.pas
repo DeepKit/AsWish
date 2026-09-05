@@ -64,6 +64,14 @@ type
   TVisualConfirmProc = reference to procedure(
     const ARationale: string);
 
+  /// <summary>JS Bridge callback for structural difference judgment (acceptable/unacceptable, WO-20260905-0029).</summary>
+  TDifferenceJudgeProc = reference to procedure(
+    const ABaselineId, AAction, ARationale: string);
+
+  /// <summary>JS Bridge callback for evolving baseline from reality (WO-20260905-0029).</summary>
+  TBaselineEvolveProc = reference to procedure(
+    const ABaselineId, ARationale: string);
+
   /// <summary>
   /// Holds a target URL and navigates the browser when it becomes ready.
   /// Also handles incoming postMessage events from the page (JS Bridge).
@@ -79,6 +87,8 @@ type
     FOnSubmitIntent: TChangeSetSubmitProc;
     FOnChangeSetAction: TChangeSetActionProc;
     FOnVisualConfirm: TVisualConfirmProc;
+    FOnDifferenceJudge: TDifferenceJudgeProc;
+    FOnBaselineEvolve: TBaselineEvolveProc;
     procedure HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
     procedure HandleWebMessage(Sender: TCustomEdgeBrowser;
       Args: TWebMessageReceivedEventArgs);
@@ -92,7 +102,9 @@ type
       AOnBundleAction: TBundleActionProc;
       AOnSubmitIntent: TChangeSetSubmitProc = nil;
       AOnChangeSetAction: TChangeSetActionProc = nil;
-      AOnVisualConfirm: TVisualConfirmProc = nil);
+      AOnVisualConfirm: TVisualConfirmProc = nil;
+      AOnDifferenceJudge: TDifferenceJudgeProc = nil;
+      AOnBaselineEvolve: TBaselineEvolveProc = nil);
   end;
 
   TAsWishMainViewProvider = class(TInterfacedObject, IShellMainViewProvider)
@@ -104,6 +116,8 @@ type
     FOnSubmitIntent: TChangeSetSubmitProc;
     FOnChangeSetAction: TChangeSetActionProc;
     FOnVisualConfirm: TVisualConfirmProc;
+    FOnDifferenceJudge: TDifferenceJudgeProc;
+    FOnBaselineEvolve: TBaselineEvolveProc;
     function GetIndexHtmlPath: string;
   public
     constructor Create(AProjectService: TAsWishProjectService;
@@ -112,7 +126,9 @@ type
       AOnBundleAction: TBundleActionProc;
       AOnSubmitIntent: TChangeSetSubmitProc = nil;
       AOnChangeSetAction: TChangeSetActionProc = nil;
-      AOnVisualConfirm: TVisualConfirmProc = nil);
+      AOnVisualConfirm: TVisualConfirmProc = nil;
+      AOnDifferenceJudge: TDifferenceJudgeProc = nil;
+      AOnBaselineEvolve: TBaselineEvolveProc = nil);
     function ProviderId: string;
     function CanOpen(const ARef: TShellObjectRef): Boolean;
     function GetViewForObject(const ARef: TShellObjectRef): TShellViewInfo;
@@ -138,7 +154,9 @@ constructor TBrowserNavigator.CreateFor(AOwner: TComponent; const ATargetUrl: st
   AOnBundleAction: TBundleActionProc;
   AOnSubmitIntent: TChangeSetSubmitProc;
   AOnChangeSetAction: TChangeSetActionProc;
-  AOnVisualConfirm: TVisualConfirmProc);
+  AOnVisualConfirm: TVisualConfirmProc;
+  AOnDifferenceJudge: TDifferenceJudgeProc;
+  AOnBaselineEvolve: TBaselineEvolveProc);
 begin
   inherited Create(AOwner);
   FTargetUrl := ATargetUrl;
@@ -149,6 +167,8 @@ begin
   FOnSubmitIntent := AOnSubmitIntent;
   FOnChangeSetAction := AOnChangeSetAction;
   FOnVisualConfirm := AOnVisualConfirm;
+  FOnDifferenceJudge := AOnDifferenceJudge;
+  FOnBaselineEvolve := AOnBaselineEvolve;
 end;
 
 procedure TBrowserNavigator.HandleCreated(Sender: TCustomEdgeBrowser; AResult: HResult);
@@ -272,6 +292,31 @@ begin
         if TFile.Exists(LVisualPath) then
           Sender.Navigate('file:///' + LVisualPath.Replace('\', '/'));
       end;
+    end
+    else if LAction = 'difference-judge' then
+    begin
+      var LBaseId := LObj.GetValue<string>('baseline_id', '');
+      var LJudgeAction := LObj.GetValue<string>('judge_action', '');
+      var LRationale := LObj.GetValue<string>('rationale', '');
+      if Assigned(FOnDifferenceJudge) then
+      begin
+        FOnDifferenceJudge(LBaseId, LJudgeAction, LRationale);
+        var LDecPath := TPath.Combine(FProjectService.AsWishPath, 'html\decisions.html');
+        if TFile.Exists(LDecPath) then
+          Sender.Navigate('file:///' + LDecPath.Replace('\', '/'));
+      end;
+    end
+    else if LAction = 'baseline-evolve' then
+    begin
+      var LBaseId := LObj.GetValue<string>('baseline_id', '');
+      var LRationale := LObj.GetValue<string>('rationale', '');
+      if Assigned(FOnBaselineEvolve) then
+      begin
+        FOnBaselineEvolve(LBaseId, LRationale);
+        var LIndexPath := TPath.Combine(FProjectService.AsWishPath, 'html\index.html');
+        if TFile.Exists(LIndexPath) then
+          Sender.Navigate('file:///' + LIndexPath.Replace('\', '/'));
+      end;
     end;
   finally
     LJson.Free;
@@ -323,7 +368,9 @@ constructor TAsWishMainViewProvider.Create(AProjectService: TAsWishProjectServic
   AOnCreateTicket: TCreateTicketProc; AOnExportOptPrompt: TExportOptPromptProc;
   AOnBundleAction: TBundleActionProc; AOnSubmitIntent: TChangeSetSubmitProc;
   AOnChangeSetAction: TChangeSetActionProc;
-  AOnVisualConfirm: TVisualConfirmProc);
+  AOnVisualConfirm: TVisualConfirmProc;
+  AOnDifferenceJudge: TDifferenceJudgeProc;
+  AOnBaselineEvolve: TBaselineEvolveProc);
 begin
   inherited Create;
   FProjectService := AProjectService;
@@ -333,6 +380,8 @@ begin
   FOnSubmitIntent := AOnSubmitIntent;
   FOnChangeSetAction := AOnChangeSetAction;
   FOnVisualConfirm := AOnVisualConfirm;
+  FOnDifferenceJudge := AOnDifferenceJudge;
+  FOnBaselineEvolve := AOnBaselineEvolve;
 end;
 
 function TAsWishMainViewProvider.ProviderId: string;
@@ -382,7 +431,8 @@ begin
     // Navigator gets owned by the browser, freed automatically.
     LNavigator := TBrowserNavigator.CreateFor(LBrowser, LUrl, FProjectService,
       FOnCreateTicket, FOnExportOptPrompt, FOnBundleAction,
-      FOnSubmitIntent, FOnChangeSetAction, FOnVisualConfirm);
+      FOnSubmitIntent, FOnChangeSetAction, FOnVisualConfirm,
+      FOnDifferenceJudge, FOnBaselineEvolve);
     LBrowser.OnCreateWebViewCompleted := LNavigator.HandleCreated;
     LBrowser.OnWebMessageReceived := LNavigator.HandleWebMessage;
 

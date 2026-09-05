@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Providers
   ---------------------------------------------------------------------------
   Registers AsWish providers (Structure, MainView, Inspector) into the shell.
@@ -77,6 +77,18 @@ begin
       procedure(const ARationale: string)
       begin
         AController.ConfirmVisualBaseline(ARationale);
+      end,
+      // Difference judge -> Controller.RecordDifferenceDecision (WO-20260905-0029)
+      procedure(const ABaselineId, AAction, ARationale: string)
+      begin
+        AController.RecordDifferenceDecision(ABaselineId, AAction, ARationale);
+      end,
+      // Baseline evolve -> Controller.EvolveBaseline (WO-20260905-0029)
+      procedure(const ABaselineId, ARationale: string)
+      var
+        LNewBaseline: TAsWishBaseline;
+      begin
+        AController.EvolveBaseline(ABaselineId, ARationale, LNewBaseline);
       end));
   AForm.RegisterInspectorProvider(
     TAsWishInspectorProvider.Create(
