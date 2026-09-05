@@ -104,6 +104,7 @@ type
     property CenterPanel: TPanel read FCenterPanel;
     property RightPanel: TPanel read FRightPanel;
     property BottomPanel: TPanel read FBottomPanel;
+    property CurrentMainControl: TControl read FCurrentMainControl;
   end;
 
 implementation

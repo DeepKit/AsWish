@@ -421,6 +421,7 @@ begin
     LBrowser := TEdgeBrowser.Create(AOwner);
     LBrowser.Align := alClient;
     LBrowser.UserDataFolder := TPath.Combine(TPath.GetTempPath, 'AsWish-WebView2');
+    LBrowser.AdditionalBrowserArguments := '--disable-gpu';
 
     LIndexPath := GetIndexHtmlPath;
     if (LIndexPath <> '') and TFile.Exists(LIndexPath) then
@@ -435,7 +436,6 @@ begin
       FOnDifferenceJudge, FOnBaselineEvolve);
     LBrowser.OnCreateWebViewCompleted := LNavigator.HandleCreated;
     LBrowser.OnWebMessageReceived := LNavigator.HandleWebMessage;
-
     Result := LBrowser;
   except
     on E: Exception do

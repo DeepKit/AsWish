@@ -177,12 +177,13 @@ begin
     LSb.AppendLine('  body { font-family: -apple-system, "Segoe UI", sans-serif; margin: 2em; color: #1e293b; background: #ffffff; }');
     LSb.AppendLine('  h1 { border-bottom: 2px solid #4a90e2; padding-bottom: 0.5em; color: #1e293b; }');
     LSb.AppendLine('  table { width: 100%; border-collapse: collapse; margin-top: 1em; }');
-    LSb.AppendLine('  th, td { border: 1px solid #cbd5e1; padding: 0.6em 0.8em; text-align: left; }');
+    LSb.AppendLine('  th, td { border: 1px solid #cbd5e1; padding: 0.5em 0.7em; text-align: left; vertical-align: top; }');
     LSb.AppendLine('  th { background: #f1f5f9; }');
     LSb.AppendLine('  .badge { display: inline-block; padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.85em; font-weight: bold; }');
     LSb.AppendLine('  .badge-accepted { background: #dcfce7; color: #166534; }');
     LSb.AppendLine('  .badge-rejected { background: #fee2e2; color: #991b1b; }');
     LSb.AppendLine('  .badge-pending  { background: #fef3c7; color: #92400e; }');
+    LSb.AppendLine('  .target-nodes { max-width: 260px; max-height: 3.5em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-all; }');
     LSb.AppendLine('</style></head><body>');
 
     LSb.AppendLine('<h1>' + HtmlEscape(LTitle) + ': ' + HtmlEscape(LProj) + '</h1>');
@@ -209,7 +210,7 @@ begin
         LSb.AppendLine('    <td><code>' + HtmlEscape(LDec.ChangeSetId) + '</code></td>');
         LSb.AppendLine('    <td>' + HtmlEscape(LDec.Title) + '</td>');
         LSb.AppendLine('    <td>' + HtmlEscape(LDec.Rationale) + '</td>');
-        LSb.AppendLine('    <td><small>' + HtmlEscape(LTargets) + '</small></td>');
+        LSb.AppendLine('    <td><div class="target-nodes"><small>' + HtmlEscape(LTargets) + '</small></div></td>');
         LSb.AppendLine('    <td><small>' + HtmlEscape(DateToISO8601(LDec.CreatedAt, False)) + '</small></td>');
         LSb.AppendLine('  </tr>');
       end;
