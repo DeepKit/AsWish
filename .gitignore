@@ -1,6 +1,7 @@
 # AsWish build / IDE artifacts
 bin/
 dcu/
+dist/
 __history/
 *.local
 *.identcache

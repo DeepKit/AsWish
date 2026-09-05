@@ -181,23 +181,57 @@ installer/                        Inno Setup packaging script
    ```
 3. **First Run Guide**: Follow [`docs/01.产品-AsWish产品身份与愿景蓝图.md`](docs/01.产品-AsWish产品身份与愿景蓝图.md).
 
+### Minimal First Closed Loop Path (Headless CLI)
+
+For command options and details, run `AsWish.CLI` (implemented in [`cli/AsWish.CLI.dpr`](cli/AsWish.CLI.dpr)):
+
+```bat
+:: 1. Initialize and scan
+AsWish.CLI init <dir>
+AsWish.CLI scan <dir>
+
+:: 2. Propose human intent and accept change set -> creates Accepted Baseline B-0001
+AsWish.CLI intent <dir> <node-id> <tree> "<user-intent>"
+AsWish.CLI changeset accept <dir> "<rationale>"
+AsWish.CLI baseline verify <dir> B-0001
+
+:: 3. Collect implementation evidence & compute structural difference
+AsWish.CLI evidence collect <dir> B-0001
+AsWish.CLI difference <dir> B-0001
+
+:: 4. Human judgment & dual exits (Revision / Evolution)
+:: Exit A (Unacceptable): record rejection -> triggers revision intent iteration
+AsWish.CLI judge <dir> B-0001 unacceptable "Difference rejected, needs rework"
+
+:: Exit B (Acceptable): accept difference & evolve baseline to B-0002
+AsWish.CLI judge <dir> B-0001 acceptable "Difference approved"
+AsWish.CLI evolve <dir> B-0001 "Evolve from implementation reality"
+```
+
 ### Headless CLI Commands
 
 ```bat
-AsWish.CLI init <dir>                      :: Initialize a fresh .AsWish directory
-AsWish.CLI scan <dir>                      :: Scan project codebase and build 4 trees
-AsWish.CLI generate <dir>                  :: Export AI generation prompt pack
-AsWish.CLI validate <dir>                  :: Validate .AsWish YAML consistency
-AsWish.CLI render <dir>                    :: Re-render HTML review pages
-AsWish.CLI health <dir> [--json]           :: Output health metrics snapshot
-AsWish.CLI decisions apply <dir>           :: Promote pending decisions to formal tree states
-AsWish.CLI bundle apply <dir> <id> <act>   :: Batch accept or reject a bundle
-AsWish.CLI ingest <dir> <candidate.yaml>   :: Validate and merge candidate nodes
-AsWish.CLI intent <dir> <node-id> <tree> <text>       :: Submit natural-language intent (0027A)
-AsWish.CLI changeset <dir> <node-id> <tree> <intent>  :: Generate structured change set (0027B)
-AsWish.CLI changeset accept <dir> <reason>            :: Accept change set, freeze Accepted Baseline (0027E)
-AsWish.CLI baseline list <dir> / verify <dir> <id>    :: List / verify Accepted Baseline (0027E)
-AsWish.CLI visual preview <dir> / confirm <dir> <note>:: Wireframe preview / confirm visual baseline (0028)
+AsWish.CLI --version                                   :: Print version (AsWish v0.1.0)
+AsWish.CLI init <dir>                                  :: Initialize a fresh .AsWish directory
+AsWish.CLI scan <dir>                                  :: Scan project codebase and build 4 trees
+AsWish.CLI generate <dir>                              :: Export AI generation prompt pack
+AsWish.CLI validate <dir>                              :: Validate .AsWish YAML consistency
+AsWish.CLI render <dir>                                :: Re-render HTML review pages
+AsWish.CLI health <dir> [--json]                       :: Output health metrics snapshot
+AsWish.CLI decisions apply <dir>                       :: Promote pending decisions to formal tree states
+AsWish.CLI bundle apply <dir> <id> <act>               :: Batch accept or reject a bundle
+AsWish.CLI ingest <dir> <candidate.yaml>               :: Validate and merge candidate nodes
+AsWish.CLI intent <dir> <node-id> <tree> <text>        :: Submit natural-language intent (0027A)
+AsWish.CLI changeset <dir> <node-id> <tree> <intent>   :: Generate structured change set (0027B)
+AsWish.CLI changeset accept <dir> [id] [rationale]     :: Accept change set, freeze Accepted Baseline (0027E)
+AsWish.CLI baseline list <dir>                         :: List Accepted Baselines (0027E)
+AsWish.CLI baseline verify <dir> <id>                  :: Verify integrity of Accepted Baseline (0027E)
+AsWish.CLI visual preview <dir>                        :: Wireframe preview (0028)
+AsWish.CLI visual confirm <dir> [rationale]            :: Confirm Accepted Visual Baseline (0028)
+AsWish.CLI evidence collect <dir> [baseline-id]        :: Collect implementation evidence (0027F)
+AsWish.CLI difference <dir> <baseline-id>              :: Compute structural difference (0027G)
+AsWish.CLI judge <dir> <id> <verdict> [note]           :: Record human judgment (0027H)
+AsWish.CLI evolve <dir> <baseline-id> [note]           :: Freeze new baseline from reality (0027H)
 ```
 
 ### Standalone Cold-Start (Zero Delphi Dependencies)
