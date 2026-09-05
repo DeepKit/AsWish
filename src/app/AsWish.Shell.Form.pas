@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Shell.Form
   ---------------------------------------------------------------------------
   Reusable standalone VCL Desktop Shell Form for AsWish.
@@ -80,6 +80,7 @@ type
     procedure ShutdownShell; virtual;
 
   public
+    constructor Create(AOwner: TComponent); override;
     procedure RegisterStructureProvider(const AProvider: IShellStructureProvider);
     procedure RegisterMainViewProvider(const AProvider: IShellMainViewProvider);
     procedure RegisterInspectorProvider(const AProvider: IShellInspectorProvider);
@@ -442,6 +443,11 @@ begin
 end;
 
 { TAsWishShellForm }
+ 
+constructor TAsWishShellForm.Create(AOwner: TComponent);
+begin
+  inherited CreateNew(AOwner);
+end;
 
 procedure TAsWishShellForm.DoCreate;
 begin

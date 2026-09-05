@@ -1091,6 +1091,22 @@ begin
       end;
     end;
 
+    // Step 6b: Render decisions and difference pages (WO-20260905-0029)
+    var LDecList := ListDecisions;
+    if Length(LDecList) > 0 then
+      FRender.RenderDecisionsPage(LDecList, FProjectService.ProjectName);
+
+    var LBaselines := FSnapshot.ListBaselines;
+    if Length(LBaselines) > 0 then
+    begin
+      try
+        ComputeDifference(LBaselines[High(LBaselines)].BaselineId);
+      except
+        on E: Exception do
+          FStatus.Warning('AsWish.Scan', 'Initial difference computation skipped: ' + E.Message);
+      end;
+    end;
+
     // Step 7: Generate prompts
     FStatus.Progress('scan', 'AsWish.Scan', 95, 'Generating LLM prompts...');
     FPrompts.WriteContextPack(FScanService, FProjectService.ProjectName, LType);

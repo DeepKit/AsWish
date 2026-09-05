@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish
   ---------------------------------------------------------------------------
   AI-native requirement specification tool.
@@ -51,8 +51,18 @@ uses
 
 {$R *.res}
 
+var
+  LIsGuiVerify: Boolean;
+  I: Integer;
 begin
-  ReportMemoryLeaksOnShutdown := True;
+  LIsGuiVerify := False;
+  for I := 1 to ParamCount do
+    if (ParamStr(I) = '--gui-verify') or (ParamStr(I) = '-gui-verify') then
+    begin
+      LIsGuiVerify := True;
+      Break;
+    end;
+  ReportMemoryLeaksOnShutdown := not LIsGuiVerify;
   InstallAIErrorHandler;
   TAsWishAutoFix.Install;
   TAutoFixVclHook.Install;
@@ -65,7 +75,6 @@ begin
   except
     on E: Exception do
     begin
-      ShowMessage('FATAL: Form creation failed: ' + E.ClassName + ': ' + E.Message);
       Exit;
     end;
   end;
