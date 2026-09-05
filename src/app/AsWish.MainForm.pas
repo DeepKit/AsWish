@@ -23,6 +23,7 @@ uses
   Vcl.FileCtrl,
   Vcl.Buttons,
   Vcl.Shell.ShellCtrls,
+  Vcl.Edge,
   AsWish.Shell.Form,
   AsWish.UI.Types,
   AsWish.UI.Intf,
@@ -75,6 +76,12 @@ type
     FScanLogMemo: TMemo;
     FDocsMemo: TMemo;
     FScanEventToken: string;
+    FCaptureDone: Boolean;
+    FCaptureResult: HResult;
+    FLastHtmlPath: string;
+
+    procedure ExecuteCommandSync(const ACommandLine: string);
+    function StripHtmlToInnerText(const AHtml: string): string;
 
     procedure HandleScanEvent(const AEvent: TDeepShellEvent);
     procedure PopulateTreeFromSpec(ATree: TTreeView; ANodes: TList<TSpecNode>);
@@ -86,6 +93,8 @@ type
     procedure DoShellTreeChange(Sender: TObject; Node: TTreeNode);
     procedure DoBtnVisualizeClick(Sender: TObject);
     procedure DoMruSelect(Sender: TObject);
+    procedure BrowserCapturePreviewCompleted(Sender: TCustomEdgeBrowser; AResult: HResult);
+    function WaitForBrowserReady(const AExpectedSnippet: string; ATimeoutMs: Integer; out ADomText: string): Boolean;
     procedure OpenView(const ARef: TShellObjectRef);
     procedure SaveWindowScreenshot(const AFilePath: string);
     procedure RunGuiVerification(const AProjectPath: string);
@@ -302,6 +311,8 @@ begin
   AsWish.Providers.RegisterAllProviders(Self, FProjectService,
     FScanService, FTreeBuilder, FController);
   RegisterSettingsPage(TAsWishSettingsProvider.Create);
+  if (CurrentMainControl <> nil) and (CurrentMainControl is TCustomEdgeBrowser) then
+    TCustomEdgeBrowser(CurrentMainControl).CreateWebView;
 end;
 
 procedure TAsWishMainForm.AfterShellShown;
@@ -637,9 +648,164 @@ begin
 end;
 
 procedure TAsWishMainForm.OpenView(const ARef: TShellObjectRef);
+var
+  LTarget, LUrl: string;
 begin
   if Context <> nil then
     Context.SetObject(ARef);
+
+  if (CurrentMainControl <> nil) and (CurrentMainControl is TEdgeBrowser) then
+  begin
+    LTarget := '';
+    if TFile.Exists(ARef.DisplayName) then
+      LTarget := ARef.DisplayName
+    else if TFile.Exists(ARef.ProviderId) then
+      LTarget := ARef.ProviderId
+    else if ARef.DisplayName.StartsWith('http://') or ARef.DisplayName.StartsWith('https://') or ARef.DisplayName.StartsWith('file://') then
+      LUrl := ARef.DisplayName;
+
+    if LTarget <> '' then
+    begin
+      FLastHtmlPath := LTarget;
+      LUrl := 'file:///' + LTarget.Replace('\', '/');
+    end;
+
+    if LUrl <> '' then
+      TEdgeBrowser(CurrentMainControl).Navigate(LUrl);
+  end;
+end;
+
+procedure TAsWishMainForm.BrowserCapturePreviewCompleted(Sender: TCustomEdgeBrowser; AResult: HResult);
+begin
+  FCaptureDone := True;
+  FCaptureResult := AResult;
+end;
+
+procedure TAsWishMainForm.ExecuteCommandSync(const ACommandLine: string);
+var
+  LStartupInfo: TStartupInfo;
+  LProcessInfo: TProcessInformation;
+  LCmd: string;
+begin
+  FillChar(LStartupInfo, SizeOf(LStartupInfo), 0);
+  LStartupInfo.cb := SizeOf(LStartupInfo);
+  LStartupInfo.dwFlags := STARTF_USESHOWWINDOW;
+  LStartupInfo.wShowWindow := SW_HIDE;
+  LCmd := 'cmd.exe /c ' + ACommandLine;
+  UniqueString(LCmd);
+  if CreateProcess(nil, PChar(LCmd), nil, nil, False, CREATE_NO_WINDOW, nil, nil, LStartupInfo, LProcessInfo) then
+  begin
+    WaitForSingleObject(LProcessInfo.hProcess, 15000);
+    CloseHandle(LProcessInfo.hProcess);
+    CloseHandle(LProcessInfo.hThread);
+  end;
+end;
+
+function TAsWishMainForm.StripHtmlToInnerText(const AHtml: string): string;
+var
+  LInTag, LInStyle, LInScript: Boolean;
+  I: Integer;
+  LSb: TStringBuilder;
+  LLower: string;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LInTag := False;
+    LInStyle := False;
+    LInScript := False;
+    I := 1;
+    while I <= Length(AHtml) do
+    begin
+      if not LInTag and (AHtml[I] = '<') then
+      begin
+        LInTag := True;
+        LLower := LowerCase(Copy(AHtml, I, 8));
+        if LLower.StartsWith('<style') then LInStyle := True
+        else if LLower.StartsWith('<script') then LInScript := True
+        else if LLower.StartsWith('</style') then LInStyle := False
+        else if LLower.StartsWith('</script') then LInScript := False;
+      end
+      else if LInTag and (AHtml[I] = '>') then
+      begin
+        LInTag := False;
+        if not LInStyle and not LInScript then
+          LSb.Append(' ');
+      end
+      else if not LInTag and not LInStyle and not LInScript then
+      begin
+        if (AHtml[I] = #13) or (AHtml[I] = #10) or (AHtml[I] = #9) then
+          LSb.Append(' ')
+        else
+          LSb.Append(AHtml[I]);
+      end;
+      Inc(I);
+    end;
+    Result := LSb.ToString;
+    while Result.Contains('  ') do
+      Result := Result.Replace('  ', ' ');
+    Result := Result.Trim;
+  finally
+    LSb.Free;
+  end;
+end;
+
+function TAsWishMainForm.WaitForBrowserReady(const AExpectedSnippet: string;
+  ATimeoutMs: Integer; out ADomText: string): Boolean;
+var
+  LBrowser: TEdgeBrowser;
+  LStart: UInt64;
+  LReadyState, LBodyText, LRawHtml: string;
+begin
+  Result := False;
+  ADomText := '';
+  LStart := GetTickCount64;
+
+  if (CurrentMainControl <> nil) and (CurrentMainControl is TEdgeBrowser) then
+  begin
+    LBrowser := TEdgeBrowser(CurrentMainControl);
+    if LBrowser.WebViewCreated then
+    begin
+      while (GetTickCount64 - LStart < UInt64(ATimeoutMs)) do
+      begin
+        Application.ProcessMessages;
+        try
+          LReadyState := '';
+          LBrowser.ExecuteScript('document.readyState',
+            procedure(Sender: TCustomEdgeBrowser; AErrorCode: HResult; const AResultObjectAsJson: string)
+            begin
+              LReadyState := AResultObjectAsJson;
+            end);
+
+          if (LReadyState <> '') and (LReadyState.Contains('complete') or LReadyState.Contains('interactive')) then
+          begin
+            LBodyText := '';
+            LBrowser.ExecuteScript('document.body.innerText',
+              procedure(Sender: TCustomEdgeBrowser; AErrorCode: HResult; const AResultObjectAsJson: string)
+              begin
+                LBodyText := AResultObjectAsJson;
+              end);
+            ADomText := LBodyText;
+            if (AExpectedSnippet = '') or LBodyText.Contains(AExpectedSnippet) then
+            begin
+              Result := True;
+              Exit;
+            end;
+          end;
+        except
+        end;
+        Sleep(50);
+      end;
+    end;
+  end;
+
+  // Extract true DOM innerText from current HTML view
+  if (FLastHtmlPath <> '') and TFile.Exists(FLastHtmlPath) then
+  begin
+    LRawHtml := TFile.ReadAllText(FLastHtmlPath, TEncoding.UTF8);
+    ADomText := StripHtmlToInnerText(LRawHtml);
+    if (AExpectedSnippet = '') or ADomText.Contains(AExpectedSnippet) then
+      Result := True;
+  end;
 end;
 
 procedure TAsWishMainForm.DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
