@@ -1,0 +1,109 @@
+========================================================
+[Step 13.2: Evolve Baseline B-0003 from Baseline B-0002]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve D:\_Progs\02Business\AsWish\dogfood_r3_site_final B-0002 "Evolution to Baseline B-0003 from implementation reality"
+Exit code: 0
+Output:
+[evolve] evaluating differences against baseline B-0002...
+[evolve] found 1 differences. All differences verified as acceptable with evidence.
+[evolve] recorded Decision dec-0005 for evolution.
+Evolved new Accepted Baseline "B-0003" (snapshot: 2026-09-05_101301-accepted-baseline-B-0003-dec-0005) from current implementation reality.
+  - Decision ID: dec-0005
+  - Changes applied: 1
+  - Verified and frozen.
+
+========================================================
+[Step 13.3: List all Accepted Baselines]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood_r3_site_final
+Exit code: 0
+Output:
+[baseline] found 3 Accepted Baseline(s):
+  - ID: B-0003 | Decision: dec-0005 | Snapshot: 2026-09-05_101301-accepted-baseline-B-0003-dec-0005 | Tree: function
+    ContentHash: 59c2a49b10c04051153dc8cf47dd8d436ac6b6cabf8893005a2c7ad2b8f82c50 | RelationHash: c3fc6268fe9225378c55868277bdaf6b9526233329a897447c9b7a035ec67f70
+    Lineage: ChangeSet=cs-evolve-B-0002, Intent=diff-evolve, ParentBaseline=B-0002
+  - ID: B-0002 | Decision: dec-0003 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0002-dec-0003 | Tree: function
+    ContentHash: d144b2f08cecefdd0aedb77bebe38ca2093cac84f2d4e843a372caaad8af4a94 | RelationHash: ad5a51631a98873f2587144c8177768bc27b064e96f7ad1f2aeb2b2ed9d81f90
+    Lineage: ChangeSet=cs-func-root-02, Intent=func-root
+  - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-03_234231-accepted-baseline-B-0001-dec-0001 | Tree: function
+    ContentHash: 043d1bd37722d92e675f90b849d6ac02b8a9d2c4a5443951bb61ca6ab2f7eeb4 | RelationHash: 576bbdd653dfea864152e49c20fd489b81cbff1d9fe85f39eb504e576db2c045
+    Lineage: ChangeSet=cs-func-root-01, Intent=func-root
+
+========================================================
+[Step 13.4: Verify Baseline Integrity (B-0001, B-0002, B-0003)]
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood_r3_site_final B-0001
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood_r3_site_final B-0002
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+Command: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood_r3_site_final B-0003
+Exit code: 0
+Output:
+[baseline verify] PASS: B-0003 integrity verified (content & relation hashes match)
+
+========================================================
+[Step 13.5: Inspection of B-0003 Snapshot File Lineage]
+File: D:\_Progs\02Business\AsWish\dogfood_r3_site_final\.AsWish\snapshots\2026-09-05_101301-accepted-baseline-B-0003-dec-0005\snapshot.yaml
+Content:
+version: "1.0"
+label: "accepted-baseline-B-0003-dec-0005"
+created_at: "2026-09-05T10:13:01"
+files:
+  - "trees/data-tree.yaml"
+  - "trees/function-tree.yaml"
+  - "trees/module-tree.yaml"
+  - "trees/view-tree.yaml"
+  - "issues/doc-issues.yaml"
+baseline:
+  baseline_id: "B-0003"
+  decision_id: "dec-0005"
+  snapshot_name: "2026-09-05_101301-accepted-baseline-B-0003-dec-0005"
+  tree_type: "function"
+  content_hash: "59c2a49b10c04051153dc8cf47dd8d436ac6b6cabf8893005a2c7ad2b8f82c50"
+  relation_hash: "c3fc6268fe9225378c55868277bdaf6b9526233329a897447c9b7a035ec67f70"
+  created_at: "2026-09-05T10:13:01.790+08:00"
+  lineage:
+    change_set_id: "cs-evolve-B-0002"
+    intent_id: "diff-evolve"
+    parent_baseline_id: "B-0002"
+
+========================================================
+[Step 13.6: Inspection of Non-Evolve Baselines Snapshot Lineage (B-0001, B-0002)]
+File: D:\_Progs\02Business\AsWish\dogfood_r3_site_final\.AsWish\snapshots\2026-09-03_234231-accepted-baseline-B-0001-dec-0001\snapshot.yaml
+lineage section:
+  lineage:
+    change_set_id: "cs-func-root-01"
+    intent_id: "func-root"
+(parent_baseline_id correctly omitted)
+
+File: D:\_Progs\02Business\AsWish\dogfood_r3_site_final\.AsWish\snapshots\2026-09-03_234231-accepted-baseline-B-0002-dec-0003\snapshot.yaml
+lineage section:
+  lineage:
+    change_set_id: "cs-func-root-02"
+    intent_id: "func-root"
+(parent_baseline_id correctly omitted)
+
+========================================================
+[Step 13.7: Inspection of Decisions (dec-0001..dec-0005)]
+File: D:\_Progs\02Business\AsWish\dogfood_r3_site_final\.AsWish\decisions\requirement-decisions.yaml
+Summary:
+- dec-0001 (confirm, accepted, cs-func-root-01)
+- dec-0002 (reject, rejected, 21 target_nodes)
+- dec-0003 (confirm, accepted, cs-func-root-02)
+- dec-0004 (accept_difference, accepted, func-export-feature)
+- dec-0005 (accept_difference, accepted, func-export-feature, cs-evolve-B-0002)
+Total decisions: 5. All monotonic and unique.
+
+========================================================
+[Step 13.8: Inspection of .AsWish/llm/ ChangeSet Files]
+Directory: D:\_Progs\02Business\AsWish\dogfood_r3_site_final\.AsWish\llm
+Files:
+- candidate-intent.yaml
+- change-set-cs-func-root-01.yaml
+- change-set-cs-func-root-02.yaml
+(No redundant change-set.yaml present)
+
+Site preserved at: D:\_Progs\02Business\AsWish\dogfood_r3_site_final
