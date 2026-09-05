@@ -897,7 +897,12 @@ end;
 procedure TAsWishMainForm.SaveWindowScreenshot(const AFilePath: string);
 var
   LBmp: Vcl.Graphics.TBitmap;
-  LPng: TPngImage;
+  LPng, LBrowserPng: TPngImage;
+  LBrowser: TEdgeBrowser;
+  LTempPng, LScript, LCmd, LRepoRoot: string;
+  LStart: UInt64;
+  LRect: TRect;
+  LComposited: Boolean;
 begin
   TDirectory.CreateDirectory(TPath.GetDirectoryName(AFilePath));
   LBmp := GetFormImage;
@@ -908,6 +913,74 @@ begin
     PaintTo(LBmp.Canvas, 0, 0);
   end;
   try
+    LComposited := False;
+    LRect := Rect(CenterPanel.Left, CenterPanel.Top,
+      CenterPanel.Left + CenterPanel.Width, CenterPanel.Top + CenterPanel.Height);
+
+    if (CurrentMainControl <> nil) and (CurrentMainControl is TEdgeBrowser) then
+    begin
+      LBrowser := TEdgeBrowser(CurrentMainControl);
+      if LBrowser.WebViewCreated then
+      begin
+        LTempPng := TPath.Combine(TPath.GetTempPath,
+          Format('aswish-preview-%d-%d.png', [GetCurrentProcessId, GetTickCount64]));
+        FCaptureDone := False;
+        FCaptureResult := E_FAIL;
+        LBrowser.OnCapturePreviewCompleted := BrowserCapturePreviewCompleted;
+        LBrowser.CapturePreview(LTempPng, TCustomEdgeBrowser.TPreviewFormat.PNG);
+
+        LStart := GetTickCount64;
+        while not FCaptureDone and (GetTickCount64 - LStart < 4000) do
+        begin
+          Application.ProcessMessages;
+          Sleep(20);
+        end;
+
+        if FCaptureDone and (FCaptureResult = S_OK) and TFile.Exists(LTempPng) then
+        begin
+          try
+            LBrowserPng := TPngImage.Create;
+            try
+              LBrowserPng.LoadFromFile(LTempPng);
+              LBmp.Canvas.StretchDraw(LRect, LBrowserPng);
+              LComposited := True;
+            finally
+              LBrowserPng.Free;
+            end;
+          finally
+            try TFile.Delete(LTempPng); except end;
+          end;
+        end;
+        LBrowser.OnCapturePreviewCompleted := nil;
+      end;
+    end;
+
+    // Offscreen / Virtual session fallback: Render HTML view directly into CenterPanel
+    if not LComposited and (FLastHtmlPath <> '') and TFile.Exists(FLastHtmlPath) then
+    begin
+      LRepoRoot := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)), '..'));
+      LTempPng := TPath.Combine(TPath.GetTempPath,
+        Format('aswish-render-%d-%d.png', [GetCurrentProcessId, GetTickCount64]));
+      LScript := TPath.Combine(LRepoRoot, 'scripts\render_view.py');
+      LCmd := Format('python "%s" "%s" "%s" %d %d',
+        [LScript, FLastHtmlPath, LTempPng, CenterPanel.Width, CenterPanel.Height]);
+      ExecuteCommandSync(LCmd);
+      if TFile.Exists(LTempPng) then
+      begin
+        try
+          LBrowserPng := TPngImage.Create;
+          try
+            LBrowserPng.LoadFromFile(LTempPng);
+            LBmp.Canvas.StretchDraw(LRect, LBrowserPng);
+          finally
+            LBrowserPng.Free;
+          end;
+        finally
+          try TFile.Delete(LTempPng); except end;
+        end;
+      end;
+    end;
+
     LPng := TPngImage.Create;
     try
       LPng.Assign(LBmp);
