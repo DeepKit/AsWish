@@ -1,0 +1,47 @@
+================================================================================
+BUILD LOG: WO-20260906-0033-甲 VCL Native End-to-End Dogfood
+================================================================================
+
+--- 1. GUI Build (_build.bat) ---
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\controllers\AsWish.Controller.pas(295) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(354) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(354) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+src\controllers\AsWish.Controller.pas(355) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(355) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+src\controllers\AsWish.Controller.pas(356) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(393) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(411) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(413) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(439) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(440) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(441) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(689) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+20677 lines, 2.41 seconds, 6780416 bytes code, 684112 bytes data.
+
+
+--- 2. CLI Build (cli\_build_cli.bat) ---
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+14970 lines, 1.66 seconds, 3193376 bytes code, 385480 bytes data.
+
+
+--- 3. Tests Build (tests\_build_tests.bat) ---
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(295) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(354) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(354) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(355) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(355) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(356) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(393) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(411) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(413) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(439) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(440) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(441) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(689) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+24930 lines, 2.78 seconds, 9207828 bytes code, 838088 bytes data.
+
