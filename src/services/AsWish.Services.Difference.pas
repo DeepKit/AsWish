@@ -1,4 +1,4 @@
-unit AsWish.Services.Difference;
+﻿unit AsWish.Services.Difference;
 
 interface
 
@@ -11,14 +11,62 @@ uses
   AsWish.Services.Snapshot;
 
 type
+  /// <summary>Non-persistent identity resolver context passed to comparators.</summary>
+  IPlatformIdentityResolver = interface
+    ['{3A9E8C1F-5D2B-4E7A-9B6C-1F0E8D7C6B5A}']
+    function ResolveNodeId(const APlatformId: string): string;
+    function TryResolveNodeId(const APlatformId: string; out ANodeId: string): Boolean;
+  end;
+
+  /// <summary>In-memory map identity resolver for testing and caller-supplied bindings.</summary>
+  TMapIdentityResolver = class(TInterfacedObject, IPlatformIdentityResolver)
+  private
+    FMap: TDictionary<string, string>;
+  public
+    constructor Create(const AMap: TDictionary<string, string>);
+    destructor Destroy; override;
+    function ResolveNodeId(const APlatformId: string): string;
+    function TryResolveNodeId(const APlatformId: string; out ANodeId: string): Boolean;
+  end;
+
+  /// <summary>Non-persistent comparison context passed to platform comparators.</summary>
+  TPlatformComparisonContext = record
+    ProjectDir: string;
+    TreeType: string;
+    BaselineId: string;
+    SnapshotDir: string;
+    ObservationJson: string;
+    ConstraintsJson: string;
+    ExpectedStylesJson: string;
+    IdentityResolver: IPlatformIdentityResolver;
+  end;
+
+  /// <summary>Extension seam for platform L2/L3 comparators.</summary>
+  IPlatformDifferenceComparator = interface
+    ['{8F5A9A1E-2B6C-4D8E-9A3F-7E1D2C5B4A01}']
+    function GetPlatformName: string;
+    function CanHandle(const AContext: TPlatformComparisonContext;
+      const ABaseline: TAsWishBaseline): Boolean;
+    function CompareL2L3(const AContext: TPlatformComparisonContext;
+      const ABaseline: TAsWishBaseline): TArray<TSpecDifferenceItem>;
+  end;
+
   TAsWishDifferenceService = class
   private
     FStore: TAsWishStoreService;
     FSnapshot: TAsWishSnapshotService;
+    FComparators: TList<IPlatformDifferenceComparator>;
   public
     constructor Create(AStore: TAsWishStoreService; ASnapshot: TAsWishSnapshotService);
+    destructor Destroy; override;
+    procedure RegisterComparator(const AComparator: IPlatformDifferenceComparator);
+    procedure ClearComparators;
     function ComputeDifference(const AProjectDir: string;
-      const ABaselineId: string): TSpecDifferenceReport;
+      const ABaselineId: string;
+      const AResolver: IPlatformIdentityResolver = nil;
+      const AObservationJson: string = '';
+      const AConstraintsJson: string = '';
+      const AExpectedStylesJson: string = ''): TSpecDifferenceReport;
     procedure WriteDifferenceFile(const ARelPath: string;
       const AReport: TSpecDifferenceReport);
     function ReadDifferenceFile(const ARelPath: string = 'difference.yaml'): TSpecDifferenceReport;
@@ -33,6 +81,32 @@ uses
   AsWish.Yaml.Parser,
   AsWish.Yaml.Writer;
 
+constructor TMapIdentityResolver.Create(const AMap: TDictionary<string, string>);
+begin
+  inherited Create;
+  FMap := TDictionary<string, string>.Create;
+  if AMap <> nil then
+    for var LPair in AMap do
+      FMap.AddOrSetValue(LPair.Key, LPair.Value);
+end;
+
+destructor TMapIdentityResolver.Destroy;
+begin
+  FMap.Free;
+  inherited Destroy;
+end;
+
+function TMapIdentityResolver.ResolveNodeId(const APlatformId: string): string;
+begin
+  if not TryResolveNodeId(APlatformId, Result) then
+    Result := '';
+end;
+
+function TMapIdentityResolver.TryResolveNodeId(const APlatformId: string; out ANodeId: string): Boolean;
+begin
+  Result := FMap.TryGetValue(APlatformId, ANodeId);
+end;
+
 constructor TAsWishDifferenceService.Create(AStore: TAsWishStoreService;
   ASnapshot: TAsWishSnapshotService);
 begin
@@ -43,6 +117,24 @@ begin
     raise Exception.Create('TAsWishDifferenceService requires a snapshot service');
   FStore := AStore;
   FSnapshot := ASnapshot;
+  FComparators := TList<IPlatformDifferenceComparator>.Create;
+end;
+
+destructor TAsWishDifferenceService.Destroy;
+begin
+  FComparators.Free;
+  inherited Destroy;
+end;
+
+procedure TAsWishDifferenceService.RegisterComparator(const AComparator: IPlatformDifferenceComparator);
+begin
+  if (AComparator <> nil) and not FComparators.Contains(AComparator) then
+    FComparators.Add(AComparator);
+end;
+
+procedure TAsWishDifferenceService.ClearComparators;
+begin
+  FComparators.Clear;
 end;
 
 procedure TAsWishDifferenceService.WriteDifferenceFile(const ARelPath: string;
@@ -80,6 +172,8 @@ begin
           LSb.AppendLine('    evidence_hash: "' + EscapeStr(LItem.EvidenceHash) + '"')
         else
           LSb.AppendLine('    evidence_hash: null');
+        if LItem.Note <> '' then
+          LSb.AppendLine('    note: "' + EscapeStr(LItem.Note) + '"');
       end;
     end;
 
@@ -136,6 +230,10 @@ begin
               LItem.ChangedAspect := daNone;
             LItem.BaselineHash := LItemNode.GetString('baseline_hash', '');
             LItem.EvidenceHash := LItemNode.GetString('evidence_hash', '');
+            if LItemNode.Has('note') then
+              LItem.Note := LItemNode.GetString('note', '')
+            else if LItemNode.Has('message') then
+              LItem.Note := LItemNode.GetString('message', '');
 
             LItemsList.Add(LItem);
           end;
@@ -153,7 +251,11 @@ begin
 end;
 
 function TAsWishDifferenceService.ComputeDifference(const AProjectDir: string;
-  const ABaselineId: string): TSpecDifferenceReport;
+  const ABaselineId: string;
+  const AResolver: IPlatformIdentityResolver;
+  const AObservationJson: string;
+  const AConstraintsJson: string;
+  const AExpectedStylesJson: string): TSpecDifferenceReport;
 var
   LBaseline: TAsWishBaseline;
   LSnapDir, LTreeFileName: string;
@@ -270,6 +372,30 @@ begin
           LItem.BaselineHash := '';
           LItem.EvidenceHash := TSpecHash.NodeContentHash(LLiveNode);
           LDiffItems.Add(LItem);
+        end;
+      end;
+
+      // 3. Dispatch registered Platform Comparators for L2/L3 extension
+      if FComparators.Count > 0 then
+      begin
+        var LCtx: TPlatformComparisonContext;
+        LCtx.ProjectDir := AProjectDir;
+        LCtx.TreeType := LBaseline.TreeType;
+        LCtx.BaselineId := LBaseline.BaselineId;
+        LCtx.SnapshotDir := LSnapDir;
+        LCtx.ObservationJson := AObservationJson;
+        LCtx.ConstraintsJson := AConstraintsJson;
+        LCtx.ExpectedStylesJson := AExpectedStylesJson;
+        LCtx.IdentityResolver := AResolver;
+
+        for var LComp in FComparators do
+        begin
+          if (LComp <> nil) and LComp.CanHandle(LCtx, LBaseline) then
+          begin
+            var LPlatformItems := LComp.CompareL2L3(LCtx, LBaseline);
+            for var LPlatItem in LPlatformItems do
+              LDiffItems.Add(LPlatItem);
+          end;
         end;
       end;
 
