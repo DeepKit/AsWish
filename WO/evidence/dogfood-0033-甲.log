@@ -1,0 +1,114 @@
+================================================================================
+WO-20260906-0033-甲 VCL L2/L3 Native End-to-End Dogfood Execution Log
+Target: dogfood_vcl_native
+================================================================================
+
+[Step 1] Verifying clean state before Dogfood (AC #1)...
+Clean check: .AsWish exists = False
+Listing target directory files:
+  DogfoodApp.dpr
+  DogfoodApp.exe
+  RuntimeObservation.json
+  src\MainForm.dcu
+  src\MainForm.pas
+
+[Step 2] Running 'AsWish.CLI init dogfood_vcl_native'...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe init dogfood_vcl_native
+[init] initialized: dogfood_vcl_native\.AsWish
+
+[Step 2b] Running 'AsWish.CLI scan dogfood_vcl_native'...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan dogfood_vcl_native
+[scan] scanning dogfood_vcl_native
+[scan] 15 files, type=delphi_vcl
+[scan] trees: function 1 / module 5 / view 0 / data 1
+[scan] done -> dogfood_vcl_native\.AsWish\html\
+
+[Step 3] Setting up View Spec trees, layout constraints, expected styles, and visual binding...
+View Spec, layout-constraints.json, expected-styles.json, visual-binding.yaml written successfully.
+
+[Step 4] Confirming Initial Visual Baseline (B-0001)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe visual confirm dogfood_vcl_native Accepted Initial Visual Baseline for VCL Dogfood
+[visual confirm] created Accepted Visual Baseline B-0001 (decision: dec-0001)
+Linked constraints & styles to immutable baseline snapshot: 2026-09-07_001058-accepted-baseline-B-0001-dec-0001
+
+[Step 4b] Verifying B-0001 integrity (AC #2)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify dogfood_vcl_native B-0001
+[baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+[Step 5] Compiling DogfoodApp.dpr with Delphi compiler (dcc64)...
+
+$ dcc64 -B DogfoodApp.dpr
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+142 lines, 0.30 seconds, 3092300 bytes code, 326264 bytes data.
+
+[Step 5b] Executing DogfoodApp.exe to extract runtime VCL observations...
+
+$ D:\_Progs\02Business\AsWish\dogfood_vcl_native\DogfoodApp.exe
+Runtime observation successfully extracted to: D:\_Progs\02Business\AsWish\dogfood_vcl_native\.AsWish\evidence\runtime-observation.json
+
+[Step 5c] Collecting Implementation Evidence (AC #3)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect dogfood_vcl_native B-0001
+Collected 2 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+  - ev-impl-0001: src/MainForm.pas (lines: , hash: da2ffb47ca64)
+  - ev-impl-0002: DogfoodApp.dpr (lines: , hash: 1cd08d7ff109)
+Implementation evidence collected to D:\_Progs\02Business\AsWish\dogfood_vcl_native\.AsWish\evidence\implementation-evidence.yaml
+
+[Step 6] Running 'AsWish.CLI difference dogfood_vcl_native B-0001' (AC #4)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference dogfood_vcl_native B-0001
+Computed difference report against baseline "B-0001" (tree: view):
+  Found 2 structural difference(s):
+  - [changed (relation)] node: node_btn_confirm (baseline: 9599e8c9, live/ev: b84c647e)
+  - [changed (content)] node: node_title (baseline: 761a941b, live/ev: 9556b824)
+Saved difference report to .AsWish/difference.yaml
+
+--- .AsWish/difference.yaml Content ---
+﻿baseline_id: "B-0001"
+tree_type: "view"
+computed_at: "2026-09-07T00:10:59.730+08:00"
+items:
+  - node_id: "node_btn_confirm"
+    kind: changed
+    changed_aspect: relation
+    baseline_hash: "9599e8c9657bcf23743bdffbf31f0ccbfe8faf9bc6357c12e552b0be9ca8b152"
+    evidence_hash: "b84c647e9b6c54d4eb23fcc41dcccf6620d58003999be17c5d349bd6681b2eb4"
+    note: "L2 Layout Difference: Expected node_btn_cancel left-of node_btn_confirm, but Observed node_btn_confirm (Left=180) left-of node_btn_cancel (Left=276)."
+  - node_id: "node_title"
+    kind: changed
+    changed_aspect: content
+    baseline_hash: "761a941bccfaa75dd8ac321e53f2b0a76740e2df7272bc021b2e9efe2a88e63b"
+    evidence_hash: "9556b82499cc0aaf86aee7f0d253e17c61b7ef73d48a295f37d98f08b04ffa7f"
+    note: "L3 Appearance Difference: Expected clNavy (8388608) from token token.text.title, but Observed 255."
+---------------------------------------
+[VERIFIED] difference.yaml contains both L2 relation difference and L3 appearance difference!
+
+[Step 7] Recording Human Judgment via 'AsWish.CLI judge' (AC #5)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge dogfood_vcl_native B-0001 acceptable Accept deliberate VCL layout swap and appearance difference during dogfood
+Recorded human judgment decision "dec-0002" (acceptable) for baseline B-0001 (2 difference items).
+[VERIFIED] Human Decision recorded in D:\_Progs\02Business\AsWish\dogfood_vcl_native\.AsWish\decisions\requirement-decisions.yaml
+
+[Step 8] Evolving baseline to B-0002 via 'AsWish.CLI evolve' (AC #6)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve dogfood_vcl_native B-0001 Evolve baseline to B-0002 from accepted VCL reality
+Evolved new Accepted Baseline "B-0002" (snapshot: 2026-09-07_001059-accepted-baseline-B-0002-dec-0003) from current implementation reality.
+  - Decision ID: dec-0003
+  - Content Hash: d28b5957132989c4
+  - Relation Hash: 9c212a2ad3159f20
+[VERIFIED] Snapshot 2026-09-07_001059-accepted-baseline-B-0002-dec-0003 snapshot.yaml contains parent_baseline_id: B-0001
+
+[Step 9] Verifying B-0002 integrity (AC #8)...
+
+$ D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify dogfood_vcl_native B-0002
+[baseline verify] PASS: B-0002 integrity verified (content & relation hashes match)
+
+================================================================================
+WO-0033 VCL Native End-to-End Dogfood COMPLETED SUCCESSFULLY!
+All ACs (AC #1, #2, #3, #4, #5, #6, #8) verified!
+================================================================================
