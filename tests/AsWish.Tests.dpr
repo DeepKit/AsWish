@@ -29,6 +29,7 @@ uses
   Test.AsWish.VisualBaseline in 'Test.AsWish.VisualBaseline.pas',
   Test.AsWish.Evidence in 'Test.AsWish.Evidence.pas',
   Test.AsWish.Difference in 'Test.AsWish.Difference.pas',
+  Test.AsWish.Difference.L2L3 in 'Test.AsWish.Difference.L2L3.pas',
   Test.AsWish.RevisionEvolution in 'Test.AsWish.RevisionEvolution.pas',
   Test.AsWish.GUIDecisions in 'Test.AsWish.GUIDecisions.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
@@ -53,7 +54,8 @@ uses
   AsWish.Controller in '..\src\controllers\AsWish.Controller.pas',
   AsWish.Services.CandidateIngest in '..\src\services\AsWish.Services.CandidateIngest.pas',
   AsWish.Services.EvidenceCollector in '..\src\services\AsWish.Services.EvidenceCollector.pas',
-  AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas';
+  AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas',
+  AsWish.Plugins.VCL.Difference in '..\src\services\AsWish.Plugins.VCL.Difference.pas';
 
 var
   LRunner: ITestRunner;
