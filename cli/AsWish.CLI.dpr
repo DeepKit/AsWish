@@ -1408,6 +1408,54 @@ begin
   end;
 end;
 
+procedure RunHandoff(const ADir, ABaselineId: string);
+var
+  LStore: TAsWishStoreService;
+  LSnap: TAsWishSnapshotService;
+  LDecService: TAsWishDecisionsService;
+  LDiff: TAsWishDifferenceService;
+  LWorkflow: TAsWishVisualWorkflowService;
+  LBaseId, LFile: string;
+begin
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[handoff] error: no .AsWish directory');
+    Halt(1);
+  end;
+  LBaseId := ABaselineId;
+  if LBaseId = '' then LBaseId := 'B-0001';
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(ADir);
+    LSnap := TAsWishSnapshotService.Create(LStore);
+    try
+      LDecService := TAsWishDecisionsService.Create;
+      try
+        LDecService.Initialize(TPath.Combine(ADir, '.AsWish'));
+        LDecService.Load;
+        LDiff := TAsWishDifferenceService.Create(LStore, LSnap);
+        try
+          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnap, LDecService, LDiff);
+          try
+            LFile := LWorkflow.ExportAgentHandoff(ADir, LBaseId);
+            Writeln('[handoff] exported agent handoff package to ' + LFile);
+          finally
+            LWorkflow.Free;
+          end;
+        finally
+          LDiff.Free;
+        end;
+      finally
+        LDecService.Free;
+      end;
+    finally
+      LSnap.Free;
+    end;
+  finally
+    LStore.Free;
+  end;
+end;
+
 procedure RunEvidenceCollect(const AProjectDir, ABaselineId: string);
 var
   LStore: TAsWishStoreService;
@@ -1632,6 +1680,7 @@ begin
     Writeln('  evolve <dir> <baseline-id> [note] freeze new baseline from implementation reality');
     Writeln('  visual preview <dir>      render Visual Preview wireframe');
     Writeln('  visual confirm <dir> [txt] confirm Accepted Visual Baseline');
+    Writeln('  handoff <dir> [baseline-id] export Agent Handoff package');
     Halt(2);
   end;
 
@@ -1869,6 +1918,15 @@ begin
       Writeln('  or: AsWish.CLI visual confirm <project-dir> [rationale]');
       Halt(2);
     end;
+  end
+  else if LCommand = 'handoff' then
+  begin
+    if ParamCount < 2 then
+    begin
+      Writeln('AsWish.CLI handoff <project-dir> [baseline-id]');
+      Halt(2);
+    end;
+    RunHandoff(ParamStr(2), ParamStr(3));
   end
   else
   begin
