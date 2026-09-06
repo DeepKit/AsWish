@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Services.VisualWorkflow.pas
   WO-0032: Visual Workflow Application Service Extraction (ADR-2).
   Orchestrates Visual Baseline confirmation, Difference evaluation,
@@ -32,11 +32,13 @@ type
       const AChangeSetId: string = ''): string;
     function EvolveBaseline(const ABaselineId, ADecisionId: string;
       out ANewBaseline: TAsWishBaseline): string;
+    function ExportAgentHandoff(const AProjectDir, ABaselineId: string): string;
   end;
 
 implementation
 
 uses
+  System.JSON,
   AsWish.Plugins.VCL.Difference;
 
 function LoadBindingResolver(const AFilePath: string): IPlatformIdentityResolver;
@@ -282,6 +284,109 @@ begin
     if LView <> nil then LView.Free;
     if LMod <> nil then LMod.Free;
     if LFunc <> nil then LFunc.Free;
+  end;
+end;
+
+function TAsWishVisualWorkflowService.ExportAgentHandoff(const AProjectDir,
+  ABaselineId: string): string;
+var
+  LAsWishDir, LHandoffDir, LHandoffFile, LSnapDir: string;
+  LBaseline: TAsWishBaseline;
+  LConstraintsJson: string;
+  LViewNodes: TList<TSpecNode>;
+  LSb: TStringBuilder;
+  LConstraintsRoot: TJSONObject;
+begin
+  LAsWishDir := TPath.Combine(AProjectDir, '.AsWish');
+  LHandoffDir := TPath.Combine(LAsWishDir, 'handoff');
+  if not TDirectory.Exists(LHandoffDir) then
+    TDirectory.CreateDirectory(LHandoffDir);
+
+  LHandoffFile := TPath.Combine(LHandoffDir, 'agent-handoff.md');
+  LConstraintsJson := '';
+
+  if not FSnapshot.LoadBaseline(ABaselineId, LBaseline) then
+    raise Exception.CreateFmt('Baseline "%s" not found for handoff export', [ABaselineId]);
+
+  LSnapDir := TPath.Combine(LAsWishDir, 'snapshots\' + LBaseline.SnapshotName);
+
+  for var LSub in [TPath.Combine(LSnapDir, 'layout-constraints.json'),
+                   TPath.Combine(LAsWishDir, 'layout-constraints.json'),
+                   TPath.Combine(LAsWishDir, 'evidence\layout-constraints.json')] do
+  begin
+    if TFile.Exists(LSub) then
+    begin
+      LConstraintsJson := TFile.ReadAllText(LSub, TEncoding.UTF8);
+      Break;
+    end;
+  end;
+
+  LViewNodes := FStore.ReadTreeFile(TPath.Combine('snapshots\' + LBaseline.SnapshotName, 'trees\view-tree.yaml'));
+  if LViewNodes = nil then
+    LViewNodes := FStore.ReadTreeFile('trees/view-tree.yaml');
+
+  LSb := TStringBuilder.Create;
+  try
+    LSb.AppendLine('# Agent Handoff Package');
+    LSb.AppendLine('');
+    LSb.AppendLine('> **NON-CANONICAL / EVIDENCE-ONLY / NOT PROTOCOL** (WO-20260907-0034-甲)');
+    LSb.AppendLine('');
+    LSb.AppendLine('## 1. Baseline Target');
+    LSb.AppendLine('- Baseline ID: ' + LBaseline.BaselineId);
+    LSb.AppendLine('- Snapshot Name: ' + LBaseline.SnapshotName);
+    LSb.AppendLine('- Decision ID: ' + LBaseline.DecisionId);
+    LSb.AppendLine('- Content Hash: ' + LBaseline.ContentHash);
+    LSb.AppendLine('- Relation Hash: ' + LBaseline.RelationHash);
+    LSb.AppendLine('');
+    LSb.AppendLine('## 2. Declared View Components');
+    if LViewNodes <> nil then
+    begin
+      for var LN in LViewNodes do
+        LSb.AppendLine(Format('- Node `%s`: %s (type: %s)', [LN.Id, LN.Summary, LN.Kind]));
+    end;
+    LSb.AppendLine('');
+    LSb.AppendLine('## 3. Declared Relative Layout Intent & Provenance');
+    if LConstraintsJson <> '' then
+    begin
+      LConstraintsRoot := TJSONObject.ParseJSONValue(LConstraintsJson) as TJSONObject;
+      if LConstraintsRoot <> nil then
+      try
+        for var I := 0 to LConstraintsRoot.Count - 1 do
+        begin
+          var LPair := LConstraintsRoot.Pairs[I];
+          if not (LPair.JsonValue is TJSONObject) then Continue;
+          var LNodeId := LPair.JsonString.Value;
+          var LObj := TJSONObject(LPair.JsonValue);
+          var LRel := LObj.GetValue<string>('relation', '');
+          var LProvObj := LObj.GetValue<TJSONObject>('provenance', nil);
+          LSb.AppendLine(Format('### Constraint: `%s` %s', [LNodeId, LRel]));
+          if LProvObj <> nil then
+          begin
+            LSb.AppendLine('- **Provenance Source**: ' + LProvObj.GetValue<string>('source_type', 'human_intent'));
+            LSb.AppendLine('- **Intent ID**: ' + LProvObj.GetValue<string>('intent_id', ''));
+            LSb.AppendLine('- **Confirmed By**: ' + LProvObj.GetValue<string>('author', 'human'));
+            LSb.AppendLine('- **Decision ID**: ' + LProvObj.GetValue<string>('decision_id', ''));
+            LSb.AppendLine('- **Statement**: ' + LProvObj.GetValue<string>('statement', ''));
+            LSb.AppendLine('- **Confirmed At**: ' + LProvObj.GetValue<string>('confirmed_at', ''));
+          end;
+          LSb.AppendLine('');
+        end;
+      finally
+        LConstraintsRoot.Free;
+      end;
+    end
+    else
+      LSb.AppendLine('- No explicit layout constraints found.');
+
+    LSb.AppendLine('## 4. Implementation Guidance for Agent');
+    LSb.AppendLine('Implement the VCL UI controls to strictly satisfy the declared layout constraints above.');
+    LSb.AppendLine('Do NOT reverse the relative ordering confirmed by Human.');
+
+    TFile.WriteAllText(LHandoffFile, LSb.ToString, TEncoding.UTF8);
+    Result := LHandoffFile;
+  finally
+    if LViewNodes <> nil then LViewNodes.Free;
+    LSb.Free;
   end;
 end;
 

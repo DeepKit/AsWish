@@ -1,4 +1,4 @@
-﻿unit AsWish.Plugins.VCL.Difference;
+unit AsWish.Plugins.VCL.Difference;
 
 interface
 
@@ -126,11 +126,20 @@ begin
             LTargetId := LRel.Substring(8).Trim;
             if LObservedMap.TryGetValue(LNodeId, LObsA) and LObservedMap.TryGetValue(LTargetId, LObsB) then
             begin
+              var LProvStr := '';
+              var LProvObj := LSpecObj.GetValue<TJSONObject>('provenance', nil);
+              if LProvObj <> nil then
+              begin
+                var LDecId := LProvObj.GetValue<string>('decision_id', '');
+                if LDecId <> '' then
+                  LProvStr := Format(' [provenance: %s]', [LDecId]);
+              end;
+
               if LObsA.Left >= LObsB.Left then
                 LDiffList.Add(MakeDiffItem(LTargetId, dkChanged, daRelation, TSpecHash.Sha256Hex(LRel),
                   TSpecHash.Sha256Hex(Format('Left=%d,Left=%d', [LObsB.Left, LObsA.Left])),
-                  Format('L2 Layout Difference: Expected %s left-of %s, but Observed %s (Left=%d) left-of %s (Left=%d).',
-                    [LNodeId, LTargetId, LTargetId, LObsB.Left, LNodeId, LObsA.Left])))
+                  Format('L2 Layout Difference: Expected %s left-of %s%s, but Observed %s (Left=%d) left-of %s (Left=%d).',
+                    [LNodeId, LTargetId, LProvStr, LTargetId, LObsB.Left, LNodeId, LObsA.Left])))
               else if LSpecObj.TryGetValue<Integer>('gap', LExpectedGap) then
               begin
                 LObsGap := LObsB.Left - (LObsA.Left + LObsA.Width);
