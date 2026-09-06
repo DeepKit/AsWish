@@ -36,6 +36,57 @@ type
 
 implementation
 
+uses
+  AsWish.Plugins.VCL.Difference;
+
+function LoadBindingResolver(const AFilePath: string): IPlatformIdentityResolver;
+var
+  LLines: TStringList;
+  LMap: TDictionary<string, string>;
+  I, LColonPos: Integer;
+  LLine, LKey, LVal: string;
+  LInMap: Boolean;
+begin
+  Result := nil;
+  if not TFile.Exists(AFilePath) then Exit;
+  LLines := TStringList.Create;
+  LMap := TDictionary<string, string>.Create;
+  try
+    LLines.LoadFromFile(AFilePath, TEncoding.UTF8);
+    LInMap := False;
+    for I := 0 to LLines.Count - 1 do
+    begin
+      LLine := LLines[I].Trim;
+      if LLine.StartsWith('identity_map:') then
+      begin
+        LInMap := True;
+        Continue;
+      end;
+      if LInMap then
+      begin
+        if (LLine = '') or (not LLines[I].StartsWith('  ')) or LLine.EndsWith(':') then
+        begin
+          if LLine.EndsWith(':') and not LLine.StartsWith('identity_map:') then
+            LInMap := False;
+          Continue;
+        end;
+        LColonPos := Pos(':', LLine);
+        if LColonPos > 0 then
+        begin
+          LKey := Copy(LLine, 1, LColonPos - 1).Trim;
+          LVal := Copy(LLine, LColonPos + 1, Length(LLine)).Trim;
+          if (LKey <> '') and (LVal <> '') then
+            LMap.AddOrSetValue(LKey, LVal);
+        end;
+      end;
+    end;
+    Result := TMapIdentityResolver.Create(LMap);
+  finally
+    LMap.Free;
+    LLines.Free;
+  end;
+end;
+
 constructor TAsWishVisualWorkflowService.Create(AStore: TAsWishStoreService;
   ASnapshot: TAsWishSnapshotService; ADecisions: TAsWishDecisionsService;
   ADifference: TAsWishDifferenceService);
@@ -96,8 +147,85 @@ end;
 
 function TAsWishVisualWorkflowService.ComputeDifference(const AProjectDir,
   ABaselineId: string): TSpecDifferenceReport;
+var
+  LObsJson, LConstraintsJson, LStylesJson: string;
+  LResolver: IPlatformIdentityResolver;
+  LAsWishDir, LSnapDir, LCandidate: string;
+  LBaseline: TAsWishBaseline;
 begin
-  Result := FDifference.ComputeDifference(AProjectDir, ABaselineId);
+  // Register VCL platform comparator
+  FDifference.RegisterComparator(TAsWishVCLDifferenceComparator.Create);
+
+  LAsWishDir := TPath.Combine(AProjectDir, '.AsWish');
+  LObsJson := '';
+  LConstraintsJson := '';
+  LStylesJson := '';
+  LResolver := nil;
+  LSnapDir := '';
+
+  // 1. Discover runtime observation JSON
+  for var LSub in ['evidence\runtime-observation.json', 'runtime-observation.json', 'RuntimeObservation.json'] do
+  begin
+    LCandidate := TPath.Combine(LAsWishDir, LSub);
+    if TFile.Exists(LCandidate) then
+    begin
+      LObsJson := TFile.ReadAllText(LCandidate, TEncoding.UTF8);
+      Break;
+    end;
+  end;
+  if (LObsJson = '') and TFile.Exists(TPath.Combine(AProjectDir, 'RuntimeObservation.json')) then
+    LObsJson := TFile.ReadAllText(TPath.Combine(AProjectDir, 'RuntimeObservation.json'), TEncoding.UTF8);
+
+  // 2. Discover visual binding YAML
+  for var LSub in ['visual-binding.yaml', 'evidence\visual-binding.yaml', 'binding.yaml'] do
+  begin
+    LCandidate := TPath.Combine(LAsWishDir, LSub);
+    if TFile.Exists(LCandidate) then
+    begin
+      LResolver := LoadBindingResolver(LCandidate);
+      Break;
+    end;
+  end;
+  if (LResolver = nil) and TFile.Exists(TPath.Combine(AProjectDir, 'visual-binding.yaml')) then
+    LResolver := LoadBindingResolver(TPath.Combine(AProjectDir, 'visual-binding.yaml'));
+
+  // 3. Discover layout constraints JSON (from project or baseline snapshot)
+  for var LSub in ['layout-constraints.json', 'evidence\layout-constraints.json', 'trees\layout-constraints.json'] do
+  begin
+    LCandidate := TPath.Combine(LAsWishDir, LSub);
+    if TFile.Exists(LCandidate) then
+    begin
+      LConstraintsJson := TFile.ReadAllText(LCandidate, TEncoding.UTF8);
+      Break;
+    end;
+  end;
+  if (LConstraintsJson = '') and FSnapshot.LoadBaseline(ABaselineId, LBaseline) then
+  begin
+    LSnapDir := TPath.Combine(LAsWishDir, 'snapshots\' + LBaseline.SnapshotName);
+    LCandidate := TPath.Combine(LSnapDir, 'layout-constraints.json');
+    if TFile.Exists(LCandidate) then
+      LConstraintsJson := TFile.ReadAllText(LCandidate, TEncoding.UTF8);
+  end;
+
+  // 4. Discover expected styles JSON (from project or baseline snapshot)
+  for var LSub in ['expected-styles.json', 'evidence\expected-styles.json', 'trees\expected-styles.json'] do
+  begin
+    LCandidate := TPath.Combine(LAsWishDir, LSub);
+    if TFile.Exists(LCandidate) then
+    begin
+      LStylesJson := TFile.ReadAllText(LCandidate, TEncoding.UTF8);
+      Break;
+    end;
+  end;
+  if (LStylesJson = '') and (LSnapDir <> '') then
+  begin
+    LCandidate := TPath.Combine(LSnapDir, 'expected-styles.json');
+    if TFile.Exists(LCandidate) then
+      LStylesJson := TFile.ReadAllText(LCandidate, TEncoding.UTF8);
+  end;
+
+  Result := FDifference.ComputeDifference(AProjectDir, ABaselineId,
+    LResolver, LObsJson, LConstraintsJson, LStylesJson);
 end;
 
 function TAsWishVisualWorkflowService.RecordDifferenceDecision(
