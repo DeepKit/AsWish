@@ -1443,7 +1443,9 @@ procedure RunDifference(const AProjectDir, ABaselineId: string);
 var
   LStore: TAsWishStoreService;
   LSnapshot: TAsWishSnapshotService;
+  LDecisions: TAsWishDecisionsService;
   LDifference: TAsWishDifferenceService;
+  LWorkflow: TAsWishVisualWorkflowService;
   LReport: TSpecDifferenceReport;
 begin
   LStore := TAsWishStoreService.Create;
@@ -1451,29 +1453,41 @@ begin
     LStore.Initialize(AProjectDir);
     LSnapshot := TAsWishSnapshotService.Create(LStore);
     try
-      LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+      LDecisions := TAsWishDecisionsService.Create;
       try
-        LReport := LDifference.ComputeDifference(AProjectDir, ABaselineId);
-        Writeln(Format('Computed difference report against baseline "%s" (tree: %s):',
-          [LReport.BaselineId, LReport.TreeType]));
-        if Length(LReport.Items) = 0 then
-          Writeln('  No structural differences found (0 items).')
-        else
-        begin
-          Writeln(Format('  Found %d structural difference(s):', [Length(LReport.Items)]));
-          for var LItem in LReport.Items do
-          begin
-            var LAspectStr := '';
-            if LItem.Kind = dkChanged then
-              LAspectStr := ' (' + TSpecEnums.DifferenceAspectToStr(LItem.ChangedAspect) + ')';
-            Writeln(Format('  - [%s%s] node: %s (baseline: %s, live/ev: %s)',
-              [TSpecEnums.DifferenceKindToStr(LItem.Kind), LAspectStr, LItem.NodeId,
-               Copy(LItem.BaselineHash, 1, 8), Copy(LItem.EvidenceHash, 1, 8)]));
+        LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+        LDecisions.Load;
+        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+        try
+          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnapshot, LDecisions, LDifference);
+          try
+            LReport := LWorkflow.ComputeDifference(AProjectDir, ABaselineId);
+            Writeln(Format('Computed difference report against baseline "%s" (tree: %s):',
+              [LReport.BaselineId, LReport.TreeType]));
+            if Length(LReport.Items) = 0 then
+              Writeln('  No structural differences found (0 items).')
+            else
+            begin
+              Writeln(Format('  Found %d structural difference(s):', [Length(LReport.Items)]));
+              for var LItem in LReport.Items do
+              begin
+                var LAspectStr := '';
+                if LItem.Kind = dkChanged then
+                  LAspectStr := ' (' + TSpecEnums.DifferenceAspectToStr(LItem.ChangedAspect) + ')';
+                Writeln(Format('  - [%s%s] node: %s (baseline: %s, live/ev: %s)',
+                  [TSpecEnums.DifferenceKindToStr(LItem.Kind), LAspectStr, LItem.NodeId,
+                   Copy(LItem.BaselineHash, 1, 8), Copy(LItem.EvidenceHash, 1, 8)]));
+              end;
+            end;
+            Writeln('Saved difference report to .AsWish/difference.yaml');
+          finally
+            LWorkflow.Free;
           end;
+        finally
+          LDifference.Free;
         end;
-        Writeln('Saved difference report to .AsWish/difference.yaml');
       finally
-        LDifference.Free;
+        LDecisions.Free;
       end;
     finally
       LSnapshot.Free;
