@@ -1,0 +1,133 @@
+================================================================================
+WO-20260907-0034-甲 Explicit Layout Intent Provenance Dogfood Execution Log
+Target: dogfood_vcl_provenance
+================================================================================
+
+[Step 1] Verifying clean state before Dogfood (AC1)...
+Clean check: .AsWish exists = False
+Created initial VCL project files (Inverted order: Confirm at Left=180, Cancel at Left=276).
+
+[Step 2] Running 'AsWish.CLI init dogfood_vcl_provenance'...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" init dogfood_vcl_provenance
+  [init] initialized: dogfood_vcl_provenance\.AsWish
+
+[Step 2b] Running 'AsWish.CLI scan dogfood_vcl_provenance'...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" scan dogfood_vcl_provenance
+  [scan] scanning dogfood_vcl_provenance
+  [scan] 12 files, type=delphi_vcl
+  [scan] trees: function 1 / module 5 / view 0 / data 1
+  [scan] done -> dogfood_vcl_provenance\.AsWish\html\
+
+[Step 3] Setting up View Spec trees, Candidate Layout Intent with Provenance (AC1, AC2)...
+View Spec, Candidate Layout Intent with Provenance, and visual-binding.yaml written.
+
+[Step 4] Confirming Initial Visual Baseline (B-0001) with explicit layout intent (AC1)...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" visual confirm dogfood_vcl_provenance "Human confirmed Cancel button left-of Confirm button with provenance dec-0001"
+  [visual confirm] created Accepted Visual Baseline B-0001 (decision: dec-0001)
+[Step 4b] Verifying B-0001 integrity...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" baseline verify dogfood_vcl_provenance B-0001
+  [baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+
+[Step 5] Exporting Agent Handoff Package (AC3)...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" handoff dogfood_vcl_provenance B-0001
+  [handoff] exported agent handoff package to dogfood_vcl_provenance\.AsWish\handoff\agent-handoff.md
+--- .AsWish/handoff/agent-handoff.md Sample ---
+  # Agent Handoff Package
+  
+  > **NON-CANONICAL / EVIDENCE-ONLY / NOT PROTOCOL** (WO-20260907-0034-甲)
+  
+  ## 1. Baseline Target
+  - Baseline ID: B-0001
+  - Snapshot Name: 2026-09-07_075229-accepted-baseline-B-0001-dec-0001
+  - Decision ID: dec-0001
+  - Content Hash: a0099f9487b9f520e5d4d6507b646d1b95f44ba49a7335ad2d3ef3a06d1f66a8
+  - Relation Hash: a4f9397e1ac23912111c49fc6876b2a169325a41c321c11cdc52802138fa7e66
+  
+  ## 2. Declared View Components
+  - Node `node_view_root`:  (type: page)
+  - Node `node_btn_cancel`:  (type: component)
+  - Node `node_btn_confirm`:  (type: component)
+  
+  ## 3. Declared Relative Layout Intent & Provenance
+  ### Constraint: `node_btn_cancel` left-of node_btn_confirm
+  - **Provenance Source**: human_intent
+  - **Intent ID**: intent-layout-0001
+  - **Confirmed By**: human
+  - **Decision ID**: dec-0001
+  - **Statement**: Cancel button must be placed left-of Confirm button
+  - **Confirmed At**: 2026-09-07T08:00:00Z
+  
+----------------------------------------------
+[VERIFIED] Agent Handoff contains explicit layout intent and decision provenance (AC3)!
+
+[Step 6: Case A] Compiling VCL App with Inverted Order (Confirm Left=180, Cancel Left=276)...
+$ dcc64 -B DogfoodApp.dpr
+  Embarcadero Delphi for Win64 compiler version 37.0
+  Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+  104 lines, 0.27 seconds, 3091332 bytes code, 326236 bytes data.
+[Step 6b] Executing DogfoodApp.exe to extract runtime observation (AC4)...
+$ D:\_Progs\02Business\AsWish\dogfood_vcl_provenance\DogfoodApp.exe
+Runtime observation: {"Profile": {"DPI": 96, "Theme": "Windows"}, "Observations": [{"Name": "AW_BtnCancel", "ClassName": "TButton", "Bounds": {"Left": 276, "Top": 160, "Width": 80, "Height": 30}}, {"Name": "AW_BtnConfirm", "ClassName": "TButton", "Bounds": {"Left": 180, "Top": 160, "Width": 80, "Height": 30}}]}
+[VERIFIED] Runtime observation contains ONLY facts (Bounds), ZERO intent (AC4)!
+
+[Step 6c] Collecting Implementation Evidence...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" evidence collect dogfood_vcl_provenance B-0001
+  Collected 2 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+    - ev-impl-0001: src/MainForm.pas (lines: , hash: 31d7cb744b5e)
+    - ev-impl-0002: DogfoodApp.dpr (lines: , hash: 00b72595ab16)
+
+[Step 6d] Running 'AsWish.CLI difference dogfood_vcl_provenance B-0001' for Case A (Inverted)...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" difference dogfood_vcl_provenance B-0001
+  Computed difference report against baseline "B-0001" (tree: view):
+    Found 1 structural difference(s):
+    - [changed (relation)] node: node_btn_confirm (baseline: 9599e8c9, live/ev: b84c647e)
+  Saved difference report to .AsWish/difference.yaml
+--- .AsWish/difference.yaml (Case A: Inverted) ---
+baseline_id: "B-0001"
+tree_type: "view"
+computed_at: "2026-09-07T07:52:31.494+08:00"
+items:
+  - node_id: "node_btn_confirm"
+    kind: changed
+    changed_aspect: relation
+    baseline_hash: "9599e8c9657bcf23743bdffbf31f0ccbfe8faf9bc6357c12e552b0be9ca8b152"
+    evidence_hash: "b84c647e9b6c54d4eb23fcc41dcccf6620d58003999be17c5d349bd6681b2eb4"
+    note: "L2 Layout Difference: Expected node_btn_cancel left-of node_btn_confirm [provenance: dec-0001], but Observed node_btn_confirm (Left=180) left-of node_btn_cancel (Left=276)."
+-------------------------------------------------
+[VERIFIED] Case A produced changed_aspect: relation with [provenance: dec-0001] (AC5, AC6)!
+
+[Step 7] Recording Human Judgment via 'AsWish.CLI judge' (AC8)...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" judge dogfood_vcl_provenance B-0001 unacceptable "Reject reversed layout; Cancel must be left-of Confirm per human intent dec-0001"
+  Recorded human judgment decision "dec-0002" (unacceptable) for baseline B-0001 (1 difference items).
+[VERIFIED] Human Judgment recorded in requirement-decisions.yaml (AC8)!
+
+[Step 8: Case B] Updating DogfoodApp.dpr to Compliant Layout (Cancel Left=180, Confirm Left=276)...
+[Step 8b] Recompiling VCL App with Compliant Order...
+$ dcc64 -B DogfoodApp.dpr
+  Embarcadero Delphi for Win64 compiler version 37.0
+  Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+  104 lines, 0.28 seconds, 3091332 bytes code, 326236 bytes data.
+[Step 8c] Executing DogfoodApp.exe to extract compliant runtime observation...
+$ D:\_Progs\02Business\AsWish\dogfood_vcl_provenance\DogfoodApp.exe
+[Step 8d] Re-collecting implementation evidence...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" evidence collect dogfood_vcl_provenance B-0001
+  Collected 2 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+    - ev-impl-0001: src/MainForm.pas (lines: , hash: 31d7cb744b5e)
+    - ev-impl-0002: DogfoodApp.dpr (lines: , hash: e7ebf82abf4d)
+[Step 8e] Running 'AsWish.CLI difference dogfood_vcl_provenance B-0001' for Case B (Compliant)...
+$ "D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe" difference dogfood_vcl_provenance B-0001
+  Computed difference report against baseline "B-0001" (tree: view):
+    No structural differences found (0 items).
+  Saved difference report to .AsWish/difference.yaml
+--- .AsWish/difference.yaml (Case B: Compliant) ---
+baseline_id: "B-0001"
+tree_type: "view"
+computed_at: "2026-09-07T07:52:32.466+08:00"
+items: []
+--------------------------------------------------
+[VERIFIED] Case B produces NO L2 difference items (No important L2 Difference) (AC7)!
+
+================================================================================
+WO-0034 DOGFOOD EXECUTION COMPLETED SUCCESSFULLY!
+All ACs (AC1, AC2, AC3, AC4, AC5, AC6, AC7, AC8) verified in real execution!
+================================================================================
