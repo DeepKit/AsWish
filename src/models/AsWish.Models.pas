@@ -235,6 +235,7 @@ type
 
   TDifferenceKind = (dkMissing, dkExtra, dkChanged);
   TDifferenceAspect = (daNone, daContent, daRelation, daBoth);
+  TDifferenceJudgment = (djNoImportantDifference, djAcceptable, djUnacceptable, djUnresolved);
 
   TSpecDifferenceItem = record
     NodeId: string;
@@ -393,6 +394,9 @@ type
     class function DifferenceAspectToStr(AValue: TDifferenceAspect): string; static;
     class function DifferenceAspectFromStr(const AValue: string;
       ADefault: TDifferenceAspect = daNone): TDifferenceAspect; static;
+    class function DifferenceJudgmentToStr(AValue: TDifferenceJudgment): string; static;
+    class function DifferenceJudgmentFromStr(const AValue: string;
+      ADefault: TDifferenceJudgment = djUnresolved): TDifferenceJudgment; static;
 
     /// <summary>Validate GenStatus transition. Returns True if allowed.</summary>
     class function CanTransitionGen(AFrom, ATo: TGenStatus): Boolean; static;
@@ -953,6 +957,32 @@ begin
   else if LLower = 'relation' then Result := daRelation
   else if LLower = 'both' then Result := daBoth
   else Result := ADefault;
+end;
+
+class function TSpecEnums.DifferenceJudgmentToStr(AValue: TDifferenceJudgment): string;
+begin
+  case AValue of
+    djNoImportantDifference: Result := 'no_important_difference';
+    djAcceptable:            Result := 'acceptable';
+    djUnacceptable:          Result := 'unacceptable';
+    djUnresolved:            Result := 'unresolved';
+  end;
+end;
+
+class function TSpecEnums.DifferenceJudgmentFromStr(const AValue: string;
+  ADefault: TDifferenceJudgment): TDifferenceJudgment;
+begin
+  var LLower := LowerCase(AValue.Trim);
+  if (LLower = 'no_important_difference') or (LLower = 'no-important-difference') or (LLower = 'nodiff') then
+    Result := djNoImportantDifference
+  else if (LLower = 'acceptable') or (LLower = 'accept') then
+    Result := djAcceptable
+  else if (LLower = 'unacceptable') or (LLower = 'reject') then
+    Result := djUnacceptable
+  else if (LLower = 'unresolved') or (LLower = 'clarify') then
+    Result := djUnresolved
+  else
+    Result := ADefault;
 end;
 
 class function TSpecEnums.CanTransitionGen(AFrom, ATo: TGenStatus): Boolean;
