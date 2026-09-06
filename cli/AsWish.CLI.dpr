@@ -46,6 +46,7 @@ uses
   AsWish.Delphi.PasParser in '..\src\core\AsWish.Delphi.PasParser.pas',
   AsWish.Services.EvidenceCollector in '..\src\services\AsWish.Services.EvidenceCollector.pas',
   AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas',
+  AsWish.Services.VisualWorkflow in '..\src\services\AsWish.Services.VisualWorkflow.pas',
   AsWish.Version in '..\src\core\AsWish.Version.pas',
   System.JSON;
 
@@ -1337,11 +1338,9 @@ var
   LStore: TAsWishStoreService;
   LDecService: TAsWishDecisionsService;
   LSnap: TAsWishSnapshotService;
-  LFunc, LMod, LView, LData: TList<TSpecNode>;
-  LDec: TSpecDecision;
-  LCS: TChangeSet;
-  LBaseline: TAsWishBaseline;
-  LBaseId, LDecId: string;
+  LDiff: TAsWishDifferenceService;
+  LWorkflow: TAsWishVisualWorkflowService;
+  LDecId, LBaseId: string;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
@@ -1349,60 +1348,62 @@ begin
     Halt(1);
   end;
   LStore := TAsWishStoreService.Create;
-  LDecService := TAsWishDecisionsService.Create;
-  LSnap := TAsWishSnapshotService.Create(LStore);
-  LFunc := nil; LMod := nil; LView := nil; LData := nil;
   try
     LStore.Initialize(ADir);
-    LDecService.Initialize(TPath.Combine(ADir, '.AsWish'));
-    LDecService.Load;
-
-    LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
-    LMod := LStore.ReadTreeFile('trees/module-tree.yaml');
-    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-    if TFile.Exists(TPath.Combine(LStore.BasePath, 'trees\data-tree.yaml')) then
-      LData := LStore.ReadTreeFile('trees/data-tree.yaml');
-
-    if (LView = nil) or (LView.Count = 0) then
-    begin
-      Writeln('[visual confirm] error: no View Spec nodes to confirm');
-      Halt(1);
-    end;
-
-    var LViewIds: TList<string> := TList<string>.Create;
+    LSnap := TAsWishSnapshotService.Create(LStore);
     try
-      for var LN in LView do
-        LViewIds.Add(LN.Id);
-
-      var LRat := ARationale;
-      if LRat = '' then
-        LRat := 'CLI visual confirm.';
-
-      LDecId := LDecService.AddDecision(dtConfirm,
-        'Accepted Visual Baseline for View Spec',
-        'Human confirmed current View Spec representation (wireframe-v1.0) as Accepted Visual Baseline.',
-        LRat, LViewIds.ToArray);
-      LDecService.AcceptDecision(LDecId);
-      LDecService.Save;
-      LDec := LDecService.FindById(LDecId);
+      LDecService := TAsWishDecisionsService.Create;
+      try
+        LDecService.Initialize(TPath.Combine(ADir, '.AsWish'));
+        LDecService.Load;
+        LDiff := TAsWishDifferenceService.Create(LStore, LSnap);
+        try
+          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnap, LDecService, LDiff);
+          try
+            // If ARationale is an existing Decision ID, use it directly
+            if (ARationale <> '') and (LDecService.FindById(ARationale).Id <> '') then
+              LDecId := ARationale
+            else
+            begin
+              var LView := LStore.ReadTreeFile('trees/view-tree.yaml');
+              if (LView = nil) or (LView.Count = 0) then
+              begin
+                if LView <> nil then LView.Free;
+                Writeln('[visual confirm] error: no View Spec nodes to confirm');
+                Halt(1);
+              end;
+              var LViewIds := TList<string>.Create;
+              try
+                for var LN in LView do LViewIds.Add(LN.Id);
+                var LRat := ARationale;
+                if LRat = '' then LRat := 'CLI visual confirm.';
+                LDecId := LDecService.AddDecision(dtConfirm,
+                  'Accepted Visual Baseline for View Spec',
+                  'Human confirmed current View Spec representation (wireframe-v1.0) as Accepted Visual Baseline.',
+                  LRat, LViewIds.ToArray);
+                LDecService.AcceptDecision(LDecId);
+                LDecService.Save;
+              finally
+                LViewIds.Free;
+                LView.Free;
+              end;
+            end;
+            LBaseId := LWorkflow.ConfirmVisualBaseline(LDecId);
+            Writeln(Format('[visual confirm] created Accepted Visual Baseline %s (decision: %s)',
+              [LBaseId, LDecId]));
+          finally
+            LWorkflow.Free;
+          end;
+        finally
+          LDiff.Free;
+        end;
+      finally
+        LDecService.Free;
+      end;
     finally
-      LViewIds.Free;
+      LSnap.Free;
     end;
-
-    LCS := TChangeSet.CreateNew('cs-visual-baseline', 'root-view', ttView, 'Confirm Visual Baseline', 'human');
-
-    LBaseId := LSnap.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData,
-      LBaseline, 'wireframe-v1.0', 'html/visual-preview.html');
-
-    Writeln(Format('[visual confirm] created Accepted Visual Baseline %s (decision: %s, snapshot: %s)',
-      [LBaseId, LDecId, LBaseline.SnapshotName]));
   finally
-    LData.Free;
-    LView.Free;
-    LMod.Free;
-    LFunc.Free;
-    LSnap.Free;
-    LDecService.Free;
     LStore.Free;
   end;
 end;
@@ -1488,29 +1489,37 @@ var
   LSnapshot: TAsWishSnapshotService;
   LDifference: TAsWishDifferenceService;
   LDecisions: TAsWishDecisionsService;
+  LWorkflow: TAsWishVisualWorkflowService;
   LReport: TSpecDifferenceReport;
   LDecId: string;
+  LJudgment: TDifferenceJudgment;
 begin
   LStore := TAsWishStoreService.Create;
   try
     LStore.Initialize(AProjectDir);
     LSnapshot := TAsWishSnapshotService.Create(LStore);
     try
-      LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+      LDecisions := TAsWishDecisionsService.Create;
       try
-        LReport := LDifference.ComputeDifference(AProjectDir, ABaselineId);
-        LDecisions := TAsWishDecisionsService.Create;
+        LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+        LDecisions.Load;
+        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
         try
-          LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-          LDecisions.Load;
-          LDecId := LDecisions.RecordDifferenceDecision(LReport, AAction, ANote);
-          Writeln(Format('Recorded human judgment decision "%s" (%s) for baseline %s (%d difference items).',
-            [LDecId, AAction, ABaselineId, Length(LReport.Items)]));
+          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnapshot, LDecisions, LDifference);
+          try
+            LReport := LWorkflow.ComputeDifference(AProjectDir, ABaselineId);
+            LJudgment := TSpecEnums.DifferenceJudgmentFromStr(AAction);
+            LDecId := LWorkflow.RecordDifferenceDecision(LReport, LJudgment, ANote);
+            Writeln(Format('Recorded human judgment decision "%s" (%s) for baseline %s (%d difference items).',
+              [LDecId, AAction, ABaselineId, Length(LReport.Items)]));
+          finally
+            LWorkflow.Free;
+          end;
         finally
-          LDecisions.Free;
+          LDifference.Free;
         end;
       finally
-        LDifference.Free;
+        LDecisions.Free;
       end;
     finally
       LSnapshot.Free;
@@ -1526,59 +1535,40 @@ var
   LSnapshot: TAsWishSnapshotService;
   LDifference: TAsWishDifferenceService;
   LDecisions: TAsWishDecisionsService;
+  LWorkflow: TAsWishVisualWorkflowService;
   LReport: TSpecDifferenceReport;
   LDecId, LNewBaseId: string;
-  LDec: TSpecDecision;
-  LCS: TChangeSet;
   LNewBaseline: TAsWishBaseline;
-  LFunc, LMod, LView, LData: TList<TSpecNode>;
 begin
   LStore := TAsWishStoreService.Create;
   try
     LStore.Initialize(AProjectDir);
     LSnapshot := TAsWishSnapshotService.Create(LStore);
     try
-      LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+      LDecisions := TAsWishDecisionsService.Create;
       try
-        LReport := LDifference.ComputeDifference(AProjectDir, ABaselineId);
-        LDecisions := TAsWishDecisionsService.Create;
+        LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+        LDecisions.Load;
+        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
         try
-          LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-          LDecisions.Load;
-
-          LCS := Default(TChangeSet);
-          LCS.Id := 'cs-evolve-' + ABaselineId;
-          if LReport.TreeType = 'view' then LCS.IntentTree := ttView
-          else if LReport.TreeType = 'module' then LCS.IntentTree := ttModule
-          else if LReport.TreeType = 'data' then LCS.IntentTree := ttData
-          else LCS.IntentTree := ttFunction;
-          LCS.IntentNodeId := 'diff-evolve';
-
-          LDecId := LDecisions.RecordDifferenceDecision(LReport, 'acceptable', ANote, LCS.Id);
-          LDec := LDecisions.FindById(LDecId);
-
-          LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
-          LMod := LStore.ReadTreeFile('trees/module-tree.yaml');
-          LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-          LData := LStore.ReadTreeFile('trees/data-tree.yaml');
+          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnapshot, LDecisions, LDifference);
           try
-            LNewBaseId := LSnapshot.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, LNewBaseline, '', '', ABaselineId);
+            LReport := LWorkflow.ComputeDifference(AProjectDir, ABaselineId);
+            LDecId := LWorkflow.RecordDifferenceDecision(LReport, djAcceptable, ANote, 'cs-evolve-' + ABaselineId);
+            LNewBaseId := LWorkflow.EvolveBaseline(ABaselineId, LDecId, LNewBaseline);
             Writeln(Format('Evolved new Accepted Baseline "%s" (snapshot: %s) from current implementation reality.',
               [LNewBaseId, LNewBaseline.SnapshotName]));
             Writeln(Format('  - Decision ID: %s', [LDecId]));
             Writeln(Format('  - Content Hash: %s', [Copy(LNewBaseline.ContentHash, 1, 16)]));
             Writeln(Format('  - Relation Hash: %s', [Copy(LNewBaseline.RelationHash, 1, 16)]));
           finally
-            LData.Free;
-            LView.Free;
-            LMod.Free;
-            LFunc.Free;
+            LWorkflow.Free;
           end;
         finally
-          LDecisions.Free;
+          LDifference.Free;
         end;
       finally
-        LDifference.Free;
+        LDecisions.Free;
       end;
     finally
       LSnapshot.Free;
