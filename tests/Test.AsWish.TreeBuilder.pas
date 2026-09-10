@@ -25,6 +25,8 @@ type
     procedure Build_GenericProject_InfersDataEntities;
     [Test]
     procedure Build_GenericProjectWithoutData_EmitsFoggedPlaceholder;
+    [Test]
+    procedure Scan_IgnoresAsWishDirectory_CaseInsensitive;
   end;
 
 implementation
@@ -115,6 +117,40 @@ begin
     Assert.AreEqual(LRoot.Id, LPlaceholder.ParentId);
   finally
     LBuilder.Free;
+    LScan.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.Scan_IgnoresAsWishDirectory_CaseInsensitive;
+var
+  LDir: string;
+  LScan: TAsWishScanService;
+begin
+  LDir := NewTreeBuilderTempDir;
+  LScan := TAsWishScanService.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    TFile.WriteAllText(TPath.Combine(LDir, 'Main.pas'), 'unit Main; interface implementation end.', TEncoding.UTF8);
+
+    // Create .AsWish and .aswish directory structures with internal files
+    TDirectory.CreateDirectory(TPath.Combine(LDir, '.AsWish'));
+    TDirectory.CreateDirectory(TPath.Combine(LDir, '.AsWish\snapshots'));
+    TFile.WriteAllText(TPath.Combine(LDir, '.AsWish\project-spec.yaml'), 'name: test', TEncoding.UTF8);
+    TFile.WriteAllText(TPath.Combine(LDir, '.AsWish\snapshots\view-tree.yaml'), 'tree: view', TEncoding.UTF8);
+
+    LScan.ScanDirectory(LDir);
+
+    // Only Main.pas should be recognized as a user project file, .AsWish files must be ignored
+    Assert.AreEqual<Integer>(1, LScan.CategoryCount(fcCode),
+      'ScanDirectory must ignore files inside .AsWish regardless of letter casing');
+    Assert.AreEqual<Integer>(1, LScan.CategoryCount(fcIgnored),
+      '.AsWish directory should be recorded as fcIgnored');
+    var LCodeFiles := LScan.GetFilesByCategory(fcCode);
+    Assert.AreEqual<Integer>(1, Length(LCodeFiles));
+    Assert.AreEqual('Main.pas', LCodeFiles[0]);
+  finally
     LScan.Free;
     if TDirectory.Exists(LDir) then
       TDirectory.Delete(LDir, True);

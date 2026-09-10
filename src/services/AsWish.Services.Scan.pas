@@ -58,7 +58,7 @@ const
     'node_modules', '.git', '.svn', '.hg', '__pycache__',
     '.pytest_cache', 'build', 'bin', 'dist', 'out',
     'target', 'debug', 'release', '__history', '.next',
-    '.AsWish'
+    '.aswish'
   );
 
   AI_RULES_FILES: array[0..4] of string = (
@@ -100,9 +100,8 @@ end;
 
 function TAsWishScanService.IsIgnoredDir(const ADirName: string): Boolean;
 begin
-  var LLower := LowerCase(ADirName);
   for var LDir in IGNORED_DIRS do
-    if LLower = LDir then
+    if SameText(ADirName, LDir) then
       Exit(True);
   Result := False;
 end;
