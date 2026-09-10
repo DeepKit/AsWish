@@ -5,6 +5,76 @@
 
 **As I Wish** is an open, free, theory-driven empirical system for AI-native software development. This repository is **AsWish** — its reference engineering implementation (Delphi/VCL Desktop + Headless CLI), with **`.AsWish/`** as the project-level protocol workspace.
 
+---
+
+## One more question after "all tests passed"
+
+AI coding agents can already write code, run tests, fix failures, and report:
+
+> **All tests passed.**
+
+But passing tests answers one question:
+
+> Did the implementation satisfy the conditions represented by the tests?
+
+There is another question:
+
+> **Is what we built still what the human actually confirmed?**
+
+Those are not the same judgment.
+
+```text
+Implementation
+    vs
+Tests
+```
+
+is different from:
+
+```text
+Implementation
+    vs
+Human-confirmed intent
+```
+
+AsWish currently focuses on making the **pre-implementation side** of that comparison more explicit and traceable:
+
+```text
+Human Intent
+     ↓
+AI Interpretation
+     ↓
+Human Review
+     ↓
+Confirmed Understanding
+     ↓
+Structured / Visual Baseline
+```
+
+So that what humans said, what AI inferred, and what was actually confirmed do not disappear once coding starts.
+
+Current capability boundary:
+
+```text
+Manifest / 显影        FACT
+Align / 对齐           FACT
+Structure / 结构化     FACT
+
+Difference / 差异      PLAN
+Adjust / 调整          PLAN
+Accumulate / 积累      VISION
+```
+
+AsWish does **not** currently claim that it has solved implementation drift or completed the full Difference loop.
+
+Its core question is simpler:
+
+> **Are we still building the same thing?**
+
+And the first step toward answering that question is making sure we still know what "the same thing" was.
+
+---
+
 AsWish is **not** a spec tool, spec editor, or AI coding tool. It is the open engineering layer between **Human ↔ AI Coding Agent ↔ Software Implementation**.
 
 > **开发随心 · 六脉神剑**：AsWish 不帮你「避免一切差异」，而是让你在差异恒常存在的 AI Coding 世界里，**自由地开发、清楚地看见、自己地判断、随时地调整**。六脉（显影 → 对齐 → 结构化 → 差异 → 调整 → 积累）见 [`docs/17.产品-开发随心的六脉神剑与用户价值.md`](docs/17.产品-开发随心的六脉神剑与用户价值.md)。
@@ -25,7 +95,7 @@ The critical breakdown is not whether the AI can generate syntax or follow an am
 1. **Did humans and AI ever reach a shared, observable understanding of what was being built *before* code was generated?**
 2. **After code was generated, can humans verify whether the actual software matches that shared understanding, and where the differences entered?**
 
-AsWish makes what should be built visible and confirmable *before* development, and makes the actual software comparable against implementation evidence *afterward*.
+Today, AsWish makes what should be built visible and confirmable *before* development. Making the actual software comparable against implementation evidence *afterward* (④ Difference / ⑤ Adjust) is the part we are still building — not yet a shipped capability (see the six-ability status table below).
 
 ---
 
@@ -54,6 +124,8 @@ Project Workspace
 
 ## Core Product Pipeline
 
+> The full pipeline AsWish is building. The segment up to **Implementation Evidence** reflects shipped work; the **Difference → Human Confirmation → Revision** loop (④ / ⑤) is under construction — shown here as the intended loop, not as a finished capability (see the status table below).
+
 ```text
 Problem Manifestation ──► Decision Confirmation ──► Co-construction ──► Specification
          │
@@ -80,7 +152,7 @@ $$(\text{显影} \longrightarrow \text{确认} \longrightarrow \text{建构} \lo
   - A difference between initial understanding and final implementation is not automatically a bug. Humans may review a difference and conclude *"this is actually better"*.
   - AsWish does not pursue *Zero Difference*. It pursues **Difference made visible, traceable, and judgeable**.
 - **Visual Baseline (WYSIWYG)**:
-  - What humans and agents confirm visually *before* development and the actual product produced *after* development are directly comparable through evidence. This is *not* a WYSIWYG spec editor.
+  - What humans and agents confirm visually *before* development is real today. The design intent is that this baseline and the actual product produced *after* development become directly comparable through implementation evidence — that post-development comparison (④ / ⑤) is **being built**, not yet delivered. This is *not* a WYSIWYG spec editor.
 - **Local-First & Download-and-Run**:
   - Windows Desktop / CLI out-of-the-box. Zero forced account registration, cloud sign-in, SaaS workspace, or SSO.
 - **Open Source Mission**:
@@ -192,8 +264,10 @@ AsWish.CLI scan <dir>
 
 :: 2. Propose human intent and accept change set -> creates Accepted Baseline B-0001
 AsWish.CLI intent <dir> <node-id> <tree> "<user-intent>"
+AsWish.CLI changeset <dir> <node-id> <tree> "<user-intent>"
 AsWish.CLI changeset accept <dir> "<rationale>"
 AsWish.CLI baseline verify <dir> B-0001
+AsWish.CLI handoff <dir> B-0001
 
 :: 3. Collect implementation evidence & compute structural difference
 AsWish.CLI evidence collect <dir> B-0001
@@ -223,11 +297,14 @@ AsWish.CLI bundle apply <dir> <id> <act>               :: Batch accept or reject
 AsWish.CLI ingest <dir> <candidate.yaml>               :: Validate and merge candidate nodes
 AsWish.CLI intent <dir> <node-id> <tree> <text>        :: Submit natural-language intent (0027A)
 AsWish.CLI changeset <dir> <node-id> <tree> <intent>   :: Generate structured change set (0027B)
+AsWish.CLI changeset review <dir> [id]                 :: Review candidate change set
 AsWish.CLI changeset accept <dir> [id] [rationale]     :: Accept change set, freeze Accepted Baseline (0027E)
+AsWish.CLI changeset reject <dir> [id] [rationale]     :: Reject candidate change set
 AsWish.CLI baseline list <dir>                         :: List Accepted Baselines (0027E)
 AsWish.CLI baseline verify <dir> <id>                  :: Verify integrity of Accepted Baseline (0027E)
 AsWish.CLI visual preview <dir>                        :: Wireframe preview (0028)
 AsWish.CLI visual confirm <dir> [rationale]            :: Confirm Accepted Visual Baseline (0028)
+AsWish.CLI handoff <dir> [baseline-id]                 :: Export Agent Handoff package
 AsWish.CLI evidence collect <dir> [baseline-id]        :: Collect implementation evidence (0027F)
 AsWish.CLI difference <dir> <baseline-id>              :: Compute structural difference (0027G)
 AsWish.CLI judge <dir> <id> <verdict> [note]           :: Record human judgment (0027H)
@@ -253,11 +330,11 @@ Python readers are available in `protocol/readers/python/` for programmatic tree
 ### Theoretical Sources
 AsWish embodies theoretical achievements created and authored by **付毅 (Fuyi)**:
 
-1. **Difference Monism (DM, 差异一元论)**: Foundational ontology replacing substance ontology with differential ontology. Academic DOI: [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505).
-2. **Attributive Set Transition Ontology (ASTO, 属集变迁存在论)**: Multi-state phase transitions, structural boundaries, and formal encoding. Academic DOI: [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467).
-3. **Output-Driven Development (ODD, 产出物驱动开发)**: Engineering discipline mandating frozen specification deliverables and deterministic gates before production. Academic DOI: [10.5281/zenodo.20024964](https://doi.org/10.5281/zenodo.20024964).
-4. **Constructive Traceable Fallibilist Specification (CTF, 建构追溯可谬规格方法论)**: Pre-specification layer of ODD (theory source `ODD.P03`) converting human-AI intent into traceable, reviewable, defeasible specification snapshots. Academic DOI pending (preprint prepared 2026-08-29). Claim strength **C2**.
-5. **Problem Manifestation Methodology (PFM, 前线显影层)**: Front-line intent modeling methodology uncovering latent constraints and acceptance criteria. Prior public record: [10.5281/zenodo.19856528](https://doi.org/10.5281/zenodo.19856528).
+1. **Difference Monism (DM, 差异一元论)**: Foundational ontology replacing substance ontology with differential ontology. Academic DOI: [10.5281/zenodo.20726003](https://doi.org/10.5281/zenodo.20726003) (Canonical); [10.5281/zenodo.19852505](https://doi.org/10.5281/zenodo.19852505) (Priority).
+2. **Attributive Set Transition Ontology (ASTO, 属集变迁存在论)**: Multi-state phase transitions, structural boundaries, and formal encoding. Academic DOI: [10.5281/zenodo.20726007](https://doi.org/10.5281/zenodo.20726007) (Canonical); [10.5281/zenodo.19856467](https://doi.org/10.5281/zenodo.19856467) (Priority).
+3. **Output-Driven Development (ODD, 产出物驱动开发)**: Engineering discipline mandating frozen specification deliverables and deterministic gates before production. Academic DOI: [10.5281/zenodo.20024964](https://doi.org/10.5281/zenodo.20024964) (v2.1); [10.5281/zenodo.20537639](https://doi.org/10.5281/zenodo.20537639) (ODD-min).
+4. **Constructive Traceable Fallibilist Specification (CTF, 建构追溯可谬规格方法论)**: Pre-specification layer of ODD (theory source `ODD.P03`) converting human-AI intent into traceable, reviewable, defeasible specification snapshots. Academic DOI: [10.5281/zenodo.22682642](https://doi.org/10.5281/zenodo.22682642). Claim strength **C2**.
+5. **Problem Manifestation Methodology (PFM, 前线显影层)**: Front-line intent modeling methodology uncovering latent constraints and acceptance criteria. Academic DOI: [10.5281/zenodo.22682678](https://doi.org/10.5281/zenodo.22682678) (PFM-min); [10.5281/zenodo.19856528](https://doi.org/10.5281/zenodo.19856528) (Priority).
 
 Canonical Theory Source Repository: `D:\_Progs\一元论\`  
 Upstream Problem Contract: `PC-20260828-AsWish-OpenSource`
