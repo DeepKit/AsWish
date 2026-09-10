@@ -34,6 +34,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; \
 
 [Files]
 Source: "..\bin\AsWish.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\cli\bin\AsWish.CLI.exe"; DestDir: "{app}\tools"; \
     Flags: ignoreversion skipifsourcedoesntexist
 

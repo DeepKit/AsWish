@@ -111,6 +111,7 @@ New-Item -ItemType Directory -Path $StageDir -Force | Out-Null
 
 $FilesToCopy = @(
     @{ Src = $DesktopExe; Dst = "AsWish.exe" },
+    @{ Src = (Join-Path $RepoRoot "bin\WebView2Loader.dll"); Dst = "WebView2Loader.dll" },
     @{ Src = $CliExe; Dst = "AsWish.CLI.exe" },
     @{ Src = (Join-Path $RepoRoot "README.md"); Dst = "README.md" },
     @{ Src = (Join-Path $RepoRoot "LICENSE"); Dst = "LICENSE" },
