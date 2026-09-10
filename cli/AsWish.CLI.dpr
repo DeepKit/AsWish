@@ -1210,6 +1210,19 @@ begin
       end;
     end;
 
+    var LDecFile := TPath.Combine(LProject.AsWishPath, 'decisions.yaml');
+    if TFile.Exists(LDecFile) then
+    begin
+      var LDecService := TAsWishDecisionsService.Create;
+      try
+        LDecService.Initialize(LProject.AsWishPath);
+        LDecService.Load;
+        LRender.RenderDecisionsPage(LDecService.Decisions.ToArray, LProject.ProjectName);
+      finally
+        LDecService.Free;
+      end;
+    end;
+
     Writeln('[render] done -> ' + LProject.AsWishPath + '\html\');
   finally
     LData.Free;
@@ -1528,6 +1541,15 @@ begin
               end;
             end;
             Writeln('Saved difference report to .AsWish/difference.yaml');
+            var LRender := TAsWishRenderService.Create;
+            try
+              LRender.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+              LRender.RenderDifferencePage(LReport, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
+              LRender.RenderDecisionsPage(LDecisions.Decisions.ToArray, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
+              Writeln('Rendered difference report to .AsWish/html/difference.html');
+            finally
+              LRender.Free;
+            end;
           finally
             LWorkflow.Free;
           end;
@@ -1574,6 +1596,15 @@ begin
             LDecId := LWorkflow.RecordDifferenceDecision(LReport, LJudgment, ANote);
             Writeln(Format('Recorded human judgment decision "%s" (%s) for baseline %s (%d difference items).',
               [LDecId, AAction, ABaselineId, Length(LReport.Items)]));
+            var LRender := TAsWishRenderService.Create;
+            try
+              LRender.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+              LRender.RenderDifferencePage(LReport, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
+              LRender.RenderDecisionsPage(LDecisions.Decisions.ToArray, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
+              Writeln('Rendered decisions history to .AsWish/html/decisions.html');
+            finally
+              LRender.Free;
+            end;
           finally
             LWorkflow.Free;
           end;
@@ -1623,6 +1654,15 @@ begin
             Writeln(Format('  - Decision ID: %s', [LDecId]));
             Writeln(Format('  - Content Hash: %s', [Copy(LNewBaseline.ContentHash, 1, 16)]));
             Writeln(Format('  - Relation Hash: %s', [Copy(LNewBaseline.RelationHash, 1, 16)]));
+            var LRender := TAsWishRenderService.Create;
+            try
+              LRender.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
+              LRender.RenderDifferencePage(LReport, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
+              LRender.RenderDecisionsPage(LDecisions.Decisions.ToArray, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
+              Writeln('Rendered decisions history to .AsWish/html/decisions.html');
+            finally
+              LRender.Free;
+            end;
           finally
             LWorkflow.Free;
           end;
@@ -1672,6 +1712,10 @@ begin
     Writeln('  ingest <dir> <file.yaml>  validate + merge LLM candidate nodes');
     Writeln('  intent <dir> <id> <tree> <text> record candidate user intent');
     Writeln('  intent list <dir>         list candidate intents');
+    Writeln('  changeset <dir> <id> <tree> <text> generate structured change set');
+    Writeln('  changeset accept <dir> [id] [rationale] accept change set & freeze baseline');
+    Writeln('  changeset reject <dir> [id] [rationale] reject change set');
+    Writeln('  changeset review <dir> [id] review candidate change set');
     Writeln('  baseline list <dir>       list Accepted Baselines');
     Writeln('  baseline verify <dir> <id> verify integrity of Accepted Baseline');
     Writeln('  evidence collect <dir> [baseline-id] collect implementation evidence');

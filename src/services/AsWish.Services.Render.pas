@@ -399,15 +399,20 @@ begin
     LSb.AppendLine('  <li><a href="scan-report.html">Scan Report</a> (' +
       ATotalFiles.ToString + ' files)</li>');
     LSb.AppendLine('  <li><a href="problems.html">Problems</a></li>');
-    LSb.AppendLine('  <li><a href="bundles.html">Bundles</a></li>');
-    LSb.AppendLine('  <li><a href="changeset-review.html"><strong>' +
-      T('ChangeSet Review (I said &rarr; AI understood &rarr; Decision)', '意图审阅与裁决（我说 &rarr; AI 理解 &rarr; 裁决）') + '</strong></a></li>');
-    LSb.AppendLine('  <li><a href="visual-preview.html"><strong>' +
-      T('Visual Preview (Wireframe / UI Representation)', '视觉规格基线预览（结构线框）') + '</strong></a></li>');
-    LSb.AppendLine('  <li><a href="difference.html"><strong>' +
-      T('Structural Difference & Judgment', '结构差异与裁决（Difference / Judge）') + '</strong></a></li>');
-    LSb.AppendLine('  <li><a href="decisions.html"><strong>' +
-      T('Requirement Decisions History', '需求决策历史留痕（Decisions History）') + '</strong></a></li>');
+    if TFile.Exists(TPath.Combine(FBasePath, 'bundles.html')) then
+      LSb.AppendLine('  <li><a href="bundles.html">Bundles</a></li>');
+    if TFile.Exists(TPath.Combine(FBasePath, 'changeset-review.html')) then
+      LSb.AppendLine('  <li><a href="changeset-review.html"><strong>' +
+        T('ChangeSet Review (I said &rarr; AI understood &rarr; Decision)', '意图审阅与裁决（我说 &rarr; AI 理解 &rarr; 裁决）') + '</strong></a></li>');
+    if TFile.Exists(TPath.Combine(FBasePath, 'visual-preview.html')) then
+      LSb.AppendLine('  <li><a href="visual-preview.html"><strong>' +
+        T('Visual Preview (Wireframe / UI Representation)', '视觉规格基线预览（结构线框）') + '</strong></a></li>');
+    if TFile.Exists(TPath.Combine(FBasePath, 'difference.html')) then
+      LSb.AppendLine('  <li><a href="difference.html"><strong>' +
+        T('Structural Difference & Judgment', '结构差异与裁决（Difference / Judge）') + '</strong></a></li>');
+    if TFile.Exists(TPath.Combine(FBasePath, 'decisions.html')) then
+      LSb.AppendLine('  <li><a href="decisions.html"><strong>' +
+        T('Requirement Decisions History', '需求决策历史留痕（Decisions History）') + '</strong></a></li>');
     LSb.AppendLine('  <li><a href="function-tree.html">Function Tree</a></li>');
     LSb.AppendLine('  <li><a href="module-tree.html">Module Tree</a></li>');
     LSb.AppendLine('  <li><a href="view-tree.html">View Tree</a></li>');

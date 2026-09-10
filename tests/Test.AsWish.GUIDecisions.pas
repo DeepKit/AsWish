@@ -155,9 +155,12 @@ begin
   LCSId := FController.SubmitUserIntent('func-root', ttFunction, 'Initial specification for GUI decision test');
   Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
 
-  // 2. Modify code to produce difference
+  // 2. Modify code and documentation to produce difference in function tree
   TFile.WriteAllText(TPath.Combine(FDir, 'extra.pas'),
     'unit extra; interface function ExtraFunc: string; implementation function ExtraFunc: string; begin Result := ''extra''; end; end.',
+    TEncoding.UTF8);
+  TFile.AppendAllText(TPath.Combine(FDir, 'README.md'),
+    sLineBreak + '## Extra Feature' + sLineBreak + 'New capability implementation.' + sLineBreak,
     TEncoding.UTF8);
   FController.RunScan;
 

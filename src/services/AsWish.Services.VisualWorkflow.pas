@@ -329,7 +329,7 @@ begin
   try
     LSb.AppendLine('# Agent Handoff Package');
     LSb.AppendLine('');
-    LSb.AppendLine('> **NON-CANONICAL / EVIDENCE-ONLY / NOT PROTOCOL** (WO-20260907-0034-甲)');
+    LSb.AppendLine('> **NON-CANONICAL / EVIDENCE-ONLY / NOT PROTOCOL** (Accepted Baseline Handoff Specification)');
     LSb.AppendLine('');
     LSb.AppendLine('## 1. Baseline Target');
     LSb.AppendLine('- Baseline ID: ' + LBaseline.BaselineId);
