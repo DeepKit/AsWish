@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Controller
 
@@ -103,9 +103,16 @@ type
     procedure PromotePendingDecisions;
 
     // Natural Language -> Change Set -> Decision Commands (WO-20260830-0027D)
+    function SubmitUserIntent(const AIntent: TCandidateIntent): string; overload;
     function SubmitUserIntent(const ANodeId, AIntentText: string): string; overload;
     function SubmitUserIntent(const ANodeId: string; ATree: TTreeType;
       const AIntentText: string): string; overload;
+    function SubmitUserIntent(const AIntentText: string;
+      ATree: TTreeType = ttFunction): string; overload;
+    function SubmitFrameRejection(const ARejectedNodeId: string;
+      ARejectedTree: TTreeType; const AIntentText: string;
+      const ATargetTree: TTreeType = ttFunction;
+      const ATargetNodeId: string = ''): string;
     function ReviewChangeSet(const AChangeSetId: string = ''): string;
     function AcceptChangeSet(const AChangeSetId: string;
       const ARationale: string = ''): Boolean;
@@ -1140,24 +1147,45 @@ begin
   end;
 end;
 
-function TAsWishController.SubmitUserIntent(const ANodeId, AIntentText: string): string;
-begin
-  Result := SubmitUserIntent(ANodeId, ttFunction, AIntentText);
-end;
-
-function TAsWishController.SubmitUserIntent(const ANodeId: string;
-  ATree: TTreeType; const AIntentText: string): string;
+function TAsWishController.SubmitUserIntent(const AIntent: TCandidateIntent): string;
 var
   LIngest: TAsWishCandidateIngest;
-  LIntent: TCandidateIntent;
   LChangeSet: TChangeSet;
   LBundles: TList<TSemanticBundle>;
-  LTargetNode: TSpecNode;
-  LTreeNodes: TList<TSpecNode>;
+  LTargetNode, LRejectedNode: TSpecNode;
+  LTreeNodes, LRejTreeNodes: TList<TSpecNode>;
   LAffected: TArray<TTreeType>;
-  LItem: TChangeItem;
+  LItems: TList<TChangeItem>;
   LChangePath, LPromptPath: string;
   LCSId: string;
+  procedure AddAffected(ATree: TTreeType);
+  var
+    LFound: Boolean;
+  begin
+    LFound := False;
+    for var LT in LAffected do
+      if LT = ATree then
+      begin
+        LFound := True;
+        Break;
+      end;
+    if not LFound then
+    begin
+      SetLength(LAffected, Length(LAffected) + 1);
+      LAffected[High(LAffected)] := ATree;
+    end;
+  end;
+  function GetNodesForTree(ATree: TTreeType): TList<TSpecNode>;
+  begin
+    case ATree of
+      ttFunction: Result := FTreeBuilder.FunctionNodes;
+      ttModule:   Result := FTreeBuilder.ModuleNodes;
+      ttView:     Result := FTreeBuilder.ViewNodes;
+      ttData:     Result := FTreeBuilder.DataNodes;
+    else
+      Result := nil;
+    end;
+  end;
 begin
   Result := '';
   if not FProjectService.IsOpen then
@@ -1168,54 +1196,127 @@ begin
 
   LIngest := TAsWishCandidateIngest.Create(FSpecStore);
   try
-    LIntent := TCandidateIntent.CreateNew(ANodeId, ATree, AIntentText, 'human');
-    LIngest.SaveCandidateIntent(FProjectService.ProjectPath, LIntent);
+    LIngest.SaveCandidateIntent(FProjectService.ProjectPath, AIntent);
 
-    // Read bundles for affected projections
     LBundles := FSpecStore.ReadBundlesFile('bundles.yaml');
     try
-      case ATree of
-        ttFunction: LTreeNodes := FTreeBuilder.FunctionNodes;
-        ttModule:   LTreeNodes := FTreeBuilder.ModuleNodes;
-        ttView:     LTreeNodes := FTreeBuilder.ViewNodes;
-        ttData:     LTreeNodes := FTreeBuilder.DataNodes;
+      LTargetNode := Default(TSpecNode);
+      if AIntent.NodeId <> '' then
+      begin
+        LTreeNodes := GetNodesForTree(AIntent.Tree);
+        if LTreeNodes <> nil then
+          for var LN in LTreeNodes do
+            if LN.Id = AIntent.NodeId then
+            begin
+              LTargetNode := LN;
+              Break;
+            end;
+        LAffected := LIngest.ComputeAffectedProjections(AIntent.NodeId, LBundles);
+      end
       else
-        LTreeNodes := nil;
+        SetLength(LAffected, 0);
+
+      LItems := TList<TChangeItem>.Create;
+      try
+        if AIntent.IsFrameRejection then
+        begin
+          LRejTreeNodes := GetNodesForTree(AIntent.RejectedTree);
+          LRejectedNode := Default(TSpecNode);
+          if LRejTreeNodes <> nil then
+            for var LN in LRejTreeNodes do
+              if LN.Id = AIntent.RejectedNodeId then
+              begin
+                LRejectedNode := LN;
+                Break;
+              end;
+
+          AddAffected(AIntent.RejectedTree);
+          AddAffected(AIntent.Tree);
+
+          LCSId := LIngest.GenerateNextChangeSetId(FProjectService.ProjectPath, 'reframe-' + AIntent.RejectedNodeId);
+          LChangeSet := TChangeSet.CreateFrameRejection(LCSId, AIntent.RejectedNodeId, AIntent.RejectedTree,
+            AIntent.UserIntent, AIntent.NodeId, AIntent.Tree, AIntent.Author);
+
+          // Item 1: mark rejected frame as frame_rejected
+          LItems.Add(TChangeItem.CreateItem(AIntent.RejectedNodeId, AIntent.RejectedTree,
+            'status', TSpecEnums.NodeStatusToStr(LRejectedNode.Status), 'frame_rejected',
+            cstExplicit, 'Frame rejected by human: ' + AIntent.UserIntent));
+
+          // Item 2: attach new higher-level intent to target projection / upstream node
+          if AIntent.NodeId <> '' then
+            LItems.Add(TChangeItem.CreateItem(AIntent.NodeId, AIntent.Tree,
+              'user_intent', LTargetNode.UserIntent, AIntent.UserIntent,
+              cstExplicit, 'Higher-level intent from human reframe'))
+          else
+            LItems.Add(TChangeItem.CreateItem('', AIntent.Tree,
+              'user_intent', '', AIntent.UserIntent,
+              cstExplicit, 'Higher-level unanchored intent from human reframe'));
+        end
+        else if AIntent.NodeId = '' then
+        begin
+          AddAffected(AIntent.Tree);
+          LCSId := LIngest.GenerateNextChangeSetId(FProjectService.ProjectPath, 'unanchored');
+          LChangeSet := TChangeSet.CreateNew(LCSId, '', AIntent.Tree, AIntent.UserIntent, AIntent.Author);
+          LItems.Add(TChangeItem.CreateItem('', AIntent.Tree,
+            'user_intent', '', AIntent.UserIntent,
+            cstExplicit, 'Unanchored human user intent'));
+        end
+        else
+        begin
+          AddAffected(AIntent.Tree);
+          LCSId := LIngest.GenerateNextChangeSetId(FProjectService.ProjectPath, AIntent.NodeId);
+          LChangeSet := TChangeSet.CreateNew(LCSId, AIntent.NodeId, AIntent.Tree, AIntent.UserIntent, AIntent.Author);
+          LItems.Add(TChangeItem.CreateItem(AIntent.NodeId, AIntent.Tree,
+            'summary', LTargetNode.Summary, AIntent.UserIntent,
+            cstExplicit, 'Interpreted from human user intent'));
+        end;
+
+        LChangeSet.AffectedProjections := LAffected;
+        LChangeSet.Items := LItems.ToArray;
+      finally
+        LItems.Free;
       end;
 
-      LTargetNode := Default(TSpecNode);
-      if LTreeNodes <> nil then
-        for var LN in LTreeNodes do
-          if LN.Id = ANodeId then
-          begin
-            LTargetNode := LN;
-            Break;
-          end;
-
-      LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
-
-      LCSId := LIngest.GenerateNextChangeSetId(FProjectService.ProjectPath, ANodeId);
-      LChangeSet := TChangeSet.CreateNew(LCSId, ANodeId, ATree, AIntentText, 'human');
-      LChangeSet.AffectedProjections := LAffected;
-
-      LItem := TChangeItem.CreateItem(ANodeId, ATree, 'summary', LTargetNode.Summary, AIntentText, cstExplicit, 'Interpreted from human user intent');
-      LChangeSet.Items := TArray<TChangeItem>.Create(LItem);
-
       LChangePath := LIngest.SaveChangeSet(FProjectService.ProjectPath, LChangeSet);
-      LPromptPath := FPrompts.WriteChangeInterpretPrompt(LIntent, LTargetNode, LBundles);
+      LPromptPath := FPrompts.WriteChangeInterpretPrompt(AIntent, LTargetNode, LBundles);
 
       // Render the 4-layer review surface
       FRender.RenderChangeSetReviewPage(LChangeSet, FTreeBuilder.FunctionNodes, FProjectService.ProjectName);
 
       Result := LCSId;
-      FStatus.Info('AsWish.ChangeSet', Format('Created ChangeSet %s for %s; Prompt saved at %s',
-        [LCSId, ANodeId, LPromptPath]));
+      FStatus.Info('AsWish.ChangeSet', Format('Created ChangeSet %s; Prompt saved at %s',
+        [LCSId, LPromptPath]));
     finally
       LBundles.Free;
     end;
   finally
     LIngest.Free;
   end;
+end;
+
+function TAsWishController.SubmitUserIntent(const ANodeId, AIntentText: string): string;
+begin
+  Result := SubmitUserIntent(TCandidateIntent.CreateNew(ANodeId, ttFunction, AIntentText, 'human'));
+end;
+
+function TAsWishController.SubmitUserIntent(const ANodeId: string;
+  ATree: TTreeType; const AIntentText: string): string;
+begin
+  Result := SubmitUserIntent(TCandidateIntent.CreateNew(ANodeId, ATree, AIntentText, 'human'));
+end;
+
+function TAsWishController.SubmitUserIntent(const AIntentText: string;
+  ATree: TTreeType): string;
+begin
+  Result := SubmitUserIntent(TCandidateIntent.CreateUnanchored(ATree, AIntentText, 'human'));
+end;
+
+function TAsWishController.SubmitFrameRejection(const ARejectedNodeId: string;
+  ARejectedTree: TTreeType; const AIntentText: string;
+  const ATargetTree: TTreeType; const ATargetNodeId: string): string;
+begin
+  Result := SubmitUserIntent(TCandidateIntent.CreateFrameRejection(ARejectedNodeId,
+    ARejectedTree, AIntentText, ATargetNodeId, ATargetTree, 'human'));
 end;
 
 function TAsWishController.ReviewChangeSet(const AChangeSetId: string): string;

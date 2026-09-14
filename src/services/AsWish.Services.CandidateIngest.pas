@@ -578,7 +578,7 @@ begin
       try
         Result.Tree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('tree', ''));
         Result.NodeId := LRoot.GetString('node_id', '');
-        Result.IsFrameRejection := LRoot.GetBool('is_frame_rejection', False);
+        Result.IsFrameRejection := LRoot.GetBoolean('is_frame_rejection', False);
         Result.RejectedNodeId := LRoot.GetString('rejected_node_id', '');
         Result.RejectedTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('rejected_tree', ''));
         Result.UserIntent := LRoot.GetString('user_intent', '');
@@ -764,7 +764,7 @@ begin
         Result.Id := LRoot.GetString('change_set_id', LRoot.GetString('id', ''));
         Result.IntentNodeId := LRoot.GetString('intent_node_id', LRoot.GetString('target_node_id', ''));
         Result.IntentTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('intent_tree', LRoot.GetString('target_projection', '')));
-        Result.IsFrameRejection := LRoot.GetBool('is_frame_rejection', False);
+        Result.IsFrameRejection := LRoot.GetBoolean('is_frame_rejection', False);
         Result.RejectedNodeId := LRoot.GetString('rejected_node_id', '');
         Result.RejectedTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('rejected_tree', ''));
         Result.RawUserIntent := LRoot.GetString('raw_user_intent', LRoot.GetString('user_intent', ''));
