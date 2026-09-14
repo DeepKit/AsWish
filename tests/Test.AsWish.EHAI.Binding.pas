@@ -11,9 +11,12 @@
     - ASWISH-V-006: CandidateSelection != Inherent Commitment
     - ASWISH-V-007: Regenerate (8) pure exploration within frame
     - ASWISH-V-008: BackNavigation (0) does not revoke prior decisions or alter baselines
+    - ASWISH-V-009: Real keyboard FrameRejection E2E (physical keyboard cisKeyboard + eokFrameRejection path)
   ============================================================================ }
 
 unit Test.AsWish.EHAI.Binding;
+
+{$WARN IMPLICIT_STRING_CAST OFF}
 
 interface
 
@@ -102,6 +105,7 @@ type
     [Test] procedure ASWISH_V_006_CandidateSelection_Not_Inherent_Commitment;
     [Test] procedure ASWISH_V_007_Regenerate_Pure_Exploration;
     [Test] procedure ASWISH_V_008_BackNavigation_Preserves_Decisions;
+    [Test] procedure ASWISH_V_009_Real_Keyboard_FrameRejection_E2E;
   end;
 
 implementation
@@ -452,6 +456,85 @@ begin
   // Verification ASWISH-V-008: Prior decisions and baselines remain intact
   Assert.AreEqual(LDecisionsCount, Integer(FDecisions.Decisions.Count), 'BackNavigation must not revoke prior decisions');
   Assert.IsTrue(FController.VerifyBaseline('B-0001'), 'Prior baseline B-0001 must still be valid');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_009_Real_Keyboard_FrameRejection_E2E;
+var
+  LAction: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+  LModNode: TSpecNode;
+  LCS: TChangeSet;
+  LIngest: TAsWishCandidateIngest;
+  LSuccess: Boolean;
+begin
+  // 1. Establish mod-orders in module tree
+  LModNode := Default(TSpecNode);
+  LModNode.Id := 'mod-orders';
+  LModNode.Tree := ttModule;
+  LModNode.Title := 'Order Processing Engine';
+  LModNode.Summary := 'Original module summary before human interaction';
+  LModNode.Status := nsCandidate;
+  LModNode.ReviewStatus := rsUnreviewed;
+  FBuilder.ModuleNodes.Add(LModNode);
+  FStore.WriteTreeFile('trees/module-tree.yaml', ttModule, FBuilder.ModuleNodes);
+
+  // 2. Real keyboard interaction on HB Choice Deck:
+  // Under DeepBase R-04, SubmitFreeInputWithKind routes physical keyboard input (cisKeyboard)
+  // with explicit eokFrameRejection (distinct from eokAlternativeExpression / eokNone).
+  LAction := THbChoiceAction.Create(
+    cakFreeInput,
+    9,
+    '这些都不是。这个模块本身不应该存在，问题在更上游的需求定义。',
+    0,
+    cisKeyboard,
+    eokFrameRejection,
+    esHuman,
+    eipProvide,
+    'mod-orders'
+  );
+
+  // Assert incoming action strictly preserves eokFrameRejection
+  Assert.AreEqual(Ord(eokFrameRejection), Ord(LAction.OverrideKind), 'Must observe eokFrameRejection');
+  Assert.AreNotEqual(Ord(eokAlternativeExpression), Ord(LAction.OverrideKind), 'Must not be degraded to alt expression');
+  Assert.AreNotEqual(Ord(eokNone), Ord(LAction.OverrideKind), 'Must not be unclassified');
+  Assert.AreEqual(Ord(cisKeyboard), Ord(LAction.InputSource), 'Must originate from physical keyboard');
+
+  // 3. Process action through AsWish EHAI Binding 001
+  LTrace := FBinding.ProcessHbAction(LAction);
+
+  Assert.AreEqual(Ord(eseDataProvided), Ord(LTrace.SemanticEffect));
+  Assert.IsFalse(LTrace.IsCommitted, 'Must not mutate Canonical Spec before human commitment gate');
+  Assert.IsNotEmpty(FBinding.LastChangeSetId, 'Must produce ChangeSet ID');
+
+  // 4. Verify ChangeSet preserves Frame Rejection and does not rewrite mod-orders.summary
+  LIngest := TAsWishCandidateIngest.Create(FStore);
+  try
+    LCS := LIngest.LoadChangeSet(FProject.ProjectPath, FBinding.LastChangeSetId);
+    Assert.IsTrue(LCS.IsFrameRejection, 'ChangeSet must mark IsFrameRejection = True');
+    Assert.AreEqual('mod-orders', LCS.RejectedNodeId, 'Must reject mod-orders');
+    Assert.AreEqual(Ord(ttModule), Ord(LCS.RejectedTree));
+    Assert.AreEqual('human', LCS.Author);
+
+    // Verify mod-orders was NOT contaminated as Option 4
+    Assert.IsTrue(Length(LCS.Items) >= 2);
+    Assert.AreEqual('mod-orders', LCS.Items[0].TargetNodeId);
+    Assert.AreEqual('status', LCS.Items[0].Field, 'Must mutate status, not summary');
+    Assert.AreEqual('frame_rejected', LCS.Items[0].AfterValue);
+  finally
+    LIngest.Free;
+  end;
+
+  // 5. Human confirms commitment gate
+  LSuccess := FBinding.ExecuteCommitmentGate(FBinding.LastChangeSetId, 'Confirmed frame rejection of mod-orders');
+  Assert.IsTrue(LSuccess);
+  Assert.IsTrue(FBinding.IsLastActionCommitted);
+  Assert.AreEqual(Ord(eseAuthorized), Ord(FBinding.LastEffect));
+
+  // Verify mod-orders in canonical spec is rejected, and original summary remains intact
+  LModNode := FBuilder.FindNodeById('mod-orders');
+  Assert.AreEqual(Ord(nsRejected), Ord(LModNode.Status));
+  Assert.AreEqual(Ord(rsRejected), Ord(LModNode.ReviewStatus));
+  Assert.AreEqual('Original module summary before human interaction', LModNode.Summary, 'Summary must not be rewritten');
 end;
 
 initialization

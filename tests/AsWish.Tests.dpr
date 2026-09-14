@@ -74,7 +74,7 @@ begin
   try
     TDUnitX.CheckCommandLine;
     LRunner := TDUnitX.CreateRunner;
-    LLogger := TDUnitXConsoleLogger.Create(True);
+    LLogger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
     LRunner.AddLogger(LLogger);
 
     LNUnitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
