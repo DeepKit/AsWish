@@ -1386,10 +1386,16 @@ begin
     FSpecStore.WriteTreeFile('trees/data-tree.yaml', ttData, FTreeBuilder.DataNodes);
 
     // Freeze resulting Canonical Spec state into immutable Accepted Baseline (WO-20260830-0027E)
+    var LParentBaseId := '';
+    var LExistingBaselines := FSnapshot.ListBaselines;
+    if Length(LExistingBaselines) > 0 then
+      LParentBaseId := LExistingBaselines[0].BaselineId;
+
     var LBaseline: TAsWishBaseline;
     var LBaseId := FSnapshot.CreateBaseline(LDec, LCS,
       FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
-      FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LBaseline);
+      FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LBaseline,
+      '', '', LParentBaseId);
 
     // Re-render
     RenderAll;

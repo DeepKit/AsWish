@@ -964,9 +964,8 @@ var
 begin
   Result := Default(TMergeStats);
 
-  // If decision is rejected or clarify, Canonical Spec MUST NOT be mutated (AC-03, AC-07)
-  if (ADecision.Status = dsRejected) or (ADecision.DecisionType = dtReject) or
-     (ADecision.DecisionType = dtClarify) then
+  // If decision is not accepted or is clarify, Canonical Spec MUST NOT be mutated (AC-03, AC-07)
+  if (ADecision.Status <> dsAccepted) or (ADecision.DecisionType = dtClarify) then
   begin
     Exit;
   end;
