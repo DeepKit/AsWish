@@ -1,0 +1,2294 @@
+**********************************************************************
+*        DUnitX - (c) 2015-2026 Vincent Parrett & Contributors       *
+*                                                                    *
+*        License - http://www.apache.org/licenses/LICENSE-2.0        *
+**********************************************************************
+
+  Fixture : Test
+  -------------------------------------------------
+     Fixture : Test.AsWish
+     -------------------------------------------------
+        Fixture : Test.AsWish.Baseline
+        -------------------------------------------------
+           Fixture : Test.AsWish.Baseline.TTestAsWishBaseline
+           -------------------------------------------------
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test01_AcceptedDecision_BaselineExists
+             -------------------------------------------------
+             Running Setup for : Test01_AcceptedDecision_BaselineExists
+             
+             Executing Test : Test01_AcceptedDecision_BaselineExists
+             
+             
+              Running Teardown for Test : Test01_AcceptedDecision_BaselineExists
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test02_Baseline_ReferencesCorrectDecisionId
+             -------------------------------------------------
+             Running Setup for : Test02_Baseline_ReferencesCorrectDecisionId
+             
+             Executing Test : Test02_Baseline_ReferencesCorrectDecisionId
+             
+             
+              Running Teardown for Test : Test02_Baseline_ReferencesCorrectDecisionId
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test03_Baseline_ContainsExpectedSnapshotContent
+             -------------------------------------------------
+             Running Setup for : Test03_Baseline_ContainsExpectedSnapshotContent
+             
+             Executing Test : Test03_Baseline_ContainsExpectedSnapshotContent
+             
+             
+              Running Teardown for Test : Test03_Baseline_ContainsExpectedSnapshotContent
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test04_ContentHash_Determinism
+             -------------------------------------------------
+             Running Setup for : Test04_ContentHash_Determinism
+             
+             Executing Test : Test04_ContentHash_Determinism
+             
+             
+              Running Teardown for Test : Test04_ContentHash_Determinism
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test05_RelationHash_Determinism
+             -------------------------------------------------
+             Running Setup for : Test05_RelationHash_Determinism
+             
+             Executing Test : Test05_RelationHash_Determinism
+             
+             
+              Running Teardown for Test : Test05_RelationHash_Determinism
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test06_ChangeSummary_OnlyContentHashChanges
+             -------------------------------------------------
+             Running Setup for : Test06_ChangeSummary_OnlyContentHashChanges
+             
+             Executing Test : Test06_ChangeSummary_OnlyContentHashChanges
+             
+             
+              Running Teardown for Test : Test06_ChangeSummary_OnlyContentHashChanges
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test07_ChangeParentId_OnlyRelationHashChanges
+             -------------------------------------------------
+             Running Setup for : Test07_ChangeParentId_OnlyRelationHashChanges
+             
+             Executing Test : Test07_ChangeParentId_OnlyRelationHashChanges
+             
+             
+              Running Teardown for Test : Test07_ChangeParentId_OnlyRelationHashChanges
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test08_ReloadBaseline_SameHashAndLineage
+             -------------------------------------------------
+             Running Setup for : Test08_ReloadBaseline_SameHashAndLineage
+             
+             Executing Test : Test08_ReloadBaseline_SameHashAndLineage
+             
+             
+              Running Teardown for Test : Test08_ReloadBaseline_SameHashAndLineage
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test09_SpecModification_DoesNotAlterHistoricalBaseline
+             -------------------------------------------------
+             Running Setup for : Test09_SpecModification_DoesNotAlterHistoricalBaseline
+             
+             Executing Test : Test09_SpecModification_DoesNotAlterHistoricalBaseline
+             
+             
+              Running Teardown for Test : Test09_SpecModification_DoesNotAlterHistoricalBaseline
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test10_LineageTraceable_BaselineToDecisionToChangeSetToIntent
+             -------------------------------------------------
+             Running Setup for : Test10_LineageTraceable_BaselineToDecisionToChangeSetToIntent
+             
+             Executing Test : Test10_LineageTraceable_BaselineToDecisionToChangeSetToIntent
+             
+             
+              Running Teardown for Test : Test10_LineageTraceable_BaselineToDecisionToChangeSetToIntent
+              
+               Success.
+            
+             Test : Test.AsWish.Baseline.TTestAsWishBaseline.Test11_EmptySnapshot_CannotBecomeAcceptedBaseline_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test11_EmptySnapshot_CannotBecomeAcceptedBaseline_FailClosed
+             
+             Executing Test : Test11_EmptySnapshot_CannotBecomeAcceptedBaseline_FailClosed
+             
+             
+              Running Teardown for Test : Test11_EmptySnapshot_CannotBecomeAcceptedBaseline_FailClosed
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.CandidateIngest
+        -------------------------------------------------
+           Fixture : Test.AsWish.CandidateIngest.TCandidateIngestTests
+           -------------------------------------------------
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Split_ThreeDocs_ReturnsThree
+             -------------------------------------------------
+             Running Setup for : Split_ThreeDocs_ReturnsThree
+             
+             Executing Test : Split_ThreeDocs_ReturnsThree
+             
+             
+              Running Teardown for Test : Split_ThreeDocs_ReturnsThree
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Split_LeadingMarker_NoEmptyFirst
+             -------------------------------------------------
+             Running Setup for : Split_LeadingMarker_NoEmptyFirst
+             
+             Executing Test : Split_LeadingMarker_NoEmptyFirst
+             
+             
+              Running Teardown for Test : Split_LeadingMarker_NoEmptyFirst
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Split_SingleDoc_NoMarkers_ReturnsOne
+             -------------------------------------------------
+             Running Setup for : Split_SingleDoc_NoMarkers_ReturnsOne
+             
+             Executing Test : Split_SingleDoc_NoMarkers_ReturnsOne
+             
+             
+              Running Teardown for Test : Split_SingleDoc_NoMarkers_ReturnsOne
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Split_EmptyInput_ReturnsEmpty
+             -------------------------------------------------
+             Running Setup for : Split_EmptyInput_ReturnsEmpty
+             
+             Executing Test : Split_EmptyInput_ReturnsEmpty
+             
+             
+              Running Teardown for Test : Split_EmptyInput_ReturnsEmpty
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_ValidFunctionNode_Accepted
+             -------------------------------------------------
+             Running Setup for : Ingest_ValidFunctionNode_Accepted
+             
+             Executing Test : Ingest_ValidFunctionNode_Accepted
+             
+             
+              Running Teardown for Test : Ingest_ValidFunctionNode_Accepted
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_BadIdPrefix_Rejected
+             -------------------------------------------------
+             Running Setup for : Ingest_BadIdPrefix_Rejected
+             
+             Executing Test : Ingest_BadIdPrefix_Rejected
+             
+             
+              Running Teardown for Test : Ingest_BadIdPrefix_Rejected
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_ParentIdUnknown_Rejected
+             -------------------------------------------------
+             Running Setup for : Ingest_ParentIdUnknown_Rejected
+             
+             Executing Test : Ingest_ParentIdUnknown_Rejected
+             
+             
+              Running Teardown for Test : Ingest_ParentIdUnknown_Rejected
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_ParentIdKnown_Accepted
+             -------------------------------------------------
+             Running Setup for : Ingest_ParentIdKnown_Accepted
+             
+             Executing Test : Ingest_ParentIdKnown_Accepted
+             
+             
+              Running Teardown for Test : Ingest_ParentIdKnown_Accepted
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_SourceLayerHuman_ForcedToAiInferred
+             -------------------------------------------------
+             Running Setup for : Ingest_SourceLayerHuman_ForcedToAiInferred
+             
+             Executing Test : Ingest_SourceLayerHuman_ForcedToAiInferred
+             
+             
+              Running Teardown for Test : Ingest_SourceLayerHuman_ForcedToAiInferred
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_GenStatusConfirmed_ForcedToGenerated
+             -------------------------------------------------
+             Running Setup for : Ingest_GenStatusConfirmed_ForcedToGenerated
+             
+             Executing Test : Ingest_GenStatusConfirmed_ForcedToGenerated
+             
+             
+              Running Teardown for Test : Ingest_GenStatusConfirmed_ForcedToGenerated
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_ReviewStatusNonUnreviewed_ForcedToUnreviewed
+             -------------------------------------------------
+             Running Setup for : Ingest_ReviewStatusNonUnreviewed_ForcedToUnreviewed
+             
+             Executing Test : Ingest_ReviewStatusNonUnreviewed_ForcedToUnreviewed
+             
+             
+              Running Teardown for Test : Ingest_ReviewStatusNonUnreviewed_ForcedToUnreviewed
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_DataTree_AcceptedAndRouted
+             -------------------------------------------------
+             Running Setup for : Ingest_DataTree_AcceptedAndRouted
+             
+             Executing Test : Ingest_DataTree_AcceptedAndRouted
+             
+             
+              Running Teardown for Test : Ingest_DataTree_AcceptedAndRouted
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_DataTree_InvalidId_Rejected
+             -------------------------------------------------
+             Running Setup for : Ingest_DataTree_InvalidId_Rejected
+             
+             Executing Test : Ingest_DataTree_InvalidId_Rejected
+             
+             
+              Running Teardown for Test : Ingest_DataTree_InvalidId_Rejected
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_ExistingId_OverwritesMutableFields
+             -------------------------------------------------
+             Running Setup for : Merge_ExistingId_OverwritesMutableFields
+             
+             Executing Test : Merge_ExistingId_OverwritesMutableFields
+             
+             
+              Running Teardown for Test : Merge_ExistingId_OverwritesMutableFields
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_ExistingId_PreservesReviewStatus
+             -------------------------------------------------
+             Running Setup for : Merge_ExistingId_PreservesReviewStatus
+             
+             Executing Test : Merge_ExistingId_PreservesReviewStatus
+             
+             
+              Running Teardown for Test : Merge_ExistingId_PreservesReviewStatus
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_ExistingId_AdvancesGenStatusToGenerated
+             -------------------------------------------------
+             Running Setup for : Merge_ExistingId_AdvancesGenStatusToGenerated
+             
+             Executing Test : Merge_ExistingId_AdvancesGenStatusToGenerated
+             
+             
+              Running Teardown for Test : Merge_ExistingId_AdvancesGenStatusToGenerated
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_FunctionRootSummaryChanged_ConvergesFogToFoggy
+             -------------------------------------------------
+             Running Setup for : Merge_FunctionRootSummaryChanged_ConvergesFogToFoggy
+             
+             Executing Test : Merge_FunctionRootSummaryChanged_ConvergesFogToFoggy
+             
+             
+              Running Teardown for Test : Merge_FunctionRootSummaryChanged_ConvergesFogToFoggy
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_FunctionRootSummaryUnchanged_NoFogChange
+             -------------------------------------------------
+             Running Setup for : Merge_FunctionRootSummaryUnchanged_NoFogChange
+             
+             Executing Test : Merge_FunctionRootSummaryUnchanged_NoFogChange
+             
+             
+              Running Teardown for Test : Merge_FunctionRootSummaryUnchanged_NoFogChange
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_NewId_Appended
+             -------------------------------------------------
+             Running Setup for : Merge_NewId_Appended
+             
+             Executing Test : Merge_NewId_Appended
+             
+             
+              Running Teardown for Test : Merge_NewId_Appended
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_DataTree_UpdatesFieldsPreservesReview
+             -------------------------------------------------
+             Running Setup for : Merge_DataTree_UpdatesFieldsPreservesReview
+             
+             Executing Test : Merge_DataTree_UpdatesFieldsPreservesReview
+             
+             
+              Running Teardown for Test : Merge_DataTree_UpdatesFieldsPreservesReview
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.CandidateIntent_CreateNew_SetsFields
+             -------------------------------------------------
+             Running Setup for : CandidateIntent_CreateNew_SetsFields
+             
+             Executing Test : CandidateIntent_CreateNew_SetsFields
+             
+             
+              Running Teardown for Test : CandidateIntent_CreateNew_SetsFields
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.CandidateIntent_FormatAndParseYaml_RoundTrip
+             -------------------------------------------------
+             Running Setup for : CandidateIntent_FormatAndParseYaml_RoundTrip
+             
+             Executing Test : CandidateIntent_FormatAndParseYaml_RoundTrip
+             
+             
+              Running Teardown for Test : CandidateIntent_FormatAndParseYaml_RoundTrip
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.CandidateIntent_SaveAndLoad_PersistsToDisk
+             -------------------------------------------------
+             Running Setup for : CandidateIntent_SaveAndLoad_PersistsToDisk
+             
+             Executing Test : CandidateIntent_SaveAndLoad_PersistsToDisk
+             
+             
+              Running Teardown for Test : CandidateIntent_SaveAndLoad_PersistsToDisk
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.CandidateIntent_CheckClarity_VagueIntent_GeneratesGrillingTicket
+             -------------------------------------------------
+             Running Setup for : CandidateIntent_CheckClarity_VagueIntent_GeneratesGrillingTicket
+             
+             Executing Test : CandidateIntent_CheckClarity_VagueIntent_GeneratesGrillingTicket
+             
+             
+              Running Teardown for Test : CandidateIntent_CheckClarity_VagueIntent_GeneratesGrillingTicket
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.CandidateIntent_CheckClarity_ClearIntent_ReturnsTrue
+             -------------------------------------------------
+             Running Setup for : CandidateIntent_CheckClarity_ClearIntent_ReturnsTrue
+             
+             Executing Test : CandidateIntent_CheckClarity_ClearIntent_ReturnsTrue
+             
+             
+              Running Teardown for Test : CandidateIntent_CheckClarity_ClearIntent_ReturnsTrue
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_NodeWithUserIntent_PreservesUserIntentField
+             -------------------------------------------------
+             Running Setup for : Ingest_NodeWithUserIntent_PreservesUserIntentField
+             
+             Executing Test : Ingest_NodeWithUserIntent_PreservesUserIntentField
+             
+             
+              Running Teardown for Test : Ingest_NodeWithUserIntent_PreservesUserIntentField
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Merge_NodeWithUserIntent_UpdatesUserIntentField
+             -------------------------------------------------
+             Running Setup for : Merge_NodeWithUserIntent_UpdatesUserIntentField
+             
+             Executing Test : Merge_NodeWithUserIntent_UpdatesUserIntentField
+             
+             
+              Running Teardown for Test : Merge_NodeWithUserIntent_UpdatesUserIntentField
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.Ingest_DoesNotMutateCanonicalSpec_UntilMerge
+             -------------------------------------------------
+             Running Setup for : Ingest_DoesNotMutateCanonicalSpec_UntilMerge
+             
+             Executing Test : Ingest_DoesNotMutateCanonicalSpec_UntilMerge
+             
+             
+              Running Teardown for Test : Ingest_DoesNotMutateCanonicalSpec_UntilMerge
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_CreateNew_SetsFields
+             -------------------------------------------------
+             Running Setup for : ChangeSet_CreateNew_SetsFields
+             
+             Executing Test : ChangeSet_CreateNew_SetsFields
+             
+             
+              Running Teardown for Test : ChangeSet_CreateNew_SetsFields
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_FormatAndParseYaml_RoundTrip
+             -------------------------------------------------
+             Running Setup for : ChangeSet_FormatAndParseYaml_RoundTrip
+             
+             Executing Test : ChangeSet_FormatAndParseYaml_RoundTrip
+             
+             
+              Running Teardown for Test : ChangeSet_FormatAndParseYaml_RoundTrip
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_SaveAndLoad_PersistsToDisk
+             -------------------------------------------------
+             Running Setup for : ChangeSet_SaveAndLoad_PersistsToDisk
+             
+             Executing Test : ChangeSet_SaveAndLoad_PersistsToDisk
+             
+             
+              Running Teardown for Test : ChangeSet_SaveAndLoad_PersistsToDisk
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_ComputeAffectedProjections_ViaSemanticBundles
+             -------------------------------------------------
+             Running Setup for : ChangeSet_ComputeAffectedProjections_ViaSemanticBundles
+             
+             Executing Test : ChangeSet_ComputeAffectedProjections_ViaSemanticBundles
+             
+             
+              Running Teardown for Test : ChangeSet_ComputeAffectedProjections_ViaSemanticBundles
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_DistinguishesExplicitInferredUnknown
+             -------------------------------------------------
+             Running Setup for : ChangeSet_DistinguishesExplicitInferredUnknown
+             
+             Executing Test : ChangeSet_DistinguishesExplicitInferredUnknown
+             
+             
+              Running Teardown for Test : ChangeSet_DistinguishesExplicitInferredUnknown
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_DoesNotMutateCanonicalSpec
+             -------------------------------------------------
+             Running Setup for : ChangeSet_DoesNotMutateCanonicalSpec
+             
+             Executing Test : ChangeSet_DoesNotMutateCanonicalSpec
+             
+             
+              Running Teardown for Test : ChangeSet_DoesNotMutateCanonicalSpec
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_ReviewSummary_FormatsSemanticChanges
+             -------------------------------------------------
+             Running Setup for : ChangeSet_ReviewSummary_FormatsSemanticChanges
+             
+             Executing Test : ChangeSet_ReviewSummary_FormatsSemanticChanges
+             
+             
+              Running Teardown for Test : ChangeSet_ReviewSummary_FormatsSemanticChanges
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_Accept_AppliesChangesToCanonicalSpec
+             -------------------------------------------------
+             Running Setup for : ChangeSet_Accept_AppliesChangesToCanonicalSpec
+             
+             Executing Test : ChangeSet_Accept_AppliesChangesToCanonicalSpec
+             
+             
+              Running Teardown for Test : ChangeSet_Accept_AppliesChangesToCanonicalSpec
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_Reject_DoesNotMutateCanonicalSpec
+             -------------------------------------------------
+             Running Setup for : ChangeSet_Reject_DoesNotMutateCanonicalSpec
+             
+             Executing Test : ChangeSet_Reject_DoesNotMutateCanonicalSpec
+             
+             
+              Running Teardown for Test : ChangeSet_Reject_DoesNotMutateCanonicalSpec
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_Clarify_DoesNotMutateCanonicalSpec
+             -------------------------------------------------
+             Running Setup for : ChangeSet_Clarify_DoesNotMutateCanonicalSpec
+             
+             Executing Test : ChangeSet_Clarify_DoesNotMutateCanonicalSpec
+             
+             
+              Running Teardown for Test : ChangeSet_Clarify_DoesNotMutateCanonicalSpec
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.CandidateIntent_ListCandidateIntents_ReturnsAll
+             -------------------------------------------------
+             Running Setup for : CandidateIntent_ListCandidateIntents_ReturnsAll
+             
+             Executing Test : CandidateIntent_ListCandidateIntents_ReturnsAll
+             
+             
+              Running Teardown for Test : CandidateIntent_ListCandidateIntents_ReturnsAll
+              
+               Success.
+            
+             Test : Test.AsWish.CandidateIngest.TCandidateIngestTests.ChangeSet_RenderReviewPage_GeneratesValidHtml
+             -------------------------------------------------
+             Running Setup for : ChangeSet_RenderReviewPage_GeneratesValidHtml
+             
+             Executing Test : ChangeSet_RenderReviewPage_GeneratesValidHtml
+             
+             
+              Running Teardown for Test : ChangeSet_RenderReviewPage_GeneratesValidHtml
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Controller
+        -------------------------------------------------
+           Fixture : Test.AsWish.Controller.TTestAsWishController
+           -------------------------------------------------
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_OpenAndScan_BuildsEverything
+             -------------------------------------------------
+             Running Setup for : Test_OpenAndScan_BuildsEverything
+             
+             Executing Test : Test_OpenAndScan_BuildsEverything
+             
+             
+              Running Teardown for Test : Test_OpenAndScan_BuildsEverything
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_OpenAndScan_PublishesProjectOpened
+             -------------------------------------------------
+             Running Setup for : Test_OpenAndScan_PublishesProjectOpened
+             
+             Executing Test : Test_OpenAndScan_PublishesProjectOpened
+             
+             
+              Running Teardown for Test : Test_OpenAndScan_PublishesProjectOpened
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_RenderAll_ProducesDashboardHtml
+             -------------------------------------------------
+             Running Setup for : Test_RenderAll_ProducesDashboardHtml
+             
+             Executing Test : Test_RenderAll_ProducesDashboardHtml
+             
+             
+              Running Teardown for Test : Test_RenderAll_ProducesDashboardHtml
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_HealthMetrics_Numbers
+             -------------------------------------------------
+             Running Setup for : Test_HealthMetrics_Numbers
+             
+             Executing Test : Test_HealthMetrics_Numbers
+             
+             
+              Running Teardown for Test : Test_HealthMetrics_Numbers
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_CreateTicket_DefogsAndPersists
+             -------------------------------------------------
+             Running Setup for : Test_CreateTicket_DefogsAndPersists
+             
+             Executing Test : Test_CreateTicket_DefogsAndPersists
+             
+             
+              Running Teardown for Test : Test_CreateTicket_DefogsAndPersists
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_ApplyBundleDecisions_Accept
+             -------------------------------------------------
+             Running Setup for : Test_ApplyBundleDecisions_Accept
+             
+             Executing Test : Test_ApplyBundleDecisions_Accept
+             
+             
+              Running Teardown for Test : Test_ApplyBundleDecisions_Accept
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_ApplyBundleDecisions_Reject
+             -------------------------------------------------
+             Running Setup for : Test_ApplyBundleDecisions_Reject
+             
+             Executing Test : Test_ApplyBundleDecisions_Reject
+             
+             
+              Running Teardown for Test : Test_ApplyBundleDecisions_Reject
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_Restart_KeepsDecisions
+             -------------------------------------------------
+             Running Setup for : Test_Restart_KeepsDecisions
+             
+             Executing Test : Test_Restart_KeepsDecisions
+             
+             
+              Running Teardown for Test : Test_Restart_KeepsDecisions
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_ChangeSet_EndToEnd_Accept
+             -------------------------------------------------
+             Running Setup for : Test_ChangeSet_EndToEnd_Accept
+             
+             Executing Test : Test_ChangeSet_EndToEnd_Accept
+             
+             
+              Running Teardown for Test : Test_ChangeSet_EndToEnd_Accept
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_ChangeSet_EndToEnd_Reject
+             -------------------------------------------------
+             Running Setup for : Test_ChangeSet_EndToEnd_Reject
+             
+             Executing Test : Test_ChangeSet_EndToEnd_Reject
+             
+             
+              Running Teardown for Test : Test_ChangeSet_EndToEnd_Reject
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_ChangeSet_EndToEnd_Clarify
+             -------------------------------------------------
+             Running Setup for : Test_ChangeSet_EndToEnd_Clarify
+             
+             Executing Test : Test_ChangeSet_EndToEnd_Clarify
+             
+             
+              Running Teardown for Test : Test_ChangeSet_EndToEnd_Clarify
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_ComputeDifference_GeneratesReportAndHtml
+             -------------------------------------------------
+             Running Setup for : Test_ComputeDifference_GeneratesReportAndHtml
+             
+             Executing Test : Test_ComputeDifference_GeneratesReportAndHtml
+             
+             
+              Running Teardown for Test : Test_ComputeDifference_GeneratesReportAndHtml
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_RecordDifferenceDecision_Unacceptable_PersistsDecision
+             -------------------------------------------------
+             Running Setup for : Test_RecordDifferenceDecision_Unacceptable_PersistsDecision
+             
+             Executing Test : Test_RecordDifferenceDecision_Unacceptable_PersistsDecision
+             
+             
+              Running Teardown for Test : Test_RecordDifferenceDecision_Unacceptable_PersistsDecision
+              
+               Success.
+            
+             Test : Test.AsWish.Controller.TTestAsWishController.Test_EvolveBaseline_CreatesB0002_WithParentBaselineId
+             -------------------------------------------------
+             Running Setup for : Test_EvolveBaseline_CreatesB0002_WithParentBaselineId
+             
+             Executing Test : Test_EvolveBaseline_CreatesB0002_WithParentBaselineId
+             
+             
+              Running Teardown for Test : Test_EvolveBaseline_CreatesB0002_WithParentBaselineId
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Decisions
+        -------------------------------------------------
+           Fixture : Test.AsWish.Decisions.TTestAsWishDecisions
+           -------------------------------------------------
+             Test : Test.AsWish.Decisions.TTestAsWishDecisions.Test_AddDecision_RoundTrip
+             -------------------------------------------------
+             Executing Test : Test_AddDecision_RoundTrip
+             
+               Success.
+            
+             Test : Test.AsWish.Decisions.TTestAsWishDecisions.Test_ApplyAcceptedDecision_Transitions
+             -------------------------------------------------
+             Executing Test : Test_ApplyAcceptedDecision_Transitions
+             
+               Success.
+            
+             Test : Test.AsWish.Decisions.TTestAsWishDecisions.Test_ApplyRejectedDecision_Transitions
+             -------------------------------------------------
+             Executing Test : Test_ApplyRejectedDecision_Transitions
+             
+               Success.
+            
+             Test : Test.AsWish.Decisions.TTestAsWishDecisions.Test_NoTransitionForProposedDecision
+             -------------------------------------------------
+             Executing Test : Test_NoTransitionForProposedDecision
+             
+               Success.
+            
+             Test : Test.AsWish.Decisions.TTestAsWishDecisions.Test_RecordChangeSetDecision_LinksChangeSetAndItem
+             -------------------------------------------------
+             Executing Test : Test_RecordChangeSetDecision_LinksChangeSetAndItem
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Difference
+        -------------------------------------------------
+           Fixture : Test.AsWish.Difference.L2L3
+           -------------------------------------------------
+              Fixture : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3
+              -------------------------------------------------
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test01_L2_OrderDifference
+                -------------------------------------------------
+                Running Setup for : Test01_L2_OrderDifference
+                
+                Executing Test : Test01_L2_OrderDifference
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test02_L2_GapDifference
+                -------------------------------------------------
+                Running Setup for : Test02_L2_GapDifference
+                
+                Executing Test : Test02_L2_GapDifference
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test03_L3_AppearanceDifference_DaContent
+                -------------------------------------------------
+                Running Setup for : Test03_L3_AppearanceDifference_DaContent
+                
+                Executing Test : Test03_L3_AppearanceDifference_DaContent
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test04_NoDifference_CleanMatch
+                -------------------------------------------------
+                Running Setup for : Test04_NoDifference_CleanMatch
+                
+                Executing Test : Test04_NoDifference_CleanMatch
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test05_UnknownPlatformIdentity_FailClosed
+                -------------------------------------------------
+                Running Setup for : Test05_UnknownPlatformIdentity_FailClosed
+                
+                Executing Test : Test05_UnknownPlatformIdentity_FailClosed
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test06_NoComparatorRegistered_ServiceWorks
+                -------------------------------------------------
+                Running Setup for : Test06_NoComparatorRegistered_ServiceWorks
+                
+                Executing Test : Test06_NoComparatorRegistered_ServiceWorks
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test07_DownstreamIntegration_RenderAndDecisions
+                -------------------------------------------------
+                Running Setup for : Test07_DownstreamIntegration_RenderAndDecisions
+                
+                Executing Test : Test07_DownstreamIntegration_RenderAndDecisions
+                
+                  Success.
+               
+               Running Fixture Teardown Method : Destroy
+               
+            
+         
+           Fixture : Test.AsWish.Difference.TTestAsWishDifference
+           -------------------------------------------------
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test01_P2_DifferentTriggerTree_DifferentBaselineHash
+             -------------------------------------------------
+             Running Setup for : Test01_P2_DifferentTriggerTree_DifferentBaselineHash
+             
+             Executing Test : Test01_P2_DifferentTriggerTree_DifferentBaselineHash
+             
+             
+              Running Teardown for Test : Test01_P2_DifferentTriggerTree_DifferentBaselineHash
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test02_P2_SingleTreeHash_Determinism
+             -------------------------------------------------
+             Running Setup for : Test02_P2_SingleTreeHash_Determinism
+             
+             Executing Test : Test02_P2_SingleTreeHash_Determinism
+             
+             
+              Running Teardown for Test : Test02_P2_SingleTreeHash_Determinism
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test03_P2_SummaryChange_ContentHashChanges_ParentChange_RelationHashChanges
+             -------------------------------------------------
+             Running Setup for : Test03_P2_SummaryChange_ContentHashChanges_ParentChange_RelationHashChanges
+             
+             Executing Test : Test03_P2_SummaryChange_ContentHashChanges_ParentChange_RelationHashChanges
+             
+             
+              Running Teardown for Test : Test03_P2_SummaryChange_ContentHashChanges_ParentChange_RelationHashChanges
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test04_P2_VerifyBaseline_SingleTree_Passes
+             -------------------------------------------------
+             Running Setup for : Test04_P2_VerifyBaseline_SingleTree_Passes
+             
+             Executing Test : Test04_P2_VerifyBaseline_SingleTree_Passes
+             
+             
+              Running Teardown for Test : Test04_P2_VerifyBaseline_SingleTree_Passes
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test05_Difference_Missing_Extra_Changed_Scenarios
+             -------------------------------------------------
+             Running Setup for : Test05_Difference_Missing_Extra_Changed_Scenarios
+             
+             Executing Test : Test05_Difference_Missing_Extra_Changed_Scenarios
+             
+             
+              Running Teardown for Test : Test05_Difference_Missing_Extra_Changed_Scenarios
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test06_Difference_ZeroDifference_EmptyItems
+             -------------------------------------------------
+             Running Setup for : Test06_Difference_ZeroDifference_EmptyItems
+             
+             Executing Test : Test06_Difference_ZeroDifference_EmptyItems
+             
+             
+              Running Teardown for Test : Test06_Difference_ZeroDifference_EmptyItems
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test07_Difference_MissingEvidence_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test07_Difference_MissingEvidence_FailClosed
+             
+             Executing Test : Test07_Difference_MissingEvidence_FailClosed
+             
+             
+              Running Teardown for Test : Test07_Difference_MissingEvidence_FailClosed
+              
+               Success.
+            
+             Test : Test.AsWish.Difference.TTestAsWishDifference.Test08_Difference_RoundTripReadback
+             -------------------------------------------------
+             Running Setup for : Test08_Difference_RoundTripReadback
+             
+             Executing Test : Test08_Difference_RoundTripReadback
+             
+             
+              Running Teardown for Test : Test08_Difference_RoundTripReadback
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.EHAI
+        -------------------------------------------------
+           Fixture : Test.AsWish.EHAI.Binding
+           -------------------------------------------------
+              Fixture : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding
+              -------------------------------------------------
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_001_ReviewChangeSet_Surface_ReadOnly
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_001_ReviewChangeSet_Surface_ReadOnly
+                
+                Executing Test : ASWISH_V_001_ReviewChangeSet_Surface_ReadOnly
+                
+                
+                 Running Teardown for Test : ASWISH_V_001_ReviewChangeSet_Surface_ReadOnly
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_002_Canonical_Mutation_Gate
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_002_Canonical_Mutation_Gate
+                
+                Executing Test : ASWISH_V_002_Canonical_Mutation_Gate
+                
+                
+                 Running Teardown for Test : ASWISH_V_002_Canonical_Mutation_Gate
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_003_Accepted_Baseline
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_003_Accepted_Baseline
+                
+                Executing Test : ASWISH_V_003_Accepted_Baseline
+                
+                
+                 Running Teardown for Test : ASWISH_V_003_Accepted_Baseline
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_004_Frame_Rejection_Scenario_FR_AW_01
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_004_Frame_Rejection_Scenario_FR_AW_01
+                
+                Executing Test : ASWISH_V_004_Frame_Rejection_Scenario_FR_AW_01
+                
+                
+                 Running Teardown for Test : ASWISH_V_004_Frame_Rejection_Scenario_FR_AW_01
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_005_HB_Interaction_Common_Semantic_E2E
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_005_HB_Interaction_Common_Semantic_E2E
+                
+                Executing Test : ASWISH_V_005_HB_Interaction_Common_Semantic_E2E
+                
+                
+                 Running Teardown for Test : ASWISH_V_005_HB_Interaction_Common_Semantic_E2E
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_006_CandidateSelection_Not_Inherent_Commitment
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_006_CandidateSelection_Not_Inherent_Commitment
+                
+                Executing Test : ASWISH_V_006_CandidateSelection_Not_Inherent_Commitment
+                
+                
+                 Running Teardown for Test : ASWISH_V_006_CandidateSelection_Not_Inherent_Commitment
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_007_Regenerate_Pure_Exploration
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_007_Regenerate_Pure_Exploration
+                
+                Executing Test : ASWISH_V_007_Regenerate_Pure_Exploration
+                
+                
+                 Running Teardown for Test : ASWISH_V_007_Regenerate_Pure_Exploration
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_008_BackNavigation_Preserves_Decisions
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_008_BackNavigation_Preserves_Decisions
+                
+                Executing Test : ASWISH_V_008_BackNavigation_Preserves_Decisions
+                
+                
+                 Running Teardown for Test : ASWISH_V_008_BackNavigation_Preserves_Decisions
+                 
+                  Success.
+               
+                Test : Test.AsWish.EHAI.Binding.TTestAsWishEHAIBinding.ASWISH_V_009_Real_Keyboard_FrameRejection_E2E
+                -------------------------------------------------
+                Running Setup for : ASWISH_V_009_Real_Keyboard_FrameRejection_E2E
+                
+                Executing Test : ASWISH_V_009_Real_Keyboard_FrameRejection_E2E
+                
+                
+                 Running Teardown for Test : ASWISH_V_009_Real_Keyboard_FrameRejection_E2E
+                 
+                  Success.
+               
+               Running Fixture Teardown Method : Destroy
+               
+            
+         
+      
+        Fixture : Test.AsWish.Evidence
+        -------------------------------------------------
+           Fixture : Test.AsWish.Evidence.TTestAsWishEvidence
+           -------------------------------------------------
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test01_RealFileCollection_SourceFileHashMatches
+             -------------------------------------------------
+             Running Setup for : Test01_RealFileCollection_SourceFileHashMatches
+             
+             Executing Test : Test01_RealFileCollection_SourceFileHashMatches
+             
+             
+              Running Teardown for Test : Test01_RealFileCollection_SourceFileHashMatches
+              
+               Success.
+            
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test02_FileChange_ReCollect_SourceFileHashChanges
+             -------------------------------------------------
+             Running Setup for : Test02_FileChange_ReCollect_SourceFileHashChanges
+             
+             Executing Test : Test02_FileChange_ReCollect_SourceFileHashChanges
+             
+             
+              Running Teardown for Test : Test02_FileChange_ReCollect_SourceFileHashChanges
+              
+               Success.
+            
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test03_StructuralSampling_LinesAndExcerptNonEmpty
+             -------------------------------------------------
+             Running Setup for : Test03_StructuralSampling_LinesAndExcerptNonEmpty
+             
+             Executing Test : Test03_StructuralSampling_LinesAndExcerptNonEmpty
+             
+             
+              Running Teardown for Test : Test03_StructuralSampling_LinesAndExcerptNonEmpty
+              
+               Success.
+            
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test04_ReferencedBy_BackfilledToBaselineNodeId
+             -------------------------------------------------
+             Running Setup for : Test04_ReferencedBy_BackfilledToBaselineNodeId
+             
+             Executing Test : Test04_ReferencedBy_BackfilledToBaselineNodeId
+             
+             
+              Running Teardown for Test : Test04_ReferencedBy_BackfilledToBaselineNodeId
+              
+               Success.
+            
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test05_ImplementationEvidenceYaml_RoundTripReadback
+             -------------------------------------------------
+             Running Setup for : Test05_ImplementationEvidenceYaml_RoundTripReadback
+             
+             Executing Test : Test05_ImplementationEvidenceYaml_RoundTripReadback
+             
+             
+              Running Teardown for Test : Test05_ImplementationEvidenceYaml_RoundTripReadback
+              
+               Success.
+            
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test06_MissingSourceFile_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test06_MissingSourceFile_FailClosed
+             
+             Executing Test : Test06_MissingSourceFile_FailClosed
+             
+             
+              Running Teardown for Test : Test06_MissingSourceFile_FailClosed
+              
+               Success.
+            
+             Test : Test.AsWish.Evidence.TTestAsWishEvidence.Test07_NonExistentBaselineId_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test07_NonExistentBaselineId_FailClosed
+             
+             Executing Test : Test07_NonExistentBaselineId_FailClosed
+             
+             
+              Running Teardown for Test : Test07_NonExistentBaselineId_FailClosed
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.GUIDecisions
+        -------------------------------------------------
+           Fixture : Test.AsWish.GUIDecisions.TTestAsWishGUIDecisions
+           -------------------------------------------------
+             Test : Test.AsWish.GUIDecisions.TTestAsWishGUIDecisions.Test_GUI_Decision_Workflow_EndToEnd
+             -------------------------------------------------
+             Running Setup for : Test_GUI_Decision_Workflow_EndToEnd
+             
+             Executing Test : Test_GUI_Decision_Workflow_EndToEnd
+             
+             
+              Running Teardown for Test : Test_GUI_Decision_Workflow_EndToEnd
+              
+               Success.
+            
+             Test : Test.AsWish.GUIDecisions.TTestAsWishGUIDecisions.Test_Version_Constant_Defined
+             -------------------------------------------------
+             Running Setup for : Test_Version_Constant_Defined
+             
+             Executing Test : Test_Version_Constant_Defined
+             
+             
+              Running Teardown for Test : Test_Version_Constant_Defined
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Models
+        -------------------------------------------------
+           Fixture : Test.AsWish.Models.TDefogOneStepTests
+           -------------------------------------------------
+             Test : Test.AsWish.Models.TDefogOneStepTests.UnknownUnknowns_StepToFoggy
+             -------------------------------------------------
+             Executing Test : UnknownUnknowns_StepToFoggy
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TDefogOneStepTests.Foggy_StepToMisty
+             -------------------------------------------------
+             Executing Test : Foggy_StepToMisty
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TDefogOneStepTests.Misty_StepToClear
+             -------------------------------------------------
+             Executing Test : Misty_StepToClear
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TDefogOneStepTests.Clear_Step_StaysClear
+             -------------------------------------------------
+             Executing Test : Clear_Step_StaysClear
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Models.TFogStateMachineTests
+           -------------------------------------------------
+             Test : Test.AsWish.Models.TFogStateMachineTests.SameState_IsAlwaysAllowed
+             -------------------------------------------------
+             Executing Test : SameState_IsAlwaysAllowed
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.UnknownUnknowns_ToFoggy_Allowed
+             -------------------------------------------------
+             Executing Test : UnknownUnknowns_ToFoggy_Allowed
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Foggy_ToMisty_Allowed
+             -------------------------------------------------
+             Executing Test : Foggy_ToMisty_Allowed
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Misty_ToClear_Allowed
+             -------------------------------------------------
+             Executing Test : Misty_ToClear_Allowed
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.UnknownUnknowns_ToClear_Allowed_SkipsLevels
+             -------------------------------------------------
+             Executing Test : UnknownUnknowns_ToClear_Allowed_SkipsLevels
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.UnknownUnknowns_ToMisty_Allowed_SkipsLevel
+             -------------------------------------------------
+             Executing Test : UnknownUnknowns_ToMisty_Allowed_SkipsLevel
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Foggy_ToClear_Allowed_SkipsLevel
+             -------------------------------------------------
+             Executing Test : Foggy_ToClear_Allowed_SkipsLevel
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Clear_ToAnything_Forbidden_Terminal
+             -------------------------------------------------
+             Executing Test : Clear_ToAnything_Forbidden_Terminal
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Misty_ToFoggy_Forbidden_ReverseDivergence
+             -------------------------------------------------
+             Executing Test : Misty_ToFoggy_Forbidden_ReverseDivergence
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Foggy_ToUnknownUnknowns_Forbidden_ReverseDivergence
+             -------------------------------------------------
+             Executing Test : Foggy_ToUnknownUnknowns_Forbidden_ReverseDivergence
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateMachineTests.Misty_ToUnknownUnknowns_Forbidden_ReverseDivergence
+             -------------------------------------------------
+             Executing Test : Misty_ToUnknownUnknowns_Forbidden_ReverseDivergence
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Models.TFogStateRoundTripTests
+           -------------------------------------------------
+             Test : Test.AsWish.Models.TFogStateRoundTripTests.FogStateToStr_FromStr_RoundTrip_AllFourStates
+             -------------------------------------------------
+             Executing Test : FogStateToStr_FromStr_RoundTrip_AllFourStates
+             
+               Success.
+            
+             Test : Test.AsWish.Models.TFogStateRoundTripTests.FogStateFromStr_UnknownValue_ReturnsDefault
+             -------------------------------------------------
+             Executing Test : FogStateFromStr_UnknownValue_ReturnsDefault
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Models.THealthMetricsTests
+           -------------------------------------------------
+             Test : Test.AsWish.Models.THealthMetricsTests.Coverage_Partial
+             -------------------------------------------------
+             Executing Test : Coverage_Partial
+             
+               Success.
+            
+             Test : Test.AsWish.Models.THealthMetricsTests.AvgConfidence_Mixed
+             -------------------------------------------------
+             Executing Test : AvgConfidence_Mixed
+             
+               Success.
+            
+             Test : Test.AsWish.Models.THealthMetricsTests.FogCount_AcrossTrees
+             -------------------------------------------------
+             Executing Test : FogCount_AcrossTrees
+             
+               Success.
+            
+             Test : Test.AsWish.Models.THealthMetricsTests.Backlog_OpenOnly
+             -------------------------------------------------
+             Executing Test : Backlog_OpenOnly
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Prompts
+        -------------------------------------------------
+           Fixture : Test.AsWish.Prompts.TGrillingPromptTests
+           -------------------------------------------------
+             Test : Test.AsWish.Prompts.TGrillingPromptTests.GrillingTicket_WritesStructuredPrompt
+             -------------------------------------------------
+             Executing Test : GrillingTicket_WritesStructuredPrompt
+             
+               Success.
+            
+             Test : Test.AsWish.Prompts.TGrillingPromptTests.NonGrillingIssue_DoesNotWritePrompt
+             -------------------------------------------------
+             Executing Test : NonGrillingIssue_DoesNotWritePrompt
+             
+               Success.
+            
+             Test : Test.AsWish.Prompts.TGrillingPromptTests.ChangeInterpretPrompt_WritesStructuredPrompt
+             -------------------------------------------------
+             Executing Test : ChangeInterpretPrompt_WritesStructuredPrompt
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Render
+        -------------------------------------------------
+           Fixture : Test.AsWish.Render.TRenderDataTreeTests
+           -------------------------------------------------
+             Test : Test.AsWish.Render.TRenderDataTreeTests.Render_DataTree_ContainsNodeAndMetadata
+             -------------------------------------------------
+             Executing Test : Render_DataTree_ContainsNodeAndMetadata
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.RevisionEvolution
+        -------------------------------------------------
+           Fixture : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution
+           -------------------------------------------------
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test01_UnacceptableJudgment_RecordsRejectDecision_WithDiffTargetNodes
+             -------------------------------------------------
+             Running Setup for : Test01_UnacceptableJudgment_RecordsRejectDecision_WithDiffTargetNodes
+             
+             Executing Test : Test01_UnacceptableJudgment_RecordsRejectDecision_WithDiffTargetNodes
+             
+             
+              Running Teardown for Test : Test01_UnacceptableJudgment_RecordsRejectDecision_WithDiffTargetNodes
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test02_AcceptableJudgment_EvolveCreatesNewBaseline_WithParentLineage
+             -------------------------------------------------
+             Running Setup for : Test02_AcceptableJudgment_EvolveCreatesNewBaseline_WithParentLineage
+             
+             Executing Test : Test02_AcceptableJudgment_EvolveCreatesNewBaseline_WithParentLineage
+             
+             
+              Running Teardown for Test : Test02_AcceptableJudgment_EvolveCreatesNewBaseline_WithParentLineage
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test03_EvolutionBaseline_UpdatedHash_PassesVerifyBaseline
+             -------------------------------------------------
+             Running Setup for : Test03_EvolutionBaseline_UpdatedHash_PassesVerifyBaseline
+             
+             Executing Test : Test03_EvolutionBaseline_UpdatedHash_PassesVerifyBaseline
+             
+             
+              Running Teardown for Test : Test03_EvolutionBaseline_UpdatedHash_PassesVerifyBaseline
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test04_RevisionPath_SecondRoundCreatesBaselineV2_TraceableLineage
+             -------------------------------------------------
+             Running Setup for : Test04_RevisionPath_SecondRoundCreatesBaselineV2_TraceableLineage
+             
+             Executing Test : Test04_RevisionPath_SecondRoundCreatesBaselineV2_TraceableLineage
+             
+             
+              Running Teardown for Test : Test04_RevisionPath_SecondRoundCreatesBaselineV2_TraceableLineage
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test05_UnresolvedJudgment_PersistedAsClarify
+             -------------------------------------------------
+             Running Setup for : Test05_UnresolvedJudgment_PersistedAsClarify
+             
+             Executing Test : Test05_UnresolvedJudgment_PersistedAsClarify
+             
+             
+              Running Teardown for Test : Test05_UnresolvedJudgment_PersistedAsClarify
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test06_StructuralIntegrity_ZeroNewEntities
+             -------------------------------------------------
+             Running Setup for : Test06_StructuralIntegrity_ZeroNewEntities
+             
+             Executing Test : Test06_StructuralIntegrity_ZeroNewEntities
+             
+             
+              Running Teardown for Test : Test06_StructuralIntegrity_ZeroNewEntities
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test07_BPrimeEntryPoint_RenderIndexContainsIntentInput
+             -------------------------------------------------
+             Running Setup for : Test07_BPrimeEntryPoint_RenderIndexContainsIntentInput
+             
+             Executing Test : Test07_BPrimeEntryPoint_RenderIndexContainsIntentInput
+             
+             
+              Running Teardown for Test : Test07_BPrimeEntryPoint_RenderIndexContainsIntentInput
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test08_MissingDifferenceFile_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test08_MissingDifferenceFile_FailClosed
+             
+             Executing Test : Test08_MissingDifferenceFile_FailClosed
+             
+             
+              Running Teardown for Test : Test08_MissingDifferenceFile_FailClosed
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test09_BPrimeTreeTypeParsing_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test09_BPrimeTreeTypeParsing_FailClosed
+             
+             Executing Test : Test09_BPrimeTreeTypeParsing_FailClosed
+             
+             
+              Running Teardown for Test : Test09_BPrimeTreeTypeParsing_FailClosed
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds
+             -------------------------------------------------
+             Running Setup for : Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds
+             
+             Executing Test : Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds
+             
+             
+              Running Teardown for Test : Test10_DecisionPersistence_MultipleCommandsSequence_MonotonicUniqueIds
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite
+             -------------------------------------------------
+             Running Setup for : Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite
+             
+             Executing Test : Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite
+             
+             
+              Running Teardown for Test : Test11_ChangeSetId_MonotonicUniqueGeneration_NoOverwrite
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test12_EvolveBaseline_SnapshotLineage_ContainsParentBaselineId
+             -------------------------------------------------
+             Running Setup for : Test12_EvolveBaseline_SnapshotLineage_ContainsParentBaselineId
+             
+             Executing Test : Test12_EvolveBaseline_SnapshotLineage_ContainsParentBaselineId
+             
+             
+              Running Teardown for Test : Test12_EvolveBaseline_SnapshotLineage_ContainsParentBaselineId
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test13_NonEvolveBaseline_SnapshotLineage_OmitsParentBaselineId
+             -------------------------------------------------
+             Running Setup for : Test13_NonEvolveBaseline_SnapshotLineage_OmitsParentBaselineId
+             
+             Executing Test : Test13_NonEvolveBaseline_SnapshotLineage_OmitsParentBaselineId
+             
+             
+              Running Teardown for Test : Test13_NonEvolveBaseline_SnapshotLineage_OmitsParentBaselineId
+              
+               Success.
+            
+             Test : Test.AsWish.RevisionEvolution.TTestAsWishRevisionEvolution.Test14_SingleChangeSetPersistence_NoRedundantDefaultYaml
+             -------------------------------------------------
+             Running Setup for : Test14_SingleChangeSetPersistence_NoRedundantDefaultYaml
+             
+             Executing Test : Test14_SingleChangeSetPersistence_NoRedundantDefaultYaml
+             
+             
+              Running Teardown for Test : Test14_SingleChangeSetPersistence_NoRedundantDefaultYaml
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Snapshot
+        -------------------------------------------------
+           Fixture : Test.AsWish.Snapshot.TTestAsWishSnapshot
+           -------------------------------------------------
+             Test : Test.AsWish.Snapshot.TTestAsWishSnapshot.Test_Create_List_Restore_RoundTrip
+             -------------------------------------------------
+             Executing Test : Test_Create_List_Restore_RoundTrip
+             
+               Success.
+            
+             Test : Test.AsWish.Snapshot.TTestAsWishSnapshot.Test_Restore_CreatesPreRestoreSnapshot
+             -------------------------------------------------
+             Executing Test : Test_Restore_CreatesPreRestoreSnapshot
+             
+               Success.
+            
+             Test : Test.AsWish.Snapshot.TTestAsWishSnapshot.Test_ListSnapshots_DescendingOrder
+             -------------------------------------------------
+             Executing Test : Test_ListSnapshots_DescendingOrder
+             
+               Success.
+            
+             Test : Test.AsWish.Snapshot.TTestAsWishSnapshot.Test_EmptyProject_SnapshotAndRestoreDoNotCrash
+             -------------------------------------------------
+             Executing Test : Test_EmptyProject_SnapshotAndRestoreDoNotCrash
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.SpecStore
+        -------------------------------------------------
+           Fixture : Test.AsWish.SpecStore.TTestAsWishSpecStore
+           -------------------------------------------------
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_AtomicWrite_FirstWrite
+             -------------------------------------------------
+             Executing Test : Test_AtomicWrite_FirstWrite
+             
+               Success.
+            
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_AtomicWrite_Overwrite
+             -------------------------------------------------
+             Executing Test : Test_AtomicWrite_Overwrite
+             
+               Success.
+            
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_WriteTreeFile_Overwrite_RoundTrip
+             -------------------------------------------------
+             Executing Test : Test_WriteTreeFile_Overwrite_RoundTrip
+             
+               Success.
+            
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_WriteTreeFile_CreatesSnapshotBackup
+             -------------------------------------------------
+             Executing Test : Test_WriteTreeFile_CreatesSnapshotBackup
+             
+               Success.
+            
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_WriteDataTreeFile_RoundTrip
+             -------------------------------------------------
+             Executing Test : Test_WriteDataTreeFile_RoundTrip
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.TreeBuilder
+        -------------------------------------------------
+           Fixture : Test.AsWish.TreeBuilder.TTreeBuilderDataTests
+           -------------------------------------------------
+             Test : Test.AsWish.TreeBuilder.TTreeBuilderDataTests.Build_GenericProject_InfersDataEntities
+             -------------------------------------------------
+             Executing Test : Build_GenericProject_InfersDataEntities
+             
+               Success.
+            
+             Test : Test.AsWish.TreeBuilder.TTreeBuilderDataTests.Build_GenericProjectWithoutData_EmitsFoggedPlaceholder
+             -------------------------------------------------
+             Executing Test : Build_GenericProjectWithoutData_EmitsFoggedPlaceholder
+             
+               Success.
+            
+             Test : Test.AsWish.TreeBuilder.TTreeBuilderDataTests.Scan_IgnoresAsWishDirectory_CaseInsensitive
+             -------------------------------------------------
+             Executing Test : Scan_IgnoresAsWishDirectory_CaseInsensitive
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Validation
+        -------------------------------------------------
+           Fixture : Test.AsWish.Validation.TValidationIssuesTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationIssuesTests.ValidIssue_NoErrors
+             -------------------------------------------------
+             Executing Test : ValidIssue_NoErrors
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.EmptyId_ReportedAsError
+             -------------------------------------------------
+             Executing Test : EmptyId_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.InvalidIssueIdPrefix_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidIssueIdPrefix_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.InvalidSeverity_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidSeverity_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.InvalidIssueType_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidIssueType_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.EmptyAffectedNodes_ReportedAsError
+             -------------------------------------------------
+             Executing Test : EmptyAffectedNodes_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.ResearchTicketWithRequiresHuman_NoError
+             -------------------------------------------------
+             Executing Test : ResearchTicketWithRequiresHuman_NoError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationIssuesTests.NonTicketWithRequiresHuman_ReportedAsWarning
+             -------------------------------------------------
+             Executing Test : NonTicketWithRequiresHuman_ReportedAsWarning
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationKindTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationKindTests.ExtensionKind_NoError
+             -------------------------------------------------
+             Executing Test : ExtensionKind_NoError
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationNodeIdTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationNodeIdTests.ValidFuncId_NoError
+             -------------------------------------------------
+             Executing Test : ValidFuncId_NoError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationNodeIdTests.InvalidPrefix_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidPrefix_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationNodeIdTests.DuplicateId_ReportedAsError
+             -------------------------------------------------
+             Executing Test : DuplicateId_ReportedAsError
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationParentRefTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationParentRefTests.ValidParent_NoError
+             -------------------------------------------------
+             Executing Test : ValidParent_NoError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationParentRefTests.MissingParentRef_ReportedAsError
+             -------------------------------------------------
+             Executing Test : MissingParentRef_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationParentRefTests.CircularParent_ReportedAsError
+             -------------------------------------------------
+             Executing Test : CircularParent_ReportedAsError
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationParseErrorTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationParseErrorTests.InvalidYAML_DoesNotCrash
+             -------------------------------------------------
+             Executing Test : InvalidYAML_DoesNotCrash
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationProjectSpecTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationProjectSpecTests.MissingProject_ReportedAsError
+             -------------------------------------------------
+             Executing Test : MissingProject_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationProjectSpecTests.MissingProjectName_ReportedAsError
+             -------------------------------------------------
+             Executing Test : MissingProjectName_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationProjectSpecTests.MissingProjectType_ReportedAsError
+             -------------------------------------------------
+             Executing Test : MissingProjectType_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationProjectSpecTests.CompleteProjectSpec_NoErrors
+             -------------------------------------------------
+             Executing Test : CompleteProjectSpec_NoErrors
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationReportTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationReportTests.NewReport_NoErrors
+             -------------------------------------------------
+             Executing Test : NewReport_NoErrors
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationReportTests.AddError_HasErrorsTrue
+             -------------------------------------------------
+             Executing Test : AddError_HasErrorsTrue
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationReportTests.WarningOnly_HasErrorsFalse
+             -------------------------------------------------
+             Executing Test : WarningOnly_HasErrorsFalse
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationReportTests.ClearRemovesAll
+             -------------------------------------------------
+             Executing Test : ClearRemovesAll
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationSecurityTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationSecurityTests.HumanDecidedBy_ForbiddenInLLMOutput
+             -------------------------------------------------
+             Executing Test : HumanDecidedBy_ForbiddenInLLMOutput
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationSecurityTests.SystemDecidedBy_Allowed
+             -------------------------------------------------
+             Executing Test : SystemDecidedBy_Allowed
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationSecurityTests.EmptyDecisionsList_NoErrors
+             -------------------------------------------------
+             Executing Test : EmptyDecisionsList_NoErrors
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationStatusTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationStatusTests.ValidGenStatus_NoError
+             -------------------------------------------------
+             Executing Test : ValidGenStatus_NoError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationStatusTests.InvalidGenStatus_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidGenStatus_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationStatusTests.InvalidReviewStatus_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidReviewStatus_ReportedAsError
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+           Fixture : Test.AsWish.Validation.TValidationTreeFileTests
+           -------------------------------------------------
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.MissingVersion_ReportedAsWarning
+             -------------------------------------------------
+             Executing Test : MissingVersion_ReportedAsWarning
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.MissingTree_ReportedAsError
+             -------------------------------------------------
+             Executing Test : MissingTree_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidTreeType_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidTreeType_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.ValidTreeFile_NoErrors
+             -------------------------------------------------
+             Executing Test : ValidTreeFile_NoErrors
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidNodeStatus_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidNodeStatus_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidConfidence_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidConfidence_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.ValidFogState_NoErrors
+             -------------------------------------------------
+             Executing Test : ValidFogState_NoErrors
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidFogState_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidFogState_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.ValidDataTree_NoErrors
+             -------------------------------------------------
+             Executing Test : ValidDataTree_NoErrors
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidDataKind_ReportedAsWarning
+             -------------------------------------------------
+             Executing Test : InvalidDataKind_ReportedAsWarning
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidDataPersistence_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidDataPersistence_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidRelationCardinality_ReportedAsError
+             -------------------------------------------------
+             Executing Test : InvalidRelationCardinality_ReportedAsError
+             
+               Success.
+            
+             Test : Test.AsWish.Validation.TValidationTreeFileTests.MigrationMetadataMissing_ReportedAsWarning
+             -------------------------------------------------
+             Executing Test : MigrationMetadataMissing_ReportedAsWarning
+             
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.VisualBaseline
+        -------------------------------------------------
+           Fixture : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline
+           -------------------------------------------------
+             Test : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline.Test01_VisualPreview_DeterministicRendering
+             -------------------------------------------------
+             Running Setup for : Test01_VisualPreview_DeterministicRendering
+             
+             Executing Test : Test01_VisualPreview_DeterministicRendering
+             
+             
+              Running Teardown for Test : Test01_VisualPreview_DeterministicRendering
+              
+               Success.
+            
+             Test : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline.Test02_VisualPreview_GeneratesStructureWireframe
+             -------------------------------------------------
+             Running Setup for : Test02_VisualPreview_GeneratesStructureWireframe
+             
+             Executing Test : Test02_VisualPreview_GeneratesStructureWireframe
+             
+             
+              Running Teardown for Test : Test02_VisualPreview_GeneratesStructureWireframe
+              
+               Success.
+            
+             Test : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline.Test03_VisualPreview_RendersToFile
+             -------------------------------------------------
+             Running Setup for : Test03_VisualPreview_RendersToFile
+             
+             Executing Test : Test03_VisualPreview_RendersToFile
+             
+             
+              Running Teardown for Test : Test03_VisualPreview_RendersToFile
+              
+               Success.
+            
+             Test : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline.Test04_VisualBaseline_BindingToSnapshotAndDecision
+             -------------------------------------------------
+             Running Setup for : Test04_VisualBaseline_BindingToSnapshotAndDecision
+             
+             Executing Test : Test04_VisualBaseline_BindingToSnapshotAndDecision
+             
+             
+              Running Teardown for Test : Test04_VisualBaseline_BindingToSnapshotAndDecision
+              
+               Success.
+            
+             Test : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline.Test05_VisualBaseline_ImmutableHistorical
+             -------------------------------------------------
+             Running Setup for : Test05_VisualBaseline_ImmutableHistorical
+             
+             Executing Test : Test05_VisualBaseline_ImmutableHistorical
+             
+             
+              Running Teardown for Test : Test05_VisualBaseline_ImmutableHistorical
+              
+               Success.
+            
+             Test : Test.AsWish.VisualBaseline.TTestAsWishVisualBaseline.Test06_VisualBaseline_ContextPackExport
+             -------------------------------------------------
+             Running Setup for : Test06_VisualBaseline_ContextPackExport
+             
+             Executing Test : Test06_VisualBaseline_ContextPackExport
+             
+             
+              Running Teardown for Test : Test06_VisualBaseline_ContextPackExport
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.VisualWorkflow
+        -------------------------------------------------
+           Fixture : Test.AsWish.VisualWorkflow.Evolution
+           -------------------------------------------------
+              Fixture : Test.AsWish.VisualWorkflow.Evolution.TTestAsWishVisualWorkflowEvolution
+              -------------------------------------------------
+                Test : Test.AsWish.VisualWorkflow.Evolution.TTestAsWishVisualWorkflowEvolution.Test05_EvolveBaseline_RequiresApprovedDecision
+                -------------------------------------------------
+                Running Setup for : Test05_EvolveBaseline_RequiresApprovedDecision
+                
+                Executing Test : Test05_EvolveBaseline_RequiresApprovedDecision
+                
+                
+                 Running Teardown for Test : Test05_EvolveBaseline_RequiresApprovedDecision
+                 
+                  Success.
+               
+                Test : Test.AsWish.VisualWorkflow.Evolution.TTestAsWishVisualWorkflowEvolution.Test06_Equivalence_DeterministicBaselineHash
+                -------------------------------------------------
+                Running Setup for : Test06_Equivalence_DeterministicBaselineHash
+                
+                Executing Test : Test06_Equivalence_DeterministicBaselineHash
+                
+                
+                 Running Teardown for Test : Test06_Equivalence_DeterministicBaselineHash
+                 
+                  Success.
+               
+                Test : Test.AsWish.VisualWorkflow.Evolution.TTestAsWishVisualWorkflowEvolution.Test07_DecisionsAuthority_NoPrivateRationaleRules
+                -------------------------------------------------
+                Running Setup for : Test07_DecisionsAuthority_NoPrivateRationaleRules
+                
+                Executing Test : Test07_DecisionsAuthority_NoPrivateRationaleRules
+                
+                
+                 Running Teardown for Test : Test07_DecisionsAuthority_NoPrivateRationaleRules
+                 
+                  Success.
+               
+               Running Fixture Teardown Method : Destroy
+               
+            
+         
+           Fixture : Test.AsWish.VisualWorkflow.Provenance
+           -------------------------------------------------
+              Fixture : Test.AsWish.VisualWorkflow.Provenance.Compliant
+              -------------------------------------------------
+                 Fixture : Test.AsWish.VisualWorkflow.Provenance.Compliant.TTestAsWishVisualWorkflowProvenanceCompliant
+                 -------------------------------------------------
+                   Test : Test.AsWish.VisualWorkflow.Provenance.Compliant.TTestAsWishVisualWorkflowProvenanceCompliant.Test03_CompliantOrder_ProducesNoL2Difference
+                   -------------------------------------------------
+                   Running Setup for : Test03_CompliantOrder_ProducesNoL2Difference
+                   
+                   Executing Test : Test03_CompliantOrder_ProducesNoL2Difference
+                   
+                   
+                    Running Teardown for Test : Test03_CompliantOrder_ProducesNoL2Difference
+                    
+                     Success.
+                  
+                  Running Fixture Teardown Method : Destroy
+                  
+               
+            
+              Fixture : Test.AsWish.VisualWorkflow.Provenance.Diff
+              -------------------------------------------------
+                 Fixture : Test.AsWish.VisualWorkflow.Provenance.Diff.TTestAsWishVisualWorkflowProvenanceDiff
+                 -------------------------------------------------
+                   Test : Test.AsWish.VisualWorkflow.Provenance.Diff.TTestAsWishVisualWorkflowProvenanceDiff.Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance
+                   -------------------------------------------------
+                   Running Setup for : Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance
+                   
+                   Executing Test : Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance
+                   
+                   
+                    Running Teardown for Test : Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance
+                    
+                     Success.
+                  
+                  Running Fixture Teardown Method : Destroy
+                  
+               
+            
+              Fixture : Test.AsWish.VisualWorkflow.Provenance.TTestAsWishVisualWorkflowProvenance
+              -------------------------------------------------
+                Test : Test.AsWish.VisualWorkflow.Provenance.TTestAsWishVisualWorkflowProvenance.Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance
+                -------------------------------------------------
+                Running Setup for : Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance
+                
+                Executing Test : Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance
+                
+                
+                 Running Teardown for Test : Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance
+                 
+                  Success.
+               
+               Running Fixture Teardown Method : Destroy
+               
+            
+         
+           Fixture : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow
+           -------------------------------------------------
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test01_ZeroUiDependency_HeadlessExecution
+             -------------------------------------------------
+             Running Setup for : Test01_ZeroUiDependency_HeadlessExecution
+             
+             Executing Test : Test01_ZeroUiDependency_HeadlessExecution
+             
+             
+              Running Teardown for Test : Test01_ZeroUiDependency_HeadlessExecution
+              
+               Success.
+            
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test02_ConfirmVisualBaseline_ValidatesHumanDecision
+             -------------------------------------------------
+             Running Setup for : Test02_ConfirmVisualBaseline_ValidatesHumanDecision
+             
+             Executing Test : Test02_ConfirmVisualBaseline_ValidatesHumanDecision
+             
+             
+              Running Teardown for Test : Test02_ConfirmVisualBaseline_ValidatesHumanDecision
+              
+               Success.
+            
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot
+             -------------------------------------------------
+             Running Setup for : Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot
+             
+             Executing Test : Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot
+             
+             
+              Running Teardown for Test : Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot
+              
+               Success.
+            
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test04_RecordDifferenceDecision_FourExits
+             -------------------------------------------------
+             Running Setup for : Test04_RecordDifferenceDecision_FourExits
+             
+             Executing Test : Test04_RecordDifferenceDecision_FourExits
+             
+             
+              Running Teardown for Test : Test04_RecordDifferenceDecision_FourExits
+              
+               Success.
+            
+            Running Fixture Teardown Method : Destroy
+            
+         
+      
+        Fixture : Test.AsWish.Yaml
+        -------------------------------------------------
+           Fixture : Test.AsWish.Yaml.Parser
+           -------------------------------------------------
+              Fixture : Test.AsWish.Yaml.Parser.TYamlParserTests
+              -------------------------------------------------
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.EmptyInput_ReturnsEmptyMap
+                -------------------------------------------------
+                Executing Test : EmptyInput_ReturnsEmptyMap
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SimpleMap_TwoKeys
+                -------------------------------------------------
+                Executing Test : SimpleMap_TwoKeys
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.MapWithQuotedValue_DoubleQuotes
+                -------------------------------------------------
+                Executing Test : MapWithQuotedValue_DoubleQuotes
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.MapWithQuotedValue_SingleQuotes
+                -------------------------------------------------
+                Executing Test : MapWithQuotedValue_SingleQuotes
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.FlowSequence_Empty
+                -------------------------------------------------
+                Executing Test : FlowSequence_Empty
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.FlowSequence_WithItems
+                -------------------------------------------------
+                Executing Test : FlowSequence_WithItems
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.BooleanValues
+                -------------------------------------------------
+                Executing Test : BooleanValues
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.IntegerValue
+                -------------------------------------------------
+                Executing Test : IntegerValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.EmptyMap_FlowBraces
+                -------------------------------------------------
+                Executing Test : EmptyMap_FlowBraces
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.CommentStrippedFromValue
+                -------------------------------------------------
+                Executing Test : CommentStrippedFromValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.HasKey_ReturnsTrueForExisting
+                -------------------------------------------------
+                Executing Test : HasKey_ReturnsTrueForExisting
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.HasKey_ReturnsFalseForMissing
+                -------------------------------------------------
+                Executing Test : HasKey_ReturnsFalseForMissing
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetString_DefaultForMissing
+                -------------------------------------------------
+                Executing Test : GetString_DefaultForMissing
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetInteger_ParsesValue
+                -------------------------------------------------
+                Executing Test : GetInteger_ParsesValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetBoolean_ParsesTrueFalse
+                -------------------------------------------------
+                Executing Test : GetBoolean_ParsesTrueFalse
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.NullValue
+                -------------------------------------------------
+                Executing Test : NullValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.NestedMap_ProjectSection
+                -------------------------------------------------
+                Executing Test : NestedMap_ProjectSection
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SequenceOfMaps_Nodes
+                -------------------------------------------------
+                Executing Test : SequenceOfMaps_Nodes
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SourceRefsRoundTrip
+                -------------------------------------------------
+                Executing Test : SourceRefsRoundTrip
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.OldFormat_NoGenStatus_Defaults
+                -------------------------------------------------
+                Executing Test : OldFormat_NoGenStatus_Defaults
+                
+                  Success.
+               
+               Running Fixture Teardown Method : Destroy
+               
+            
+         
+      
+   
+
+Done testing.
+Tests Found   : 233
+Tests Ignored : 0
+Tests Passed  : 233
+Tests Leaked  : 0
+Tests Failed  : 0
+Tests Errored : 0

@@ -1,0 +1,23 @@
+============================================================================
+AsWish EHAI Reference Product Binding 001R1 Build Verification Evidence
+Date: 2026-09-14
+============================================================================
+
+=== 1. GUI Application (AsWish.dpr) ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+21036 lines, 2.75 seconds, 6797632 bytes code, 685064 bytes data.
+Exit Code: 0
+
+=== 2. CLI Application (AsWish.CLI.dpr) ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+15324 lines, 1.88 seconds, 3211376 bytes code, 386264 bytes data.
+Exit Code: 0
+
+=== 3. Tier C & Full Test Suite (AsWish.Tests.dpr) ===
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+28966 lines, 3.16 seconds, 9423716 bytes code, 856592 bytes data.
+Exit Code: 0
+
