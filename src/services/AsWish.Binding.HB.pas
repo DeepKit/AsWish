@@ -8,6 +8,16 @@
     -> HB (Human-in-the-loop Bridge)
     -> AsWish Domain Binding (Reference Product Binding 001)
 
+  Public Symbol Baseline Registration (AW-R01):
+    - Baseline Version: EHAI-DELPHI-SYMBOL-BASELINE-v1.0
+    - Baseline Document: DeepBase\docs\EHAI-Delphi-Symbol-Baseline.md
+    - Generation Timestamp: 2026-09-14 09:50:00 +08:00
+    - Source Fingerprints (SHA256 SSOT):
+      * Core/DeepBase.EHAI.Types.pas:
+        de9a32082dbf86ff1943c33677a89746eae187f646c116fd465dda9cbb2d0799
+      * Core/DeepBase.HB.Choice.Types.pas:
+        963fedd0ea91402085391af2b9ed69fa137c23ffd46b340bfe8996dd059ee79e
+
   Contract Compliance:
     - AsWish does not re-define public interaction semantics (0-9, HumanOverride,
       FrameRejection, Regenerate, Back).
@@ -155,17 +165,17 @@ begin
   case AAction.Kind of
     cakCandidate:
       LEhaiAction := TEhaiInteractionAction.CreateCandidate(AAction.Key, AAction.Text,
-        AAction.Profile, LContext, AAction.Payload, AAction.Source);
+        eipJudge, LContext, AAction.Payload, AAction.Source);
     cakRegenerate:
-      LEhaiAction := TEhaiInteractionAction.CreateRegenerate(LContext, AAction.Payload, AAction.Source);
+      LEhaiAction := TEhaiInteractionAction.CreateRegenerate(eipProvide, LContext, AAction.Payload, AAction.Source);
     cakFreeInput:
       LEhaiAction := TEhaiInteractionAction.CreateOverride(AAction.OverrideKind, AAction.Text,
-        LContext, AAction.Payload, AAction.Source);
+        eipProvide, LContext, AAction.Payload, AAction.Source);
     cakBack:
-      LEhaiAction := TEhaiInteractionAction.CreateExit(LContext, AAction.Payload, AAction.Source);
+      LEhaiAction := TEhaiInteractionAction.CreateExit(eipInform, LContext, AAction.Payload, AAction.Source);
   else
     LEhaiAction := TEhaiInteractionAction.CreateCandidate(AAction.Key, AAction.Text,
-      eipInform, LContext, AAction.Payload, AAction.Source);
+      eipJudge, LContext, AAction.Payload, AAction.Source);
   end;
 
   Result := ProcessEhaiAction(LEhaiAction, AChangeSetId);
