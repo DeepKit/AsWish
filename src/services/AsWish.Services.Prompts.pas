@@ -516,7 +516,13 @@ var
   LFileName: string;
   LAffectedProjections: TList<string>;
 begin
-  LFileName := 'change-interpret-' + AIntent.NodeId + '.md';
+  if AIntent.IsFrameRejection then
+    LFileName := 'change-interpret-reframe-' + AIntent.RejectedNodeId + '.md'
+  else if AIntent.NodeId = '' then
+    LFileName := 'change-interpret-unanchored.md'
+  else
+    LFileName := 'change-interpret-' + AIntent.NodeId + '.md';
+
   LSb := TStringBuilder.Create;
   LAffectedProjections := TList<string>.Create;
   try
@@ -526,7 +532,7 @@ begin
       begin
         var LInBundle := False;
         for var LNId in LB.NodeIds do
-          if LNId = AIntent.NodeId then
+          if (LNId = AIntent.NodeId) or (AIntent.IsFrameRejection and (LNId = AIntent.RejectedNodeId)) then
           begin
             LInBundle := True;
             Break;
@@ -548,15 +554,32 @@ begin
       end;
     if not LAffectedProjections.Contains(TSpecEnums.TreeTypeToStr(AIntent.Tree)) then
       LAffectedProjections.Add(TSpecEnums.TreeTypeToStr(AIntent.Tree));
+    if AIntent.IsFrameRejection and not LAffectedProjections.Contains(TSpecEnums.TreeTypeToStr(AIntent.RejectedTree)) then
+      LAffectedProjections.Add(TSpecEnums.TreeTypeToStr(AIntent.RejectedTree));
 
     LSb.AppendLine('# AsWish LLM Interpretation: Candidate User Intent -> Structured Change Set');
     LSb.AppendLine;
+    if AIntent.IsFrameRejection then
+    begin
+      LSb.AppendLine('### FRAME REJECTION NOTICE');
+      LSb.AppendLine('The human user has explicitly REJECTED the problem framing of node `' + AIntent.RejectedNodeId + '` (' + TSpecEnums.TreeTypeToStr(AIntent.RejectedTree) + ').');
+      LSb.AppendLine('Do NOT create option alternatives on `' + AIntent.RejectedNodeId + '` or attempt to rewrite its summary.');
+      LSb.AppendLine('Produce a ChangeSet marking `' + AIntent.RejectedNodeId + '` status as `frame_rejected`, routing higher-level intent to upstream requirements.');
+      LSb.AppendLine;
+    end;
     LSb.AppendLine('You are the AsWish Spec Interpreter. Your mission is to interpret the following raw human user intent into a structured YAML Change Set.');
     LSb.AppendLine('CRITICAL: Do NOT mutate the live Canonical Spec trees directly. You are generating an interpretation candidate for human review.');
     LSb.AppendLine;
     LSb.AppendLine('## 1. Raw Human User Intent');
     LSb.AppendLine;
-    LSb.AppendLine('- Target Node ID: `' + AIntent.NodeId + '`');
+    if AIntent.IsFrameRejection then
+    begin
+      LSb.AppendLine('- Rejected Node ID: `' + AIntent.RejectedNodeId + '`');
+      LSb.AppendLine('- Rejected Projection: `' + TSpecEnums.TreeTypeToStr(AIntent.RejectedTree) + '`');
+      LSb.AppendLine('- Upstream Target Node: `' + AIntent.NodeId + '`');
+    end
+    else
+      LSb.AppendLine('- Target Node ID: `' + AIntent.NodeId + '`');
     LSb.AppendLine('- Target Projection: `' + TSpecEnums.TreeTypeToStr(AIntent.Tree) + '`');
     LSb.AppendLine('- Author: `' + AIntent.Author + '`');
     LSb.AppendLine('- User Intent Text:');

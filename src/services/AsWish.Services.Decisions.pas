@@ -300,17 +300,42 @@ begin
   LDec.Confidence := clHigh;
   LDec.ChangeSetId := AChangeSet.Id;
   LDec.ChangeItemIndex := AItemIndex;
-  LDec.TargetNodes := TArray<string>.Create(AChangeSet.IntentNodeId);
+  if AChangeSet.IsFrameRejection then
+  begin
+    if (AChangeSet.RejectedNodeId <> '') and (AChangeSet.IntentNodeId <> '') then
+      LDec.TargetNodes := TArray<string>.Create(AChangeSet.RejectedNodeId, AChangeSet.IntentNodeId)
+    else if AChangeSet.RejectedNodeId <> '' then
+      LDec.TargetNodes := TArray<string>.Create(AChangeSet.RejectedNodeId)
+    else if AChangeSet.IntentNodeId <> '' then
+      LDec.TargetNodes := TArray<string>.Create(AChangeSet.IntentNodeId)
+    else
+      SetLength(LDec.TargetNodes, 0);
+  end
+  else if AChangeSet.IntentNodeId <> '' then
+    LDec.TargetNodes := TArray<string>.Create(AChangeSet.IntentNodeId)
+  else
+    SetLength(LDec.TargetNodes, 0);
   LDec.Rationale := ARationale;
 
   case AAction of
     rsAccepted:
     begin
-      LDec.DecisionType := dtConfirm;
-      LDec.Status := dsAccepted;
-      LTitle := 'Accept ChangeSet: ' + AChangeSet.Id;
-      LDec.DecisionText := 'Accept interpreted changes for node ' + AChangeSet.IntentNodeId +
-        ' based on intent: ' + AChangeSet.RawUserIntent;
+      if AChangeSet.IsFrameRejection then
+      begin
+        LDec.DecisionType := dtReject;
+        LDec.Status := dsAccepted;
+        LTitle := 'Frame Rejection: ' + AChangeSet.RejectedNodeId;
+        LDec.DecisionText := 'Frame rejected for node ' + AChangeSet.RejectedNodeId +
+          ' based on intent: ' + AChangeSet.RawUserIntent;
+      end
+      else
+      begin
+        LDec.DecisionType := dtConfirm;
+        LDec.Status := dsAccepted;
+        LTitle := 'Accept ChangeSet: ' + AChangeSet.Id;
+        LDec.DecisionText := 'Accept interpreted changes for node ' + AChangeSet.IntentNodeId +
+          ' based on intent: ' + AChangeSet.RawUserIntent;
+      end;
     end;
     rsRejected:
     begin
