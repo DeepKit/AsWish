@@ -37,6 +37,7 @@ uses
   Test.AsWish.VisualWorkflow.Provenance in 'Test.AsWish.VisualWorkflow.Provenance.pas',
   Test.AsWish.VisualWorkflow.Provenance.Diff in 'Test.AsWish.VisualWorkflow.Provenance.Diff.pas',
   Test.AsWish.VisualWorkflow.Provenance.Compliant in 'Test.AsWish.VisualWorkflow.Provenance.Compliant.pas',
+  Test.AsWish.EHAI.Binding in 'Test.AsWish.EHAI.Binding.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Config in '..\src\core\AsWish.Config.pas',
@@ -61,7 +62,8 @@ uses
   AsWish.Services.EvidenceCollector in '..\src\services\AsWish.Services.EvidenceCollector.pas',
   AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas',
   AsWish.Services.VisualWorkflow in '..\src\services\AsWish.Services.VisualWorkflow.pas',
-  AsWish.Plugins.VCL.Difference in '..\src\services\AsWish.Plugins.VCL.Difference.pas';
+  AsWish.Plugins.VCL.Difference in '..\src\services\AsWish.Plugins.VCL.Difference.pas',
+  AsWish.Binding.HB in '..\src\services\AsWish.Binding.HB.pas';
 
 var
   LRunner: ITestRunner;
