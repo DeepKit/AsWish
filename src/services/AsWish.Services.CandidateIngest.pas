@@ -543,6 +543,12 @@ begin
     LSb.AppendLine('version: "1.2"');
     LSb.AppendLine('tree: ' + TSpecEnums.TreeTypeToStr(AIntent.Tree));
     LSb.AppendLine('node_id: "' + AIntent.NodeId + '"');
+    if AIntent.IsFrameRejection then
+    begin
+      LSb.AppendLine('is_frame_rejection: true');
+      LSb.AppendLine('rejected_node_id: "' + AIntent.RejectedNodeId + '"');
+      LSb.AppendLine('rejected_tree: ' + TSpecEnums.TreeTypeToStr(AIntent.RejectedTree));
+    end;
     LEscapedIntent := AIntent.UserIntent.Replace('\', '\\').Replace('"', '\"').Replace(#13, '\r').Replace(#10, '\n');
     LSb.AppendLine('user_intent: "' + LEscapedIntent + '"');
     LSb.AppendLine('author: "' + AIntent.Author + '"');
@@ -572,6 +578,9 @@ begin
       try
         Result.Tree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('tree', ''));
         Result.NodeId := LRoot.GetString('node_id', '');
+        Result.IsFrameRejection := LRoot.GetBool('is_frame_rejection', False);
+        Result.RejectedNodeId := LRoot.GetString('rejected_node_id', '');
+        Result.RejectedTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('rejected_tree', ''));
         Result.UserIntent := LRoot.GetString('user_intent', '');
         Result.Author := LRoot.GetString('author', 'human');
         Result.CreatedAt := Now;
@@ -629,7 +638,7 @@ begin
       begin
         try
           LIntent := ParseCandidateIntentYaml(TFile.ReadAllText(LFile, TEncoding.UTF8));
-          if LIntent.NodeId <> '' then
+          if (LIntent.NodeId <> '') or LIntent.IsFrameRejection or (LIntent.UserIntent <> '') then
             LList.Add(LIntent);
         except
           // Skip malformed
@@ -688,6 +697,12 @@ begin
     LSb.AppendLine('change_set_id: "' + Escape(AChangeSet.Id) + '"');
     LSb.AppendLine('intent_node_id: "' + Escape(AChangeSet.IntentNodeId) + '"');
     LSb.AppendLine('intent_tree: ' + TSpecEnums.TreeTypeToStr(AChangeSet.IntentTree));
+    if AChangeSet.IsFrameRejection then
+    begin
+      LSb.AppendLine('is_frame_rejection: true');
+      LSb.AppendLine('rejected_node_id: "' + Escape(AChangeSet.RejectedNodeId) + '"');
+      LSb.AppendLine('rejected_tree: ' + TSpecEnums.TreeTypeToStr(AChangeSet.RejectedTree));
+    end;
     LSb.AppendLine('raw_user_intent: "' + Escape(AChangeSet.RawUserIntent) + '"');
     LSb.AppendLine('author: "' + Escape(AChangeSet.Author) + '"');
     if AChangeSet.CreatedAt <> 0 then
@@ -749,6 +764,9 @@ begin
         Result.Id := LRoot.GetString('change_set_id', LRoot.GetString('id', ''));
         Result.IntentNodeId := LRoot.GetString('intent_node_id', LRoot.GetString('target_node_id', ''));
         Result.IntentTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('intent_tree', LRoot.GetString('target_projection', '')));
+        Result.IsFrameRejection := LRoot.GetBool('is_frame_rejection', False);
+        Result.RejectedNodeId := LRoot.GetString('rejected_node_id', '');
+        Result.RejectedTree := TSpecEnums.TreeTypeFromStr(LRoot.GetString('rejected_tree', ''));
         Result.RawUserIntent := LRoot.GetString('raw_user_intent', LRoot.GetString('user_intent', ''));
         Result.Author := LRoot.GetString('author', 'human');
         Result.CreatedAt := Now;
@@ -808,14 +826,18 @@ end;
 function TAsWishCandidateIngest.GenerateNextChangeSetId(
   const AProjectPath, ANodeId: string): string;
 var
-  LLlmDir, LCandidateId, LFilePath: string;
+  LLlmDir, LCandidateId, LFilePath, LPrefix: string;
   LSeq: Integer;
 begin
   LLlmDir := TPath.Combine(TPath.Combine(AProjectPath, '.AsWish'), 'llm');
   LSeq := 1;
+  if ANodeId = '' then
+    LPrefix := 'unanchored'
+  else
+    LPrefix := ANodeId;
   while True do
   begin
-    LCandidateId := Format('cs-%s-%.2d', [ANodeId, LSeq]);
+    LCandidateId := Format('cs-%s-%.2d', [LPrefix, LSeq]);
     LFilePath := TPath.Combine(LLlmDir, 'change-set-' + LCandidateId + '.yaml');
     if not TFile.Exists(LFilePath) then
       Exit(LCandidateId);
@@ -983,12 +1005,28 @@ begin
       else if LFieldLower = 'kind' then
         LNode.Kind := LItem.AfterValue
       else if LFieldLower = 'user_intent' then
-        LNode.UserIntent := LItem.AfterValue;
+        LNode.UserIntent := LItem.AfterValue
+      else if LFieldLower = 'status' then
+      begin
+        if (LItem.AfterValue = 'rejected') or (LItem.AfterValue = 'frame_rejected') or
+           (LItem.AfterValue = 'nsRejected') then
+        begin
+          LNode.Status := nsRejected;
+          LNode.ReviewStatus := rsRejected;
+        end
+        else if (LItem.AfterValue = 'superseded') or (LItem.AfterValue = 'nsSuperseded') then
+          LNode.Status := nsSuperseded
+        else if (LItem.AfterValue = 'confirmed') or (LItem.AfterValue = 'nsConfirmed') then
+          LNode.Status := nsConfirmed;
+      end;
 
       // Update review & gen status
-      LNode.ReviewStatus := rsAccepted;
-      LNode.GenStatus := gsConfirmed;
-      LNode.Status := nsConfirmed;
+      if LNode.ReviewStatus <> rsRejected then
+      begin
+        LNode.ReviewStatus := rsAccepted;
+        LNode.GenStatus := gsConfirmed;
+        LNode.Status := nsConfirmed;
+      end;
       LNode.UpdatedAt := Now;
       EnsureDecisionRef(LNode);
 
