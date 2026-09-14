@@ -156,8 +156,16 @@ type
     CreatedAt: TDateTime;
     Author: string;
     SourceRefs: TArray<string>;
+    IsFrameRejection: Boolean;
+    RejectedNodeId: string;
+    RejectedTree: TTreeType;
     class function CreateNew(const ANodeId: string; ATree: TTreeType;
       const AUserIntent: string; const AAuthor: string = 'human'): TCandidateIntent; static;
+    class function CreateUnanchored(ATree: TTreeType; const AUserIntent: string;
+      const AAuthor: string = 'human'): TCandidateIntent; static;
+    class function CreateFrameRejection(const ARejectedNodeId: string; ARejectedTree: TTreeType;
+      const AUserIntent: string; const ATargetNodeId: string = '';
+      ATargetTree: TTreeType = ttFunction; const AAuthor: string = 'human'): TCandidateIntent; static;
   end;
 
   /// <summary>Source category for an item in a Change Set (WO-20260830-0027B).</summary>
@@ -190,8 +198,15 @@ type
     CreatedAt: TDateTime;
     AffectedProjections: TArray<TTreeType>;
     Items: TArray<TChangeItem>;
+    IsFrameRejection: Boolean;
+    RejectedNodeId: string;
+    RejectedTree: TTreeType;
     class function CreateNew(const AId, AIntentNodeId: string; ATree: TTreeType;
       const ARawIntent: string; const AAuthor: string = 'human'): TChangeSet; static;
+    class function CreateFrameRejection(const AId, ARejectedNodeId: string;
+      ARejectedTree: TTreeType; const ARawIntent: string;
+      const ATargetNodeId: string = ''; ATargetTree: TTreeType = ttFunction;
+      const AAuthor: string = 'human'): TChangeSet; static;
   end;
 
   TSemanticBundle = record
@@ -457,6 +472,26 @@ begin
   Result.Author := AAuthor;
   if Result.Author = '' then
     Result.Author := 'human';
+  Result.IsFrameRejection := False;
+  Result.RejectedNodeId := '';
+  Result.RejectedTree := ATree;
+end;
+
+class function TCandidateIntent.CreateUnanchored(ATree: TTreeType;
+  const AUserIntent: string; const AAuthor: string): TCandidateIntent;
+begin
+  Result := CreateNew('', ATree, AUserIntent, AAuthor);
+end;
+
+class function TCandidateIntent.CreateFrameRejection(const ARejectedNodeId: string;
+  ARejectedTree: TTreeType; const AUserIntent: string;
+  const ATargetNodeId: string; ATargetTree: TTreeType;
+  const AAuthor: string): TCandidateIntent;
+begin
+  Result := CreateNew(ATargetNodeId, ATargetTree, AUserIntent, AAuthor);
+  Result.IsFrameRejection := True;
+  Result.RejectedNodeId := ARejectedNodeId;
+  Result.RejectedTree := ARejectedTree;
 end;
 
 { TChangeItem }
@@ -489,6 +524,20 @@ begin
   if Result.Author = '' then
     Result.Author := 'human';
   Result.CreatedAt := Now;
+  Result.IsFrameRejection := False;
+  Result.RejectedNodeId := '';
+  Result.RejectedTree := ATree;
+end;
+
+class function TChangeSet.CreateFrameRejection(const AId, ARejectedNodeId: string;
+  ARejectedTree: TTreeType; const ARawIntent: string;
+  const ATargetNodeId: string; ATargetTree: TTreeType;
+  const AAuthor: string): TChangeSet;
+begin
+  Result := CreateNew(AId, ATargetNodeId, ATargetTree, ARawIntent, AAuthor);
+  Result.IsFrameRejection := True;
+  Result.RejectedNodeId := ARejectedNodeId;
+  Result.RejectedTree := ARejectedTree;
 end;
 
 { TBaselineLineage }
