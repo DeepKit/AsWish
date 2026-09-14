@@ -1,0 +1,311 @@
+﻿{ ============================================================================
+  AsWish.Binding.HB - EHAI Reference Product Binding 001
+  
+  Formal Lineage:
+    EHAI
+    -> Language Common Contract
+    -> DeepBase Delphi Implementation
+    -> HB (Human-in-the-loop Bridge)
+    -> AsWish Domain Binding (Reference Product Binding 001)
+
+  Contract Compliance:
+    - AsWish does not re-define public interaction semantics (0-9, HumanOverride,
+      FrameRejection, Regenerate, Back).
+    - CandidateSelection != Inherent Commitment (1..7 is exploratory review).
+    - Regenerate (8) is non-committing candidate exploration within frame.
+    - HumanOverride / FrameRejection (9) tri-state:
+      * eokCandidateReject: reject candidates within frame
+      * eokAlternativeExpression: custom expression within frame
+      * eokFrameRejection: reject problem framing, refute premise (FR-AW-01)
+    - BackNavigation (0) exit without commitment != Reject != Consent != Judgment.
+    - Commitment Gate: AcceptChangeSet is AsWish product-specific commitment gate,
+      crossing CommitmentBoundary into Canonical Spec mutation and Baseline freeze.
+  ============================================================================ }
+
+unit AsWish.Binding.HB;
+
+{ IMPLICIT_STRING_CAST OFF}
+
+interface
+
+uses
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections,
+  DeepBase.EHAI.Types,
+  DeepBase.HB.Choice.Types,
+  AsWish.Models,
+  AsWish.Controller;
+
+type
+  /// <summary>
+  /// AsWish Reference Product Binding 001 for EHAI / HB.
+  /// Decouples generic interaction grammar from AsWish domain models.
+  /// </summary>
+  TAsWishHBBinding = class(TObject)
+  private
+    FController: TAsWishController;
+    FTraces: TList<TEhaiTraceRecord>;
+    FLastChangeSetId: string;
+    FLastEffect: TEhaiSemanticEffectKind;
+    FIsLastActionCommitted: Boolean;
+    FTraceSeq: Integer;
+    function NextTraceId: string;
+    function RecordTrace(const AAction: TEhaiInteractionAction;
+      AEffect: TEhaiSemanticEffectKind; ACommitted: Boolean;
+      const AActor: string = 'human'): TEhaiTraceRecord;
+  public
+    constructor Create(AController: TAsWishController);
+    destructor Destroy; override;
+
+    /// <summary>
+    /// Process a standard HB 0-9 Choice Deck action.
+    /// Maps 1..7 (Candidate), 8 (Regenerate), 9 (Override/Frame Rejection), 0 (Back).
+    /// Exploration effects only - does NOT commit Canonical Spec.
+    /// </summary>
+    function ProcessHbAction(const AAction: THbChoiceAction;
+      const AChangeSetId: string = ''): TEhaiTraceRecord;
+
+    /// <summary>
+    /// Process a language-neutral EHAI interaction action.
+    /// Exploration effects only - does NOT commit Canonical Spec.
+    /// </summary>
+    function ProcessEhaiAction(const AAction: TEhaiInteractionAction;
+      const AChangeSetId: string = ''): TEhaiTraceRecord;
+
+    /// <summary>
+    /// Formal Product-Specific Commitment Gate (AcceptChangeSet).
+    /// Crosses CommitmentBoundary: mutates Canonical Spec and freezes immutable Baseline.
+    /// </summary>
+    function ExecuteCommitmentGate(const AChangeSetId: string;
+      const ARationale: string = ''): Boolean;
+
+    /// <summary>
+    /// Formal Rejection of ChangeSet.
+    /// Records dtReject / dsRejected decision; leaves Canonical Spec untouched.
+    /// </summary>
+    function ExecuteReject(const AChangeSetId: string;
+      const ARationale: string = ''): Boolean;
+
+    /// <summary>Get all recorded audit trace records in order.</summary>
+    function GetTraces: TArray<TEhaiTraceRecord>;
+
+    /// <summary>Clear audit trace history.</summary>
+    procedure ClearTraces;
+
+    function GetTraceCount: Integer;
+    property Controller: TAsWishController read FController;
+    property LastChangeSetId: string read FLastChangeSetId;
+    property LastEffect: TEhaiSemanticEffectKind read FLastEffect;
+    property IsLastActionCommitted: Boolean read FIsLastActionCommitted;
+    property TraceCount: Integer read GetTraceCount;
+  end;
+
+implementation
+
+{ TAsWishHBBinding }
+
+constructor TAsWishHBBinding.Create(AController: TAsWishController);
+begin
+  inherited Create;
+  FController := AController;
+  FTraces := TList<TEhaiTraceRecord>.Create;
+  FLastChangeSetId := '';
+  FLastEffect := eseInformOnly;
+  FIsLastActionCommitted := False;
+  FTraceSeq := 0;
+end;
+
+destructor TAsWishHBBinding.Destroy;
+begin
+  FTraces.Free;
+  inherited Destroy;
+end;
+
+function TAsWishHBBinding.GetTraceCount: Integer;
+begin
+  Result := FTraces.Count;
+end;
+
+function TAsWishHBBinding.NextTraceId: string;
+begin
+  Inc(FTraceSeq);
+  Result := Format('trace-aw001-%s-%.4d', [FormatDateTime('yyyymmdd', Now), FTraceSeq]);
+end;
+
+function TAsWishHBBinding.RecordTrace(const AAction: TEhaiInteractionAction;
+  AEffect: TEhaiSemanticEffectKind; ACommitted: Boolean;
+  const AActor: string): TEhaiTraceRecord;
+begin
+  Result := TEhaiTraceRecord.Create(NextTraceId, AActor, AAction, AEffect, ACommitted);
+  FTraces.Add(Result);
+  FLastEffect := AEffect;
+  FIsLastActionCommitted := ACommitted;
+end;
+
+function TAsWishHBBinding.ProcessHbAction(const AAction: THbChoiceAction;
+  const AChangeSetId: string): TEhaiTraceRecord;
+var
+  LEhaiAction: TEhaiInteractionAction;
+  LContext: TEhaiContextBinding;
+begin
+  LContext := TEhaiContextBinding.Create(AAction.ContextId, 'HB Choice Context',
+    'User interaction via HB Choice Deck', AAction.ContextId, 'AsWish', 'human');
+
+  case AAction.Kind of
+    cakCandidate:
+      LEhaiAction := TEhaiInteractionAction.CreateCandidate(AAction.Key, AAction.Text,
+        AAction.Profile, LContext, AAction.Payload, AAction.Source);
+    cakRegenerate:
+      LEhaiAction := TEhaiInteractionAction.CreateRegenerate(LContext, AAction.Payload, AAction.Source);
+    cakFreeInput:
+      LEhaiAction := TEhaiInteractionAction.CreateOverride(AAction.OverrideKind, AAction.Text,
+        LContext, AAction.Payload, AAction.Source);
+    cakBack:
+      LEhaiAction := TEhaiInteractionAction.CreateExit(LContext, AAction.Payload, AAction.Source);
+  else
+    LEhaiAction := TEhaiInteractionAction.CreateCandidate(AAction.Key, AAction.Text,
+      eipInform, LContext, AAction.Payload, AAction.Source);
+  end;
+
+  Result := ProcessEhaiAction(LEhaiAction, AChangeSetId);
+end;
+
+function TAsWishHBBinding.ProcessEhaiAction(const AAction: TEhaiInteractionAction;
+  const AChangeSetId: string): TEhaiTraceRecord;
+var
+  LTargetCsId: string;
+  LReviewText: string;
+  LSubmittedCsId: string;
+begin
+  LTargetCsId := AChangeSetId;
+  if (LTargetCsId = '') and (FLastChangeSetId <> '') then
+    LTargetCsId := FLastChangeSetId;
+
+  case AAction.MetaAction of
+    emaChoose:
+    begin
+      // 1..7: Candidate Selection Exploration (CandidateSelection != Inherent Commitment)
+      // Presents / reviews ChangeSet for human valuation, without mutating Canonical Spec.
+      if FController <> nil then
+      begin
+        LReviewText := FController.ReviewChangeSet(LTargetCsId);
+        if LTargetCsId <> '' then
+          FLastChangeSetId := LTargetCsId;
+      end;
+      Result := RecordTrace(AAction, eseJudgmentMade, False);
+    end;
+
+    emaRegenerate:
+    begin
+      // 8: Regenerate within current frame (8 != Judgment, pure exploration)
+      if FController <> nil then
+        FController.ExportPrompt;
+      Result := RecordTrace(AAction, eseInformOnly, False);
+    end;
+
+    emaReframe:
+    begin
+      // 9: Human Override / Frame Rejection
+      if AAction.OverrideKind = eokFrameRejection then
+      begin
+        // Sub-kind 3: Frame Rejection (FR-AW-01)
+        // Explicitly refutes the framing of the current node, captures higher-level intent
+        if FController <> nil then
+        begin
+          LSubmittedCsId := FController.SubmitFrameRejection(
+            AAction.Context.ObservableObjectRef, // Rejected Node
+            ttModule,                            // Rejected Tree (default module)
+            AAction.Text,                        // Human reframe intent
+            ttFunction                           // Upstream requirement tree
+          );
+          FLastChangeSetId := LSubmittedCsId;
+        end;
+        Result := RecordTrace(AAction, eseDataProvided, False);
+      end
+      else
+      begin
+        // Sub-kind 1 & 2: Candidate Rejection or Alternative Expression within frame
+        if FController <> nil then
+        begin
+          if AAction.Context.ObservableObjectRef <> '' then
+            LSubmittedCsId := FController.SubmitUserIntent(
+              AAction.Context.ObservableObjectRef,
+              ttFunction,
+              AAction.Text
+            )
+          else
+            LSubmittedCsId := FController.SubmitUserIntent(AAction.Text, ttFunction);
+          FLastChangeSetId := LSubmittedCsId;
+        end;
+        Result := RecordTrace(AAction, eseDataProvided, False);
+      end;
+    end;
+
+    emaExit:
+    begin
+      // 0: BackNavigation (Exit without commitment != Reject != Consent != Judgment)
+      // Strictly does NOT revoke prior decisions or alter Canonical Spec
+      Result := RecordTrace(AAction, eseInformOnly, False);
+    end;
+  else
+    Result := RecordTrace(AAction, eseInformOnly, False);
+  end;
+end;
+
+function TAsWishHBBinding.ExecuteCommitmentGate(const AChangeSetId: string;
+  const ARationale: string): Boolean;
+var
+  LContext: TEhaiContextBinding;
+  LAction: TEhaiInteractionAction;
+begin
+  Result := False;
+  if FController = nil then Exit;
+
+  // Crosses Commitment Boundary: AcceptChangeSet mutates trees & freezes Baseline
+  Result := FController.AcceptChangeSet(AChangeSetId, ARationale);
+  if Result then
+  begin
+    FLastChangeSetId := AChangeSetId;
+    LContext := TEhaiContextBinding.Create(AChangeSetId, 'Commitment Gate Context',
+      'Commitment Gate crossing', AChangeSetId, 'AsWish', 'human');
+    LAction := TEhaiInteractionAction.CreateCandidate(1, 'Accept ChangeSet: ' + AChangeSetId,
+      eipAuthorize, LContext, 0, esHuman);
+    RecordTrace(LAction, eseAuthorized, True);
+  end;
+end;
+
+function TAsWishHBBinding.ExecuteReject(const AChangeSetId: string;
+  const ARationale: string): Boolean;
+var
+  LContext: TEhaiContextBinding;
+  LAction: TEhaiInteractionAction;
+begin
+  Result := False;
+  if FController = nil then Exit;
+
+  Result := FController.RejectChangeSet(AChangeSetId, ARationale);
+  if Result then
+  begin
+    FLastChangeSetId := AChangeSetId;
+    LContext := TEhaiContextBinding.Create(AChangeSetId, 'Rejection Context',
+      'ChangeSet Rejection', AChangeSetId, 'AsWish', 'human');
+    LAction := TEhaiInteractionAction.CreateCandidate(0, 'Reject ChangeSet: ' + AChangeSetId,
+      eipJudge, LContext, 0, esHuman);
+    RecordTrace(LAction, eseJudgmentMade, False);
+  end;
+end;
+
+function TAsWishHBBinding.GetTraces: TArray<TEhaiTraceRecord>;
+begin
+  Result := FTraces.ToArray;
+end;
+
+procedure TAsWishHBBinding.ClearTraces;
+begin
+  FTraces.Clear;
+  FLastEffect := eseInformOnly;
+  FIsLastActionCommitted := False;
+end;
+
+end.
