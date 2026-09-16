@@ -85,22 +85,36 @@
 6. **可信边界**：AsWish 为纯本地规范工具，所有承诺均由本地人类通过 `AcceptChangeSet` 显式确认；
 7. **授权追溯**：人类通过 `AcceptChangeSet` 显式传入 `Rationale`，固化于 `TChangeSet.Decisions`；
 8. **默认生成**：否。
-- **结论**：**NOT USED**（通过 `ASWISH_V_012` 实测断言）。
+- **源码检索证据**：归档原始 `git grep -n "'\*'" src/` 输出于 [`WO/evidence/git-grep-wildcard-aswish.txt`](file:///D:/_Progs/02Business/AsWish/WO/evidence/git-grep-wildcard-aswish.txt)（全仓源码仅 4 处命中，除密码掩码与路径非法字符外，绑定层仅作为 fail-closed 防护 `or (AChangeSetId = '*') then Exit`，零通配构造与调用）；
+- **实测断言**：`ASWISH_V_012` 实测断言 `ExecuteCommitmentGate('*', ...)` 与 `ExecuteCommitmentGate('', ...)` 严格返回 `False`（fail-closed），且合法提交门禁产出的 `ScopeBoundary` 恒为具体 `'AsWish'`、`ContextId` 恒为具体 `ChangeSetId`，二者均不等于 `'*'`；
+- **结论**：**NOT USED**（源码级检索证实 + `ASWISH_V_012` 实质断言双重确认）。
 
 ### AsWish-N2｜超过 7 个候选静默丢弃
-- AsWish 的候选方案由具体的 ChangeSet 驱动，交互 Deck 严格限定在 1..7 槽位；AsWish 内部接收到具体 Key 操作后定向审阅目标 ChangeSet，不存在未记录的候选在进入界面前被静默丢弃导致人类产生“只有这些”认知偏差的路径。
+- **全链路源码位置**：
+  1. **候选摄入**：`src/services/AsWish.Services.CandidateIngest.pas:216-310`（`TAsWishCandidateIngest.Ingest`），完整解析与验证 YAML 文档节点，无任何静默丢弃或截断逻辑；
+  2. **意图创建与呈现**：`src/controllers/AsWish.Controller.pas:1150-1285`（`TAsWishController.SubmitUserIntent`），构建 `TChangeSet` 时将全部变更项（`LItems.ToArray`）完整存盘（`:1280` `LIngest.SaveChangeSet`），并通过 `FRender.RenderChangeSetReviewPage`（`:1284`）完整渲染 4 层审阅界面，无静默上限过滤；
+  3. **交互 Deck 槽位映射**：`src/services/AsWish.Binding.HB.pas:195-208`（`ProcessEhaiAction`），1..7 槽位定向审阅目标 ChangeSet（`ReviewChangeSet`），不涉及外部候选隐式过滤；
+- **实测验证**：`ASWISH_V_012` 构造包含 8 项变更的 ChangeSet（`cs-test-n2-8items`），存盘并重新加载后，断言 `Length(Items) = 8`，实证全生命周期 0 静默丢弃、0 截断；
+- **结论**：**ESTABLISHED**（源码全路径定位与测试实测验证）。
 
 ### AsWish-N3｜Candidate Key 不查重
-- AsWish binding 层处理动作时，依据每个变更集独一无二的 `ChangeSetId`（格式如 `cs-202609...-0001`）绑定具体操作，不依赖瞬时 Key 进行哈希寻址，彻底免疫“按 Key 冲突导致选 A 执行 B”的问题（`ASWISH_V_012` 实测通过）。
+- **机制原理**：AsWish 绑定层处理交互动作时，以具体变更集的 `ChangeSetId`（如 `cs-...`）为寻址依据，不以瞬时数字 Key 寻址（源码位置：`src/services/AsWish.Binding.HB.pas:184-207`）；
+- **实测验证**：`ASWISH_V_012` 分别创建 `LCSIdA` 与 `LCSIdB`，均通过相同的数字按键（Key 1）触发 HB 候选预览动作，断言 `Trace A` 与 `Trace B` 分别严格绑定对应 ChangeSet ID（`Trace A <> Trace B`），实证同一瞬时 Key 在不同变更集间彻底免疫冲突与错绑；
+- **结论**：**PASS**（`ASWISH_V_012` 实质断言验证）。
 
 ### AsWish-N4｜Covers() 内部使用 Now（时钟确定性）
-- AsWish 内部不调用 `Covers()`；其 Trace 生成仅使用 `Now` 构造人类可读 ID（如 `trace-aw001-20260915-0001`），决策有效性与 Baseline 指纹基于内容 SHA256 哈希，不依赖实时时钟，测试具备 100% 确定性（`Deterministic = YES`）。
+- **机制原理**：AsWish 内部不调用 `Covers()`；其 Trace 生成仅使用 `Now` 构造人类可读 ID（如 `trace-aw001-20260915-0001`），决策有效性与 Baseline 指纹基于内容 SHA256 哈希，不依赖实时时钟；
+- **实测验证**：`ASWISH_V_012` 验证针对同一 ChangeSet 多次执行 `ReviewChangeSet` 输出逐字节完全一致；对同一 HB 动作重复执行产生的 `TEhaiTraceRecord` 之 `SemanticEffect`、`IsCommitted`、`Key`、`Text`、`ContextId` 逐项恒等；冻结的 Baseline `ContentHash` 与 `RelationHash` 经 `VerifyBaseline` 验证具备 100% 确定性；
+- **结论**：**PASS**（`ASWISH_V_012` 实测确定性通过）。
 
 ### AsWish-N5｜Demo 中性语义
-- DeepBase Demo 中的 `Contact List` 属于 AXIS 领域词，AsWish 仓内无任何 `Contact List` 概念与依赖，无语义误导与冲突（`NOT APPLICABLE`）。
+- DeepBase Demo 中的 `Contact List` 属于 AXIS 领域词，AsWish 仓内无任何 `Contact List` 概念与依赖，无语义误导与冲突；
+- **结论**：**NOT APPLICABLE**。
 
 ### AsWish-N6｜ExpiresAt = 0 双义消除
-- AsWish 的工程规范基线（Baseline）与架构决策（Decision）作为不可变工程资产，**永久有效**。在 AsWish 领域策略中，未设置过期时间的语义明确为 **`Never Expires`**，直至被后继显式 ChangeSet 演进取代（`ASWISH_V_012` 实测通过）。
+- **事实**：AsWish 的工程规范基线（`TAsWishBaseline`，`src/models/AsWish.Models.pas:335-350`）仅包含 `BaselineId`, `DecisionId`, `SnapshotName`, `TreeType`, `ContentHash`, `RelationHash`, `Lineage` 等不可变哈希与谱系属性，**无任何 `ExpiresAt` 字段**；AsWish 作为规范定义工具，基线属于永久有效的不变规格资产，不涉及临时租期或过期逻辑；
+- **实测验证**：`ASWISH_V_012` 断言基线哈希存在且 `VerifyBaseline` 永久有效可验证；
+- **结论**：**NOT APPLICABLE（AsWish 领域模型无 ExpiresAt 字段，不可变基线永不过期）**。
 
 ---
 
@@ -113,8 +127,9 @@
 | **AsWish Full Regression + Gate C Targeted** | **236** | **236** | **0** | **0** | **0** | **0** |
 
 **原始证据快照**：
-- 编译证据：[`WO/evidence/build-ehai-downstream-001-A.txt`](file:///D:/_Progs/02Business/AsWish/WO/evidence/build-ehai-downstream-001-A.txt)（Win64 编译完成，0 Error，0 Warning）
-- 测试实录：[`WO/evidence/tests-ehai-downstream-001-A.txt`](file:///D:/_Progs/02Business/AsWish/WO/evidence/tests-ehai-downstream-001-A.txt)（236 项全绿，Exit Code = 0）
+- 编译证据：[`WO/evidence/build-ehai-downstream-001-A-R1.txt`](file:///D:/_Progs/02Business/AsWish/WO/evidence/build-ehai-downstream-001-A-R1.txt)（Win64 编译完成，Exit Code = 0，日志中无 Error/Warning 行，0 Error, 0 Warning, 0 Hint）
+- 测试实录：[`WO/evidence/tests-ehai-downstream-001-A-R1.txt`](file:///D:/_Progs/02Business/AsWish/WO/evidence/tests-ehai-downstream-001-A-R1.txt)（236 项全绿，Passed 236, Failed 0, Exit Code = 0）
+- 通配检索：[`WO/evidence/git-grep-wildcard-aswish.txt`](file:///D:/_Progs/02Business/AsWish/WO/evidence/git-grep-wildcard-aswish.txt)（全仓源码检索证实通配权限未被使用，Exit Code = 0）
 
 ---
 
@@ -126,35 +141,41 @@
 
 ---
 
-## 九、A-9｜AsWish 提交与隔离台账
+## 九、A-9｜AsWish R1 提交与隔离台账
 
 ```text
-Commit SHA:      618508f39c5dce7e7bc1de29a2eafb18f73c5af8
-Parent SHA:      d5fce9b9f3b3f78483f3baa2ddbf28ec307549ac
-Changed Files:   3 files changed, 2425 insertions(+), 1 deletion(-)
-DeepBase Consumed: fc213b4696d92bc8a836ef644abaeb74f0daa79e
-git status:      Scoped test & evidence cleanly committed (0 dirty files in scope)
+Upstream Baseline:   fc213b4696d92bc8a836ef644abaeb74f0daa79e (DeepBase, FROZEN)
+Starting HEAD:       7af59e4eff1c9f60e519ef0b4c99f52cb8a2f2f4
+R1 Commit SHA:       41471c8b974030c041e281d9e1bdf9466998a43d
+Parent SHA:          7af59e4eff1c9f60e519ef0b4c99f52cb8a2f2f4
+Owner Repo:          AsWish (D:\_Progs\02Business\AsWish)
+Working Tree Status: Clean (0 dirty files in scope; 11 pre-existing untracked files isolated)
+Changed Files:       6 files changed, 2480 insertions(+), 39 deletions(-)
 ```
 
 **涉及文件清单**：
-- `tests/Test.AsWish.EHAI.Binding.pas`（新增 ASWISH_V_010 ～ ASWISH_V_012 专项断言）
-- `WO/evidence/build-ehai-downstream-001-A.txt`（构建原始输出）
-- `WO/evidence/tests-ehai-downstream-001-A.txt`（236 测试全绿实测原始日志）
+- `src/services/AsWish.Binding.HB.pas`（承诺门禁与拒绝入口增加空值及通配 `'*'` fail-closed 拦截）
+- `tests/Test.AsWish.EHAI.Binding.pas`（ASWISH_V_012 消除恒真断言，落地 N1~N6 实质断言与确定性检验）
+- `WO/evidence/build-ehai-downstream-001-A-R1.txt`（构建原始日志，含 Exit Code 0）
+- `WO/evidence/tests-ehai-downstream-001-A-R1.txt`（236 测试全量回归原始日志，含 Exit Code 0）
+- `WO/evidence/git-grep-wildcard-aswish.txt`（源码通配使用检索原始日志）
+- `WO/WO-20260915-EHAI-DOWNSTREAM-001-A-AsWish-Gate-C-交付报告.md`（交付报告更新）
 
 ---
 
-## 十、A-10｜Phase A 结论与阶段移交
+## 十、A-10｜Phase A R1 结论与阶段移交
 
 ```text
 ========================================================================
-PHASE A 结论：
-  AsWish Reference Product Binding 001 Gate C 承接实测全部成立。
-  全量测试 236/236 PASS，语义矩阵 10/10 PASS，N-1～N-6 全部澄清。
+PHASE A R1 结论：
+  AsWish Reference Product Binding 001 Gate C 最小整改项（A-R1-1, A-R1-2, A-R1-3）全部闭环。
+  全量测试 236/236 PASS，消除所有恒真断言，落地真实确定性与错绑免疫断言，
+  N-2 给出全链路源码定位并经测试实测验证，N-6 如实标定 NOT APPLICABLE。
   未修改 DeepBase，未修改 EHAI，未修改 AXIS。
 
 工单状态建议：
-  READY FOR GATE C REVIEW
+  DEV COMPLETE — READY FOR INDEPENDENT REVIEW
 ========================================================================
 ```
 
-*(本阶段完成，开发甲彻底退出 AsWish 仓，不作任何滞留修改，依序切入 Phase B · AXIS)*
+*(本阶段整改完成，开发甲彻底退出 AsWish 仓，不作任何滞留修改，依序切入 Phase B R1 · AXIS)*

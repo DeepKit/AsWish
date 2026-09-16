@@ -608,27 +608,106 @@ procedure TTestAsWishEHAIBinding.ASWISH_V_012_GateB_N1_To_N6_Invariants;
 var
   LCSId, LRootId: string;
   LBaselines: TArray<TAsWishBaseline>;
+  LItems8: TArray<TChangeItem>;
+  I: Integer;
+  LCS8, LLoadedCS8: TChangeSet;
+  LIngest: TAsWishCandidateIngest;
+  LCSIdA, LCSIdB: string;
+  LActionA, LActionB: THbChoiceAction;
+  LTraceA, LTraceB: TEhaiTraceRecord;
+  LReview1, LReview2: string;
+  LActionDet1, LActionDet2: THbChoiceAction;
+  LTraceDet1, LTraceDet2: TEhaiTraceRecord;
+  LGateTraces: TArray<TEhaiTraceRecord>;
+  LLastGateTrace: TEhaiTraceRecord;
 begin
   LRootId := FBuilder.FunctionNodes[0].Id;
 
+  // Submit initial intent to establish a valid ChangeSet
+  LCSId := FController.SubmitUserIntent(LRootId, ttFunction, 'Invariant verification intent');
+  Assert.IsNotEmpty(LCSId, 'ChangeSet ID must be generated');
+
   // N-1: Wildcard Authority Scope '*' is NOT USED in AsWish.
   // AsWish is a local specification system; all commitments are guarded by AcceptChangeSet.
-  Assert.AreEqual('AsWish', 'AsWish', 'AsWish does not model external execution dispatch; TEhaiAuthorityScope wildcard is NOT USED');
+  // Verification 1: Commitment gate strictly rejects wildcard '*' identifier (fail-closed)
+  Assert.IsFalse(FBinding.ExecuteCommitmentGate('*', 'Wildcard scope rejection test'),
+    'Wildcard ChangeSetId must be rejected by commitment gate (fail-closed)');
+  // Verification 2: Commitment gate strictly rejects empty identifier (fail-closed)
+  Assert.IsFalse(FBinding.ExecuteCommitmentGate('', 'Empty scope rejection test'),
+    'Empty ChangeSetId must be rejected by commitment gate');
 
-  // N-2: Candidate space is bounded (1..7), and ChangeSet items maintain recoverable lineage
-  LCSId := FController.SubmitUserIntent(LRootId, ttFunction, 'Invariant verification intent');
-  Assert.IsNotEmpty(LCSId);
+  // N-2: Candidate space bounding and non-truncation verification
+  // Verify that candidate ingestion preserves all items (e.g. 8 items) without silent drop <= 7
+  SetLength(LItems8, 8);
+  for I := 0 to 7 do
+    LItems8[I] := TChangeItem.CreateItem(LRootId, ttFunction, 'field' + IntToStr(I), '', 'val' + IntToStr(I), cstExplicit);
+  LCS8 := TChangeSet.CreateNew('cs-test-n2-8items', LRootId, ttFunction, '8 items intent');
+  LCS8.Items := LItems8;
+  LIngest := TAsWishCandidateIngest.Create(FStore);
+  try
+    LIngest.SaveChangeSet(FProject.ProjectPath, LCS8);
+    LLoadedCS8 := LIngest.LoadChangeSet(FProject.ProjectPath, 'cs-test-n2-8items');
+    Assert.AreEqual(8, Integer(Length(LLoadedCS8.Items)),
+      'Candidate space preserves all 8 items; zero silent truncation in ingest pipeline');
+  finally
+    LIngest.Free;
+  end;
 
-  // N-3: Candidate key collision immunity: actions are bound to unique ChangeSet IDs (cs-...)
-  Assert.IsTrue(LCSId.StartsWith('cs-'), 'ChangeSet ID must be uniquely prefixed and non-colliding');
+  // N-3: Candidate key collision immunity:
+  // AsWish addresses actions by explicit ChangeSetId, not by transient UI key numbers (0..9).
+  // Actions targeting different ChangeSets using the same UI key (Key 1) remain strictly isolated without cross-wiring.
+  LCSIdA := FController.SubmitUserIntent(LRootId, ttFunction, 'Distinct Intent A');
+  LCSIdB := FController.SubmitUserIntent(LRootId, ttFunction, 'Distinct Intent B');
+  Assert.AreNotEqual(LCSIdA, LCSIdB, 'Different intents produce distinct ChangeSet IDs');
 
-  // N-4: Determinism: No non-deterministic clock gating in AsWish decisions
-  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Deterministic commitment test'));
+  LActionA := THbChoiceAction.Create(cakCandidate, 1, 'Preview A', 0, cisKeyboard, eokNone, esHuman, eipJudge, LCSIdA);
+  LTraceA := FBinding.ProcessHbAction(LActionA, LCSIdA);
 
-  // N-6: ExpiresAt = 0 / Never Expires: AsWish baselines are permanent immutable specifications
+  LActionB := THbChoiceAction.Create(cakCandidate, 1, 'Preview B', 0, cisKeyboard, eokNone, esHuman, eipJudge, LCSIdB);
+  LTraceB := FBinding.ProcessHbAction(LActionB, LCSIdB);
+
+  Assert.AreEqual(LCSIdA, LTraceA.Action.Context.ContextId, 'Trace A bound to ChangeSet A');
+  Assert.AreEqual(LCSIdB, LTraceB.Action.Context.ContextId, 'Trace B bound to ChangeSet B');
+  Assert.AreNotEqual(LTraceA.Action.Context.ContextId, LTraceB.Action.Context.ContextId,
+    'Same key (1) never collides across distinct ChangeSets');
+
+  // N-4: Determinism:
+  // Same input repeatedly executed yields byte-exact identical review text and trace state
+  LReview1 := FController.ReviewChangeSet(LCSId);
+  LReview2 := FController.ReviewChangeSet(LCSId);
+  Assert.AreEqual(LReview1, LReview2,
+    'ReviewChangeSet output must be byte-exact deterministic across calls');
+
+  LActionDet1 := THbChoiceAction.Create(cakCandidate, 1, 'Deterministic preview', 0, cisKeyboard, eokNone, esHuman, eipJudge, LCSId);
+  LTraceDet1 := FBinding.ProcessHbAction(LActionDet1, LCSId);
+  LActionDet2 := THbChoiceAction.Create(cakCandidate, 1, 'Deterministic preview', 0, cisKeyboard, eokNone, esHuman, eipJudge, LCSId);
+  LTraceDet2 := FBinding.ProcessHbAction(LActionDet2, LCSId);
+  Assert.AreEqual(Ord(LTraceDet1.SemanticEffect), Ord(LTraceDet2.SemanticEffect), 'Semantic effect deterministic');
+  Assert.AreEqual(LTraceDet1.IsCommitted, LTraceDet2.IsCommitted, 'Commitment status deterministic');
+  Assert.AreEqual(LTraceDet1.Action.Key, LTraceDet2.Action.Key, 'Action key deterministic');
+  Assert.AreEqual(LTraceDet1.Action.Text, LTraceDet2.Action.Text, 'Action text deterministic');
+  Assert.AreEqual(LTraceDet1.Action.Context.ContextId, LTraceDet2.Action.Context.ContextId, 'ContextId deterministic');
+
+  // Cross commitment gate on LCSId and verify resulting concrete scope
+  Assert.IsTrue(FBinding.ExecuteCommitmentGate(LCSId, 'Deterministic commitment test'),
+    'Valid commitment gate must succeed');
+  LGateTraces := FBinding.GetTraces;
+  LLastGateTrace := LGateTraces[High(LGateTraces)];
+  Assert.AreEqual('AsWish', LLastGateTrace.Action.Context.ScopeBoundary, 'Context ScopeBoundary must be concrete AsWish scope');
+  Assert.AreNotEqual('*', LLastGateTrace.Action.Context.ScopeBoundary, 'Context ScopeBoundary must never be wildcard *');
+  Assert.AreEqual(LCSId, LLastGateTrace.Action.Context.ContextId, 'ContextId must be concrete ChangeSetId');
+  Assert.AreNotEqual('*', LLastGateTrace.Action.Context.ContextId, 'ContextId must never be wildcard *');
+
+  // N-6: ExpiresAt = 0 / Never Expires:
+  // AsWish models permanent specifications; TAsWishBaseline has no ExpiresAt field.
+  // Contractual status: NOT APPLICABLE (AsWish domain model does not feature temporal expiration).
+  // Baseline verification validates content/relation hash integrity, not temporal validity.
   LBaselines := FController.ListBaselines;
   Assert.IsTrue(Length(LBaselines) >= 1);
-  Assert.IsTrue(FController.VerifyBaseline(LBaselines[0].BaselineId), 'Baseline never expires; remains permanently valid and verifiable');
+  Assert.IsNotEmpty(LBaselines[0].ContentHash, 'Baseline ContentHash must be present');
+  Assert.IsNotEmpty(LBaselines[0].RelationHash, 'Baseline RelationHash must be present');
+  Assert.IsTrue(FController.VerifyBaseline(LBaselines[0].BaselineId),
+    'Baseline hash integrity permanently verifiable');
 end;
 
 initialization

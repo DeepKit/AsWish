@@ -1,0 +1,5 @@
+src/app/AsWish.SettingsProvider.pas:109:  FEditKey.PasswordChar := '*';
+src/services/AsWish.Binding.HB.pas:274:  if (FController = nil) or (AChangeSetId.Trim = '') or (AChangeSetId = '*') then Exit;
+src/services/AsWish.Binding.HB.pas:297:  if (FController = nil) or (AChangeSetId.Trim = '') or (AChangeSetId = '*') then Exit;
+src/services/AsWish.Services.Snapshot.pas:75:  UnsafeChars = ['<', '>', '"', '/', '\', '|', ':', '*', '?'];
+Exit Code: 0

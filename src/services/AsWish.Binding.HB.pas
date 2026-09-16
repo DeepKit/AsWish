@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Binding.HB - EHAI Reference Product Binding 001
   
   Formal Lineage:
@@ -270,7 +270,8 @@ var
   LAction: TEhaiInteractionAction;
 begin
   Result := False;
-  if FController = nil then Exit;
+  // Gate C invariant: reject empty or wildcard identifiers (fail-closed)
+  if (FController = nil) or (AChangeSetId.Trim = '') or (AChangeSetId = '*') then Exit;
 
   // Crosses Commitment Boundary: AcceptChangeSet mutates trees & freezes Baseline
   Result := FController.AcceptChangeSet(AChangeSetId, ARationale);
@@ -292,7 +293,8 @@ var
   LAction: TEhaiInteractionAction;
 begin
   Result := False;
-  if FController = nil then Exit;
+  // Gate C invariant: reject empty or wildcard identifiers (fail-closed)
+  if (FController = nil) or (AChangeSetId.Trim = '') or (AChangeSetId = '*') then Exit;
 
   Result := FController.RejectChangeSet(AChangeSetId, ARationale);
   if Result then
