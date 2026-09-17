@@ -1,0 +1,14 @@
+{
+  "node_root": {
+    "direction": "vertical",
+    "padding": 16,
+    "gap": 8
+  },
+  "node_btn_cancel": {
+    "align": "left",
+    "relation": "left-of node_btn_confirm"
+  },
+  "node_btn_confirm": {
+    "align": "right"
+  }
+}

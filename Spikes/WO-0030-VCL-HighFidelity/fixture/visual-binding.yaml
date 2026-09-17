@@ -1,0 +1,14 @@
+version: '1.0'
+identity_map:
+  AW_Form: node_root
+  AW_Title: node_title
+  AW_Desc: node_desc
+  AW_Edit: node_edit
+  AW_BtnCancel: node_btn_cancel
+  AW_BtnConfirm: node_btn_confirm
+style_refs:
+  node_title:
+    color: token.text.title
+  node_btn_confirm:
+    color: token.btn.primary
+token_bundle_hash: abc123frozenhash

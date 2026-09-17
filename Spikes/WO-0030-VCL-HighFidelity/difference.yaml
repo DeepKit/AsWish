@@ -1,0 +1,20 @@
+baseline_id: WO-0030-Spike-Baseline
+tree_type: view
+items:
+- node_id: node_btn_confirm
+  kind: changed
+  changed_aspect: relation
+  message: 'L2 Layout Difference: Expected Cancel left-of Confirm, but Observed Confirm
+    (Left=180) left-of Cancel (Left=276).'
+- node_id: node_title
+  kind: changed
+  changed_aspect: content
+  message: 'L3 Appearance Difference: Expected clNavy (8388608) from token token.text.title,
+    but Observed 255.'
+- node_id: node_btn_confirm
+  kind: changed
+  changed_aspect: content
+  message: 'L3 Appearance Difference: Expected clHighlight (-1) from token token.btn.primary,
+    but Observed -16777208.'
+spike_gap_evidence: AsWish.Services.Difference.pas lacks formal L2/L3 plugin seams.
+  SpikeAdapter generated this difference report.

@@ -1,0 +1,24 @@
+- id: node_root
+  type: Form
+  name: MainForm
+  children:
+  - node_title
+  - node_desc
+  - node_edit
+  - node_btn_cancel
+  - node_btn_confirm
+- id: node_title
+  type: Label
+  name: TitleLabel
+- id: node_desc
+  type: Label
+  name: DescLabel
+- id: node_edit
+  type: Edit
+  name: InputBox
+- id: node_btn_cancel
+  type: Button
+  name: CancelBtn
+- id: node_btn_confirm
+  type: Button
+  name: ConfirmBtn
