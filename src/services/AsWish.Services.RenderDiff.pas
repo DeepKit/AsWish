@@ -1,4 +1,5 @@
-﻿unit AsWish.Services.RenderDiff;
+unit AsWish.Services.RenderDiff;
+{$WARN IMPLICIT_STRING_CAST OFF}
 
 interface
 
@@ -84,6 +85,14 @@ begin
     LSb.AppendLine('  <span class="meta-tag"><strong>Tree:</strong> ' + HtmlEscape(AReport.TreeType) + '</span>');
     LSb.AppendLine('  <span class="meta-tag"><strong>Differences:</strong> ' + IntToStr(Length(AReport.Items)) + '</span>');
     LSb.AppendLine('</div>');
+
+    if AReport.IsDegraded then
+    begin
+      LSb.AppendLine('<div class="card" style="border-left: 4px solid #f59e0b; background: #fffbeb;">');
+      LSb.AppendLine('  <strong style="color: #b45309;">' + T(ALocale, 'Degraded Operation', '降级运行模式') + ':</strong> ');
+      LSb.AppendLine('  <span>' + HtmlEscape(AReport.DegradedReason) + '</span>');
+      LSb.AppendLine('</div>');
+    end;
 
     if Length(AReport.Items) = 0 then
     begin

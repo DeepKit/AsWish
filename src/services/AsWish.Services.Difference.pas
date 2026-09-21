@@ -1,4 +1,4 @@
-﻿unit AsWish.Services.Difference;
+unit AsWish.Services.Difference;
 
 interface
 
@@ -66,7 +66,8 @@ type
       const AResolver: IPlatformIdentityResolver = nil;
       const AObservationJson: string = '';
       const AConstraintsJson: string = '';
-      const AExpectedStylesJson: string = ''): TSpecDifferenceReport;
+      const AExpectedStylesJson: string = '';
+      const AAllowDegraded: Boolean = False): TSpecDifferenceReport;
     procedure WriteDifferenceFile(const ARelPath: string;
       const AReport: TSpecDifferenceReport);
     function ReadDifferenceFile(const ARelPath: string = 'difference.yaml'): TSpecDifferenceReport;
@@ -152,6 +153,12 @@ begin
     LSb.AppendLine('baseline_id: "' + EscapeStr(AReport.BaselineId) + '"');
     LSb.AppendLine('tree_type: "' + EscapeStr(AReport.TreeType) + '"');
     LSb.AppendLine('computed_at: "' + DateToISO8601(AReport.ComputedAt, False) + '"');
+    if AReport.IsDegraded then
+    begin
+      LSb.AppendLine('is_degraded: true');
+      if AReport.DegradedReason <> '' then
+        LSb.AppendLine('degraded_reason: "' + EscapeStr(AReport.DegradedReason) + '"');
+    end;
 
     if Length(AReport.Items) = 0 then
       LSb.AppendLine('items: []')
@@ -210,6 +217,8 @@ begin
         Result.ComputedAt := ISO8601ToDate(LRoot.GetString('computed_at', ''), False)
       else
         Result.ComputedAt := Now;
+      Result.IsDegraded := LRoot.GetBoolean('is_degraded', False);
+      Result.DegradedReason := LRoot.GetString('degraded_reason', '');
 
       LItemsSeq := LRoot.Get('items');
       LItemsList := TList<TSpecDifferenceItem>.Create;
@@ -255,7 +264,8 @@ function TAsWishDifferenceService.ComputeDifference(const AProjectDir: string;
   const AResolver: IPlatformIdentityResolver;
   const AObservationJson: string;
   const AConstraintsJson: string;
-  const AExpectedStylesJson: string): TSpecDifferenceReport;
+  const AExpectedStylesJson: string;
+  const AAllowDegraded: Boolean): TSpecDifferenceReport;
 var
   LBaseline: TAsWishBaseline;
   LSnapDir, LTreeFileName: string;
@@ -284,14 +294,18 @@ begin
   if not TDirectory.Exists(LSnapDir) then
     raise Exception.Create('Baseline snapshot directory missing: ' + LSnapDir);
 
-  // Load implementation evidence (fail-closed if missing)
+  // Load implementation evidence (fail-closed if missing unless AAllowDegraded is True)
   LEvList := FStore.ReadEvidenceFile('evidence/implementation-evidence.yaml');
   if (LEvList = nil) or (LEvList.Count = 0) then
   begin
     LEvList.Free;
-    raise Exception.Create('Implementation evidence missing or empty: .AsWish/evidence/implementation-evidence.yaml');
-  end;
-  LEvList.Free;
+    if not AAllowDegraded then
+      raise Exception.Create('Implementation evidence missing or empty: .AsWish/evidence/implementation-evidence.yaml');
+    Result.IsDegraded := True;
+    Result.DegradedReason := 'Degraded: Implementation evidence missing or empty; L1 structural comparison only.';
+  end
+  else
+    LEvList.Free;
 
   LTreeFileName := 'trees/function-tree.yaml';
   if LBaseline.TreeType = 'view' then LTreeFileName := 'trees/view-tree.yaml'
@@ -376,6 +390,7 @@ begin
       end;
 
       // 3. Dispatch registered Platform Comparators for L2/L3 extension
+      var LHandledByPlatform := False;
       if FComparators.Count > 0 then
       begin
         var LCtx: TPlatformComparisonContext;
@@ -392,10 +407,20 @@ begin
         begin
           if (LComp <> nil) and LComp.CanHandle(LCtx, LBaseline) then
           begin
+            LHandledByPlatform := True;
             var LPlatformItems := LComp.CompareL2L3(LCtx, LBaseline);
             for var LPlatItem in LPlatformItems do
               LDiffItems.Add(LPlatItem);
           end;
+        end;
+      end;
+
+      if not LHandledByPlatform and (LBaseline.TreeType = 'view') and AAllowDegraded then
+      begin
+        if not Result.IsDegraded then
+        begin
+          Result.IsDegraded := True;
+          Result.DegradedReason := 'Degraded: No platform visual comparator handled baseline; skipped L2/L3 visual comparison.';
         end;
       end;
 

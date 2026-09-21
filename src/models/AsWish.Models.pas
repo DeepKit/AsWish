@@ -266,6 +266,8 @@ type
     TreeType: string;
     ComputedAt: TDateTime;
     Items: TArray<TSpecDifferenceItem>;
+    IsDegraded: Boolean;
+    DegradedReason: string;
   end;
 
   TSpecIssue = record

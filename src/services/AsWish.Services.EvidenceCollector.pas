@@ -322,6 +322,55 @@ begin
       end;
     end;
 
+    // 4b. Fallback for projects where baseline nodes do not have explicit source_refs
+    if LCollectedList.Count = 0 then
+    begin
+      if LSourceEvMap.Count > 0 then
+      begin
+        for var LSev in LSourceEvMap.Values do
+        begin
+          LAbsPath := TPath.Combine(AProjectDir, StringReplace(LSev.Path, '/', '\', [rfReplaceAll]));
+          if TFile.Exists(LAbsPath) then
+          begin
+            LFileHash := TSpecHash.FileSha256Hex(LAbsPath);
+            LExcerpt := ExtractSampleLines(LAbsPath, LSev.Lines);
+            LEv := Default(TSpecEvidence);
+            LEv.Id := Format('ev-impl-%.4d', [LCollectedList.Count + 1]);
+            LEv.SourceLayer := slImplementation;
+            LEv.Path := LSev.Path;
+            LEv.Lines := LSev.Lines;
+            LEv.Excerpt := LExcerpt;
+            LEv.ExcerptTruncated := False;
+            LEv.Confidence := clMedium;
+            LEv.CreatedAt := Now;
+            LEv.UpdatedAt := Now;
+            LEv.SourceFileHash := LFileHash;
+            LEv.ContentHash := TSpecHash.Sha256Hex(LExcerpt);
+            LEv.Note := 'Project source fallback (unanchored)';
+            LCollectedList.Add(LEv);
+          end;
+        end;
+      end;
+
+      if LCollectedList.Count = 0 then
+      begin
+        LEv := Default(TSpecEvidence);
+        LEv.Id := 'ev-impl-0001';
+        LEv.SourceLayer := slImplementation;
+        LEv.Path := '.AsWish';
+        LEv.Lines := '1-1';
+        LEv.Excerpt := '(pure spec baseline)';
+        LEv.ExcerptTruncated := False;
+        LEv.Confidence := clLow;
+        LEv.CreatedAt := Now;
+        LEv.UpdatedAt := Now;
+        LEv.SourceFileHash := '';
+        LEv.ContentHash := TSpecHash.Sha256Hex('pure-spec');
+        LEv.Note := 'Graceful fallback: pure spec baseline';
+        LCollectedList.Add(LEv);
+      end;
+    end;
+
     // 5. Write to .AsWish/evidence/implementation-evidence.yaml
     FStore.WriteEvidenceFile('evidence/implementation-evidence.yaml', LCollectedList);
 

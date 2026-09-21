@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Controller
 
@@ -1601,10 +1601,14 @@ begin
 
   LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
   try
-    Result := LDifference.ComputeDifference(FProjectService.ProjectPath, ABaselineId);
+    Result := LDifference.ComputeDifference(FProjectService.ProjectPath, ABaselineId, nil, '', '', '', True);
     FRender.RenderDifferencePage(Result, FProjectService.ProjectName);
-    FStatus.Info('AsWish.Difference', Format('Computed %d differences against baseline %s',
-      [Length(Result.Items), ABaselineId]));
+    if Result.IsDegraded then
+      FStatus.Info('AsWish.Difference', Format('Computed %d differences against baseline %s (Degraded: %s)',
+        [Length(Result.Items), ABaselineId, Result.DegradedReason]))
+    else
+      FStatus.Info('AsWish.Difference', Format('Computed %d differences against baseline %s',
+        [Length(Result.Items), ABaselineId]));
   finally
     LDifference.Free;
   end;
