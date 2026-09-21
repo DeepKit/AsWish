@@ -67,6 +67,10 @@ type
     procedure Test07_Difference_MissingEvidence_FailClosed;
     [Test]
     procedure Test08_Difference_RoundTripReadback;
+    [Test]
+    procedure Test09_Difference_GracefulDegradation_WhenEvidenceEmpty;
+    [Test]
+    procedure Test10_Difference_NonVisual_GracefulHandling;
   end;
 
 implementation
@@ -473,6 +477,88 @@ begin
   Assert.AreEqual<string>('func-02', LReport2.Items[1].NodeId);
   Assert.AreEqual<TDifferenceKind>(dkChanged, LReport2.Items[1].Kind);
   Assert.AreEqual<TDifferenceAspect>(daBoth, LReport2.Items[1].ChangedAspect);
+end;
+
+procedure TTestAsWishDifference.Test09_Difference_GracefulDegradation_WhenEvidenceEmpty;
+var
+  LNodes: TList<TSpecNode>;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LB: TAsWishBaseline;
+  LBaseId: string;
+  LReport: TSpecDifferenceReport;
+begin
+  LNodes := TList<TSpecNode>.Create;
+  try
+    LNodes.Add(MakeTestNode('func-01', 'Func One', 'feature', '', 'Summary 1'));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LNodes);
+
+    LDec := Default(TSpecDecision);
+    LDec.Id := 'dec-01';
+    LDec.DecisionType := dtConfirm;
+    LDec.Status := dsAccepted;
+
+    LCS := Default(TChangeSet);
+    LCS.Id := 'cs-01';
+    LCS.IntentNodeId := 'func-01';
+
+    LBaseId := FSnapshot.CreateBaseline(LDec, LCS, LNodes, nil, nil, nil, LB);
+
+    // Call with AAllowDegraded = True when implementation-evidence.yaml is absent
+    LReport := FDifference.ComputeDifference(FTestDir, LBaseId, nil, '', '', '', True);
+
+    Assert.AreEqual<string>(LBaseId, LReport.BaselineId);
+    Assert.IsTrue(LReport.IsDegraded, 'Report must be marked as degraded');
+    Assert.IsTrue(LReport.DegradedReason.Contains('Implementation evidence missing'),
+      'Degraded reason must explain missing implementation evidence');
+    Assert.AreEqual<Integer>(0, Length(LReport.Items), 'Items should be 0 because baseline and live nodes match');
+  finally
+    LNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishDifference.Test10_Difference_NonVisual_GracefulHandling;
+var
+  LNodes: TList<TSpecNode>;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LB: TAsWishBaseline;
+  LBaseId: string;
+  LReport: TSpecDifferenceReport;
+begin
+  LNodes := TList<TSpecNode>.Create;
+  try
+    // Baseline has func-01
+    LNodes.Add(MakeTestNode('func-01', 'Func One', 'feature', '', 'Summary 1'));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LNodes);
+
+    LDec := Default(TSpecDecision);
+    LDec.Id := 'dec-01';
+    LDec.DecisionType := dtConfirm;
+    LDec.Status := dsAccepted;
+
+    LCS := Default(TChangeSet);
+    LCS.Id := 'cs-01';
+    LCS.IntentNodeId := 'func-01';
+
+    LBaseId := FSnapshot.CreateBaseline(LDec, LCS, LNodes, nil, nil, nil, LB);
+
+    // Mutate live: add func-02 (extra)
+    LNodes.Add(MakeTestNode('func-02', 'Func Two', 'feature', '', 'Summary 2'));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LNodes);
+
+    WriteMockEvidenceFile('func-01');
+
+    // Call on function tree without any visual comparator: must compute L1 extra cleanly
+    LReport := FDifference.ComputeDifference(FTestDir, LBaseId, nil, '', '', '', True);
+
+    Assert.AreEqual<string>(LBaseId, LReport.BaselineId);
+    Assert.AreEqual<Integer>(1, Length(LReport.Items), 'Should detect exactly 1 extra node in L1');
+    Assert.AreEqual<string>('func-02', LReport.Items[0].NodeId);
+    Assert.AreEqual<TDifferenceKind>(dkExtra, LReport.Items[0].Kind);
+  finally
+    LNodes.Free;
+  end;
 end;
 
 initialization

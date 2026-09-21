@@ -59,6 +59,8 @@ type
     procedure Test06_MissingSourceFile_FailClosed;
     [Test]
     procedure Test07_NonExistentBaselineId_FailClosed;
+    [Test]
+    procedure Test08_Evidence_FallbackWhenNoSourceRefs;
   end;
 
 implementation
@@ -294,6 +296,49 @@ begin
   end;
 
   Assert.IsTrue(LEx, 'Must fail-closed when baseline ID does not exist');
+end;
+
+procedure TTestAsWishEvidence.Test08_Evidence_FallbackWhenNoSourceRefs;
+var
+  LNodes: TList<TSpecNode>;
+  LNode: TSpecNode;
+  LChangeSet: TChangeSet;
+  LDecision: TSpecDecision;
+  LBaseline: TAsWishBaseline;
+  LEvidences: TArray<TSpecEvidence>;
+begin
+  // Create nodes with NO source_refs
+  LNodes := TList<TSpecNode>.Create;
+  try
+    LNode := Default(TSpecNode);
+    LNode.Id := 'func-pure-spec';
+    LNode.Tree := ttFunction;
+    LNode.Title := 'Pure Spec Item';
+    LNode.Kind := 'feature';
+    SetLength(LNode.SourceRefs, 0); // explicitly empty
+    LNodes.Add(LNode);
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LNodes);
+
+    LChangeSet := Default(TChangeSet);
+    LChangeSet.Id := 'cs-pure-spec';
+    LChangeSet.IntentNodeId := 'func-pure-spec';
+
+    LDecision := Default(TSpecDecision);
+    LDecision.Id := 'dec-pure-spec';
+    LDecision.DecisionType := dtConfirm;
+    LDecision.Status := dsAccepted;
+
+    FBaselineId := FSnapshot.CreateBaseline(LDecision, LChangeSet, LNodes, nil, nil, nil, LBaseline);
+
+    // Should not crash; must fall back gracefully to spec-level evidence
+    LEvidences := FCollector.CollectImplementationEvidence(FTestDir, FBaselineId);
+
+    Assert.IsTrue(Length(LEvidences) > 0, 'Must produce at least one fallback evidence item');
+    Assert.AreEqual<TSourceLayer>(slImplementation, LEvidences[0].SourceLayer,
+      'Pure spec project fallback must be slImplementation layer');
+  finally
+    LNodes.Free;
+  end;
 end;
 
 initialization
