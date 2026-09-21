@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Providers
   ---------------------------------------------------------------------------
   Registers AsWish providers (Structure, MainView, Inspector) into the shell.
@@ -15,13 +15,15 @@ uses
   AsWish.Services.Project,
   AsWish.Services.Scan,
   AsWish.Services.TreeBuilder,
+  AsWish.Binding.HB,
   AsWish.Controller;
 
 procedure RegisterAllProviders(AForm: TAsWishShellForm;
   AProjectService: TAsWishProjectService;
   AScanService: TAsWishScanService;
   ATreeBuilder: TAsWishTreeBuilder;
-  AController: TAsWishController);
+  AController: TAsWishController;
+  AHBBinding: TAsWishHBBinding = nil);
 
 implementation
 
@@ -35,7 +37,8 @@ procedure RegisterAllProviders(AForm: TAsWishShellForm;
   AProjectService: TAsWishProjectService;
   AScanService: TAsWishScanService;
   ATreeBuilder: TAsWishTreeBuilder;
-  AController: TAsWishController);
+  AController: TAsWishController;
+  AHBBinding: TAsWishHBBinding);
 begin
   AForm.RegisterStructureProvider(
     TAsWishStructureProvider.Create(AScanService, ATreeBuilder));
@@ -63,13 +66,23 @@ begin
       begin
         AController.SubmitUserIntent(ANodeId, ATree, AIntentText);
       end,
-      // ChangeSet decisions -> Controller.Accept/Reject/Clarify
+      // ChangeSet decisions -> Controller.Accept/Reject/Clarify or AHBBinding
       procedure(const AAction, AChangeSetId, AParam: string)
       begin
         if AAction = 'changeset-accept' then
-          AController.AcceptChangeSet(AChangeSetId, AParam)
+        begin
+          if AHBBinding <> nil then
+            AHBBinding.ExecuteCommitmentGate(AChangeSetId, AParam)
+          else
+            AController.AcceptChangeSet(AChangeSetId, AParam);
+        end
         else if AAction = 'changeset-reject' then
-          AController.RejectChangeSet(AChangeSetId, AParam)
+        begin
+          if AHBBinding <> nil then
+            AHBBinding.ExecuteReject(AChangeSetId, AParam)
+          else
+            AController.RejectChangeSet(AChangeSetId, AParam);
+        end
         else if AAction = 'changeset-clarify' then
           AController.ClarifyChangeSet(AChangeSetId, AParam);
       end,

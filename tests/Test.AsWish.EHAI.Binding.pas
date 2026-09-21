@@ -109,6 +109,7 @@ type
     [Test] procedure ASWISH_V_010_CandidateSpace_And_RecommendedMark;
     [Test] procedure ASWISH_V_011_SourceDistinction_Explicit_Vs_Inferred;
     [Test] procedure ASWISH_V_012_GateB_N1_To_N6_Invariants;
+    [Test] procedure ASWISH_V_013_GUI_Surface_KeyDispatcher_And_Deck_Integration;
   end;
 
 implementation
@@ -708,6 +709,51 @@ begin
   Assert.IsNotEmpty(LBaselines[0].RelationHash, 'Baseline RelationHash must be present');
   Assert.IsTrue(FController.VerifyBaseline(LBaselines[0].BaselineId),
     'Baseline hash integrity permanently verifiable');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_013_GUI_Surface_KeyDispatcher_And_Deck_Integration;
+var
+  LAction: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+  LCsId: string;
+  LCommitSuccess: Boolean;
+begin
+  // 1. Test Key 9: Free input submission via keyboard source
+  LAction := THbChoiceAction.Create(cakFreeInput, 9, 'Add export PDF capability', 0,
+    cisKeyboard, eokAlternativeExpression, esHuman, eipProvide);
+  LTrace := FBinding.ProcessHbAction(LAction);
+  Assert.AreEqual(Ord(eseDataProvided), Ord(LTrace.SemanticEffect));
+  Assert.IsFalse(LTrace.IsCommitted);
+  Assert.AreEqual(Ord(cisKeyboard), Ord(LAction.InputSource));
+  LCsId := FBinding.LastChangeSetId;
+  Assert.IsNotEmpty(LCsId, 'Free input must create candidate ChangeSet');
+
+  // 2. Test Key 1..7: Review candidate via keyboard source
+  LAction := THbChoiceAction.Create(cakCandidate, 1, 'Review candidate 1', 0,
+    cisKeyboard, eokNone, esHuman, eipJudge, LCsId);
+  LTrace := FBinding.ProcessHbAction(LAction, LCsId);
+  Assert.AreEqual(Ord(eseJudgmentMade), Ord(LTrace.SemanticEffect));
+  Assert.IsFalse(LTrace.IsCommitted, 'Candidate review must not inherently commit');
+
+  // 3. Test Key 8: Regenerate via keyboard source
+  LAction := THbChoiceAction.Create(cakRegenerate, 8, 'Regenerate', 0,
+    cisKeyboard, eokNone, esHuman, eipProvide);
+  LTrace := FBinding.ProcessHbAction(LAction);
+  Assert.AreEqual(Ord(eseInformOnly), Ord(LTrace.SemanticEffect));
+  Assert.IsFalse(LTrace.IsCommitted);
+
+  // 4. Test Commitment Gate crossing via desktop key/action
+  LCommitSuccess := FBinding.ExecuteCommitmentGate(LCsId, 'Accepted via Desktop GUI integration test');
+  Assert.IsTrue(LCommitSuccess, 'Commitment gate must succeed');
+  Assert.IsTrue(FBinding.IsLastActionCommitted, 'Last action must be marked committed');
+  Assert.AreEqual(Ord(eseAuthorized), Ord(FBinding.LastEffect));
+
+  // 5. Test Key 0: Back Navigation after commitment
+  LAction := THbChoiceAction.Create(cakBack, 0, 'Back', 0,
+    cisKeyboard, eokNone, esHuman, eipInform);
+  LTrace := FBinding.ProcessHbAction(LAction);
+  Assert.AreEqual(Ord(eseInformOnly), Ord(LTrace.SemanticEffect));
+  Assert.IsFalse(LTrace.IsCommitted);
 end;
 
 initialization
