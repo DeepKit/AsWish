@@ -1,0 +1,54 @@
+============================================================================
+WO-20260921-0036-甲: Release Readiness Master Build Evidence
+Timestamp: 2026-09-21 23:17:58
+Compiler: Embarcadero Delphi for Win64 compiler version 37.0
+============================================================================
+
+--- 1. Building AsWish GUI (bin/AsWish.exe) ---
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\controllers\AsWish.Controller.pas(302) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(361) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(361) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+src\controllers\AsWish.Controller.pas(362) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(362) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+src\controllers\AsWish.Controller.pas(363) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(400) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(418) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(420) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(446) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(447) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(448) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+src\controllers\AsWish.Controller.pas(696) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+24099 lines, 2.81 seconds, 6844560 bytes code, 687888 bytes data.
+
+ExitCode GUI: 0
+
+--- 2. Building AsWish CLI (cli/bin/AsWish.CLI.exe) ---
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+15409 lines, 1.92 seconds, 3214752 bytes code, 386320 bytes data.
+
+ExitCode CLI: 0
+
+--- 3. Building AsWish Test Suite (tests/AsWish.Tests.exe) ---
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(302) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(361) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(361) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(362) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(362) Warning: W1058 Implicit string cast with potential data loss from 'string' to 'AnsiString'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(363) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(400) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(418) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(420) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(446) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(447) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(448) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(696) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+29407 lines, 3.48 seconds, 9445300 bytes code, 857304 bytes data.
+
+ExitCode Tests: 0
+
+============================================================================
