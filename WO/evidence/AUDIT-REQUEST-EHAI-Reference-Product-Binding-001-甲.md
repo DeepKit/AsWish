@@ -153,7 +153,7 @@ AsWish 正式作为 **Reference Product Binding 001**，通过 `AsWish.Binding.H
 - Profile 漂移已对齐；
 - 三态收敛已如实记账；
 - Tier C 原始证据含全部 233 个用例名且 100% 通过（0 Failed, 0 Leaked, 0 Errored）；
-- GUI / CLI / Tests 三端 0 Warning 0 Error 纯净编译；
+- GUI / CLI / Tests 三端编译成功（Build succeeded / Exit Code 0 / 0 Error）；
 - 物理键盘路径真实端到端复验通过。
 
 申请主控/异族模型进行最终核验并裁定 CLOSE。
