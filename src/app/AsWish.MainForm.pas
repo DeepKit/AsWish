@@ -38,7 +38,10 @@ uses
   AsWish.Services.LLM,
   AsWish.Services.Settings,
   AsWish.Version,
-  AsWish.Models;
+  AsWish.Models,
+  DeepBase.EHAI.Types,
+  DeepBase.HB.Choice.Types,
+  AsWish.Binding.HB;
 
 type
   TAsWishMainForm = class(TAsWishShellForm)
@@ -80,6 +83,25 @@ type
     FCaptureResult: HResult;
     FLastHtmlPath: string;
 
+    // HB Choice Deck UI & Binding
+    FHBBinding: TAsWishHBBinding;
+    FHBDeckPanel: TPanel;
+    FHBDeckStatusLabel: TLabel;
+    FHBDeckButtons: array[0..9] of TSpeedButton;
+    FHBCommitBtn: TSpeedButton;
+    FHBRejectBtn: TSpeedButton;
+
+    procedure BuildHBDeckUI;
+    procedure DoFormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure DoHbButtonClick(Sender: TObject);
+    procedure TriggerHbCandidate(AIndex: Integer);
+    procedure TriggerHbRegenerate;
+    procedure TriggerHbOverride;
+    procedure TriggerHbBack;
+    procedure TriggerHbCommit;
+    procedure TriggerHbReject;
+    procedure UpdateHbDeckStatus(const AMsg: string);
+
     procedure ExecuteCommandSync(const ACommandLine: string);
     function StripHtmlToInnerText(const AHtml: string): string;
 
@@ -107,6 +129,7 @@ type
     procedure ShutdownShell; override;
   public
     property Controller: TAsWishController read FController;
+    property HBBinding: TAsWishHBBinding read FHBBinding;
   end;
 
 var
@@ -126,7 +149,8 @@ uses
   AsWish.AutoFix,
   AsWish.Logger,
   AsWish.Config,
-  Vcl.Imaging.pngimage;
+  Vcl.Imaging.pngimage,
+  Vcl.Dialogs;
 
 { Status adapter }
 
@@ -246,6 +270,8 @@ procedure TAsWishMainForm.InitializeShell;
 begin
   inherited InitializeShell;
   Caption := ASWISH_BANNER;
+  KeyPreview := True;
+  OnKeyDown := DoFormKeyDown;
 
   FProjectService := nil;
   FScanService := nil;
@@ -296,6 +322,8 @@ begin
     FPrompts, FDecisions, FLLMService, FSettings,
     LStatus, Context, Bus);
 
+  FHBBinding := TAsWishHBBinding.Create(FController);
+
   Logger.Info('AsWish startup completed, locale=' + AsWishDetectLocale, 'AsWish');
 end;
 
@@ -309,7 +337,7 @@ procedure TAsWishMainForm.RegisterProviders;
 begin
   inherited RegisterProviders;
   AsWish.Providers.RegisterAllProviders(Self, FProjectService,
-    FScanService, FTreeBuilder, FController);
+    FScanService, FTreeBuilder, FController, FHBBinding);
   RegisterSettingsPage(TAsWishSettingsProvider.Create);
   if (CurrentMainControl <> nil) and (CurrentMainControl is TCustomEdgeBrowser) then
     TCustomEdgeBrowser(CurrentMainControl).CreateWebView;
@@ -324,6 +352,7 @@ begin
   inherited AfterShellShown;
 
   BuildLeftPanelUI;
+  BuildHBDeckUI;
 
   TAsWishAutoFix.SendHealthSignal('startup', 1);
   TAsWishAutoFix.RegisterScenario('smoke', procedure
@@ -579,6 +608,7 @@ begin
     Bus.Unsubscribe(FScanEventToken);
     FScanEventToken := '';
   end;
+  FreeAndNil(FHBBinding);
   FreeAndNil(FController);
   FreeAndNil(FProjectService);
   FreeAndNil(FScanService);
@@ -892,6 +922,312 @@ begin
   finally
     FDocsMemo.Lines.EndUpdate;
   end;
+end;
+
+
+procedure TAsWishMainForm.BuildHBDeckUI;
+var
+  I: Integer;
+  LBtn: TSpeedButton;
+  LBtnCaptions: array[0..9] of string;
+begin
+  if BottomPanel = nil then Exit;
+
+  LBtnCaptions[1] := '1: Rev 1';
+  LBtnCaptions[2] := '2: Rev 2';
+  LBtnCaptions[3] := '3: Rev 3';
+  LBtnCaptions[4] := '4: Rev 4';
+  LBtnCaptions[5] := '5: Rev 5';
+  LBtnCaptions[6] := '6: Rev 6';
+  LBtnCaptions[7] := '7: Rev 7';
+  LBtnCaptions[8] := '8: Regen';
+  LBtnCaptions[9] := '9: Override';
+  LBtnCaptions[0] := '0: Back';
+
+  FHBDeckPanel := TPanel.Create(Self);
+  FHBDeckPanel.Parent := BottomPanel;
+  FHBDeckPanel.Align := alTop;
+  FHBDeckPanel.Height := 28;
+  FHBDeckPanel.BevelOuter := bvNone;
+  FHBDeckPanel.Color := clBtnFace;
+
+  for I := 1 to 7 do
+  begin
+    LBtn := TSpeedButton.Create(FHBDeckPanel);
+    LBtn.Parent := FHBDeckPanel;
+    LBtn.Align := alLeft;
+    LBtn.Width := 58;
+    LBtn.Tag := I;
+    LBtn.Caption := LBtnCaptions[I];
+    LBtn.OnClick := DoHbButtonClick;
+    FHBDeckButtons[I] := LBtn;
+  end;
+
+  for I := 8 to 9 do
+  begin
+    LBtn := TSpeedButton.Create(FHBDeckPanel);
+    LBtn.Parent := FHBDeckPanel;
+    LBtn.Align := alLeft;
+    LBtn.Width := 68;
+    LBtn.Tag := I;
+    LBtn.Caption := LBtnCaptions[I];
+    LBtn.OnClick := DoHbButtonClick;
+    FHBDeckButtons[I] := LBtn;
+  end;
+
+  LBtn := TSpeedButton.Create(FHBDeckPanel);
+  LBtn.Parent := FHBDeckPanel;
+  LBtn.Align := alLeft;
+  LBtn.Width := 55;
+  LBtn.Tag := 0;
+  LBtn.Caption := LBtnCaptions[0];
+  LBtn.OnClick := DoHbButtonClick;
+  FHBDeckButtons[0] := LBtn;
+
+  FHBCommitBtn := TSpeedButton.Create(FHBDeckPanel);
+  FHBCommitBtn.Parent := FHBDeckPanel;
+  FHBCommitBtn.Align := alLeft;
+  FHBCommitBtn.Width := 75;
+  FHBCommitBtn.Tag := 100;
+  FHBCommitBtn.Caption := 'Enter: Commit';
+  FHBCommitBtn.OnClick := DoHbButtonClick;
+
+  FHBRejectBtn := TSpeedButton.Create(FHBDeckPanel);
+  FHBRejectBtn.Parent := FHBDeckPanel;
+  FHBRejectBtn.Align := alLeft;
+  FHBRejectBtn.Width := 70;
+  FHBRejectBtn.Tag := 101;
+  FHBRejectBtn.Caption := 'Esc: Reject';
+  FHBRejectBtn.OnClick := DoHbButtonClick;
+
+  FHBDeckStatusLabel := TLabel.Create(FHBDeckPanel);
+  FHBDeckStatusLabel.Parent := FHBDeckPanel;
+  FHBDeckStatusLabel.Align := alClient;
+  FHBDeckStatusLabel.Layout := tlCenter;
+  FHBDeckStatusLabel.Font.Size := 8;
+  FHBDeckStatusLabel.Caption := ' [HB Ready] Keyboard 0-9 / Enter / Esc active';
+end;
+
+procedure TAsWishMainForm.DoHbButtonClick(Sender: TObject);
+var
+  LTag: Integer;
+begin
+  if not (Sender is TSpeedButton) then Exit;
+  LTag := TSpeedButton(Sender).Tag;
+  case LTag of
+    0: TriggerHbBack;
+    1..7: TriggerHbCandidate(LTag);
+    8: TriggerHbRegenerate;
+    9: TriggerHbOverride;
+    100: TriggerHbCommit;
+    101: TriggerHbReject;
+  end;
+end;
+
+procedure TAsWishMainForm.DoFormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if (ActiveControl is TCustomEdit) or (ActiveControl is TCustomMemo) or (ActiveControl is TCustomComboBox) then
+    Exit;
+
+  case Key of
+    Ord('1')..Ord('7'):
+    begin
+      TriggerHbCandidate(Key - Ord('0'));
+      Key := 0;
+    end;
+    VK_NUMPAD1..VK_NUMPAD7:
+    begin
+      TriggerHbCandidate(Key - VK_NUMPAD0);
+      Key := 0;
+    end;
+    Ord('8'), VK_NUMPAD8:
+    begin
+      TriggerHbRegenerate;
+      Key := 0;
+    end;
+    Ord('9'), VK_NUMPAD9:
+    begin
+      TriggerHbOverride;
+      Key := 0;
+    end;
+    Ord('0'), VK_NUMPAD0:
+    begin
+      TriggerHbBack;
+      Key := 0;
+    end;
+    VK_RETURN:
+    begin
+      if (FHBBinding <> nil) and (FHBBinding.LastChangeSetId <> '') then
+      begin
+        TriggerHbCommit;
+        Key := 0;
+      end;
+    end;
+    VK_ESCAPE:
+    begin
+      if (FHBBinding <> nil) and (FHBBinding.LastChangeSetId <> '') then
+      begin
+        TriggerHbReject;
+        Key := 0;
+      end;
+    end;
+  end;
+end;
+
+procedure TAsWishMainForm.TriggerHbCandidate(AIndex: Integer);
+var
+  LIntents: TArray<TCandidateIntent>;
+  LCsId, LReviewHtml: string;
+  LAct: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+begin
+  if FHBBinding = nil then Exit;
+  LCsId := '';
+  if FController <> nil then
+  begin
+    LIntents := FController.ListCandidateIntents;
+    if (AIndex - 1 >= 0) and (AIndex - 1 < Length(LIntents)) then
+      LCsId := LIntents[AIndex - 1].NodeId;
+  end;
+
+  LAct := THbChoiceAction.Create(cakCandidate, AIndex, 'Candidate ' + IntToStr(AIndex), 0, cisKeyboard,
+    eokNone, esHuman, eipJudge, LCsId);
+  LTrace := FHBBinding.ProcessHbAction(LAct, LCsId);
+
+  UpdateHbDeckStatus(Format('[Candidate %d] Trace: %s | CsId: %s', [AIndex, LTrace.TraceId, FHBBinding.LastChangeSetId]));
+  if FProjectService <> nil then
+  begin
+    LReviewHtml := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');
+    if TFile.Exists(LReviewHtml) then
+      OpenView(TShellObjectRef.Make('changeset-review', 'html', 'ChangeSet Review', LReviewHtml));
+  end;
+end;
+
+procedure TAsWishMainForm.TriggerHbRegenerate;
+var
+  LAct: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+begin
+  if FHBBinding = nil then Exit;
+  LAct := THbChoiceAction.Create(cakRegenerate, 8, 'Regenerate', 0, cisKeyboard,
+    eokNone, esHuman, eipProvide);
+  LTrace := FHBBinding.ProcessHbAction(LAct);
+  UpdateHbDeckStatus(Format('[Regenerate 8] Trace: %s | Prompt exported', [LTrace.TraceId]));
+end;
+
+procedure TAsWishMainForm.TriggerHbOverride;
+var
+  LInput: string;
+  LAct: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+  LIsFrameRejection: Boolean;
+  LReviewHtml: string;
+begin
+  if FHBBinding = nil then Exit;
+  LInput := '';
+  if not InputQuery('HB Human Override / Frame Rejection',
+    'Enter natural language intent or prefix with "[reframe]" to reject framing:', LInput) then
+    Exit;
+  if LInput.Trim = '' then Exit;
+
+  LIsFrameRejection := LInput.StartsWith('[reframe]') or LInput.StartsWith('reject:');
+  if LIsFrameRejection then
+    LAct := THbChoiceAction.Create(cakFreeInput, 9, LInput, 0, cisKeyboard,
+      eokFrameRejection, esHuman, eipProvide)
+  else
+    LAct := THbChoiceAction.Create(cakFreeInput, 9, LInput, 0, cisKeyboard,
+      eokAlternativeExpression, esHuman, eipProvide);
+
+  LTrace := FHBBinding.ProcessHbAction(LAct);
+  UpdateHbDeckStatus(Format('[Override 9] Trace: %s | CsId: %s', [LTrace.TraceId, FHBBinding.LastChangeSetId]));
+
+  if FProjectService <> nil then
+  begin
+    LReviewHtml := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');
+    if TFile.Exists(LReviewHtml) then
+      OpenView(TShellObjectRef.Make('changeset-review', 'html', 'ChangeSet Review', LReviewHtml));
+  end;
+end;
+
+procedure TAsWishMainForm.TriggerHbBack;
+var
+  LAct: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+  LIndexHtml: string;
+begin
+  if FHBBinding = nil then Exit;
+  LAct := THbChoiceAction.Create(cakBack, 0, 'Back', 0, cisKeyboard,
+    eokNone, esHuman, eipInform);
+  LTrace := FHBBinding.ProcessHbAction(LAct);
+  UpdateHbDeckStatus(Format('[Back 0] Trace: %s | Returned to index', [LTrace.TraceId]));
+
+  if FProjectService <> nil then
+  begin
+    LIndexHtml := TPath.Combine(FProjectService.AsWishPath, 'html\index.html');
+    if TFile.Exists(LIndexHtml) then
+      OpenView(TShellObjectRef.Make('index-html', 'html', 'Index', LIndexHtml));
+  end;
+end;
+
+procedure TAsWishMainForm.TriggerHbCommit;
+var
+  LCsId, LRationale: string;
+  LSuccess: Boolean;
+begin
+  if FHBBinding = nil then Exit;
+  LCsId := FHBBinding.LastChangeSetId;
+  if LCsId = '' then
+  begin
+    UpdateHbDeckStatus('[Commit Gate] No active ChangeSet selected to commit');
+    Exit;
+  end;
+
+  LRationale := 'Accepted via Desktop GUI Commitment Gate';
+  LSuccess := FHBBinding.ExecuteCommitmentGate(LCsId, LRationale);
+  if LSuccess then
+  begin
+    UpdateHbDeckStatus(Format('[Commit Gate ACCEPTED] ChangeSet %s committed across boundary', [LCsId]));
+    if FProjectService <> nil then
+      FController.OpenAndScan(FProjectService.ProjectPath);
+  end
+  else
+    UpdateHbDeckStatus(Format('[Commit Gate FAILED] Could not commit ChangeSet %s', [LCsId]));
+end;
+
+procedure TAsWishMainForm.TriggerHbReject;
+var
+  LCsId, LRationale: string;
+  LSuccess: Boolean;
+begin
+  if FHBBinding = nil then Exit;
+  LCsId := FHBBinding.LastChangeSetId;
+  if LCsId = '' then
+  begin
+    UpdateHbDeckStatus('[Reject Gate] No active ChangeSet selected to reject');
+    Exit;
+  end;
+
+  LRationale := 'Rejected via Desktop GUI Gate';
+  LSuccess := FHBBinding.ExecuteReject(LCsId, LRationale);
+  if LSuccess then
+  begin
+    UpdateHbDeckStatus(Format('[Reject Gate RECORDED] ChangeSet %s rejected (Spec untouched)', [LCsId]));
+    if FProjectService <> nil then
+    begin
+      var LDecHtml := TPath.Combine(FProjectService.AsWishPath, 'html\decisions.html');
+      if TFile.Exists(LDecHtml) then
+        OpenView(TShellObjectRef.Make('decisions-html', 'html', 'Decisions', LDecHtml));
+    end;
+  end
+  else
+    UpdateHbDeckStatus(Format('[Reject Gate FAILED] Could not reject ChangeSet %s', [LCsId]));
+end;
+
+procedure TAsWishMainForm.UpdateHbDeckStatus(const AMsg: string);
+begin
+  if FHBDeckStatusLabel <> nil then
+    FHBDeckStatusLabel.Caption := ' ' + AMsg;
+  SetStatusMessage(AMsg);
 end;
 
 procedure TAsWishMainForm.SaveWindowScreenshot(const AFilePath: string);
