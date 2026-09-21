@@ -1,0 +1,295 @@
+[2026-09-21 23:16:47] ============================================================================
+[2026-09-21 23:16:47] WO-20260921-0036-甲: Real-World Complex Dogfood Execution Log
+[2026-09-21 23:16:47] ============================================================================
+[2026-09-21 23:16:47] Repository Root: D:\_Progs\02Business\AsWish
+[2026-09-21 23:16:47] Dogfood Target Directory: D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:47] CLI Executable: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe (Exists: True)
+[2026-09-21 23:16:47] [SETUP] Created complex target workspace at D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project with 7 files across 4 directories.
+[2026-09-21 23:16:47] --- Step 1: Initialize AsWish Structure ---
+[2026-09-21 23:16:47] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe init D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:47] EXIT: 0
+[2026-09-21 23:16:47]   STDOUT: [init] initialized: D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish
+[2026-09-21 23:16:47] --- Step 2: Full Project Scan & Spec Extraction ---
+[2026-09-21 23:16:47] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:47] EXIT: 0
+[2026-09-21 23:16:47]   STDOUT: [scan] scanning D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:47]   STDOUT: [scan] 9 files, type=delphi_vcl
+[2026-09-21 23:16:47]   STDOUT: [scan] trees: function 3 / module 11 / view 6 / data 3
+[2026-09-21 23:16:47]   STDOUT: [scan] done -> D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish\html\
+[2026-09-21 23:16:47] --- Step 3: Record Candidate User Intent ---
+[2026-09-21 23:16:47] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project func-payment-retry function "Add automatic retry policy on payment processing timeout"
+[2026-09-21 23:16:47] EXIT: 0
+[2026-09-21 23:16:47]   STDOUT: [intent] saved candidate intent for func-payment-retry (function) to D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish\llm\candidate-intent.yaml
+[2026-09-21 23:16:47] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe intent list D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: Found 1 candidate intent(s):
+[2026-09-21 23:16:48]   STDOUT:   [1] Node: func-payment-retry (function) | Author: human
+[2026-09-21 23:16:48]   STDOUT:       Intent: Add automatic retry policy on payment processing timeout
+[2026-09-21 23:16:48] --- Step 4: Generate ChangeSet & Review ---
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project func-payment-retry function "Implement retry policy with max 3 attempts"
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [changeset] generated change set cs-func-payment-retry-01 for func-payment-retry (function)
+[2026-09-21 23:16:48]   STDOUT:   saved change set: D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish\llm\change-set-cs-func-payment-retry-01.yaml
+[2026-09-21 23:16:48]   STDOUT:   saved prompt:     D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish\prompts\change-interpret-func-payment-retry.md
+[2026-09-21 23:16:48] Identified Candidate ChangeSet ID: cs-func-payment-retry-01
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset review D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project cs-func-payment-retry-01
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: ================================================================
+[2026-09-21 23:16:48]   STDOUT:  AsWish Change Set Review: cs-func-payment-retry-01
+[2026-09-21 23:16:48]   STDOUT: ================================================================
+[2026-09-21 23:16:48]   STDOUT: Target Node:     func-payment-retry
+[2026-09-21 23:16:48]   STDOUT: Projection:      function
+[2026-09-21 23:16:48]   STDOUT: Raw User Intent: "Implement retry policy with max 3 attempts"
+[2026-09-21 23:16:48]   STDOUT: Author:          human
+[2026-09-21 23:16:48]   STDOUT: Affected Projs:  function
+[2026-09-21 23:16:48]   STDOUT: ----------------------------------------------------------------
+[2026-09-21 23:16:48]   STDOUT: Proposed Changes:
+[2026-09-21 23:16:48]   STDOUT:   [1] Node: func-payment-retry (function) | Field: summary | Source: explicit
+[2026-09-21 23:16:48]   STDOUT:       Before: (empty)
+[2026-09-21 23:16:48]   STDOUT:       After:  Implement retry policy with max 3 attempts
+[2026-09-21 23:16:48]   STDOUT:       Reason: Interpreted from human user intent
+[2026-09-21 23:16:48]   STDOUT: ================================================================
+[2026-09-21 23:16:48] --- Step 5: Accept ChangeSet & Freeze Baseline B-0001 ---
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe changeset accept D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project cs-func-payment-retry-01 "Human approved automatic payment retry policy"
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [changeset] ACCEPTED cs-func-payment-retry-01 -> recorded Decision dec-0001
+[2026-09-21 23:16:48]   STDOUT:   applied 0 changes to Canonical Spec and validated
+[2026-09-21 23:16:48]   STDOUT:   frozen Accepted Baseline B-0001 (snapshot: 2026-09-21_231648-accepted-baseline-B-0001-dec-0001)
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [baseline] found 1 Accepted Baseline(s):
+[2026-09-21 23:16:48]   STDOUT:   - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-21_231648-accepted-baseline-B-0001-dec-0001 | Tree: function
+[2026-09-21 23:16:48]   STDOUT:     ContentHash: 665842a09223bf5ec149bb6a1c128785cdc1641c526eed5d0bf2d137636e23dd | RelationHash: 49d5175d7ef581ba2394fc0362bf0f2d2275b8cf85c75aa4fc79a35df879fe85
+[2026-09-21 23:16:48]   STDOUT:     Lineage: ChangeSet=cs-func-payment-retry-01, Intent=func-payment-retry
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+[2026-09-21 23:16:48] --- Step 6: Visual Preview & Visual Baseline Confirmation ---
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe visual preview D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [visual preview] rendered -> D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish\html\visual-preview.html
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe visual confirm D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project "Confirmed visual preview wireframe"
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [visual confirm] created Accepted Visual Baseline B-0002 (decision: dec-0002)
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [baseline] found 2 Accepted Baseline(s):
+[2026-09-21 23:16:48]   STDOUT:   - ID: B-0002 | Decision: dec-0002 | Snapshot: 2026-09-21_231648-accepted-baseline-B-0002-dec-0002 | Tree: view
+[2026-09-21 23:16:48]   STDOUT:     ContentHash: db4e5b87da7f21bad3146696952c0cb686469d25a01c4fe0dd8e3a8303918195 | RelationHash: 96c09733387f7a89bd1bb8f1eb50a44578a8a1689f7eb4cef3a16a2d111a3481
+[2026-09-21 23:16:48]   STDOUT:     Renderer: wireframe-v1.0 | VisualBinding: html/visual-preview.html
+[2026-09-21 23:16:48]   STDOUT:     Lineage: ChangeSet=cs-visual-baseline, Intent=root-view
+[2026-09-21 23:16:48]   STDOUT:   - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-21_231648-accepted-baseline-B-0001-dec-0001 | Tree: function
+[2026-09-21 23:16:48]   STDOUT:     ContentHash: 665842a09223bf5ec149bb6a1c128785cdc1641c526eed5d0bf2d137636e23dd | RelationHash: 49d5175d7ef581ba2394fc0362bf0f2d2275b8cf85c75aa4fc79a35df879fe85
+[2026-09-21 23:16:48]   STDOUT:     Lineage: ChangeSet=cs-func-payment-retry-01, Intent=func-payment-retry
+[2026-09-21 23:16:48] --- Step 7: Reality Drift (Modify Billing.pas and Add Notification.pas) ---
+[2026-09-21 23:16:48] Billing.pas mutated (New Hash: 52d6fc9c53de935d6cc61c5071a73ba0a9e4df80e5cdc232068d6d296a5e3849)
+[2026-09-21 23:16:48] Notification.pas added (Hash: 03f9a02fbe62bfe3c8ad7933d777b1a44e331d10529024448b5e83512d73ce45)
+[2026-09-21 23:16:48] --- Step 8: Collect Implementation Evidence ---
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: Collected 7 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0001: docs/01_requirements.md (lines: , hash: 0f386ab0e8ca)
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0002: docs/02_architecture.md (lines: , hash: da4e3ddb71c6)
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0003: src/app/OrderSystem.Main.pas (lines: , hash: 7c8414a616fc)
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0004: src/services/OrderSystem.Billing.pas (lines: , hash: 52d6fc9c53de)
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0005: OrderSystem.dpr (lines: , hash: d24a6c61ee04)
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0006: src/services/OrderSystem.Inventory.pas (lines: , hash: d7d7109b091d)
+[2026-09-21 23:16:48]   STDOUT:   - ev-impl-0007: src/app/OrderSystem.Main.dfm (lines: , hash: 51348bc9f851)
+[2026-09-21 23:16:48] Implementation Evidence collected (6685 bytes):
+﻿version: "1.0"
+
+evidence:
+  - id: "ev-impl-0001"
+    source_layer: implementation
+    path: "docs/01_requirements.md"
+    lines: null
+    excerpt: "# Order System Requirements\r\n1. The system must support customer checkout and payment processing.\r\n2. The inventory service must verify product availability before checkout.\r\n3. System must record payment audits."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "95457b281b6c777f1c9f7ec970638e95b3255af2e48d3adcc57f4d4c9931daca"
+    source_file_hash: "0f386ab0e8caf9748d5b7b39faaeff10c4114f70266943a27428303c710175ff"
+    is_stale: false
+    referenced_by:
+      - "func-order-system-requirements"
+  - id: "ev-impl-0002"
+    source_layer: implementation
+    path: "docs/02_architecture.md"
+    lines: null
+    excerpt: "# System Architecture\r\n- VCL Desktop Shell\r\n- Services layer: Billing, Inventory\r\n- Decoupled modules"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "b3223ca699061644077532fe94fc8a7be159bbebba7b5994c9abbf605c4e9d01"
+    source_file_hash: "da4e3ddb71c6dd0e18414d1d39419f7219f1d25bce1ee373094b67a49f858732"
+    is_stale: false
+    referenced_by:
+      - "func-system-architecture"
+  - id: "ev-impl-0003"
+    source_layer: implementation
+    path: "src/app/OrderSystem.Main.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Main;\r\ninterface\r\nuses\r\n  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, Vcl.StdCtrls;\r\ntype\r\n  TMainOrderForm = class(TForm)\r\n    BtnCheckout: TButton;\r\n    EdtCustomerId: TEdit;\r\n    LblStatus: TLabel;\r\n  end;\r\nimplementation\r\n{$R *.dfm}\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "671dd12f9fa345fcab91f6a19ebd1d2168def9b6a20dbd626d31a055c7a7f72d"
+    source_file_hash: "7c8414a616fc0c2711c981e1b7fe243eb5c0ae27b7344166c56bae9a67a33772"
+    is_stale: false
+    referenced_by:
+      - "mod-src"
+      - "mod-src-app"
+      - "mod-class-tmainorderform"
+      - "mod-unit-ordersystem-main"
+      - "data-entity-tmainorderform"
+  - id: "ev-impl-0004"
+    source_layer: implementation
+    path: "src/services/OrderSystem.Billing.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Billing;\r\ninterface\r\ntype\r\n  TBillingService = class\r\n  public\r\n    function ProcessPayment(const ACustomerId: string; AAmount: Currency): Boolean;\r\n    function RefundPayment(const ATransactionId: string): Boolean;\r\n  end;\r\nimplementation\r\nfunction TBillingService.ProcessPayment(const ACustomerId: string; AAmount: Currency): Boolean;\r\nbegin\r\n  Result := (AAmount > 0) and (AAmount < 1000000); // Added limit check\r\nend;\r\nfunction TBillingService.RefundPayment(const ATransactionId: string): Boolean;\r\nbegin\r\n  Result := True;\r\nend;\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "1452d5311925418af2674dcdd0e8d8c299eeada186292f3f8fec16a111fec3b0"
+    source_file_hash: "52d6fc9c53de935d6cc61c5071a73ba0a9e4df80e5cdc232068d6d296a5e3849"
+    is_stale: false
+    referenced_by:
+      - "mod-src-services"
+      - "mod-class-tbillingservice"
+      - "mod-unit-ordersystem-billing"
+      - "data-entity-tbillingservice"
+  - id: "ev-impl-0005"
+    source_layer: implementation
+    path: "OrderSystem.dpr"
+    lines: null
+    excerpt: "program OrderSystem;\r\nuses\r\n  Vcl.Forms,\r\n  OrderSystem.Main in 'src\\app\\OrderSystem.Main.pas',\r\n  OrderSystem.Billing in 'src\\services\\OrderSystem.Billing.pas',\r\n  OrderSystem.Inventory in 'src\\services\\OrderSystem.Inventory.pas';\r\n\r\n{$R *.res}\r\nbegin\r\n  Application.Initialize;\r\n  Application.MainFormOnTaskbar := True;\r\n  Application.Run;\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "97f37fbc0497bcae38a86dbe75f20f6ab3541b821145d980a902fbad96a6a548"
+    source_file_hash: "d24a6c61ee045be24c4dd5a3a522501f52627d577278e54e4ab4fd4d1916ad3c"
+    is_stale: false
+    referenced_by:
+      - "mod-unit-ordersystem"
+  - id: "ev-impl-0006"
+    source_layer: implementation
+    path: "src/services/OrderSystem.Inventory.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Inventory;\r\ninterface\r\ntype\r\n  TInventoryService = class\r\n  public\r\n    function CheckStock(const ASku: string): Integer;\r\n    function ReserveStock(const ASku: string; AQuantity: Integer): Boolean;\r\n  end;\r\nimplementation\r\nfunction TInventoryService.CheckStock(const ASku: string): Integer;\r\nbegin\r\n  Result := 100;\r\nend;\r\nfunction TInventoryService.ReserveStock(const ASku: string; AQuantity: Integer): Boolean;\r\nbegin\r\n  Result := True;\r\nend;\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "f0c2da6824ce84e90d0bfe93a7cf9720b9c403e7f12c9869fc1a7e5e20e741aa"
+    source_file_hash: "d7d7109b091ddd48e48b86257f1948e15be2129b661cb73eb641b82c3defe082"
+    is_stale: false
+    referenced_by:
+      - "mod-class-tinventoryservice"
+      - "mod-unit-ordersystem-inventory"
+      - "data-entity-tinventoryservice"
+  - id: "ev-impl-0007"
+    source_layer: implementation
+    path: "src/app/OrderSystem.Main.dfm"
+    lines: null
+    excerpt: "object MainOrderForm: TMainOrderForm\r\n  Left = 0\r\n  Top = 0\r\n  Caption = 'Order System Main Form'\r\n  ClientHeight = 400\r\n  ClientWidth = 600\r\n  object LblStatus: TLabel\r\n    Left = 40\r\n    Top = 30\r\n    Width = 80\r\n    Height = 20\r\n    Caption = 'Ready'\r\n  end\r\n  object EdtCustomerId: TEdit\r\n    Left = 40\r\n    Top = 70\r\n    Width = 150\r\n    Height = 25\r\n  end\r\n  object BtnCheckout: TButton"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    content_hash: "2a8f7c1d6afb3e989d2405c967af7d09aa143f93e2282152f3a361567054032b"
+    source_file_hash: "51348bc9f85186e2dce4e0843e45b44de06f81b1dd6a5db5a69424225c11031a"
+    is_stale: false
+    referenced_by:
+      - "view-ordersystem-main"
+      - "view-ctrl-lblstatus"
+      - "view-ctrl-edtcustomerid"
+      - "view-ctrl-btncheckout"
+      - "view-form-mainorderform"
+
+[2026-09-21 23:16:48] --- Step 9: Compute Structural Difference against B-0001 ---
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe scan D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:48] EXIT: 0
+[2026-09-21 23:16:48]   STDOUT: [scan] scanning D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:48]   STDOUT: [scan] 10 files, type=delphi_vcl
+[2026-09-21 23:16:48]   STDOUT: [scan] trees: function 3 / module 13 / view 6 / data 4
+[2026-09-21 23:16:48]   STDOUT: [scan] done -> D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project\.AsWish\html\
+[2026-09-21 23:16:48] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: Computed difference report against baseline "B-0001" (tree: function):
+[2026-09-21 23:16:49]   STDOUT:   No structural differences found (0 items).
+[2026-09-21 23:16:49]   STDOUT: Saved difference report to .AsWish/difference.yaml
+[2026-09-21 23:16:49]   STDOUT: Rendered difference report to .AsWish/html/difference.html
+[2026-09-21 23:16:49] difference.yaml generated:
+﻿baseline_id: "B-0001"
+tree_type: "function"
+computed_at: "2026-09-21T23:16:48.999+08:00"
+items: []
+
+[2026-09-21 23:16:49] --- Step 10: Human Judgment Recording ---
+[2026-09-21 23:16:49] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe judge D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001 acceptable "Reality changes in Billing and Notification accepted"
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: Recorded human judgment decision "dec-0003" (acceptable) for baseline B-0001 (0 difference items).
+[2026-09-21 23:16:49]   STDOUT: Rendered decisions history to .AsWish/html/decisions.html
+[2026-09-21 23:16:49] --- Step 11: Baseline Evolution from Implementation Reality ---
+[2026-09-21 23:16:49] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evolve D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001 "Evolved baseline from reality"
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: Evolved new Accepted Baseline "B-0003" (snapshot: 2026-09-21_231649-accepted-baseline-B-0003-dec-0004) from current implementation reality.
+[2026-09-21 23:16:49]   STDOUT:   - Decision ID: dec-0004
+[2026-09-21 23:16:49]   STDOUT:   - Content Hash: db4e5b87da7f21ba
+[2026-09-21 23:16:49]   STDOUT:   - Relation Hash: 96c09733387f7a89
+[2026-09-21 23:16:49]   STDOUT: Rendered decisions history to .AsWish/html/decisions.html
+[2026-09-21 23:16:49] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline list D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: [baseline] found 3 Accepted Baseline(s):
+[2026-09-21 23:16:49]   STDOUT:   - ID: B-0003 | Decision: dec-0004 | Snapshot: 2026-09-21_231649-accepted-baseline-B-0003-dec-0004 | Tree: view
+[2026-09-21 23:16:49]   STDOUT:     ContentHash: db4e5b87da7f21bad3146696952c0cb686469d25a01c4fe0dd8e3a8303918195 | RelationHash: 96c09733387f7a89bd1bb8f1eb50a44578a8a1689f7eb4cef3a16a2d111a3481
+[2026-09-21 23:16:49]   STDOUT:     Lineage: ChangeSet=cs-evolve-B-0001, Intent=diff-evolve, ParentBaseline=B-0001
+[2026-09-21 23:16:49]   STDOUT:   - ID: B-0002 | Decision: dec-0002 | Snapshot: 2026-09-21_231648-accepted-baseline-B-0002-dec-0002 | Tree: view
+[2026-09-21 23:16:49]   STDOUT:     ContentHash: db4e5b87da7f21bad3146696952c0cb686469d25a01c4fe0dd8e3a8303918195 | RelationHash: 96c09733387f7a89bd1bb8f1eb50a44578a8a1689f7eb4cef3a16a2d111a3481
+[2026-09-21 23:16:49]   STDOUT:     Renderer: wireframe-v1.0 | VisualBinding: html/visual-preview.html
+[2026-09-21 23:16:49]   STDOUT:     Lineage: ChangeSet=cs-visual-baseline, Intent=root-view
+[2026-09-21 23:16:49]   STDOUT:   - ID: B-0001 | Decision: dec-0001 | Snapshot: 2026-09-21_231648-accepted-baseline-B-0001-dec-0001 | Tree: function
+[2026-09-21 23:16:49]   STDOUT:     ContentHash: 665842a09223bf5ec149bb6a1c128785cdc1641c526eed5d0bf2d137636e23dd | RelationHash: 49d5175d7ef581ba2394fc0362bf0f2d2275b8cf85c75aa4fc79a35df879fe85
+[2026-09-21 23:16:49]   STDOUT:     Lineage: ChangeSet=cs-func-payment-retry-01, Intent=func-payment-retry
+[2026-09-21 23:16:49] Latest Evolved Baseline ID: B-0001
+[2026-09-21 23:16:49] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe baseline verify D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: [baseline verify] PASS: B-0001 integrity verified (content & relation hashes match)
+[2026-09-21 23:16:49] --- Step 12: Re-compute Difference against Evolved Baseline (Convergence Check) ---
+[2026-09-21 23:16:49] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe evidence collect D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: Collected 7 implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0001: docs/01_requirements.md (lines: , hash: 0f386ab0e8ca)
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0002: docs/02_architecture.md (lines: , hash: da4e3ddb71c6)
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0003: src/app/OrderSystem.Main.pas (lines: , hash: 7c8414a616fc)
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0004: src/services/OrderSystem.Billing.pas (lines: , hash: 52d6fc9c53de)
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0005: OrderSystem.dpr (lines: , hash: d24a6c61ee04)
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0006: src/services/OrderSystem.Inventory.pas (lines: , hash: d7d7109b091d)
+[2026-09-21 23:16:49]   STDOUT:   - ev-impl-0007: src/app/OrderSystem.Main.dfm (lines: , hash: 51348bc9f851)
+[2026-09-21 23:16:49] EXEC: D:\_Progs\02Business\AsWish\cli\bin\AsWish.CLI.exe difference D:\_Progs\02Business\AsWish\dogfood\dogfood_0036_project B-0001
+[2026-09-21 23:16:49] EXIT: 0
+[2026-09-21 23:16:49]   STDOUT: Computed difference report against baseline "B-0001" (tree: function):
+[2026-09-21 23:16:49]   STDOUT:   No structural differences found (0 items).
+[2026-09-21 23:16:49]   STDOUT: Saved difference report to .AsWish/difference.yaml
+[2026-09-21 23:16:49]   STDOUT: Rendered difference report to .AsWish/html/difference.html
+[2026-09-21 23:16:49] Re-computed difference.yaml:
+﻿baseline_id: "B-0001"
+tree_type: "function"
+computed_at: "2026-09-21T23:16:49.503+08:00"
+items: []
+
+[2026-09-21 23:16:49] ============================================================================
+[2026-09-21 23:16:49] [SUCCESS] Full 12-Step Real-World Complex Dogfood Closed-Loop Succeeded!
+[2026-09-21 23:16:49] ============================================================================
