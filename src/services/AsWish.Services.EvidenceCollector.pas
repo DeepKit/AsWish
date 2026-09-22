@@ -19,8 +19,11 @@ type
     function ParseLineRange(const ALinesStr: string; out AStart, AEnd: Integer): Boolean;
   public
     constructor Create(AStore: TAsWishStoreService; ASnapshot: TAsWishSnapshotService);
+    /// <param name="ADegradedCount">Receives the count of refs that could not be
+    /// resolved to a real source file; those become low-confidence stale items
+    /// instead of aborting the whole collection.</param>
     function CollectImplementationEvidence(const AProjectDir: string;
-      const ABaselineId: string = ''): TArray<TSpecEvidence>;
+      const ABaselineId: string = ''; ADegradedCount: PInteger = nil): TArray<TSpecEvidence>;
   end;
 
 implementation
@@ -117,7 +120,8 @@ begin
 end;
 
 function TAsWishEvidenceCollectorService.CollectImplementationEvidence(
-  const AProjectDir: string; const ABaselineId: string): TArray<TSpecEvidence>;
+  const AProjectDir: string; const ABaselineId: string = '';
+  ADegradedCount: PInteger = nil): TArray<TSpecEvidence>;
 var
   LBaseline: TAsWishBaseline;
   LBaselines: TArray<TAsWishBaseline>;
@@ -132,12 +136,14 @@ var
   LExistingEvidence: TList<TSpecEvidence>;
   LExistingHashMap: TDictionary<string, string>; // Path -> SourceFileHash
   LEv: TSpecEvidence;
+  LUnresolvedCount: Integer;
   LTreeFiles: TArray<string>;
   LTreeFile: string;
   LRelPath, LAbsPath, LLines, LExcerpt, LFileHash: string;
   LFoundRef: Boolean;
   LMatchedEv: TSpecEvidence;
 begin
+  LUnresolvedCount := 0;
   if not TDirectory.Exists(AProjectDir) then
     raise Exception.Create('Project directory does not exist: ' + AProjectDir);
 
@@ -259,13 +265,53 @@ begin
         end;
 
         if not LFoundRef or (LRelPath = '') then
-          raise Exception.CreateFmt('Source ref not found or unresolvable: "%s" for node "%s"',
-            [LSR.RefId, LNode.Id]);
+        begin
+          // Degrade instead of aborting: one unresolvable ref must not kill
+          // evidence for the whole baseline (code-fix: single-point failure).
+          LEv := Default(TSpecEvidence);
+          LEv.Id := Format('ev-impl-unresolved-%s', [LNode.Id]);
+          LEv.SourceLayer := slImplementation;
+          LEv.Path := LSR.RefId;
+          LEv.Lines := '';
+          LEv.Excerpt := '';
+          LEv.ExcerptTruncated := False;
+          LEv.Confidence := clLow;
+          LEv.CreatedAt := Now;
+          LEv.UpdatedAt := Now;
+          LEv.SourceFileHash := '';
+          LEv.ContentHash := '';
+          LEv.IsStale := True;
+          SetLength(LEv.ReferencedBy, 1);
+          LEv.ReferencedBy[0] := LNode.Id;
+          LEv.Note := 'Unresolvable source ref (evidence collection degraded)';
+          LUnresolvedCount := LUnresolvedCount + 1;
+          LCollectedList.Add(LEv);
+          Continue;
+        end;
 
         LAbsPath := TPath.Combine(AProjectDir, StringReplace(LRelPath, '/', '\', [rfReplaceAll]));
         if not TFile.Exists(LAbsPath) then
-          raise Exception.CreateFmt('Source file does not exist: "%s" for node "%s"',
-            [LRelPath, LNode.Id]);
+        begin
+          LEv := Default(TSpecEvidence);
+          LEv.Id := Format('ev-impl-missing-%s', [LNode.Id]);
+          LEv.SourceLayer := slImplementation;
+          LEv.Path := LRelPath;
+          LEv.Lines := LLines;
+          LEv.Excerpt := '';
+          LEv.ExcerptTruncated := False;
+          LEv.Confidence := clLow;
+          LEv.CreatedAt := Now;
+          LEv.UpdatedAt := Now;
+          LEv.SourceFileHash := '';
+          LEv.ContentHash := '';
+          LEv.IsStale := True;
+          SetLength(LEv.ReferencedBy, 1);
+          LEv.ReferencedBy[0] := LNode.Id;
+          LEv.Note := 'Source file missing on disk (evidence collection degraded)';
+          LUnresolvedCount := LUnresolvedCount + 1;
+          LCollectedList.Add(LEv);
+          Continue;
+        end;
 
         LFileHash := TSpecHash.FileSha256Hex(LAbsPath);
         LExcerpt := ExtractSampleLines(LAbsPath, LLines);
@@ -373,6 +419,9 @@ begin
 
     // 5. Write to .AsWish/evidence/implementation-evidence.yaml
     FStore.WriteEvidenceFile('evidence/implementation-evidence.yaml', LCollectedList);
+
+    if ADegradedCount <> nil then
+      ADegradedCount^ := LUnresolvedCount;
 
     Result := LCollectedList.ToArray;
   finally

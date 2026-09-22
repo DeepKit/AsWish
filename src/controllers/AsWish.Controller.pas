@@ -1370,6 +1370,17 @@ begin
       Exit;
     end;
 
+    // Idempotency guard: an already-accepted ChangeSet must not be re-applied
+    // (duplicate tree mutations, duplicate decision refs, duplicate Baselines).
+    var LPriorAccepted := FDecisions.FindAcceptedByChangeSet(AChangeSetId);
+    if Length(LPriorAccepted) > 0 then
+    begin
+      FStatus.Info('AsWish.ChangeSet', Format('ChangeSet %s already accepted (Decision %s); skipping duplicate application',
+        [AChangeSetId, LPriorAccepted[0].Id]));
+      Result := True;
+      Exit;
+    end;
+
     // Record formal decision
     LDecId := FDecisions.RecordChangeSetDecision(LCS, rsAccepted, ARationale);
     LDec := FDecisions.FindById(LDecId);
@@ -1574,14 +1585,17 @@ end;
 function TAsWishController.CollectEvidence(const ABaselineId: string): TArray<TSpecEvidence>;
 var
   LCollector: TAsWishEvidenceCollectorService;
+  LDegraded: Integer;
 begin
   if not FProjectService.IsOpen then
     raise Exception.Create('No project open');
+  LDegraded := 0;
   LCollector := TAsWishEvidenceCollectorService.Create(FSpecStore, FSnapshot);
   try
-    Result := LCollector.CollectImplementationEvidence(FProjectService.ProjectPath, ABaselineId);
-    FStatus.Info('AsWish.Evidence', Format('Collected %d evidence items for baseline %s',
-      [Length(Result), ABaselineId]));
+    Result := LCollector.CollectImplementationEvidence(FProjectService.ProjectPath,
+      ABaselineId, @LDegraded);
+    FStatus.Info('AsWish.Evidence', Format('Collected %d evidence items for baseline %s (%d degraded refs)',
+      [Length(Result), ABaselineId, LDegraded]));
   finally
     LCollector.Free;
   end;

@@ -124,6 +124,7 @@ type
     [Test] procedure Test_ApplyBundleDecisions_Reject;
     [Test] procedure Test_Restart_KeepsDecisions;
     [Test] procedure Test_ChangeSet_EndToEnd_Accept;
+    [Test] procedure Test_ChangeSet_Accept_IsIdempotent;
     [Test] procedure Test_ChangeSet_EndToEnd_Reject;
     [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
     [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
@@ -658,6 +659,42 @@ begin
   finally
     LDiskNodes.Free;
   end;
+end;
+
+procedure TTestAsWishController.Test_ChangeSet_Accept_IsIdempotent;
+var
+  LFuncId, LCSId: string;
+  LOK: Boolean;
+  LNode: TSpecNode;
+  LDecs: TArray<TSpecDecision>;
+  LFirstDecisionRef: string;
+  I: Integer;
+begin
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Duplicate accept probe');
+
+  LOK := FController.AcceptChangeSet(LCSId, 'First accept');
+  Assert.IsTrue(LOK, 'First AcceptChangeSet must succeed');
+
+  LFirstDecisionRef := FBuilder.FindNodeById(LFuncId).DecisionRefs[0];
+
+  // Second accept of the SAME changeset must be a no-op, not a second mutation
+  LOK := FController.AcceptChangeSet(LCSId, 'Second accept (must be ignored)');
+  Assert.IsTrue(LOK, 'Duplicate AcceptChangeSet must still report success');
+
+  LNode := FBuilder.FindNodeById(LFuncId);
+  Assert.AreEqual<Integer>(1, Length(LNode.DecisionRefs),
+    'DecisionRefs must not grow on duplicate accept');
+  Assert.AreEqual<string>(LFirstDecisionRef, LNode.DecisionRefs[0],
+    'Original decision ref must be preserved on duplicate accept');
+
+  LDecs := FDecisions.FindAcceptedByChangeSet(LCSId);
+  Assert.AreEqual<Integer>(1, Length(LDecs),
+    'Exactly one accepted decision per ChangeSet (idempotency invariant)');
+
+  for I := 0 to High(LDecs) do
+    Assert.AreEqual<string>(LFirstDecisionRef, LDecs[I].Id,
+      'Accepted decision id must match the recorded DecisionRef');
 end;
 
 procedure TTestAsWishController.Test_ChangeSet_EndToEnd_Reject;

@@ -56,11 +56,13 @@ type
     [Test]
     procedure Test05_ImplementationEvidenceYaml_RoundTripReadback;
     [Test]
-    procedure Test06_MissingSourceFile_FailClosed;
+    procedure Test06_MissingSourceFile_DegradesNotAborts;
     [Test]
     procedure Test07_NonExistentBaselineId_FailClosed;
     [Test]
     procedure Test08_Evidence_FallbackWhenNoSourceRefs;
+    [Test]
+    procedure Test09_MissingSourceFile_DoesNotTriggerPureSpecFallback;
   end;
 
 implementation
@@ -262,23 +264,40 @@ begin
   end;
 end;
 
-procedure TTestAsWishEvidence.Test06_MissingSourceFile_FailClosed;
+procedure TTestAsWishEvidence.Test06_MissingSourceFile_DegradesNotAborts;
 var
-  LEx: Boolean;
+  LEvidences: TArray<TSpecEvidence>;
+  LDegraded: Integer;
 begin
+  // Behavior change (single-point-failure fix): a missing source file must no
+  // longer abort the whole collection; it becomes a low-confidence stale item.
   CreateDummyProjectWithBaseline('src\NonExistent.pas', 'some content', '1-1');
-  // Delete the file to simulate missing file
   TFile.Delete(TPath.Combine(FTestDir, 'src\NonExistent.pas'));
 
-  LEx := False;
-  try
-    FCollector.CollectImplementationEvidence(FTestDir, FBaselineId);
-  except
-    on E: Exception do
-      LEx := True;
-  end;
+  LDegraded := 0;
+  LEvidences := FCollector.CollectImplementationEvidence(FTestDir, FBaselineId, @LDegraded);
 
-  Assert.IsTrue(LEx, 'Must fail-closed with exception when source file is missing');
+  Assert.AreEqual<Integer>(1, LDegraded, 'Exactly one degraded ref must be reported');
+  Assert.AreEqual<Integer>(1, Length(LEvidences), 'One degraded evidence item must still be produced');
+  Assert.IsTrue(LEvidences[0].IsStale, 'Degraded item must be flagged stale');
+  Assert.IsTrue(LEvidences[0].SourceFileHash = '', 'Degraded item must carry no source hash');
+end;
+
+procedure TTestAsWishEvidence.Test09_MissingSourceFile_DoesNotTriggerPureSpecFallback;
+var
+  LEvidences: TArray<TSpecEvidence>;
+  LDegraded: Integer;
+begin
+  CreateDummyProjectWithBaseline('src\NonExistent.pas', 'some content', '1-1');
+  TFile.Delete(TPath.Combine(FTestDir, 'src\NonExistent.pas'));
+
+  LDegraded := 0;
+  LEvidences := FCollector.CollectImplementationEvidence(FTestDir, FBaselineId, @LDegraded);
+
+  Assert.AreNotEqual<string>('(pure spec baseline)', LEvidences[0].Excerpt,
+    'A degraded ref must not be masked by the pure-spec fallback excerpt');
+  Assert.AreNotEqual<string>('ev-impl-0001', LEvidences[0].Id,
+    'A degraded ref must not be replaced by the synthetic pure-spec id');
 end;
 
 procedure TTestAsWishEvidence.Test07_NonExistentBaselineId_FailClosed;

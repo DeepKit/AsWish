@@ -26,7 +26,8 @@ type
     function ConfirmVisualBaseline(const ADecisionId: string;
       const ARendererVersion: string = 'wireframe-v1.0';
       const AVisualBinding: string = 'html/visual-preview.html'): string;
-    function ComputeDifference(const AProjectDir, ABaselineId: string): TSpecDifferenceReport;
+    function ComputeDifference(const AProjectDir, ABaselineId: string;
+      const AAllowDegraded: Boolean = True): TSpecDifferenceReport;
     function RecordDifferenceDecision(const AReport: TSpecDifferenceReport;
       AJudgment: TDifferenceJudgment; const ARationale: string;
       const AChangeSetId: string = ''): string;
@@ -148,7 +149,7 @@ begin
 end;
 
 function TAsWishVisualWorkflowService.ComputeDifference(const AProjectDir,
-  ABaselineId: string): TSpecDifferenceReport;
+  ABaselineId: string; const AAllowDegraded: Boolean = True): TSpecDifferenceReport;
 var
   LObsJson, LConstraintsJson, LStylesJson: string;
   LResolver: IPlatformIdentityResolver;
@@ -227,7 +228,7 @@ begin
   end;
 
   Result := FDifference.ComputeDifference(AProjectDir, ABaselineId,
-    LResolver, LObsJson, LConstraintsJson, LStylesJson);
+    LResolver, LObsJson, LConstraintsJson, LStylesJson, AAllowDegraded);
 end;
 
 function TAsWishVisualWorkflowService.RecordDifferenceDecision(

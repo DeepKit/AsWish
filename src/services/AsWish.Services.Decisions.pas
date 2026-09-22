@@ -37,6 +37,13 @@ type
 
     function FindById(const AId: string): TSpecDecision;
     function GetAccepted: TArray<TSpecDecision>;
+
+    /// <summary>
+    /// Return accepted decisions linked to a Change Set (WO-20260830-0027C).
+    /// Used for idempotency guards: a ChangeSet already accepted must not
+    /// be re-applied to trees or re-frozen into a new Baseline.
+    /// </summary>
+    function FindAcceptedByChangeSet(const AChangeSetId: string): TArray<TSpecDecision>;
     procedure AcceptDecision(const AId: string);
     procedure RejectDecision(const AId: string);
 
@@ -250,6 +257,25 @@ begin
   try
     for var LDec in FDecisions do
       if LDec.Status = dsAccepted then
+        LResult.Add(LDec);
+    Result := LResult.ToArray;
+  finally
+    LResult.Free;
+  end;
+end;
+
+function TAsWishDecisionsService.FindAcceptedByChangeSet(
+  const AChangeSetId: string): TArray<TSpecDecision>;
+var
+  LResult: TList<TSpecDecision>;
+begin
+  Result := nil;
+  if AChangeSetId.Trim = '' then
+    Exit;
+  LResult := TList<TSpecDecision>.Create;
+  try
+    for var LDec in FDecisions do
+      if (LDec.Status = dsAccepted) and (LDec.ChangeSetId = AChangeSetId) then
         LResult.Add(LDec);
     Result := LResult.ToArray;
   finally
