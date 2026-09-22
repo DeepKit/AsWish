@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.TreeBuilder
 
@@ -37,7 +37,6 @@ type
     FProjectRootPath: string;
     FUsedIds: TDictionary<string, Integer>;
     function MakeSlug(const ATitle: string): string;
-    function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
     function UniqueId(const ABaseId: string): string;
     procedure EnhanceFromDelphi(AScan: TAsWishScanService);
     /// <summary>Extract H1/H2 headings from docs markdown files into
@@ -54,6 +53,8 @@ type
     procedure BuildFromScan(AScan: TAsWishScanService;
       const AProjectName, AProjectRootPath: string);
     function FindNodeById(const ANodeId: string): TSpecNode;
+    function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
+    property ProjectRootPath: string read FProjectRootPath write FProjectRootPath;
     property FunctionNodes: TList<TSpecNode> read FFunctionNodes;
     property ModuleNodes: TList<TSpecNode> read FModuleNodes;
     property ViewNodes: TList<TSpecNode> read FViewNodes;
@@ -152,18 +153,82 @@ begin
 end;
 
 function TAsWishTreeBuilder.MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
+var
+  LAbsPath: string;
+  LLines: TArray<string>;
+  LLineCount: Integer;
+  LFirstLine: string;
+  I: Integer;
 begin
   Result := Default(TSpecEvidence);
   Result.Id := 'ev-' + MakeSlug(ARelPath);
   Result.SourceLayer := slParsedFromA;
   Result.Path := ARelPath;
   Result.Lines := '';
-  Result.Excerpt := 'File: ' + ARelPath;
+  Result.Excerpt := '';
   Result.ExcerptTruncated := False;
   Result.Confidence := clHigh;
   Result.CreatedAt := Now;
   Result.UpdatedAt := Now;
   Result.IsStale := False;
+
+  if TPath.IsPathRooted(ARelPath) then
+    LAbsPath := ARelPath
+  else if FProjectRootPath <> '' then
+    LAbsPath := TPath.Combine(FProjectRootPath, StringReplace(ARelPath, '/', '\', [rfReplaceAll]))
+  else
+    LAbsPath := '';
+
+  if (LAbsPath <> '') and TFile.Exists(LAbsPath) then
+  begin
+    Result.SourceFileHash := TSpecHash.FileSha256Hex(LAbsPath);
+    try
+      LLines := TFile.ReadAllLines(LAbsPath, TEncoding.UTF8);
+      LLineCount := Length(LLines);
+      if LLineCount > 0 then
+      begin
+        Result.Lines := Format('1-%d', [LLineCount]);
+        LFirstLine := '';
+        for I := 0 to High(LLines) do
+        begin
+          if LLines[I].Trim <> '' then
+          begin
+            LFirstLine := LLines[I].Trim;
+            Break;
+          end;
+        end;
+
+        if LFirstLine <> '' then
+        begin
+          if Length(LFirstLine) > 200 then
+          begin
+            Result.Excerpt := Copy(LFirstLine, 1, 200);
+            Result.ExcerptTruncated := True;
+          end
+          else
+            Result.Excerpt := LFirstLine;
+        end
+        else
+          Result.Excerpt := ARelPath;
+      end
+      else
+        Result.Lines := '1-1';
+    except
+      if Result.Lines = '' then
+        Result.Lines := '1-1';
+      if Result.Excerpt = '' then
+        Result.Excerpt := ARelPath;
+    end;
+  end
+  else
+  begin
+    Result.SourceFileHash := '';
+    Result.Lines := '';
+    Result.Excerpt := ARelPath;
+  end;
+
+  if Result.Excerpt <> '' then
+    Result.ContentHash := TSpecHash.Sha256Hex(Result.Excerpt);
 end;
 
 function TAsWishTreeBuilder.FindNodeById(const ANodeId: string): TSpecNode;
@@ -277,6 +342,7 @@ begin
             begin
               var LEv := MakeEvidenceForFile(LFile);
               LEv.Excerpt := 'Directory: ' + LDir;
+              LEv.ContentHash := TSpecHash.Sha256Hex(LEv.Excerpt);
               FEvidenceList.Add(LEv);
               var LRef: TSourceRef;
               LRef.RefId := LEv.Id;
@@ -447,8 +513,9 @@ begin
       if not TFile.Exists(LFullPath) then Continue;
 
       var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
-      for var LL in LLines do
+      for var LI := 0 to High(LLines) do
       begin
+        var LL := LLines[LI];
         var LTrimmed := LL.Trim;
         if (Length(LTrimmed) > 0) and
            (LTrimmed.StartsWith('# ') or LTrimmed.StartsWith('## ')) then
@@ -469,8 +536,27 @@ begin
           LNode.Confidence := clLow;
           LNode.SourceLayer := slParsedFromA;
 
+          var LStartLine := LI + 1;
+          var LEndLine := Length(LLines);
+          for var LJ := LI + 1 to High(LLines) do
+          begin
+            var LNextTrim := LLines[LJ].Trim;
+            if (Length(LNextTrim) > 0) and
+               (LNextTrim.StartsWith('# ') or LNextTrim.StartsWith('## ')) then
+            begin
+              LEndLine := LJ;
+              Break;
+            end;
+          end;
+          if LEndLine < LStartLine then LEndLine := LStartLine;
+
           var LEv := MakeEvidenceForFile(LFile);
+          LEv.Lines := Format('%d-%d', [LStartLine, LEndLine]);
           LEv.Excerpt := LTrimmed;
+          LEv.ExcerptTruncated := Length(LTrimmed) > 200;
+          if Length(LTrimmed) > 200 then
+            LEv.Excerpt := Copy(LTrimmed, 1, 200);
+          LEv.ContentHash := TSpecHash.Sha256Hex(LEv.Excerpt);
           FEvidenceList.Add(LEv);
           var LRef: TSourceRef;
           LRef.RefId := LEv.Id;
@@ -543,6 +629,7 @@ begin
         // Add evidence
         var LEv := MakeEvidenceForFile(LFile);
         LEv.Excerpt := 'unit ' + LInfo.UnitName + ';';
+        LEv.ContentHash := TSpecHash.Sha256Hex(LEv.Excerpt);
         FEvidenceList.Add(LEv);
         var LRef: TSourceRef;
         LRef.RefId := LEv.Id;
@@ -623,6 +710,7 @@ begin
 
         var LEv := MakeEvidenceForFile(LFile);
         LEv.Excerpt := 'object ' + LDfm.Name + ': ' + LDfm.ClassName;
+        LEv.ContentHash := TSpecHash.Sha256Hex(LEv.Excerpt);
         FEvidenceList.Add(LEv);
         var LRef: TSourceRef;
         LRef.RefId := LEv.Id;
@@ -722,7 +810,38 @@ begin
           LEntityNode.Confidence := clMedium;
           LEntityNode.SourceLayer := slParsedFromA;
 
+          var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
+          var LClassStart := 1;
+          var LClassEnd := Length(LLines);
+          var LClassExcerpt := 'type ' + LItem.Name + ' = class';
+          if Length(LLines) > 0 then
+          begin
+            for var LIdx := 0 to High(LLines) do
+            begin
+              var LLineTrim := LLines[LIdx].Trim;
+              if (Pos(LItem.Name, LLineTrim) > 0) and (Pos('class', LLineTrim) > 0) then
+              begin
+                LClassStart := LIdx + 1;
+                LClassExcerpt := LLineTrim;
+                for var LEndIdx := LIdx + 1 to High(LLines) do
+                begin
+                  var LEndTrim := LLines[LEndIdx].Trim;
+                  if (LEndTrim = 'end;') or LEndTrim.StartsWith('end;') then
+                  begin
+                    LClassEnd := LEndIdx + 1;
+                    Break;
+                  end;
+                end;
+                Break;
+              end;
+            end;
+          end;
+
           var LEv := MakeEvidenceForFile(LFile);
+          if LClassStart > 1 then
+            LEv.Lines := Format('%d-%d', [LClassStart, LClassEnd]);
+          LEv.Excerpt := LClassExcerpt;
+          LEv.ContentHash := TSpecHash.Sha256Hex(LEv.Excerpt);
           FEvidenceList.Add(LEv);
           var LRef: TSourceRef;
           LRef.RefId := LEv.Id;
@@ -733,7 +852,6 @@ begin
           var LFieldList: TList<string>;
           LFieldList := TList<string>.Create;
           try
-            var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
             var LInPublished := False;
             var LFieldCount := 0;
             for var LI := 0 to High(LLines) do
