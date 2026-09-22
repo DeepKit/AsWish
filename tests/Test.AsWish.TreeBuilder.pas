@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.TreeBuilder
 
   Verifies that a non-Delphi project receives a useful data projection and
@@ -27,6 +27,10 @@ type
     procedure Build_GenericProjectWithoutData_EmitsFoggedPlaceholder;
     [Test]
     procedure Scan_IgnoresAsWishDirectory_CaseInsensitive;
+    [Test]
+    procedure MakeEvidenceForFile_CalculatesHash_Lines_And_Excerpt;
+    [Test]
+    procedure BuildFromScan_PopulatesEvidenceWithNonEmptyHashAndLines;
   end;
 
 implementation
@@ -151,6 +155,114 @@ begin
     Assert.AreEqual<Integer>(1, Length(LCodeFiles));
     Assert.AreEqual('Main.pas', LCodeFiles[0]);
   finally
+    LScan.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.MakeEvidenceForFile_CalculatesHash_Lines_And_Excerpt;
+var
+  LDir: string;
+  LBuilder: TAsWishTreeBuilder;
+  LEv: TSpecEvidence;
+  LContent: string;
+begin
+  LDir := NewTreeBuilderTempDir;
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    LContent :=
+      'unit SampleOrder;' + sLineBreak +
+      'interface' + sLineBreak +
+      'type' + sLineBreak +
+      '  TSampleOrder = class' + sLineBreak +
+      '  end;' + sLineBreak +
+      'implementation' + sLineBreak +
+      'end.' + sLineBreak;
+    TFile.WriteAllText(TPath.Combine(LDir, 'SampleOrder.pas'), LContent, TEncoding.UTF8);
+
+    LBuilder.ProjectRootPath := LDir;
+    LEv := LBuilder.MakeEvidenceForFile('SampleOrder.pas');
+
+    Assert.AreEqual('ev-sampleorder-pas', LEv.Id);
+    Assert.IsNotEmpty(LEv.SourceFileHash, 'SourceFileHash must not be empty');
+    Assert.AreEqual<Integer>(64, Length(LEv.SourceFileHash), 'SourceFileHash must be 64-char sha256');
+    Assert.AreEqual('1-7', LEv.Lines, 'Lines must match file line count 1-N');
+    Assert.AreEqual('unit SampleOrder;', LEv.Excerpt, 'Excerpt must capture first non-empty line');
+    Assert.IsFalse(LEv.ExcerptTruncated);
+    Assert.IsNotEmpty(LEv.ContentHash, 'ContentHash must not be empty');
+    Assert.AreEqual<Integer>(64, Length(LEv.ContentHash), 'ContentHash must be 64-char sha256');
+  finally
+    LBuilder.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.BuildFromScan_PopulatesEvidenceWithNonEmptyHashAndLines;
+var
+  LDir: string;
+  LScan: TAsWishScanService;
+  LBuilder: TAsWishTreeBuilder;
+  LEv: TSpecEvidence;
+begin
+  LDir := NewTreeBuilderTempDir;
+  LScan := TAsWishScanService.Create;
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    TDirectory.CreateDirectory(TPath.Combine(LDir, 'docs'));
+    TDirectory.CreateDirectory(TPath.Combine(LDir, 'src'));
+
+    TFile.WriteAllText(TPath.Combine(LDir, 'docs\01_req.md'),
+      '# Requirements' + sLineBreak +
+      'Must process payments.' + sLineBreak +
+      '## SubRequirement' + sLineBreak +
+      'Must record audit.' + sLineBreak, TEncoding.UTF8);
+
+    TFile.WriteAllText(TPath.Combine(LDir, 'src\App.pas'),
+      'unit App;' + sLineBreak +
+      'interface' + sLineBreak +
+      'type' + sLineBreak +
+      '  TAppEntity = class' + sLineBreak +
+      '  published' + sLineBreak +
+      '    Title: string;' + sLineBreak +
+      '  end;' + sLineBreak +
+      'implementation' + sLineBreak +
+      'end.' + sLineBreak, TEncoding.UTF8);
+
+    TFile.WriteAllText(TPath.Combine(LDir, 'src\MainForm.dfm'),
+      'object MainForm: TMainForm' + sLineBreak +
+      '  Caption = ''Main''' + sLineBreak +
+      'end' + sLineBreak, TEncoding.UTF8);
+
+    LScan.ScanDirectory(LDir);
+    LBuilder.BuildFromScan(LScan, 'DemoProject', LDir);
+
+    Assert.IsTrue(LBuilder.EvidenceList.Count > 0, 'EvidenceList must contain items');
+
+    for LEv in LBuilder.EvidenceList do
+    begin
+      Assert.IsNotEmpty(LEv.SourceFileHash,
+        'Every evidence item must have a non-empty SourceFileHash (path: ' + LEv.Path + ')');
+      Assert.AreEqual<Integer>(64, Length(LEv.SourceFileHash),
+        'SourceFileHash must be 64-char SHA256 hex');
+      Assert.IsNotEmpty(LEv.Lines,
+        'Every evidence item must have a non-empty Lines range (path: ' + LEv.Path + ')');
+      Assert.IsTrue(LEv.Lines.Contains('-'),
+        'Lines must follow start-end format: ' + LEv.Lines);
+      Assert.IsNotEmpty(LEv.Excerpt,
+        'Every evidence item must have a non-empty Excerpt');
+      Assert.AreNotEqual('File: ' + LEv.Path, LEv.Excerpt,
+        'Excerpt must not be a dead path restatement: ' + LEv.Excerpt);
+      Assert.IsNotEmpty(LEv.ContentHash,
+        'Every evidence item must have a non-empty ContentHash');
+      Assert.AreEqual<Integer>(64, Length(LEv.ContentHash),
+        'ContentHash must be 64-char SHA256 hex');
+    end;
+  finally
+    LBuilder.Free;
     LScan.Free;
     if TDirectory.Exists(LDir) then
       TDirectory.Delete(LDir, True);
