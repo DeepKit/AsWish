@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aswish.dev/schemas/v1/commons-lesson.schema.json",
+  "title": "AsWish Difference Commons Lesson",
+  "description": "Schema for .AsWish/commons/lesson-<id>.yaml (WO-20260923-0041). Captures human-AI semantic divergence trajectories and human takeaway wisdom.",
+  "type": "object",
+  "required": [
+    "version",
+    "id",
+    "title",
+    "human_takeaway",
+    "trigger_pattern",
+    "wrong_expression",
+    "right_expression",
+    "baseline_ref",
+    "difference_ref",
+    "domain",
+    "contributed_by",
+    "story_mode",
+    "created_at"
+  ],
+  "properties": {
+    "version": { "type": "string", "const": "1.0" },
+    "id": { "type": "string", "pattern": "^lesson-[0-9a-zA-Z_-]+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "human_takeaway": { "type": "string", "minLength": 1 },
+    "trigger_pattern": { "type": "string", "minLength": 1 },
+    "wrong_expression": { "type": "string" },
+    "right_expression": { "type": "string" },
+    "baseline_ref": { "type": "string" },
+    "difference_ref": { "type": "string" },
+    "domain": { "type": "string", "default": "general" },
+    "contributed_by": { "type": "string", "default": "seed:aswish-dogfood" },
+    "story_mode": {
+      "type": "string",
+      "enum": ["cautionary", "anti_pattern", "boundary_defense", "clarification_triumph", "divergence_resolved", "best_practice"]
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

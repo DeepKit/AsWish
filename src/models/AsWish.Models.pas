@@ -352,6 +352,30 @@ type
   end;
 
   /// <summary>
+  /// Difference Commons Lesson (WO-20260923-0041).
+  /// Captures an immutable human-AI semantic divergence trajectory and takeaway wisdom.
+  /// </summary>
+  TSpecCommonsLesson = record
+    Id: string;
+    Title: string;
+    HumanTakeaway: string;
+    TriggerPattern: string;
+    WrongExpression: string;
+    RightExpression: string;
+    BaselineRef: string;
+    DifferenceRef: string;
+    Domain: string;
+    ContributedBy: string;
+    StoryMode: string;
+    CreatedAt: TDateTime;
+    class function CreateNew(const AId, ATitle, ATakeaway, ATrigger,
+      AWrong, ARight: string; const ABaselineRef: string = '';
+      const ADifferenceRef: string = ''; const ADomain: string = 'general';
+      const AContributedBy: string = 'seed:aswish-dogfood';
+      const AStoryMode: string = 'cautionary'): TSpecCommonsLesson; static;
+  end;
+
+  /// <summary>
   /// String conversion helpers for enum values matching protocol enum names.
   /// </summary>
   TSpecEnums = class
@@ -571,6 +595,27 @@ begin
   Result.Lineage := ALineage;
   Result.RendererVersion := ARendererVersion;
   Result.VisualBinding := AVisualBinding;
+end;
+
+{ TSpecCommonsLesson }
+
+class function TSpecCommonsLesson.CreateNew(const AId, ATitle, ATakeaway,
+  ATrigger, AWrong, ARight: string; const ABaselineRef, ADifferenceRef,
+  ADomain, AContributedBy, AStoryMode: string): TSpecCommonsLesson;
+begin
+  Result := Default(TSpecCommonsLesson);
+  Result.Id := AId;
+  Result.Title := ATitle;
+  Result.HumanTakeaway := ATakeaway;
+  Result.TriggerPattern := ATrigger;
+  Result.WrongExpression := AWrong;
+  Result.RightExpression := ARight;
+  Result.BaselineRef := ABaselineRef;
+  Result.DifferenceRef := ADifferenceRef;
+  Result.Domain := ADomain;
+  Result.ContributedBy := AContributedBy;
+  Result.StoryMode := AStoryMode;
+  Result.CreatedAt := Now;
 end;
 
 { TSpecEnums }
