@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Yaml.Writer
 
@@ -54,6 +54,8 @@ type
 
     procedure WriteDecisionsFile(ADecisions: TList<TSpecDecision>);
     procedure WriteDecision(const ADec: TSpecDecision);
+
+    procedure WriteCommonsLessonFile(const ALesson: TSpecCommonsLesson);
   end;
 
 implementation
@@ -485,6 +487,28 @@ begin
   finally
     FIndent := 0;
   end;
+end;
+
+procedure TYamlWriter.WriteCommonsLessonFile(const ALesson: TSpecCommonsLesson);
+begin
+  FBuilder.Clear;
+  FIndent := 0;
+  WriteQuotedKV('version', '1.0');
+  WriteQuotedKV('id', ALesson.Id);
+  WriteQuotedKV('title', ALesson.Title);
+  WriteQuotedKV('human_takeaway', ALesson.HumanTakeaway);
+  WriteQuotedKV('trigger_pattern', ALesson.TriggerPattern);
+  WriteQuotedKV('wrong_expression', ALesson.WrongExpression);
+  WriteQuotedKV('right_expression', ALesson.RightExpression);
+  WriteQuotedKV('baseline_ref', ALesson.BaselineRef);
+  WriteQuotedKV('difference_ref', ALesson.DifferenceRef);
+  WriteQuotedKV('domain', ALesson.Domain);
+  WriteQuotedKV('contributed_by', ALesson.ContributedBy);
+  WriteQuotedKV('story_mode', ALesson.StoryMode);
+  if ALesson.CreatedAt <> 0 then
+    WriteQuotedKV('created_at', FormatTimestamp(ALesson.CreatedAt))
+  else
+    WriteQuotedKV('created_at', FormatTimestamp(Now));
 end;
 
 end.

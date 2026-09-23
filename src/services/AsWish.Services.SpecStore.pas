@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.SpecStore
 
@@ -76,6 +76,16 @@ type
       AIssues: TList<TSpecIssue>);
     /// <summary>Read issues/doc-issues.yaml. Caller owns the returned list.</summary>
     function ReadIssuesFile(const ARelPath: string): TList<TSpecIssue>;
+
+    /// <summary>Write commons lesson YAML file (e.g. commons/lesson-0001.yaml).</summary>
+    procedure WriteCommonsLessonFile(const ARelPath: string;
+      const ALesson: TSpecCommonsLesson);
+    /// <summary>Read commons lesson YAML file.</summary>
+    function ReadCommonsLessonFile(const ARelPath: string): TSpecCommonsLesson;
+    /// <summary>List all lesson file paths under commons/.</summary>
+    function ListCommonsLessonFiles: TArray<string>;
+    /// <summary>List all commons lessons under commons/.</summary>
+    function ListCommonsLessons: TArray<TSpecCommonsLesson>;
 
     /// <summary>Atomic text-file write (bugfix.md BUG-5): write to a .tmp
     /// sibling, then TFile.Replace (atomic on NTFS) or TFile.Move on first
@@ -182,6 +192,7 @@ begin
   EnsureDirectory('llm');
   EnsureDirectory('logs');
   EnsureDirectory('snapshots');
+  EnsureDirectory('commons');
 end;
 
 procedure TAsWishStoreService.WriteScanReport(AScanService: TAsWishScanService);
@@ -780,6 +791,101 @@ begin
     end;
   finally
     LParser.Free;
+  end;
+end;
+
+procedure TAsWishStoreService.WriteCommonsLessonFile(const ARelPath: string;
+  const ALesson: TSpecCommonsLesson);
+var
+  LWriter: TYamlWriter;
+begin
+  LWriter := TYamlWriter.Create;
+  try
+    LWriter.WriteCommonsLessonFile(ALesson);
+    WriteYamlFile(ARelPath, LWriter.ToString);
+  finally
+    LWriter.Free;
+  end;
+end;
+
+function TAsWishStoreService.ReadCommonsLessonFile(const ARelPath: string): TSpecCommonsLesson;
+var
+  LFullPath, LContent, LCreatedAtStr: string;
+  LParser: TYamlParser;
+  LRoot: TYamlNode;
+begin
+  Result := Default(TSpecCommonsLesson);
+  LFullPath := TPath.Combine(FBasePath, ARelPath);
+  if not TFile.Exists(LFullPath) then Exit;
+
+  LContent := TFile.ReadAllText(LFullPath, TEncoding.UTF8);
+  LParser := TYamlParser.Create;
+  try
+    LRoot := LParser.Parse(LContent);
+    try
+      if LRoot = nil then Exit;
+      Result.Id := LRoot.GetString('id', '');
+      Result.Title := LRoot.GetString('title', '');
+      Result.HumanTakeaway := LRoot.GetString('human_takeaway', '');
+      Result.TriggerPattern := LRoot.GetString('trigger_pattern', '');
+      Result.WrongExpression := LRoot.GetString('wrong_expression', '');
+      Result.RightExpression := LRoot.GetString('right_expression', '');
+      Result.BaselineRef := LRoot.GetString('baseline_ref', '');
+      Result.DifferenceRef := LRoot.GetString('difference_ref', '');
+      Result.Domain := LRoot.GetString('domain', 'general');
+      Result.ContributedBy := LRoot.GetString('contributed_by', 'seed:aswish-dogfood');
+      Result.StoryMode := LRoot.GetString('story_mode', 'cautionary');
+      LCreatedAtStr := LRoot.GetString('created_at', '');
+      if LCreatedAtStr <> '' then
+      begin
+        try
+          Result.CreatedAt := ISO8601ToDate(LCreatedAtStr, False);
+        except
+          Result.CreatedAt := Now;
+        end;
+      end
+      else
+        Result.CreatedAt := Now;
+    finally
+      LRoot.Free;
+    end;
+  finally
+    LParser.Free;
+  end;
+end;
+
+function TAsWishStoreService.ListCommonsLessonFiles: TArray<string>;
+var
+  LCommonsDir: string;
+begin
+  SetLength(Result, 0);
+  LCommonsDir := TPath.Combine(FBasePath, 'commons');
+  if not TDirectory.Exists(LCommonsDir) then Exit;
+  Result := TDirectory.GetFiles(LCommonsDir, 'lesson-*.yaml');
+  TArray.Sort<string>(Result);
+end;
+
+function TAsWishStoreService.ListCommonsLessons: TArray<TSpecCommonsLesson>;
+var
+  LFiles: TArray<string>;
+  LList: TList<TSpecCommonsLesson>;
+begin
+  SetLength(Result, 0);
+  LFiles := ListCommonsLessonFiles;
+  if Length(LFiles) = 0 then Exit;
+
+  LList := TList<TSpecCommonsLesson>.Create;
+  try
+    for var LFile in LFiles do
+    begin
+      var LRelPath := TPath.Combine('commons', TPath.GetFileName(LFile));
+      var LLesson := ReadCommonsLessonFile(LRelPath);
+      if LLesson.Id <> '' then
+        LList.Add(LLesson);
+    end;
+    Result := LList.ToArray;
+  finally
+    LList.Free;
   end;
 end;
 

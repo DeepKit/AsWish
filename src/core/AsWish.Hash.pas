@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Hash
 
@@ -57,6 +57,11 @@ type
     /// </summary>
     class function SnapshotRelationHash(ANodes: TList<TSpecNode>): string; overload; static;
     class function SnapshotRelationHash(AFunc, AMod, AView, AData: TList<TSpecNode>): string; overload; static;
+
+    /// <summary>
+    /// Compute content hash for a commons lesson record.
+    /// </summary>
+    class function LessonContentHash(const ALesson: TSpecCommonsLesson): string; static;
   end;
 
 implementation
@@ -293,6 +298,29 @@ begin
     Result := SnapshotRelationHash(LAll);
   finally
     LAll.Free;
+  end;
+end;
+
+class function TSpecHash.LessonContentHash(const ALesson: TSpecCommonsLesson): string;
+var
+  LSb: TStringBuilder;
+begin
+  LSb := TStringBuilder.Create;
+  try
+    LSb.Append('id=').Append(ALesson.Id).Append('|');
+    LSb.Append('title=').Append(ALesson.Title).Append('|');
+    LSb.Append('human_takeaway=').Append(ALesson.HumanTakeaway).Append('|');
+    LSb.Append('trigger_pattern=').Append(ALesson.TriggerPattern).Append('|');
+    LSb.Append('wrong_expression=').Append(ALesson.WrongExpression).Append('|');
+    LSb.Append('right_expression=').Append(ALesson.RightExpression).Append('|');
+    LSb.Append('baseline_ref=').Append(ALesson.BaselineRef).Append('|');
+    LSb.Append('difference_ref=').Append(ALesson.DifferenceRef).Append('|');
+    LSb.Append('domain=').Append(ALesson.Domain).Append('|');
+    LSb.Append('contributed_by=').Append(ALesson.ContributedBy).Append('|');
+    LSb.Append('story_mode=').Append(ALesson.StoryMode);
+    Result := Sha256Hex(LSb.ToString);
+  finally
+    LSb.Free;
   end;
 end;
 
