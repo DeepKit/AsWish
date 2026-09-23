@@ -1,0 +1,211 @@
+﻿version: "1.0"
+
+evidence:
+  - id: "ev-docs-01-requirements-md"
+    source_layer: parsed_from_a
+    path: "docs/01_requirements.md"
+    lines: null
+    excerpt: "# Order System Requirements"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-docs-02-architecture-md"
+    source_layer: parsed_from_a
+    path: "docs/02_architecture.md"
+    lines: null
+    excerpt: "# System Architecture"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-ordersystem-main-pas"
+    source_layer: parsed_from_a
+    path: "src/app/OrderSystem.Main.pas"
+    lines: null
+    excerpt: "Directory: src"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-ordersystem-main-pas"
+    source_layer: parsed_from_a
+    path: "src/app/OrderSystem.Main.pas"
+    lines: null
+    excerpt: "Directory: src/app"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-billing-pas"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Billing.pas"
+    lines: null
+    excerpt: "Directory: src/services"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-ordersystem-main-dfm"
+    source_layer: parsed_from_a
+    path: "src/app/OrderSystem.Main.dfm"
+    lines: null
+    excerpt: "File: src/app/OrderSystem.Main.dfm"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-ordersystem-dpr"
+    source_layer: parsed_from_a
+    path: "OrderSystem.dpr"
+    lines: null
+    excerpt: "unit OrderSystem;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-ordersystem-main-pas"
+    source_layer: parsed_from_a
+    path: "src/app/OrderSystem.Main.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Main;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-billing-pas"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Billing.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Billing;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-inventory-pas"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Inventory.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Inventory;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-notification-pa"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Notification.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Notification;"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-ordersystem-main-dfm"
+    source_layer: parsed_from_a
+    path: "src/app/OrderSystem.Main.dfm"
+    lines: null
+    excerpt: "object MainOrderForm: TMainOrderForm"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-app-ordersystem-main-pas"
+    source_layer: parsed_from_a
+    path: "src/app/OrderSystem.Main.pas"
+    lines: null
+    excerpt: "File: src/app/OrderSystem.Main.pas"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-billing-pas"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Billing.pas"
+    lines: null
+    excerpt: "File: src/services/OrderSystem.Billing.pas"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-inventory-pas"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Inventory.pas"
+    lines: null
+    excerpt: "File: src/services/OrderSystem.Inventory.pas"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []
+  - id: "ev-src-services-ordersystem-notification-pa"
+    source_layer: parsed_from_a
+    path: "src/services/OrderSystem.Notification.pas"
+    lines: null
+    excerpt: "File: src/services/OrderSystem.Notification.pas"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:48+08:00"
+    updated_at: "2026-09-21T23:16:48+08:00"
+    source_file_hash: null
+    is_stale: false
+    referenced_by: []

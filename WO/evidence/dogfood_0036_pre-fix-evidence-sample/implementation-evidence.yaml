@@ -1,0 +1,121 @@
+﻿version: "1.0"
+
+evidence:
+  - id: "ev-impl-0001"
+    source_layer: implementation
+    path: "docs/01_requirements.md"
+    lines: null
+    excerpt: "# Order System Requirements\r\n1. The system must support customer checkout and payment processing.\r\n2. The inventory service must verify product availability before checkout.\r\n3. System must record payment audits."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "95457b281b6c777f1c9f7ec970638e95b3255af2e48d3adcc57f4d4c9931daca"
+    source_file_hash: "0f386ab0e8caf9748d5b7b39faaeff10c4114f70266943a27428303c710175ff"
+    is_stale: false
+    referenced_by:
+      - "func-order-system-requirements"
+  - id: "ev-impl-0002"
+    source_layer: implementation
+    path: "docs/02_architecture.md"
+    lines: null
+    excerpt: "# System Architecture\r\n- VCL Desktop Shell\r\n- Services layer: Billing, Inventory\r\n- Decoupled modules"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "b3223ca699061644077532fe94fc8a7be159bbebba7b5994c9abbf605c4e9d01"
+    source_file_hash: "da4e3ddb71c6dd0e18414d1d39419f7219f1d25bce1ee373094b67a49f858732"
+    is_stale: false
+    referenced_by:
+      - "func-system-architecture"
+  - id: "ev-impl-0003"
+    source_layer: implementation
+    path: "src/app/OrderSystem.Main.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Main;\r\ninterface\r\nuses\r\n  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, Vcl.StdCtrls;\r\ntype\r\n  TMainOrderForm = class(TForm)\r\n    BtnCheckout: TButton;\r\n    EdtCustomerId: TEdit;\r\n    LblStatus: TLabel;\r\n  end;\r\nimplementation\r\n{$R *.dfm}\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "671dd12f9fa345fcab91f6a19ebd1d2168def9b6a20dbd626d31a055c7a7f72d"
+    source_file_hash: "7c8414a616fc0c2711c981e1b7fe243eb5c0ae27b7344166c56bae9a67a33772"
+    is_stale: false
+    referenced_by:
+      - "mod-src"
+      - "mod-src-app"
+      - "mod-class-tmainorderform"
+      - "mod-unit-ordersystem-main"
+      - "data-entity-tmainorderform"
+  - id: "ev-impl-0004"
+    source_layer: implementation
+    path: "src/services/OrderSystem.Billing.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Billing;\r\ninterface\r\ntype\r\n  TBillingService = class\r\n  public\r\n    function ProcessPayment(const ACustomerId: string; AAmount: Currency): Boolean;\r\n    function RefundPayment(const ATransactionId: string): Boolean;\r\n  end;\r\nimplementation\r\nfunction TBillingService.ProcessPayment(const ACustomerId: string; AAmount: Currency): Boolean;\r\nbegin\r\n  Result := (AAmount > 0) and (AAmount < 1000000); // Added limit check\r\nend;\r\nfunction TBillingService.RefundPayment(const ATransactionId: string): Boolean;\r\nbegin\r\n  Result := True;\r\nend;\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "1452d5311925418af2674dcdd0e8d8c299eeada186292f3f8fec16a111fec3b0"
+    source_file_hash: "52d6fc9c53de935d6cc61c5071a73ba0a9e4df80e5cdc232068d6d296a5e3849"
+    is_stale: false
+    referenced_by:
+      - "mod-src-services"
+      - "mod-class-tbillingservice"
+      - "mod-unit-ordersystem-billing"
+      - "data-entity-tbillingservice"
+  - id: "ev-impl-0005"
+    source_layer: implementation
+    path: "OrderSystem.dpr"
+    lines: null
+    excerpt: "program OrderSystem;\r\nuses\r\n  Vcl.Forms,\r\n  OrderSystem.Main in 'src\\app\\OrderSystem.Main.pas',\r\n  OrderSystem.Billing in 'src\\services\\OrderSystem.Billing.pas',\r\n  OrderSystem.Inventory in 'src\\services\\OrderSystem.Inventory.pas';\r\n\r\n{$R *.res}\r\nbegin\r\n  Application.Initialize;\r\n  Application.MainFormOnTaskbar := True;\r\n  Application.Run;\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "97f37fbc0497bcae38a86dbe75f20f6ab3541b821145d980a902fbad96a6a548"
+    source_file_hash: "d24a6c61ee045be24c4dd5a3a522501f52627d577278e54e4ab4fd4d1916ad3c"
+    is_stale: false
+    referenced_by:
+      - "mod-unit-ordersystem"
+  - id: "ev-impl-0006"
+    source_layer: implementation
+    path: "src/services/OrderSystem.Inventory.pas"
+    lines: null
+    excerpt: "unit OrderSystem.Inventory;\r\ninterface\r\ntype\r\n  TInventoryService = class\r\n  public\r\n    function CheckStock(const ASku: string): Integer;\r\n    function ReserveStock(const ASku: string; AQuantity: Integer): Boolean;\r\n  end;\r\nimplementation\r\nfunction TInventoryService.CheckStock(const ASku: string): Integer;\r\nbegin\r\n  Result := 100;\r\nend;\r\nfunction TInventoryService.ReserveStock(const ASku: string; AQuantity: Integer): Boolean;\r\nbegin\r\n  Result := True;\r\nend;\r\nend."
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "f0c2da6824ce84e90d0bfe93a7cf9720b9c403e7f12c9869fc1a7e5e20e741aa"
+    source_file_hash: "d7d7109b091ddd48e48b86257f1948e15be2129b661cb73eb641b82c3defe082"
+    is_stale: false
+    referenced_by:
+      - "mod-class-tinventoryservice"
+      - "mod-unit-ordersystem-inventory"
+      - "data-entity-tinventoryservice"
+  - id: "ev-impl-0007"
+    source_layer: implementation
+    path: "src/app/OrderSystem.Main.dfm"
+    lines: null
+    excerpt: "object MainOrderForm: TMainOrderForm\r\n  Left = 0\r\n  Top = 0\r\n  Caption = 'Order System Main Form'\r\n  ClientHeight = 400\r\n  ClientWidth = 600\r\n  object LblStatus: TLabel\r\n    Left = 40\r\n    Top = 30\r\n    Width = 80\r\n    Height = 20\r\n    Caption = 'Ready'\r\n  end\r\n  object EdtCustomerId: TEdit\r\n    Left = 40\r\n    Top = 70\r\n    Width = 150\r\n    Height = 25\r\n  end\r\n  object BtnCheckout: TButton"
+    excerpt_truncated: false
+    note: null
+    confidence: high
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    content_hash: "2a8f7c1d6afb3e989d2405c967af7d09aa143f93e2282152f3a361567054032b"
+    source_file_hash: "51348bc9f85186e2dce4e0843e45b44de06f81b1dd6a5db5a69424225c11031a"
+    is_stale: false
+    referenced_by:
+      - "view-ordersystem-main"
+      - "view-ctrl-lblstatus"
+      - "view-ctrl-edtcustomerid"
+      - "view-ctrl-btncheckout"
+      - "view-form-mainorderform"
