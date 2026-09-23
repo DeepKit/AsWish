@@ -317,7 +317,8 @@ begin
     LSb.Append('difference_ref=').Append(ALesson.DifferenceRef).Append('|');
     LSb.Append('domain=').Append(ALesson.Domain).Append('|');
     LSb.Append('contributed_by=').Append(ALesson.ContributedBy).Append('|');
-    LSb.Append('story_mode=').Append(ALesson.StoryMode);
+    LSb.Append('story_mode=').Append(ALesson.StoryMode).Append('|');
+    LSb.Append('anchor_kind=').Append(ALesson.AnchorKind);
     Result := Sha256Hex(LSb.ToString);
   finally
     LSb.Free;

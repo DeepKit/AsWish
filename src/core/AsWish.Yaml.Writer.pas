@@ -505,6 +505,7 @@ begin
   WriteQuotedKV('domain', ALesson.Domain);
   WriteQuotedKV('contributed_by', ALesson.ContributedBy);
   WriteQuotedKV('story_mode', ALesson.StoryMode);
+  WriteQuotedKV('anchor_kind', ALesson.AnchorKind);
   if ALesson.CreatedAt <> 0 then
     WriteQuotedKV('created_at', FormatTimestamp(ALesson.CreatedAt))
   else

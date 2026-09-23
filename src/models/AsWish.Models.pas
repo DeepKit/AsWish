@@ -367,12 +367,14 @@ type
     Domain: string;
     ContributedBy: string;
     StoryMode: string;
+    AnchorKind: string; // 'machine' | 'narrative' (WO-20260923-0043)
     CreatedAt: TDateTime;
     class function CreateNew(const AId, ATitle, ATakeaway, ATrigger,
       AWrong, ARight: string; const ABaselineRef: string = '';
       const ADifferenceRef: string = ''; const ADomain: string = 'general';
       const AContributedBy: string = 'seed:aswish-dogfood';
-      const AStoryMode: string = 'cautionary'): TSpecCommonsLesson; static;
+      const AStoryMode: string = 'cautionary';
+      const AAnchorKind: string = 'narrative'): TSpecCommonsLesson; static;
   end;
 
   /// <summary>
@@ -601,7 +603,7 @@ end;
 
 class function TSpecCommonsLesson.CreateNew(const AId, ATitle, ATakeaway,
   ATrigger, AWrong, ARight: string; const ABaselineRef, ADifferenceRef,
-  ADomain, AContributedBy, AStoryMode: string): TSpecCommonsLesson;
+  ADomain, AContributedBy, AStoryMode, AAnchorKind: string): TSpecCommonsLesson;
 begin
   Result := Default(TSpecCommonsLesson);
   Result.Id := AId;
@@ -615,6 +617,8 @@ begin
   Result.Domain := ADomain;
   Result.ContributedBy := AContributedBy;
   Result.StoryMode := AStoryMode;
+  Result.AnchorKind := AAnchorKind;
+  if Result.AnchorKind = '' then Result.AnchorKind := 'narrative';
   Result.CreatedAt := Now;
 end;
 

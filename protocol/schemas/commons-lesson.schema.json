@@ -35,6 +35,11 @@
       "type": "string",
       "enum": ["cautionary", "anti_pattern", "boundary_defense", "clarification_triumph", "divergence_resolved", "best_practice"]
     },
+    "anchor_kind": {
+      "type": "string",
+      "enum": ["machine", "narrative"],
+      "default": "narrative"
+    },
     "created_at": { "type": "string", "format": "date-time" }
   },
   "additionalProperties": true

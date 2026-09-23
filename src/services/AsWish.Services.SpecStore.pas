@@ -835,6 +835,7 @@ begin
       Result.Domain := LRoot.GetString('domain', 'general');
       Result.ContributedBy := LRoot.GetString('contributed_by', 'seed:aswish-dogfood');
       Result.StoryMode := LRoot.GetString('story_mode', 'cautionary');
+      Result.AnchorKind := LRoot.GetString('anchor_kind', 'narrative');
       LCreatedAtStr := LRoot.GetString('created_at', '');
       if LCreatedAtStr <> '' then
       begin
