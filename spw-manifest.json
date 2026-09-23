@@ -38,7 +38,8 @@
     "src/services/AsWish.Services.Difference.pas",
     "src/services/AsWish.Services.VisualWorkflow.pas",
     "src/services/AsWish.Services.RenderDiff.pas",
-    "src/services/AsWish.Binding.HB.pas"
+    "src/services/AsWish.Binding.HB.pas",
+    "src/services/AsWish.Services.Commons.pas"
   ],
   "observer_files": [
     "src/app/AsWish.MainForm.pas",

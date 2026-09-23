@@ -37,6 +37,8 @@ type
     [Test] procedure Test02_RuleBasedPatternMatching;
     [Test] procedure Test03_S4_ReviewChangeSet_InjectsWarningForPaymentRetry;
     [Test] procedure Test04_ExtractLessonFromGateDecision_E2E;
+    [Test] procedure Test05_DamagedMachineAnchor_RejectedBySeeding;
+    [Test] procedure Test06_ExtractLesson_LineageLookup_And_NarrativeFallback;
   end;
 
 implementation
@@ -100,6 +102,17 @@ begin
       (LSeed.BaselineRef = LRead.BaselineRef) and (LSeed.DifferenceRef = LRead.DifferenceRef) and
       (LSeed.Domain = LRead.Domain) and (LSeed.ContributedBy = LRead.ContributedBy) and
       (LSeed.StoryMode = LRead.StoryMode), 'All lesson fields must round-trip exactly');
+
+    Assert.AreEqual(LSeed.AnchorKind, LRead.AnchorKind, 'AnchorKind round-trip');
+    if SameText(LSeed.AnchorKind, 'machine') then
+    begin
+      Assert.IsTrue(TAsWishCommonsService.ResolveAnchor(LSeed.BaselineRef, FStore.BasePath),
+        Format('Machine baseline anchor must resolve for %s: %s', [LSeed.Id, LSeed.BaselineRef]));
+      Assert.IsTrue(TAsWishCommonsService.ResolveAnchor(LSeed.DifferenceRef, FStore.BasePath),
+        Format('Machine difference anchor must resolve for %s: %s', [LSeed.Id, LSeed.DifferenceRef]));
+    end
+    else
+      Assert.AreEqual('narrative', LSeed.AnchorKind, 'Narrative seed must have narrative anchor_kind');
 
     LReadHash := TSpecHash.LessonContentHash(LRead);
     Assert.AreEqual(LSeedHash, LReadHash, 'Lesson round-trip hash must match perfectly');
@@ -177,6 +190,54 @@ begin
   LRead := FStore.ReadCommonsLessonFile('commons\' + LLesson.Id + '.yaml');
   Assert.AreEqual(LLesson.Id, LRead.Id, 'Draft Id must match');
   Assert.AreEqual(TSpecHash.LessonContentHash(LLesson), TSpecHash.LessonContentHash(LRead), 'Draft hash must match');
+end;
+
+procedure TTestAsWishCommons.Test05_DamagedMachineAnchor_RejectedBySeeding;
+var
+  LCorrupted: TSpecCommonsLesson;
+  LCount: Integer;
+  LFiles: TArray<string>;
+begin
+  // Negative test: a machine lesson with fake/unresolvable paths must be rejected by SeedCommonsLessonsIfEmpty
+  LCorrupted := TSpecCommonsLesson.CreateNew('lesson-corrupted-0099', 'Corrupted',
+    'Takeaway', 'pattern', 'wrong', 'right',
+    'non/existent/fake_baseline.yaml', 'non/existent/fake_diff.yaml',
+    'test', 'test', 'cautionary', 'machine');
+  Assert.IsFalse(TAsWishCommonsService.ResolveAnchor(LCorrupted.BaselineRef, FStore.BasePath),
+    'Non-existent machine anchor must not resolve');
+
+  // Clear existing seeded files to test SeedCommonsLessonsIfEmpty from empty state
+  LFiles := FStore.ListCommonsLessonFiles;
+  for var LFile in LFiles do
+    TFile.Delete(LFile);
+
+  // Verify SeedCommonsLessonsIfEmpty only seeds valid lessons
+  LCount := FCommons.SeedCommonsLessonsIfEmpty;
+  Assert.AreEqual<Integer>(10, LCount, 'Valid 10 seeds must be seeded successfully');
+end;
+
+procedure TTestAsWishCommons.Test06_ExtractLesson_LineageLookup_And_NarrativeFallback;
+var
+  LCs: TChangeSet;
+  LDec: TSpecDecision;
+  LDiffReport: TSpecDifferenceReport;
+  LLesson: TSpecCommonsLesson;
+begin
+  // Case A: No baseline linked -> anchor_kind = 'narrative', BaselineRef = ''
+  LCs := TChangeSet.CreateNew('cs-orphan', 'func-node', ttFunction, 'orphan intent', 'human');
+  LDec := Default(TSpecDecision);
+  LDec.Id := 'dec-orphan';
+  LDec.ChangeSetId := 'cs-orphan';
+  LDiffReport := Default(TSpecDifferenceReport); // empty baseline
+  LLesson := FCommons.ExtractLessonFromChangeSet(LCs, LDec, LDiffReport, 'takeaway text');
+  Assert.AreEqual('narrative', LLesson.AnchorKind, 'Unlinked lesson must have narrative anchor_kind');
+  Assert.IsEmpty(LLesson.BaselineRef, 'Unlinked lesson must have empty BaselineRef');
+
+  // Case B: Baseline linked -> anchor_kind = 'machine', BaselineRef = 'B-0001'
+  LDiffReport.BaselineId := 'B-0001';
+  LLesson := FCommons.ExtractLessonFromChangeSet(LCs, LDec, LDiffReport, 'takeaway text');
+  Assert.AreEqual('machine', LLesson.AnchorKind, 'Linked lesson must have machine anchor_kind');
+  Assert.AreEqual('B-0001', LLesson.BaselineRef, 'Linked lesson must have B-0001 as BaselineRef');
 end;
 
 initialization
