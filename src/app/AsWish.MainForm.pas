@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.MainForm
   ---------------------------------------------------------------------------
   Main form for AsWish - inherits TAsWishShellForm.
@@ -90,6 +90,9 @@ type
     FHBDeckButtons: array[0..9] of TSpeedButton;
     FHBCommitBtn: TSpeedButton;
     FHBRejectBtn: TSpeedButton;
+    FHBExtractBtn: TSpeedButton;
+    FLastGateCsId: string;
+    FLastGateRationale: string;
 
     procedure BuildHBDeckUI;
     procedure DoFormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -100,6 +103,7 @@ type
     procedure TriggerHbBack;
     procedure TriggerHbCommit;
     procedure TriggerHbReject;
+    procedure TriggerHbExtractLesson;
     procedure UpdateHbDeckStatus(const AMsg: string);
 
     procedure ExecuteCommandSync(const ACommandLine: string);
@@ -130,6 +134,9 @@ type
   public
     property Controller: TAsWishController read FController;
     property HBBinding: TAsWishHBBinding read FHBBinding;
+    property HBExtractBtn: TSpeedButton read FHBExtractBtn;
+    property LastGateCsId: string read FLastGateCsId;
+    procedure TriggerExtractLesson;
   end;
 
 var
@@ -1000,6 +1007,15 @@ begin
   FHBRejectBtn.Caption := 'Esc: Reject';
   FHBRejectBtn.OnClick := DoHbButtonClick;
 
+  FHBExtractBtn := TSpeedButton.Create(FHBDeckPanel);
+  FHBExtractBtn.Parent := FHBDeckPanel;
+  FHBExtractBtn.Align := alLeft;
+  FHBExtractBtn.Width := 115;
+  FHBExtractBtn.Tag := 102;
+  FHBExtractBtn.Caption := '🚩 存为避坑经验';
+  FHBExtractBtn.Visible := False;
+  FHBExtractBtn.OnClick := DoHbButtonClick;
+
   FHBDeckStatusLabel := TLabel.Create(FHBDeckPanel);
   FHBDeckStatusLabel.Parent := FHBDeckPanel;
   FHBDeckStatusLabel.Align := alClient;
@@ -1021,6 +1037,7 @@ begin
     9: TriggerHbOverride;
     100: TriggerHbCommit;
     101: TriggerHbReject;
+    102: TriggerHbExtractLesson;
   end;
 end;
 
@@ -1195,7 +1212,14 @@ begin
   LSuccess := FHBBinding.ExecuteCommitmentGate(LCsId, LRationale);
   if LSuccess then
   begin
-    UpdateHbDeckStatus(Format('[Commit Gate ACCEPTED] ChangeSet %s committed across boundary', [LCsId]));
+    FLastGateCsId := LCsId;
+    FLastGateRationale := LRationale;
+    if FHBExtractBtn <> nil then
+    begin
+      FHBExtractBtn.Visible := True;
+      FHBExtractBtn.Enabled := True;
+    end;
+    UpdateHbDeckStatus(Format('[Commit Gate ACCEPTED] ChangeSet %s committed across boundary [🚩 存为避坑经验]', [LCsId]));
     if FProjectService <> nil then
       FController.OpenAndScan(FProjectService.ProjectPath);
   end
@@ -1220,7 +1244,14 @@ begin
   LSuccess := FHBBinding.ExecuteReject(LCsId, LRationale);
   if LSuccess then
   begin
-    UpdateHbDeckStatus(Format('[Reject Gate RECORDED] ChangeSet %s rejected (Spec untouched)', [LCsId]));
+    FLastGateCsId := LCsId;
+    FLastGateRationale := LRationale;
+    if FHBExtractBtn <> nil then
+    begin
+      FHBExtractBtn.Visible := True;
+      FHBExtractBtn.Enabled := True;
+    end;
+    UpdateHbDeckStatus(Format('[Reject Gate RECORDED] ChangeSet %s rejected (Spec untouched) [🚩 存为避坑经验]', [LCsId]));
     if FProjectService <> nil then
     begin
       var LDecHtml := TPath.Combine(FProjectService.AsWishPath, 'html\decisions.html');
@@ -1230,6 +1261,35 @@ begin
   end
   else
     UpdateHbDeckStatus(Format('[Reject Gate FAILED] Could not reject ChangeSet %s', [LCsId]));
+end;
+
+procedure TAsWishMainForm.TriggerHbExtractLesson;
+var
+  LCsId: string;
+  LLesson: TSpecCommonsLesson;
+  LYamlPath: string;
+begin
+  if FController = nil then Exit;
+  LCsId := FLastGateCsId;
+  if LCsId = '' then
+  begin
+    UpdateHbDeckStatus('[Commons] No recent gate rejection or override changeset to extract');
+    Exit;
+  end;
+
+  LLesson := FController.ExtractCommonsLesson(LCsId, FLastGateRationale);
+  if LLesson.Id <> '' then
+  begin
+    LYamlPath := TPath.Combine(FProjectService.AsWishPath, 'commons\' + LLesson.Id + '.yaml');
+    UpdateHbDeckStatus(Format('[Commons 🚩] Lesson %s drafted: %s', [LLesson.Id, LLesson.Title]));
+    if TFile.Exists(LYamlPath) then
+      OpenView(TShellObjectRef.Make(LLesson.Id, 'yaml', LLesson.Title, LYamlPath));
+  end;
+end;
+
+procedure TAsWishMainForm.TriggerExtractLesson;
+begin
+  TriggerHbExtractLesson;
 end;
 
 procedure TAsWishMainForm.UpdateHbDeckStatus(const AMsg: string);
