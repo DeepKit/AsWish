@@ -33,7 +33,12 @@
     "src/services/AsWish.Services.Settings.pas",
     "src/services/AsWish.Services.SpecStore.pas",
     "src/services/AsWish.Services.TreeBuilder.pas",
-    "cli/AsWish.CLI.dpr"
+    "cli/AsWish.CLI.dpr",
+    "src/services/AsWish.Services.EvidenceCollector.pas",
+    "src/services/AsWish.Services.Difference.pas",
+    "src/services/AsWish.Services.VisualWorkflow.pas",
+    "src/services/AsWish.Services.RenderDiff.pas",
+    "src/services/AsWish.Binding.HB.pas"
   ],
   "observer_files": [
     "src/app/AsWish.MainForm.pas",
@@ -72,15 +77,37 @@
     {
       "gate_id": "H1.resource-locks",
       "required": true,
-      "claims": ["controlled_entry_only"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_resource_locks.py"],
+      "claims": [
+        "controlled_entry_only"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_resource_locks.py"
+      ],
       "timeout": 120
     },
     {
       "gate_id": "H2.compile-build",
       "required": true,
       "claims": [],
-      "command": ["cmd", "/c", "_build.bat && cd tests && _build_tests.bat"],
+      "command": [
+        "cmd",
+        "/c",
+        "D:\\_Progs\\02Business\\AsWish\\_build.bat"
+      ],
+      "timeout": 900
+    },
+    {
+      "gate_id": "H2.compile-tests",
+      "required": true,
+      "claims": [],
+      "command": [
+        "cmd",
+        "/c",
+        "D:\\_Progs\\02Business\\AsWish\\tests\\_build_tests.bat"
+      ],
       "timeout": 900
     },
     {
@@ -91,28 +118,56 @@
         "state_machine_check",
         "required_fields_on_activation"
       ],
-      "command": ["cmd", "/c", "cd tests && AsWish.Tests.exe"],
+      "command": [
+        "D:\\_Progs\\02Business\\AsWish\\tests\\AsWish.Tests.exe"
+      ],
       "timeout": 300
     },
     {
       "gate_id": "H3.encoding-guard",
       "required": true,
-      "claims": ["counterfactual_1", "counterfactual_2"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_encoding.py"],
+      "claims": [
+        "counterfactual_1",
+        "counterfactual_2"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_encoding.py"
+      ],
       "timeout": 120
     },
     {
       "gate_id": "H3.runtime-autofix",
       "required": true,
-      "claims": ["counterfactual_3", "counterfactual_4", "counterfactual_5"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_autofix.py"],
+      "claims": [
+        "counterfactual_3",
+        "counterfactual_4",
+        "counterfactual_5"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_autofix.py"
+      ],
       "timeout": 120
     },
     {
       "gate_id": "H3.deep-ui-test",
       "required": true,
-      "claims": ["counterfactual_6", "counterfactual_7", "counterfactual_8"],
-      "command": ["python", "-X", "utf8", "D:/Temp/opencode/aswish-spw/gate_ui_bridge.py"],
+      "claims": [
+        "counterfactual_6",
+        "counterfactual_7",
+        "counterfactual_8"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_ui_bridge.py"
+      ],
       "timeout": 120
     }
   ],
@@ -130,14 +185,30 @@
     "required_fields_on_activation": [
       "tests/Test.AsWish.Validation.pas (INV-2/4/5/6: parent ref, gen/review status, cycles, hashes)"
     ],
-    "counterfactual_1": ["gate_encoding.py: undecodable/NUL source files must fail"],
-    "counterfactual_2": ["gate_encoding.py: mixed line endings must fail"],
-    "counterfactual_3": ["gate_autofix.py: dpr must install InstallAIErrorHandler/AutoFix.Install/TAutoFixVclHook.Install"],
-    "counterfactual_4": ["gate_autofix.py: AutoFix scenario registration must exist in MainForm"],
-    "counterfactual_5": ["gate_autofix.py: boundary.json must be valid JSON with allowed/blocked paths"],
-    "counterfactual_6": ["gate_ui_bridge.py: every rendered data-action must have a host handler (dead-button class)"],
-    "counterfactual_7": ["gate_ui_bridge.py: orphan host handlers reported"],
-    "counterfactual_8": ["gate_ui_bridge.py: bridge dispatch audit deterministic on Render.pas + MainView.pas"]
+    "counterfactual_1": [
+      "gate_encoding.py: undecodable/NUL source files must fail"
+    ],
+    "counterfactual_2": [
+      "gate_encoding.py: mixed line endings must fail"
+    ],
+    "counterfactual_3": [
+      "gate_autofix.py: dpr must install InstallAIErrorHandler/AutoFix.Install/TAutoFixVclHook.Install"
+    ],
+    "counterfactual_4": [
+      "gate_autofix.py: AutoFix scenario registration must exist in MainForm"
+    ],
+    "counterfactual_5": [
+      "gate_autofix.py: boundary.json must be valid JSON with allowed/blocked paths"
+    ],
+    "counterfactual_6": [
+      "gate_ui_bridge.py: every rendered data-action must have a host handler (dead-button class)"
+    ],
+    "counterfactual_7": [
+      "gate_ui_bridge.py: orphan host handlers reported"
+    ],
+    "counterfactual_8": [
+      "gate_ui_bridge.py: bridge dispatch audit deterministic on Render.pas + MainView.pas"
+    ]
   },
   "h4_patterns": [
     {
