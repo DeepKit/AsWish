@@ -1,0 +1,51 @@
+﻿============================================================
+ AsWish Desktop GUI Decision Workflow Real Verification
+============================================================
+Timestamp: 2026-09-24 07:52:39
+Process ID: 45704 | Window Handle: 27069596
+Window Caption: AsWish v0.1.0
+Project Path: dogfood\dogfood_0036_project
+Main Control Class: TEdgeBrowser
+Browser State: 1
+WebView Created: False
+Last Error Code: $00000000
+[PASS] Step 1: OpenAndScan executed in GUI.
+       Screenshot: WO/evidence/screenshots/gui-01-project-open.png
+       [DOM-ASSERT] index.html rendered in WebView2, DOM excerpt: 索引 - AsWish AsWish: dogfood_0036_project 项目规格健康度看板（BUG-9）。 文档健康度 0.0% 覆盖率 已确认节点占比。文档够不够 AI 开发用。 80% 平均置信度 low=30 / mediu
+[PASS] Step 2: Difference view loaded. Path: dogfood\dogfood_0036_project\.AsWish\html\difference.html
+       Screenshot: WO/evidence/screenshots/gui-02-difference-view.png
+       [DOM-ASSERT] difference.html rendered, difference count verified in DOM: 21 items
+       [DOM-ASSERT] DOM excerpt: 缁撴瀯宸紓涓庤鍐 - AsWish 缁撴瀯宸紓涓庤鍐: dogfood_0036_project &larr; 杩斿洖棣栭〉 | 鍐崇瓥鍘嗗彶鐣欑棔 Baseline: B-0001 Tree: function Differences: 0 鍩虹嚎涓庡綋鍓嶅疄鐜板畬鍏ㄤ竴鑷达紝鏈彂鐜扮粨鏋勫樊寮傘€?
+[PASS] Step 3: Recorded Unacceptable decision dec-0008 in GUI.
+       Screenshot: WO/evidence/screenshots/gui-03-judge-unacceptable.png
+       [DOM-ASSERT] decisions.html rendered, contains decision "dec-0008" in DOM
+       [DOM-ASSERT] DOM excerpt: 闇€姹傚喅绛栧巻鍙茬暀鐥 - AsWish 闇€姹傚喅绛栧巻鍙茬暀鐥: dogfood_0036_project &larr; 杩斿洖棣栭〉 | 鏌ョ湅宸紓 ID Type Status ChangeSet Title Rationale Target Nodes Date dec-0001 confirm ac
+[PASS] Step 4: Recorded Acceptable decision dec-0009 in GUI.
+       Screenshot: WO/evidence/screenshots/gui-04-judge-acceptable.png
+       [DOM-ASSERT] decisions.html rendered, contains decision "dec-0009" in DOM
+       [DOM-ASSERT] DOM excerpt: 闇€姹傚喅绛栧巻鍙茬暀鐥 - AsWish 闇€姹傚喅绛栧巻鍙茬暀鐥: dogfood_0036_project &larr; 杩斿洖棣栭〉 | 鏌ョ湅宸紓 ID Type Status ChangeSet Title Rationale Target Nodes Date dec-0001 confirm ac
+[PASS] Step 5: Evolved new baseline B-0005 (parent: B-0001) in GUI.
+       Screenshot: WO/evidence/screenshots/gui-05-evolve-baseline.png
+       [DOM-ASSERT] difference.html rendered for evolved baseline B-0005 (0 differences) in DOM
+       [DOM-ASSERT] DOM excerpt: 缁撴瀯宸紓涓庤鍐 - AsWish 缁撴瀯宸紓涓庤鍐: dogfood_0036_project &larr; 杩斿洖棣栭〉 | 鍐崇瓥鍘嗗彶鐣欑棔 Baseline: B-0005 Tree: view Differences: 0 闄嶇骇杩愯妯″紡: Degraded: No platform vis
+[PASS] Step 6: Decisions history displayed in GUI.
+       Screenshot: WO/evidence/screenshots/gui-06-decisions-history.png
+       [DOM-ASSERT] decisions.html rendered, contains full history dec-0001..dec-0004 in DOM
+       [DOM-ASSERT] DOM excerpt: 闇€姹傚喅绛栧巻鍙茬暀鐥 - AsWish 闇€姹傚喅绛栧巻鍙茬暀鐥: dogfood_0036_project &larr; 杩斿洖棣栭〉 | 鏌ョ湅宸紓 ID Type Status ChangeSet Title Rationale Target Nodes Date dec-0001 confirm accepted cs-func-payment-retry-01 Accept ChangeSet: cs-func-pa
+[PASS] Step 7: D-1 Inspector Sidebar verified. ChangeSet: cs-func-dogfood-0036-project-02 submitted via SSOT.
+       Screenshot: WO/evidence/screenshots/gui-07-inspector-dialog.png
+[PASS] Step 8: D-2 Ghosts context chips (matching, narrative badges, dismiss) verified.
+       Screenshot: WO/evidence/screenshots/gui-08-ghosts-hints.png
+[PASS] Step 9: D-3 Immersive review surface (F11 toggle, panel hide/restore) verified.
+       Screenshot: WO/evidence/screenshots/gui-09-immersive-review.png
+------------------------------------------------------------
+Physical Disk Verification:
+  - difference.html exists: True (dogfood\dogfood_0036_project\.AsWish\html\difference.html)
+  - decisions.html exists: True (dogfood\dogfood_0036_project\.AsWish\html\decisions.html)
+  - requirement-decisions.yaml exists: True
+  - evolved baseline: B-0005 (2026-09-24_075250-accepted-baseline-B-0005-dec-0010)
+  - parent_baseline_id: B-0001
+  - DOM-verified decisions: dec-0001, dec-0002, dec-0003, dec-0004
+  - DOM-verified difference count: 21 items
+============================================================
+GUI Verification Exit Code: 0

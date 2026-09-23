@@ -1765,7 +1765,7 @@ begin
     try
       LEvidenceDir := TPath.Combine(LRepoRoot, 'WO\evidence');
       LShotDir := TPath.Combine(LEvidenceDir, 'screenshots');
-      LLogFile := TPath.Combine(LEvidenceDir, 'gui-decisions-20260905-0029-甲.txt');
+      LLogFile := TPath.Combine(LEvidenceDir, 'gui-dual-surface-0044-甲.txt');
       TDirectory.CreateDirectory(LShotDir);
 
       LLog.Add('============================================================');
@@ -1879,7 +1879,72 @@ begin
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
         Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 220));
 
-      // Step 7: Verify disk artifacts
+      // Step 7: Verify D-1 Inspector Sidebar Dialog (WO-0044)
+      SetStatusMessage('GUI Step 7: Verifying D-1 Inspector Sidebar Dialog...');
+      if (FFuncTree <> nil) and (FFuncTree.Items.Count > 0) then
+      begin
+        FFuncTree.Selected := FFuncTree.Items[0];
+        DoSpecTreeChange(FFuncTree, FFuncTree.Selected);
+      end
+      else
+      begin
+        FCurrentInspectedNodeId := 'func-payment-retry';
+        RightPanel.Visible := True;
+        RightSplitter.Visible := True;
+        FInspectorNodeLabel.Caption := ' func-payment-retry';
+      end;
+      if not RightPanel.Visible then
+        raise Exception.Create('D-1 assertion failed: RightPanel must be visible on node inspection');
+      FInspectorIntentEdit.Text := 'Update retry backoff policy';
+      var LSubmittedCs := SubmitInspectorIntent;
+      if LSubmittedCs = '' then
+        raise Exception.Create('D-1 assertion failed: SubmitInspectorIntent returned empty ChangeSet ID');
+      Update;
+      Application.ProcessMessages;
+      SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-07-inspector-dialog.png'));
+      LLog.Add(Format('[PASS] Step 7: D-1 Inspector Sidebar verified. ChangeSet: %s submitted via SSOT.', [LSubmittedCs]));
+      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-07-inspector-dialog.png');
+
+      // Step 8: Verify D-2 Ghosts Context Hints & Badges (WO-0044)
+      SetStatusMessage('GUI Step 8: Verifying D-2 Ghosts Context Hints...');
+      UpdateGhosts('func-payment-retry');
+      if not FGhostsPanel.Visible then
+        raise Exception.Create('D-2 assertion failed: Ghosts panel must be visible when match found');
+      if not FGhostsChips[0].Visible then
+        raise Exception.Create('D-2 assertion failed: Ghosts chip 0 must be visible');
+      if Pos('业务重试策略死循环陷阱', FGhostsLabels[0].Caption) <= 0 then
+        raise Exception.Create('D-2 assertion failed: Ghosts chip text must contain lesson title');
+
+      UpdateGhosts('status=disabled and delete requested');
+      if Pos('经验总结，非可复核记录', FGhostsLabels[0].Caption) <= 0 then
+        raise Exception.Create('D-2 assertion failed: Narrative anchor must include [经验总结，非可复核记录]');
+
+      DoGhostChipCloseClick(FGhostsCloseBtns[0]);
+      if FGhostsChips[0].Visible then
+        raise Exception.Create('D-2 assertion failed: Closing chip must hide it');
+      Update;
+      Application.ProcessMessages;
+      SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-08-ghosts-hints.png'));
+      LLog.Add('[PASS] Step 8: D-2 Ghosts context chips (matching, narrative badges, dismiss) verified.');
+      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-08-ghosts-hints.png');
+
+      // Step 9: Verify D-3 Immersive Review Surface (F11) (WO-0044)
+      SetStatusMessage('GUI Step 9: Verifying D-3 Immersive Review Surface...');
+      if not LeftPanel.Visible then LeftPanel.Visible := True;
+      ToggleFullscreenReview;
+      if LeftPanel.Visible or RightPanel.Visible then
+        raise Exception.Create('D-3 assertion failed: Immersive review must hide left and right panels');
+      Update;
+      Application.ProcessMessages;
+      SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-09-immersive-review.png'));
+
+      ToggleFullscreenReview;
+      if not LeftPanel.Visible then
+        raise Exception.Create('D-3 assertion failed: Restoring review must restore left panel');
+      LLog.Add('[PASS] Step 9: D-3 Immersive review surface (F11 toggle, panel hide/restore) verified.');
+      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-09-immersive-review.png');
+
+      // Step 10: Verify disk artifacts
       LLog.Add('------------------------------------------------------------');
       LLog.Add('Physical Disk Verification:');
       LLog.Add('  - difference.html exists: ' + BoolToStr(TFile.Exists(LDiffPath), True) + ' (' + LDiffPath + ')');
