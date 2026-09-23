@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.MainForm
   ---------------------------------------------------------------------------
   Main form for AsWish - inherits TAsWishShellForm.
@@ -1283,6 +1283,7 @@ begin
     LYamlPath := TPath.Combine(FProjectService.AsWishPath, 'commons\' + LLesson.Id + '.yaml');
     UpdateHbDeckStatus(Format('[Commons 🚩] Lesson %s drafted: %s', [LLesson.Id, LLesson.Title]));
     if TFile.Exists(LYamlPath) then
+      // Open preview within shell host preview panel (OpenView, WO-0043 F-4)
       OpenView(TShellObjectRef.Make(LLesson.Id, 'yaml', LLesson.Title, LYamlPath));
   end;
 end;

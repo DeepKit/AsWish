@@ -1361,7 +1361,14 @@ begin
     LMatches := FCommons.FindMatchingLessons(LCS.RawUserIntent + ' ' + LCS.IntentNodeId, LNodeIds);
     LWarningMsg := '';
     if Length(LMatches) > 0 then
-      LWarningMsg := Format('历史经验：同类分叉曾错在 %s（%s）', [LMatches[0].Title, LMatches[0].Id]);
+    begin
+      if SameText(LMatches[0].AnchorKind, 'narrative') then
+        LWarningMsg := Format('历史经验：同类分叉曾错在 %s（%s） [源自实践总结，非可复核记录]',
+          [LMatches[0].Title, LMatches[0].Id])
+      else
+        LWarningMsg := Format('历史经验：同类分叉曾错在 %s（%s）',
+          [LMatches[0].Title, LMatches[0].Id]);
+    end;
 
     FRender.RenderChangeSetReviewPage(LCS, FTreeBuilder.FunctionNodes, FProjectService.ProjectName, LWarningMsg);
     Result := LIngest.FormatChangeSetReviewSummary(LCS, FTreeBuilder.FunctionNodes);
@@ -1400,8 +1407,20 @@ begin
 
     LDiff := Default(TSpecDifferenceReport);
     LBaselines := FSnapshot.ListBaselines;
-    if Length(LBaselines) > 0 then
-      LDiff.BaselineId := LBaselines[0].BaselineId;
+    // F-2: Reverse lookup Baseline via Decision lineage (Lineage.ChangeSetId or DecisionId)
+    for var LB in LBaselines do
+    begin
+      if (LDec.ChangeSetId <> '') and (LB.Lineage.ChangeSetId = LDec.ChangeSetId) then
+      begin
+        LDiff.BaselineId := LB.BaselineId;
+        Break;
+      end
+      else if (LDec.Id <> '') and (LB.DecisionId = LDec.Id) then
+      begin
+        LDiff.BaselineId := LB.BaselineId;
+        Break;
+      end;
+    end;
 
     Result := FCommons.ExtractLessonFromChangeSet(LCS, LDec, LDiff, ATakeaway);
     FCommons.SaveLessonDraft(Result);
