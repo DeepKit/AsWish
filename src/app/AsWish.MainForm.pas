@@ -91,10 +91,12 @@ type
     FHBCommitBtn: TSpeedButton;
     FHBRejectBtn: TSpeedButton;
     FHBExtractBtn: TSpeedButton;
+    FHBFullscreenBtn: TSpeedButton;
     FLastGateCsId: string;
     FLastGateRationale: string;
 
-    // Dual Surface: D-1 Inspector Sidebar Dialog (WO-0044)
+    // Dual Surface (WO-20260923-0044)
+    // D-1: Inspector Sidebar Dialog
     FInspectorTopBar: TPanel;
     FInspectorTitleLabel: TLabel;
     FInspectorCloseBtn: TSpeedButton;
@@ -105,12 +107,29 @@ type
     FInspectorSubmitBtn: TSpeedButton;
     FCurrentInspectedNodeId: string;
 
+    // D-2: Ghosts context reveal chips
+    FGhostsPanel: TPanel;
+    FGhostsChips: array[0..2] of TPanel;
+    FGhostsLabels: array[0..2] of TLabel;
+    FGhostsCloseBtns: array[0..2] of TSpeedButton;
+
+    // D-3: Immersive review surface (F11)
+    FIsFullscreenReview: Boolean;
+    FSavedLeftVisible: Boolean;
+    FSavedRightVisible: Boolean;
+
     procedure BuildHBDeckUI;
     procedure BuildInspectorPanelUI;
+    procedure BuildGhostsUI;
     procedure DoInspectorCloseClick(Sender: TObject);
     procedure DoInspectorSubmitClick(Sender: TObject);
     procedure DoInspectorIntentKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     function SubmitInspectorIntent: string;
+    procedure DoGhostChipCloseClick(Sender: TObject);
+    procedure UpdateGhosts(const AText: string; const ANodes: TArray<string> = nil);
+    procedure ClearGhosts;
+    procedure ToggleFullscreenReview;
+
     procedure DoFormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure DoHbButtonClick(Sender: TObject);
     procedure TriggerHbCandidate(AIndex: Integer);
@@ -154,6 +173,8 @@ type
     property LastGateCsId: string read FLastGateCsId;
     property InspectorIntentEdit: TEdit read FInspectorIntentEdit;
     property InspectorNodeLabel: TLabel read FInspectorNodeLabel;
+    property GhostsPanel: TPanel read FGhostsPanel;
+    property IsFullscreenReview: Boolean read FIsFullscreenReview;
     procedure TriggerExtractLesson;
     function PerformInspectorSubmit(const ANodeId, AText: string): string;
   end;
@@ -379,6 +400,7 @@ begin
 
   BuildLeftPanelUI;
   BuildInspectorPanelUI;
+  BuildGhostsUI;
   BuildHBDeckUI;
 
   TAsWishAutoFix.SendHealthSignal('startup', 1);
@@ -891,7 +913,7 @@ begin
     OpenView(TShellObjectRef.Make('node-detail', 'html', LNode.Title,
       TPath.Combine(FProjectService.AsWishPath, 'html\node-detail.html')));
 
-    // WO-0044 D-1: Populate Inspector Sidebar
+    // WO-0044 D-1 & D-2: Populate Inspector Sidebar and Reveal Ghosts
     FCurrentInspectedNodeId := LNode.Id;
     if RightPanel <> nil then
       RightPanel.Visible := True;
@@ -908,6 +930,7 @@ begin
       FInspectorPropsMemo.Lines.Add('Status: ' + TSpecEnums.NodeStatusToStr(LNode.Status));
       FInspectorPropsMemo.Lines.Add('Summary: ' + LNode.Summary);
     end;
+    UpdateGhosts(LNode.Id);
   except
     on E: Exception do
       Logger.Error('Node detail render failed: ' + E.Message, 'AsWish');
@@ -1091,6 +1114,156 @@ begin
   Result := FController.SubmitUserIntent(ANodeId, LTree, AText);
 
   UpdateHbDeckStatus(Format('[Inspector] ChangeSet %s submitted for %s', [Result, ANodeId]));
+  UpdateGhosts(AText, [ANodeId]);
+end;
+
+procedure TAsWishMainForm.BuildGhostsUI;
+var
+  I: Integer;
+  LChip: TPanel;
+  LLbl: TLabel;
+  LClose: TSpeedButton;
+begin
+  if BottomPanel = nil then Exit;
+
+  FGhostsPanel := TPanel.Create(Self);
+  FGhostsPanel.Parent := BottomPanel;
+  FGhostsPanel.Align := alTop;
+  FGhostsPanel.Height := 26;
+  FGhostsPanel.BevelOuter := bvNone;
+  FGhostsPanel.Color := $00E6F0FA;
+  FGhostsPanel.Visible := False;
+
+  for I := 0 to 2 do
+  begin
+    LChip := TPanel.Create(FGhostsPanel);
+    LChip.Parent := FGhostsPanel;
+    LChip.Align := alLeft;
+    LChip.Width := 260;
+    LChip.BevelOuter := bvNone;
+    LChip.Color := $00D2E5F8;
+    LChip.Visible := False;
+    LChip.Tag := I;
+
+    LClose := TSpeedButton.Create(LChip);
+    LClose.Parent := LChip;
+    LClose.Align := alRight;
+    LClose.Width := 18;
+    LClose.Caption := '×';
+    LClose.Flat := True;
+    LClose.Tag := I;
+    LClose.OnClick := DoGhostChipCloseClick;
+    FGhostsCloseBtns[I] := LClose;
+
+    LLbl := TLabel.Create(LChip);
+    LLbl.Parent := LChip;
+    LLbl.Align := alClient;
+    LLbl.Layout := tlCenter;
+    LLbl.Font.Size := 8;
+    LLbl.Caption := '';
+    FGhostsLabels[I] := LLbl;
+
+    FGhostsChips[I] := LChip;
+  end;
+end;
+
+procedure TAsWishMainForm.UpdateGhosts(const AText: string;
+  const ANodes: TArray<string>);
+var
+  LMatches: TArray<TSpecCommonsLesson>;
+  I, LLimit: Integer;
+  LChipText: string;
+begin
+  if (FController = nil) or (FController.Commons = nil) or (FGhostsPanel = nil) then Exit;
+  if Trim(AText) = '' then
+  begin
+    ClearGhosts;
+    Exit;
+  end;
+
+  LMatches := FController.Commons.FindMatchingLessons(AText, ANodes);
+  if Length(LMatches) = 0 then
+  begin
+    ClearGhosts;
+    Exit;
+  end;
+
+  LLimit := Length(LMatches);
+  if LLimit > 3 then LLimit := 3;
+
+  for I := 0 to 2 do
+  begin
+    if I < LLimit then
+    begin
+      LChipText := Format('这类分叉曾错在 %s（%s）', [LMatches[I].Title, LMatches[I].Id]);
+      if SameText(LMatches[I].AnchorKind, 'narrative') then
+        LChipText := LChipText + ' [经验总结，非可复核记录]';
+      FGhostsLabels[I].Caption := ' ' + LChipText;
+      FGhostsLabels[I].Hint := LMatches[I].HumanTakeaway;
+      FGhostsLabels[I].ShowHint := True;
+      FGhostsChips[I].Width := Canvas.TextWidth(LChipText) + 36;
+      FGhostsChips[I].Visible := True;
+    end
+    else
+      FGhostsChips[I].Visible := False;
+  end;
+  FGhostsPanel.Visible := True;
+end;
+
+procedure TAsWishMainForm.ClearGhosts;
+var I: Integer;
+begin
+  if FGhostsPanel = nil then Exit;
+  for I := 0 to 2 do
+    if FGhostsChips[I] <> nil then
+      FGhostsChips[I].Visible := False;
+  FGhostsPanel.Visible := False;
+end;
+
+procedure TAsWishMainForm.DoGhostChipCloseClick(Sender: TObject);
+var
+  LTag, I: Integer;
+  LAnyVisible: Boolean;
+begin
+  if not (Sender is TSpeedButton) then Exit;
+  LTag := TSpeedButton(Sender).Tag;
+  if (LTag >= 0) and (LTag <= 2) and (FGhostsChips[LTag] <> nil) then
+    FGhostsChips[LTag].Visible := False;
+
+  LAnyVisible := False;
+  for I := 0 to 2 do
+    if (FGhostsChips[I] <> nil) and FGhostsChips[I].Visible then
+    begin
+      LAnyVisible := True;
+      Break;
+    end;
+  if not LAnyVisible and (FGhostsPanel <> nil) then
+    FGhostsPanel.Visible := False;
+end;
+
+procedure TAsWishMainForm.ToggleFullscreenReview;
+begin
+  FIsFullscreenReview := not FIsFullscreenReview;
+  if FIsFullscreenReview then
+  begin
+    if LeftPanel <> nil then FSavedLeftVisible := LeftPanel.Visible;
+    if RightPanel <> nil then FSavedRightVisible := RightPanel.Visible;
+    if LeftPanel <> nil then LeftPanel.Visible := False;
+    if LeftSplitter <> nil then LeftSplitter.Visible := False;
+    if RightPanel <> nil then RightPanel.Visible := False;
+    if RightSplitter <> nil then RightSplitter.Visible := False;
+    if FHBFullscreenBtn <> nil then FHBFullscreenBtn.Caption := 'F11: 还原';
+    UpdateHbDeckStatus('[沉浸 Review 模式已开启] 左右面板已隐藏，按 F11 还原');
+  end
+  else
+  begin
+    if LeftPanel <> nil then LeftPanel.Visible := FSavedLeftVisible;
+    if LeftSplitter <> nil then LeftSplitter.Visible := FSavedLeftVisible;
+    if RightPanel <> nil then RightPanel.Visible := FSavedRightVisible;
+    if RightSplitter <> nil then RightSplitter.Visible := FSavedRightVisible;
+    if FHBFullscreenBtn <> nil then FHBFullscreenBtn.Caption := 'F11: 沉浸';
+    UpdateHbDeckStatus('[沉浸 Review 模式已退出] 左右面板已还原');
+  end;
 end;
 
 procedure TAsWishMainForm.BuildHBDeckUI;
@@ -1177,6 +1350,14 @@ begin
   FHBExtractBtn.Visible := False;
   FHBExtractBtn.OnClick := DoHbButtonClick;
 
+  FHBFullscreenBtn := TSpeedButton.Create(FHBDeckPanel);
+  FHBFullscreenBtn.Parent := FHBDeckPanel;
+  FHBFullscreenBtn.Align := alLeft;
+  FHBFullscreenBtn.Width := 75;
+  FHBFullscreenBtn.Tag := 103;
+  FHBFullscreenBtn.Caption := 'F11: 沉浸';
+  FHBFullscreenBtn.OnClick := DoHbButtonClick;
+
   FHBDeckStatusLabel := TLabel.Create(FHBDeckPanel);
   FHBDeckStatusLabel.Parent := FHBDeckPanel;
   FHBDeckStatusLabel.Align := alClient;
@@ -1199,6 +1380,7 @@ begin
     100: TriggerHbCommit;
     101: TriggerHbReject;
     102: TriggerHbExtractLesson;
+    103: ToggleFullscreenReview;
   end;
 end;
 
@@ -1206,6 +1388,14 @@ procedure TAsWishMainForm.DoFormKeyDown(Sender: TObject; var Key: Word; Shift: T
 begin
   if (ActiveControl is TCustomEdit) or (ActiveControl is TCustomMemo) or (ActiveControl is TCustomComboBox) then
     Exit;
+
+  if Key = VK_F11 then
+  begin
+    ToggleFullscreenReview;
+    Key := 0;
+    Exit;
+  end;
+
   // WO-0039 B-1: WebView2 owns its own keys; form-level shortcuts must not
   // swallow or double-fire 0-9/Enter/Esc while focus is inside the browser.
   if ActiveControl is TCustomEdgeBrowser then
