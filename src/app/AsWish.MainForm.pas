@@ -94,7 +94,23 @@ type
     FLastGateCsId: string;
     FLastGateRationale: string;
 
+    // Dual Surface: D-1 Inspector Sidebar Dialog (WO-0044)
+    FInspectorTopBar: TPanel;
+    FInspectorTitleLabel: TLabel;
+    FInspectorCloseBtn: TSpeedButton;
+    FInspectorNodeLabel: TLabel;
+    FInspectorPropsMemo: TMemo;
+    FInspectorIntentPrompt: TLabel;
+    FInspectorIntentEdit: TEdit;
+    FInspectorSubmitBtn: TSpeedButton;
+    FCurrentInspectedNodeId: string;
+
     procedure BuildHBDeckUI;
+    procedure BuildInspectorPanelUI;
+    procedure DoInspectorCloseClick(Sender: TObject);
+    procedure DoInspectorSubmitClick(Sender: TObject);
+    procedure DoInspectorIntentKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    function SubmitInspectorIntent: string;
     procedure DoFormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure DoHbButtonClick(Sender: TObject);
     procedure TriggerHbCandidate(AIndex: Integer);
@@ -136,7 +152,10 @@ type
     property HBBinding: TAsWishHBBinding read FHBBinding;
     property HBExtractBtn: TSpeedButton read FHBExtractBtn;
     property LastGateCsId: string read FLastGateCsId;
+    property InspectorIntentEdit: TEdit read FInspectorIntentEdit;
+    property InspectorNodeLabel: TLabel read FInspectorNodeLabel;
     procedure TriggerExtractLesson;
+    function PerformInspectorSubmit(const ANodeId, AText: string): string;
   end;
 
 var
@@ -359,6 +378,7 @@ begin
   inherited AfterShellShown;
 
   BuildLeftPanelUI;
+  BuildInspectorPanelUI;
   BuildHBDeckUI;
 
   TAsWishAutoFix.SendHealthSignal('startup', 1);
@@ -870,6 +890,24 @@ begin
     FRender.RenderNodeDetail(LNode);
     OpenView(TShellObjectRef.Make('node-detail', 'html', LNode.Title,
       TPath.Combine(FProjectService.AsWishPath, 'html\node-detail.html')));
+
+    // WO-0044 D-1: Populate Inspector Sidebar
+    FCurrentInspectedNodeId := LNode.Id;
+    if RightPanel <> nil then
+      RightPanel.Visible := True;
+    if RightSplitter <> nil then
+      RightSplitter.Visible := True;
+    if FInspectorNodeLabel <> nil then
+      FInspectorNodeLabel.Caption := ' ' + LNode.Id;
+    if FInspectorPropsMemo <> nil then
+    begin
+      FInspectorPropsMemo.Lines.Clear;
+      FInspectorPropsMemo.Lines.Add('Title: ' + LNode.Title);
+      FInspectorPropsMemo.Lines.Add('Kind: ' + LNode.Kind);
+      FInspectorPropsMemo.Lines.Add('Tree: ' + TSpecEnums.TreeTypeToStr(LNode.Tree));
+      FInspectorPropsMemo.Lines.Add('Status: ' + TSpecEnums.NodeStatusToStr(LNode.Status));
+      FInspectorPropsMemo.Lines.Add('Summary: ' + LNode.Summary);
+    end;
   except
     on E: Exception do
       Logger.Error('Node detail render failed: ' + E.Message, 'AsWish');
@@ -931,6 +969,129 @@ begin
   end;
 end;
 
+
+procedure TAsWishMainForm.BuildInspectorPanelUI;
+var
+  LBottomPanel, LInputRow: TPanel;
+begin
+  if RightPanel = nil then Exit;
+  RightPanel.Width := 280;
+
+  FInspectorTopBar := TPanel.Create(Self);
+  FInspectorTopBar.Parent := RightPanel;
+  FInspectorTopBar.Align := alTop;
+  FInspectorTopBar.Height := 28;
+  FInspectorTopBar.BevelOuter := bvNone;
+
+  FInspectorTitleLabel := TLabel.Create(FInspectorTopBar);
+  FInspectorTitleLabel.Parent := FInspectorTopBar;
+  FInspectorTitleLabel.Align := alLeft;
+  FInspectorTitleLabel.Caption := ' 节点速览 (Inspector)';
+  FInspectorTitleLabel.Font.Style := [fsBold];
+  FInspectorTitleLabel.Layout := tlCenter;
+
+  FInspectorCloseBtn := TSpeedButton.Create(FInspectorTopBar);
+  FInspectorCloseBtn.Parent := FInspectorTopBar;
+  FInspectorCloseBtn.Align := alRight;
+  FInspectorCloseBtn.Width := 24;
+  FInspectorCloseBtn.Caption := '×';
+  FInspectorCloseBtn.Flat := True;
+  FInspectorCloseBtn.OnClick := DoInspectorCloseClick;
+
+  FInspectorNodeLabel := TLabel.Create(RightPanel);
+  FInspectorNodeLabel.Parent := RightPanel;
+  FInspectorNodeLabel.Align := alTop;
+  FInspectorNodeLabel.Height := 24;
+  FInspectorNodeLabel.Font.Style := [fsBold];
+  FInspectorNodeLabel.Caption := ' [未选择节点]';
+  FInspectorNodeLabel.Layout := tlCenter;
+
+  LBottomPanel := TPanel.Create(Self);
+  LBottomPanel.Parent := RightPanel;
+  LBottomPanel.Align := alBottom;
+  LBottomPanel.Height := 76;
+  LBottomPanel.BevelOuter := bvNone;
+
+  FInspectorIntentPrompt := TLabel.Create(LBottomPanel);
+  FInspectorIntentPrompt.Parent := LBottomPanel;
+  FInspectorIntentPrompt.Align := alTop;
+  FInspectorIntentPrompt.Height := 22;
+  FInspectorIntentPrompt.Caption := ' 快速修订意图 (Enter 提交):';
+  FInspectorIntentPrompt.Layout := tlCenter;
+
+  LInputRow := TPanel.Create(LBottomPanel);
+  LInputRow.Parent := LBottomPanel;
+  LInputRow.Align := alClient;
+  LInputRow.BevelOuter := bvNone;
+
+  FInspectorSubmitBtn := TSpeedButton.Create(LInputRow);
+  FInspectorSubmitBtn.Parent := LInputRow;
+  FInspectorSubmitBtn.Align := alRight;
+  FInspectorSubmitBtn.Width := 50;
+  FInspectorSubmitBtn.Caption := '提交';
+  FInspectorSubmitBtn.OnClick := DoInspectorSubmitClick;
+
+  FInspectorIntentEdit := TEdit.Create(LInputRow);
+  FInspectorIntentEdit.Parent := LInputRow;
+  FInspectorIntentEdit.Align := alClient;
+  FInspectorIntentEdit.OnKeyDown := DoInspectorIntentKeyDown;
+
+  FInspectorPropsMemo := TMemo.Create(RightPanel);
+  FInspectorPropsMemo.Parent := RightPanel;
+  FInspectorPropsMemo.Align := alClient;
+  FInspectorPropsMemo.ReadOnly := True;
+  FInspectorPropsMemo.ScrollBars := ssVertical;
+end;
+
+procedure TAsWishMainForm.DoInspectorCloseClick(Sender: TObject);
+begin
+  if RightPanel <> nil then
+    RightPanel.Visible := False;
+  if RightSplitter <> nil then
+    RightSplitter.Visible := False;
+end;
+
+procedure TAsWishMainForm.DoInspectorSubmitClick(Sender: TObject);
+begin
+  SubmitInspectorIntent;
+end;
+
+procedure TAsWishMainForm.DoInspectorIntentKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+  begin
+    SubmitInspectorIntent;
+    Key := 0;
+  end;
+end;
+
+function TAsWishMainForm.SubmitInspectorIntent: string;
+var
+  LNodeId, LText: string;
+begin
+  Result := '';
+  if FController = nil then Exit;
+  LNodeId := Trim(FCurrentInspectedNodeId);
+  LText := Trim(FInspectorIntentEdit.Text);
+  Result := PerformInspectorSubmit(LNodeId, LText);
+  if Result <> '' then
+    FInspectorIntentEdit.Text := '';
+end;
+
+function TAsWishMainForm.PerformInspectorSubmit(const ANodeId, AText: string): string;
+var
+  LTree: TTreeType;
+begin
+  Result := '';
+  if FController = nil then Exit;
+  if (ANodeId = '') or (AText = '') then Exit;
+
+  LTree := TSpecEnums.TreeFromNodePrefix(ANodeId);
+  Result := FController.SubmitUserIntent(ANodeId, LTree, AText);
+
+  UpdateHbDeckStatus(Format('[Inspector] ChangeSet %s submitted for %s', [Result, ANodeId]));
+end;
 
 procedure TAsWishMainForm.BuildHBDeckUI;
 var
