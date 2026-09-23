@@ -27,6 +27,10 @@
 - 现象：`require_source_action_exists: true`（model-roles.yaml:171），AsWish 无本线 action 可挂，只能借挂 DeepAxis 的 `BCW-A20260921-001`，造成台账语义错位（PG 留痕显示不相关归属）。
 - 建议：提供受控 `action-register` 入口或在 work-start 支持 `--create-action`（写 action_registry），杜绝"借挂"。
 
+### BUG-R7 生命周期死循环指引：完成态错误提示误导恢复路径
+- 现象：root `node-complete` 成功后 work 自动收口（合理），但此后 `handoff`/`node-start` 报 `WORK_IDENTITY_NOT_ACTIVE`，其恢复提示统一为 "use work-start for a new work, or **work-resume** for a handed-off/blocked work"；照提示执行 `work-resume` 又报 `WORK_NOT_RESUMABLE: 只有 handed_off/blocked 工作可以恢复`——completed 态两条指引互斥，AI 被迫试探 4 次才走通（field 要求 `CONFIG_REVISION_REQUIRED`→`OBJECTIVE_REQUIRED`→`RETURN_ANCHOR_REQUIRED` 逐错暴露）。
+- 建议：错误 details 增加 `work_status` 字段（completed/handed_off/blocked/active），按当前态给唯一正确指令；payload 字段要求一次性列全（同 A-5）。
+
 ### BUG-R6 escalation-check 对"有客观证据的纠错"误判灰区
 - 现象：问"git 中误报是否追加更正记录"→ `no_objective_verdict` 判应上报；实际复现输出已构成客观判据（不更正=台账含假 P0）。
 - 根因：纯函数只看问题文本，无"证据已具备"输入通道。
