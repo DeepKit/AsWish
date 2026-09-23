@@ -110,6 +110,7 @@ type
     [Test] procedure ASWISH_V_011_SourceDistinction_Explicit_Vs_Inferred;
     [Test] procedure ASWISH_V_012_GateB_N1_To_N6_Invariants;
     [Test] procedure ASWISH_V_013_GUI_Surface_KeyDispatcher_And_Deck_Integration;
+    [Test] procedure ASWISH_V_014_Deck_Idle_After_Commitment_And_Rejection;
   end;
 
 implementation
@@ -754,6 +755,32 @@ begin
   LTrace := FBinding.ProcessHbAction(LAction);
   Assert.AreEqual(Ord(eseInformOnly), Ord(LTrace.SemanticEffect));
   Assert.IsFalse(LTrace.IsCommitted);
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_014_Deck_Idle_After_Commitment_And_Rejection;
+var
+  LAct: THbChoiceAction;
+  LCsId: string;
+begin
+  // WO-0039 B-2: both gates must leave the deck Idle so Enter/Esc/click
+  // cannot re-fire a finished commitment.
+  LAct := THbChoiceAction.Create(cakFreeInput, 9, 'Deck idle reject probe', 0, cisKeyboard,
+    eokAlternativeExpression, esHuman, eipProvide);
+  FBinding.ProcessHbAction(LAct);
+  LCsId := FBinding.LastChangeSetId;
+  Assert.IsNotEmpty(LCsId, 'free input must create ChangeSet');
+
+  Assert.IsTrue(FBinding.ExecuteReject(LCsId, 'idle check reject'), 'reject must succeed');
+  Assert.AreEqual('', FBinding.LastChangeSetId, 'rejection must leave deck Idle');
+
+  LAct := THbChoiceAction.Create(cakFreeInput, 9, 'Deck idle commit probe', 0, cisKeyboard,
+    eokAlternativeExpression, esHuman, eipProvide);
+  FBinding.ProcessHbAction(LAct);
+  LCsId := FBinding.LastChangeSetId;
+  Assert.IsNotEmpty(LCsId, 'second free input must create ChangeSet');
+
+  Assert.IsTrue(FBinding.ExecuteCommitmentGate(LCsId, 'idle check commit'), 'commit must succeed');
+  Assert.AreEqual('', FBinding.LastChangeSetId, 'commitment must leave deck Idle');
 end;
 
 initialization

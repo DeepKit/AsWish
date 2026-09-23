@@ -387,10 +387,15 @@ begin
           or (LTrimmed.StartsWith('''') and LTrimmed.EndsWith(''''))) then
   begin
     Result := LTrimmed.Substring(1, LTrimmed.Length - 2);
-    // Handle escape sequences for double-quoted strings
+    // WO-0039 B-4: decode escapes via sentinel in one pass. The previous chain
+    // decoded '\n' before '\\', so the text "\\n" (escaped backslash + letter n)
+    // wrongly became a newline.
     if LTrimmed.StartsWith('"') then
-      Result := Result.Replace('\n', #10).Replace('\r', #13)
-        .Replace('\"', '"').Replace('\\', '\');
+    begin
+      Result := Result.Replace('\\', #1);
+      Result := Result.Replace('\n', #10).Replace('\r', #13).Replace('\"', '"');
+      Result := Result.Replace(#1, '\');
+    end;
   end
   else
     Result := LTrimmed;

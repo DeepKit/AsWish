@@ -59,7 +59,9 @@ type
     FLastChangeSetId: string;
     FLastEffect: TEhaiSemanticEffectKind;
     FIsLastActionCommitted: Boolean;
+    FLastReviewText: string;
     FTraceSeq: Integer;
+    function TreeFromNodePrefix(const ANodeId: string): TTreeType;
     function NextTraceId: string;
     function RecordTrace(const AAction: TEhaiInteractionAction;
       AEffect: TEhaiSemanticEffectKind; ACommitted: Boolean;
@@ -107,6 +109,9 @@ type
     property Controller: TAsWishController read FController;
     property LastChangeSetId: string read FLastChangeSetId;
     property LastEffect: TEhaiSemanticEffectKind read FLastEffect;
+    /// <summary>WO-0039 B-5: review summary produced by the last candidate
+    /// exploration (key 1..7), for the deck status line.</summary>
+    property LastReviewText: string read FLastReviewText;
     property IsLastActionCommitted: Boolean read FIsLastActionCommitted;
     property TraceCount: Integer read GetTraceCount;
   end;
@@ -135,6 +140,18 @@ end;
 function TAsWishHBBinding.GetTraceCount: Integer;
 begin
   Result := FTraces.Count;
+end;
+
+// WO-0039 B-5: node-id prefix carries the tree (same convention as
+// TAsWishCandidateIngest.ComputeAffectedProjections); unknown prefix keeps
+// the historical ttFunction default.
+function TAsWishHBBinding.TreeFromNodePrefix(const ANodeId: string): TTreeType;
+begin
+  if ANodeId.StartsWith('func-') then Exit(ttFunction);
+  if ANodeId.StartsWith('mod-') then Exit(ttModule);
+  if ANodeId.StartsWith('view-') then Exit(ttView);
+  if ANodeId.StartsWith('data-') then Exit(ttData);
+  Result := ttFunction;
 end;
 
 function TAsWishHBBinding.NextTraceId: string;
@@ -200,6 +217,7 @@ begin
       if FController <> nil then
       begin
         LReviewText := FController.ReviewChangeSet(LTargetCsId);
+        FLastReviewText := LReviewText;
         if LTargetCsId <> '' then
           FLastChangeSetId := LTargetCsId;
       end;
@@ -224,10 +242,10 @@ begin
         if FController <> nil then
         begin
           LSubmittedCsId := FController.SubmitFrameRejection(
-            AAction.Context.ObservableObjectRef, // Rejected Node
-            ttModule,                            // Rejected Tree (default module)
-            AAction.Text,                        // Human reframe intent
-            ttFunction                           // Upstream requirement tree
+            AAction.Context.ObservableObjectRef,               // Rejected Node
+            TreeFromNodePrefix(AAction.Context.ObservableObjectRef), // Rejected Tree (WO-0039 B-5: infer, no module hardcode)
+            AAction.Text,                                      // Human reframe intent
+            ttFunction                                         // Upstream requirement tree (by design)
           );
           FLastChangeSetId := LSubmittedCsId;
         end;
@@ -241,7 +259,7 @@ begin
           if AAction.Context.ObservableObjectRef <> '' then
             LSubmittedCsId := FController.SubmitUserIntent(
               AAction.Context.ObservableObjectRef,
-              ttFunction,
+              TreeFromNodePrefix(AAction.Context.ObservableObjectRef), // WO-0039 B-5
               AAction.Text
             )
           else
@@ -283,6 +301,9 @@ begin
     LAction := TEhaiInteractionAction.CreateCandidate(1, 'Accept ChangeSet: ' + AChangeSetId,
       eipAuthorize, LContext, 0, esHuman);
     RecordTrace(LAction, eseAuthorized, True);
+    // WO-0039 B-2: commitment closes the exploration cycle; the deck must not
+    // keep a live CsId that Enter/Esc/button clicks would re-fire.
+    FLastChangeSetId := '';
   end;
 end;
 
@@ -305,6 +326,8 @@ begin
     LAction := TEhaiInteractionAction.CreateCandidate(0, 'Reject ChangeSet: ' + AChangeSetId,
       eipJudge, LContext, 0, esHuman);
     RecordTrace(LAction, eseJudgmentMade, False);
+    // WO-0039 B-2: rejection also closes the cycle (Spec untouched, deck Idle).
+    FLastChangeSetId := '';
   end;
 end;
 

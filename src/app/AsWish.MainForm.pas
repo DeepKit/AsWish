@@ -1028,6 +1028,10 @@ procedure TAsWishMainForm.DoFormKeyDown(Sender: TObject; var Key: Word; Shift: T
 begin
   if (ActiveControl is TCustomEdit) or (ActiveControl is TCustomMemo) or (ActiveControl is TCustomComboBox) then
     Exit;
+  // WO-0039 B-1: WebView2 owns its own keys; form-level shortcuts must not
+  // swallow or double-fire 0-9/Enter/Esc while focus is inside the browser.
+  if ActiveControl is TCustomEdgeBrowser then
+    Exit;
 
   case Key of
     Ord('1')..Ord('7'):
@@ -1077,7 +1081,7 @@ end;
 procedure TAsWishMainForm.TriggerHbCandidate(AIndex: Integer);
 var
   LIntents: TArray<TCandidateIntent>;
-  LCsId, LReviewHtml: string;
+  LCsId, LReviewHtml, LRev: string;
   LAct: THbChoiceAction;
   LTrace: TEhaiTraceRecord;
 begin
@@ -1094,7 +1098,12 @@ begin
     eokNone, esHuman, eipJudge, LCsId);
   LTrace := FHBBinding.ProcessHbAction(LAct, LCsId);
 
-  UpdateHbDeckStatus(Format('[Candidate %d] Trace: %s | CsId: %s', [AIndex, LTrace.TraceId, FHBBinding.LastChangeSetId]));
+  // WO-0039 B-5: surface the review summary (previously computed then dropped).
+  LRev := FHBBinding.LastReviewText;
+  if Length(LRev) > 80 then
+    LRev := Copy(LRev, 1, 80) + '...';
+  UpdateHbDeckStatus(Format('[Candidate %d] %s | CsId: %s | %s',
+    [AIndex, LRev, FHBBinding.LastChangeSetId, LTrace.TraceId]));
   if FProjectService <> nil then
   begin
     LReviewHtml := TPath.Combine(FProjectService.AsWishPath, 'html\changeset-review.html');

@@ -145,7 +145,10 @@ var
 
   function EscapeStr(const S: string): string;
   begin
-    Result := S.Replace('\', '\\').Replace('"', '\"');
+    // WO-0039 B-4: newlines must not break YAML line structure (Notes carry
+    // multi-line rationale from difference judgments).
+    Result := S.Replace('\', '\\').Replace('"', '\"')
+      .Replace(#13#10, '\n').Replace(#10, '\n').Replace(#13, '\r');
   end;
 begin
   LSb := TStringBuilder.Create;
