@@ -1,0 +1,324 @@
+{
+  "schema": "spw/evidence/v1",
+  "run_id": "SPW-20260923-203227",
+  "created_at": "2026-09-23T12:32:27.379422+00:00",
+  "manifest_path": "D:\\_Progs\\02Business\\AsWish\\spw-manifest.json",
+  "manifest_sha256": "33f01c0ab94954acf34c36e7caa434a7c74756bbd2fab2e340bca4a282502033",
+  "subject": {
+    "workspace": "D:\\_Progs\\02Business\\AsWish",
+    "sha256": "77f5ee427c67f7f5740dbc4725b9fa238dd209609dcd7e9b13bc00f7f8b7236c",
+    "files": [
+      {
+        "path": "AsWish.dpr",
+        "sha256": "830d4db81c30155b9152126c770533e317d1228674dcb749ccf473ba0b7aef12",
+        "size": 3423
+      },
+      {
+        "path": "cli/AsWish.CLI.dpr",
+        "sha256": "1f413df3b72f015f74b314b38eda955779ad914eb8e73e25316d110526b1662c",
+        "size": 64947
+      },
+      {
+        "path": "src/app/AsWish.Commands.pas",
+        "sha256": "8b034e0aa6b5b5b3590ac546887fbec8d31bb4e6023205f737ce502f50cc642a",
+        "size": 13034
+      },
+      {
+        "path": "src/app/AsWish.Localization.pas",
+        "sha256": "101a1d57bdc102c9423a1ba16a10eb6492601506159ed4ad2f72fbe150311c3a",
+        "size": 8904
+      },
+      {
+        "path": "src/app/AsWish.MainForm.pas",
+        "sha256": "a5c6d5025ca389d4690cf3d99729ce8e2fcb136f4e017e21845f47bc0548b6f3",
+        "size": 50513
+      },
+      {
+        "path": "src/app/AsWish.Providers.pas",
+        "sha256": "181a7c1482a60d93e6c4d065a19ca3216fedcc8f53ec4749f03aa095af521941",
+        "size": 4035
+      },
+      {
+        "path": "src/app/AsWish.Services.pas",
+        "sha256": "d248f0430ca40da512601446c6eb075bb34ae041a0f809c0f09c046b31089c97",
+        "size": 635
+      },
+      {
+        "path": "src/controllers/AsWish.Controller.pas",
+        "sha256": "d086c4b5a4ff8e09ac611e90ff0822eef7eb606d01224f4badcc84c907dfba94",
+        "size": 62818
+      },
+      {
+        "path": "src/core/AsWish.Delphi.DfmParser.pas",
+        "sha256": "22671257dc151ff38e4ccf5661c426934cc70f3c82c40374aa3db91f491a7691",
+        "size": 5978
+      },
+      {
+        "path": "src/core/AsWish.Delphi.PasParser.pas",
+        "sha256": "157aa58c992b479f2a09b94675870beaeeb99ca792f8f2a647281ebef7c3e3d1",
+        "size": 6763
+      },
+      {
+        "path": "src/core/AsWish.Hash.pas",
+        "sha256": "344a5c3430ea82864f3f2608be52ab27713ca2a9bccf5c660bf8e49bfca1fc4f",
+        "size": 9742
+      },
+      {
+        "path": "src/core/AsWish.Validation.pas",
+        "sha256": "1880fa3201d7d4a53c57d4cc5fa1c43ef4b4f0e1d9a05c08a51a2ed289c9e8f9",
+        "size": 31758
+      },
+      {
+        "path": "src/core/AsWish.Yaml.Parser.pas",
+        "sha256": "837e7fe2edcf89d6969a54a164c98abc7fe379297fa18480e2f64640c2b6cd5e",
+        "size": 20787
+      },
+      {
+        "path": "src/core/AsWish.Yaml.Writer.pas",
+        "sha256": "0b7b5bf107f3acc29150ff2e5f08c664c1da987098e8427396cbf534900235c4",
+        "size": 17624
+      },
+      {
+        "path": "src/models/AsWish.Models.pas",
+        "sha256": "5309b0a2e56e87939a23a3efa59a28d0b760c56d56049eb8e0ba7fb4f12fc169",
+        "size": 42171
+      },
+      {
+        "path": "src/providers/AsWish.Providers.Inspector.pas",
+        "sha256": "a22abc68ef428a2e557abcb52272c7f2b5995ba6fb131bb99b027895bd102df0",
+        "size": 2224
+      },
+      {
+        "path": "src/providers/AsWish.Providers.MainView.pas",
+        "sha256": "0864830b5a0ba2582bd9eba02da70907f50572fba933f74804898f6e8f5733c5",
+        "size": 17617
+      },
+      {
+        "path": "src/providers/AsWish.Providers.Structure.pas",
+        "sha256": "9575545dca9f82bac4f5de1c54dff83533364bdab241c92a031c196ffa851cd1",
+        "size": 7202
+      },
+      {
+        "path": "src/services/AsWish.Binding.HB.pas",
+        "sha256": "3335f88da3fafd15a6ab005d5bd81db563a0579a3499f609b5693114fcb4199f",
+        "size": 13274
+      },
+      {
+        "path": "src/services/AsWish.Services.CandidateIngest.pas",
+        "sha256": "d17d70da1ede59f44490c107f83723dab4afb706a92bd43b8c6b8f0623d1d9b7",
+        "size": 40443
+      },
+      {
+        "path": "src/services/AsWish.Services.Commons.pas",
+        "sha256": "b32a5c1b1e4f8c31245277cd8d1289a6ef51cdea4704238640331df7b5f6a517",
+        "size": 12695
+      },
+      {
+        "path": "src/services/AsWish.Services.Context.pas",
+        "sha256": "54da5ea405be0cdabd721e54f396ea16e0392f47478b35ff3b99fef84c60d345",
+        "size": 9749
+      },
+      {
+        "path": "src/services/AsWish.Services.Decisions.pas",
+        "sha256": "4febe38f4f0c89d44bd08d44891dc16ac4bf311df8cdf00debc05cd02b43a6ef",
+        "size": 20267
+      },
+      {
+        "path": "src/services/AsWish.Services.Difference.pas",
+        "sha256": "4482b19aaaee228670eec0e7ff615e8870ef597138dfb76ecc6dd6c95ee689a6",
+        "size": 16072
+      },
+      {
+        "path": "src/services/AsWish.Services.EvidenceCollector.pas",
+        "sha256": "da1117401c45f4b302fd4c97b7f012031046a2c63282afc84d81d318e05cca1d",
+        "size": 14469
+      },
+      {
+        "path": "src/services/AsWish.Services.LLM.pas",
+        "sha256": "df5af3d0b9df8e5c16dfbea7a0fe15ff2367e4a2da4e49c8b01682bbacfd448a",
+        "size": 7259
+      },
+      {
+        "path": "src/services/AsWish.Services.LLMConfig.pas",
+        "sha256": "c956a4c24fd281ba45e72e6fec6be4804ea102b668accddebbfd68c490cb388c",
+        "size": 2414
+      },
+      {
+        "path": "src/services/AsWish.Services.Project.pas",
+        "sha256": "e01ae80ed65c9fea7bd5344bf6026d004e18ebb3a97a3bc8fabd8c94c81d8635",
+        "size": 1718
+      },
+      {
+        "path": "src/services/AsWish.Services.Prompts.pas",
+        "sha256": "0bbe5a559822aadd5e016998c91fdd43f7b9886314626bcab59377af6da9b91b",
+        "size": 27650
+      },
+      {
+        "path": "src/services/AsWish.Services.Render.pas",
+        "sha256": "9e2d5d50eab91e39bbd460be2b985c393bad48c7702e3332a6da0acba4b2c13d",
+        "size": 105960
+      },
+      {
+        "path": "src/services/AsWish.Services.RenderDiff.pas",
+        "sha256": "b69de48cdf0f4d7d5df45d2d28f03fc52db2d63fa9bdab88a6d7ea9fbc5d2145",
+        "size": 12156
+      },
+      {
+        "path": "src/services/AsWish.Services.Scan.pas",
+        "sha256": "70a43b864ff283d92228be0d8944a5aa045033ac87e67b140c9ddfa8d3c59df9",
+        "size": 5820
+      },
+      {
+        "path": "src/services/AsWish.Services.Settings.pas",
+        "sha256": "dbfd2c0ae57169ed9f7b48da1d27acdfa0f90673d0498c70a87271e3e86416f1",
+        "size": 1376
+      },
+      {
+        "path": "src/services/AsWish.Services.SpecStore.pas",
+        "sha256": "9c9f85304a0f33173d9f53701b3e6adfbbbc8cdece28a48c90c331bd1bffd59c",
+        "size": 32191
+      },
+      {
+        "path": "src/services/AsWish.Services.TreeBuilder.pas",
+        "sha256": "42c2b21c65db982c4d351390bc5cd1e94c15eb187ebf6d9a6d581086240a3ec2",
+        "size": 60043
+      },
+      {
+        "path": "src/services/AsWish.Services.VisualWorkflow.pas",
+        "sha256": "079339fc7ffefdc28436bb054b4cc6c128364ed185d0b268fbf206b637ea2775",
+        "size": 15672
+      }
+    ],
+    "integrity_binding": "verified"
+  },
+  "deterministic_gates": [
+    {
+      "gate_id": "H1.resource-locks",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_resource_locks.py"
+      ],
+      "exit_code": 0,
+      "stdout": "[H1.resource-locks] PASS\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H2.compile-build",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "cmd",
+        "/c",
+        "D:\\_Progs\\02Business\\AsWish\\_build.bat"
+      ],
+      "exit_code": 0,
+      "stdout": "Embarcadero Delphi for Win64 compiler version 37.0\nCopyright (c) 1983,2026 Embarcadero Technologies, Inc.\nsrc\\services\\AsWish.Services.Commons.pas(142) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list\n24994 lines, 3.36 seconds, 6899416 bytes code, 691600 bytes data.\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H2.compile-tests",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "cmd",
+        "/c",
+        "D:\\_Progs\\02Business\\AsWish\\tests\\_build_tests.bat"
+      ],
+      "exit_code": 0,
+      "stdout": "Embarcadero Delphi for Win64 compiler version 37.0\nCopyright (c) 1983,2026 Embarcadero Technologies, Inc.\nD:\\_Progs\\02Business\\AsWish\\src\\services\\AsWish.Services.Commons.pas(142) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list\n30677 lines, 4.24 seconds, 9522192 bytes code, 861728 bytes data.\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H2.unit-tests",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "D:\\_Progs\\02Business\\AsWish\\tests\\AsWish.Tests.exe"
+      ],
+      "exit_code": 0,
+      "stdout": "               -------------------------------------------------\n                Running Setup for : Test07_DecisionsAuthority_NoPrivateRationaleRules\n                \n                Executing Test : Test07_DecisionsAuthority_NoPrivateRationaleRules\n                \n                \n                 Running Teardown for Test : Test07_DecisionsAuthority_NoPrivateRationaleRules\n                 \n                  Success.\n               \n               Running Fixture Teardown Method : Destroy\n               \n            \n         \n           Fixture : Test.AsWish.VisualWorkflow.Provenance\n           -------------------------------------------------\n              Fixture : Test.AsWish.VisualWorkflow.Provenance.Compliant\n              -------------------------------------------------\n                 Fixture : Test.AsWish.VisualWorkflow.Provenance.Compliant.TTestAsWishVisualWorkflowProvenanceCompliant\n                 -------------------------------------------------\n                   Test : Test.AsWish.VisualWorkflow.Provenance.Compliant.TTestAsWishVisualWorkflowProvenanceCompliant.Test03_CompliantOrder_ProducesNoL2Difference\n                   -------------------------------------------------\n                   Running Setup for : Test03_CompliantOrder_ProducesNoL2Difference\n                   \n                   Executing Test : Test03_CompliantOrder_ProducesNoL2Difference\n                   \n                   \n                    Running Teardown for Test : Test03_CompliantOrder_ProducesNoL2Difference\n                    \n                     Success.\n                  \n                  Running Fixture Teardown Method : Destroy\n                  \n               \n            \n              Fixture : Test.AsWish.VisualWorkflow.Provenance.Diff\n              -------------------------------------------------\n                 Fixture : Test.AsWish.VisualWorkflow.Provenance.Diff.TTestAsWishVisualWorkflowProvenanceDiff\n                 -------------------------------------------------\n                   Test : Test.AsWish.VisualWorkflow.Provenance.Diff.TTestAsWishVisualWorkflowProvenanceDiff.Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance\n                   -------------------------------------------------\n                   Running Setup for : Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance\n                   \n                   Executing Test : Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance\n                   \n                   \n                    Running Teardown for Test : Test02_InvertedOrder_ProducesRelationDifferenceWithProvenance\n                    \n                     Success.\n                  \n                  Running Fixture Teardown Method : Destroy\n                  \n               \n            \n              Fixture : Test.AsWish.VisualWorkflow.Provenance.TTestAsWishVisualWorkflowProvenance\n              -------------------------------------------------\n                Test : Test.AsWish.VisualWorkflow.Provenance.TTestAsWishVisualWorkflowProvenance.Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance\n                -------------------------------------------------\n                Running Setup for : Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance\n                \n                Executing Test : Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance\n                \n                \n                 Running Teardown for Test : Test01_ExportAgentHandoff_ContainsLayoutIntentAndProvenance\n                 \n                  Success.\n               \n               Running Fixture Teardown Method : Destroy\n               \n            \n         \n           Fixture : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow\n           -------------------------------------------------\n             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test01_ZeroUiDependency_HeadlessExecution\n             -------------------------------------------------\n             Running Setup for : Test01_ZeroUiDependency_HeadlessExecution\n             \n             Executing Test : Test01_ZeroUiDependency_HeadlessExecution\n             \n             \n              Running Teardown for Test : Test01_ZeroUiDependency_HeadlessExecution\n              \n               Success.\n            \n             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test02_ConfirmVisualBaseline_ValidatesHumanDecision\n             -------------------------------------------------\n             Running Setup for : Test02_ConfirmVisualBaseline_ValidatesHumanDecision\n             \n             Executing Test : Test02_ConfirmVisualBaseline_ValidatesHumanDecision\n             \n             \n              Running Teardown for Test : Test02_ConfirmVisualBaseline_ValidatesHumanDecision\n              \n               Success.\n            \n             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot\n             -------------------------------------------------\n             Running Setup for : Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot\n             \n             Executing Test : Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot\n             \n             \n              Running Teardown for Test : Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot\n              \n               Success.\n            \n             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test04_RecordDifferenceDecision_FourExits\n             -------------------------------------------------\n             Running Setup for : Test04_RecordDifferenceDecision_FourExits\n             \n             Executing Test : Test04_RecordDifferenceDecision_FourExits\n             \n             \n              Running Teardown for Test : Test04_RecordDifferenceDecision_FourExits\n              \n               Success.\n            \n            Running Fixture Teardown Method : Destroy\n            \n         \n      \n        Fixture : Test.AsWish.Yaml\n        -------------------------------------------------\n           Fixture : Test.AsWish.Yaml.Parser\n           -------------------------------------------------\n              Fixture : Test.AsWish.Yaml.Parser.TYamlParserTests\n              -------------------------------------------------\n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.EmptyInput_ReturnsEmptyMap\n                -------------------------------------------------\n                Executing Test : EmptyInput_ReturnsEmptyMap\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SimpleMap_TwoKeys\n                -------------------------------------------------\n                Executing Test : SimpleMap_TwoKeys\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.MapWithQuotedValue_DoubleQuotes\n                -------------------------------------------------\n                Executing Test : MapWithQuotedValue_DoubleQuotes\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.MapWithQuotedValue_SingleQuotes\n                -------------------------------------------------\n                Executing Test : MapWithQuotedValue_SingleQuotes\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.FlowSequence_Empty\n                -------------------------------------------------\n                Executing Test : FlowSequence_Empty\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.FlowSequence_WithItems\n                -------------------------------------------------\n                Executing Test : FlowSequence_WithItems\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.BooleanValues\n                -------------------------------------------------\n                Executing Test : BooleanValues\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.IntegerValue\n                -------------------------------------------------\n                Executing Test : IntegerValue\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.EmptyMap_FlowBraces\n                -------------------------------------------------\n                Executing Test : EmptyMap_FlowBraces\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.CommentStrippedFromValue\n                -------------------------------------------------\n                Executing Test : CommentStrippedFromValue\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.HasKey_ReturnsTrueForExisting\n                -------------------------------------------------\n                Executing Test : HasKey_ReturnsTrueForExisting\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.HasKey_ReturnsFalseForMissing\n                -------------------------------------------------\n                Executing Test : HasKey_ReturnsFalseForMissing\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetString_DefaultForMissing\n                -------------------------------------------------\n                Executing Test : GetString_DefaultForMissing\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetInteger_ParsesValue\n                -------------------------------------------------\n                Executing Test : GetInteger_ParsesValue\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetBoolean_ParsesTrueFalse\n                -------------------------------------------------\n                Executing Test : GetBoolean_ParsesTrueFalse\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.NullValue\n                -------------------------------------------------\n                Executing Test : NullValue\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.NestedMap_ProjectSection\n                -------------------------------------------------\n                Executing Test : NestedMap_ProjectSection\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SequenceOfMaps_Nodes\n                -------------------------------------------------\n                Executing Test : SequenceOfMaps_Nodes\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SourceRefsRoundTrip\n                -------------------------------------------------\n                Executing Test : SourceRefsRoundTrip\n                \n                  Success.\n               \n                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.OldFormat_NoGenStatus_Defaults\n                -------------------------------------------------\n                Executing Test : OldFormat_NoGenStatus_Defaults\n                \n                  Success.\n               \n               Running Fixture Teardown Method : Destroy\n               \n            \n         \n      \n   \n\nDone testing.\nTests Found   : 251\nTests Ignored : 0\nTests Passed  : 251\nTests Leaked  : 0\nTests Failed  : 0\nTests Errored : 0\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H3.encoding-guard",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_encoding.py"
+      ],
+      "exit_code": 0,
+      "stdout": "[H3.encoding-guard] PASS\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H3.runtime-autofix",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_autofix.py"
+      ],
+      "exit_code": 0,
+      "stdout": "[H3.runtime-autofix] PASS\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H3.deep-ui-test",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_ui_bridge.py"
+      ],
+      "exit_code": 0,
+      "stdout": "[H3.deep-ui-test] PASS rendered=14 handlers=14\n",
+      "stderr": ""
+    },
+    {
+      "gate_id": "H4.bypass-patterns",
+      "required": true,
+      "execution_status": "completed",
+      "verdict": "PASS",
+      "findings": []
+    }
+  ],
+  "external_observations": [],
+  "observer_seat_outcomes": [],
+  "valid_observer_families": [],
+  "required_observer_families": 2,
+  "h5_observation_verdict": null,
+  "pending_h5_findings": [],
+  "artifact_verdict": "PASS",
+  "artifact_integrity": "verified",
+  "execution_status": "degraded",
+  "release_ready": false,
+  "degradation_reasons": [
+    "H5_HETEROGENEOUS_OBSERVATION_UNAVAILABLE"
+  ],
+  "certification": {
+    "status": "withheld",
+    "certificate_id": null,
+    "subject_sha256": "77f5ee427c67f7f5740dbc4725b9fa238dd209609dcd7e9b13bc00f7f8b7236c",
+    "manifest_sha256": "33f01c0ab94954acf34c36e7caa434a7c74756bbd2fab2e340bca4a282502033",
+    "reason": "SPW_RELEASE_CONDITIONS_NOT_MET"
+  },
+  "evidence_self_sha256": "364fb156b49a439a743d67b8ae653d38ffed5556559f0764b9b1aca4ace2f97a"
+}
