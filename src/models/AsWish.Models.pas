@@ -402,6 +402,7 @@ type
       ADefault: TTreeType = ttFunction): TTreeType; static;
     class function TryTreeTypeFromStr(const AValue: string;
       out ATree: TTreeType): Boolean; static;
+    class function TreeFromNodePrefix(const ANodeId: string): TTreeType; static;
     class function NodeStatusFromStr(const AValue: string;
       ADefault: TNodeStatus = nsCandidate): TNodeStatus; static;
     class function ConfidenceFromStr(const AValue: string;
@@ -821,6 +822,15 @@ begin
   else if LLower = 'view' then ATree := ttView
   else if LLower = 'data' then ATree := ttData
   else Result := False;
+end;
+
+class function TSpecEnums.TreeFromNodePrefix(const ANodeId: string): TTreeType;
+begin
+  if ANodeId.StartsWith('func-') then Exit(ttFunction);
+  if ANodeId.StartsWith('mod-') then Exit(ttModule);
+  if ANodeId.StartsWith('view-') then Exit(ttView);
+  if ANodeId.StartsWith('data-') then Exit(ttData);
+  Result := ttFunction;
 end;
 
 class function TSpecEnums.NodeStatusFromStr(const AValue: string;

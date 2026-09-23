@@ -147,11 +147,7 @@ end;
 // the historical ttFunction default.
 function TAsWishHBBinding.TreeFromNodePrefix(const ANodeId: string): TTreeType;
 begin
-  if ANodeId.StartsWith('func-') then Exit(ttFunction);
-  if ANodeId.StartsWith('mod-') then Exit(ttModule);
-  if ANodeId.StartsWith('view-') then Exit(ttView);
-  if ANodeId.StartsWith('data-') then Exit(ttData);
-  Result := ttFunction;
+  Result := TSpecEnums.TreeFromNodePrefix(ANodeId);
 end;
 
 function TAsWishHBBinding.NextTraceId: string;

@@ -22,6 +22,7 @@ uses
   AsWish.Services.Snapshot,
   AsWish.Services.Difference,
   AsWish.Services.EvidenceCollector,
+  AsWish.Services.CandidateIngest,
   AsWish.Version,
   AsWish.Controller;
 
@@ -80,6 +81,9 @@ type
 
     [Test] procedure Test_GUI_Decision_Workflow_EndToEnd;
     [Test] procedure Test_Version_Constant_Defined;
+    [Test] procedure Test_DualSurface_D1_TreeFromNodePrefix_Inference;
+    [Test] procedure Test_DualSurface_D1_SubmitUserIntent_WithTreeInference;
+    [Test] procedure Test_DualSurface_D2_Ghosts_MatchingAndNarrativeBadge;
   end;
 
 implementation
@@ -205,6 +209,73 @@ procedure TTestAsWishGUIDecisions.Test_Version_Constant_Defined;
 begin
   Assert.AreEqual('0.1.0', ASWISH_VERSION);
   Assert.AreEqual('AsWish v0.1.0', ASWISH_BANNER);
+end;
+
+procedure TTestAsWishGUIDecisions.Test_DualSurface_D1_TreeFromNodePrefix_Inference;
+begin
+  Assert.AreEqual(ttFunction, TSpecEnums.TreeFromNodePrefix('func-order-checkout'));
+  Assert.AreEqual(ttModule, TSpecEnums.TreeFromNodePrefix('mod-billing-service'));
+  Assert.AreEqual(ttView, TSpecEnums.TreeFromNodePrefix('view-main-form'));
+  Assert.AreEqual(ttData, TSpecEnums.TreeFromNodePrefix('data-customer-table'));
+  Assert.AreEqual(ttFunction, TSpecEnums.TreeFromNodePrefix('custom-unprefixed-node'));
+end;
+
+procedure TTestAsWishGUIDecisions.Test_DualSurface_D1_SubmitUserIntent_WithTreeInference;
+var
+  LCsId: string;
+  LIngest: TAsWishCandidateIngest;
+  LCs: TChangeSet;
+begin
+  LIngest := TAsWishCandidateIngest.Create(FStore);
+  try
+    // Submit intent for module node
+    LCsId := FController.SubmitUserIntent('mod-billing-service',
+      TSpecEnums.TreeFromNodePrefix('mod-billing-service'), 'Add invoice validation');
+    Assert.IsNotEmpty(LCsId);
+
+    LCs := LIngest.LoadChangeSet(FDir, LCsId);
+    Assert.AreEqual('mod-billing-service', LCs.IntentNodeId);
+    Assert.AreEqual(ttModule, LCs.IntentTree);
+    Assert.AreEqual('Add invoice validation', LCs.RawUserIntent);
+
+    // Submit intent for view node
+    LCsId := FController.SubmitUserIntent('view-main-form',
+      TSpecEnums.TreeFromNodePrefix('view-main-form'), 'Add responsive grid layout');
+    Assert.IsNotEmpty(LCsId);
+
+    LCs := LIngest.LoadChangeSet(FDir, LCsId);
+    Assert.AreEqual('view-main-form', LCs.IntentNodeId);
+    Assert.AreEqual(ttView, LCs.IntentTree);
+    Assert.AreEqual('Add responsive grid layout', LCs.RawUserIntent);
+  finally
+    LIngest.Free;
+  end;
+end;
+
+procedure TTestAsWishGUIDecisions.Test_DualSurface_D2_Ghosts_MatchingAndNarrativeBadge;
+var
+  LMatches: TArray<TSpecCommonsLesson>;
+  LBadgeText: string;
+begin
+  // S-4 machine lesson matching
+  LMatches := FController.Commons.FindMatchingLessons('func-payment-retry');
+  Assert.IsTrue(Length(LMatches) > 0, 'Must match lesson-0009');
+  Assert.AreEqual('lesson-0009', LMatches[0].Id);
+  Assert.AreEqual('machine', LMatches[0].AnchorKind);
+
+  // S-4 narrative lesson matching
+  LMatches := FController.Commons.FindMatchingLessons('status=disabled and delete requested');
+  Assert.IsTrue(Length(LMatches) > 0, 'Must match lesson-0001');
+  Assert.AreEqual('lesson-0001', LMatches[0].Id);
+  Assert.AreEqual('narrative', LMatches[0].AnchorKind);
+
+  // Verify narrative badge generation format
+  if SameText(LMatches[0].AnchorKind, 'narrative') then
+    LBadgeText := '这类分叉曾错在 ' + LMatches[0].Title + '（' + LMatches[0].Id + '） [经验总结，非可复核记录]'
+  else
+    LBadgeText := '这类分叉曾错在 ' + LMatches[0].Title + '（' + LMatches[0].Id + '）';
+
+  Assert.IsTrue(LBadgeText.Contains('[经验总结，非可复核记录]'), 'Narrative lesson badge must contain disclaimer');
 end;
 
 initialization

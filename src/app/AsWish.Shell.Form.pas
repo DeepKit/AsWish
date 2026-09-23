@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Shell.Form
   ---------------------------------------------------------------------------
   Reusable standalone VCL Desktop Shell Form for AsWish.
@@ -101,8 +101,10 @@ type
 
     // Panel controls for derived forms
     property LeftPanel: TPanel read FLeftPanel;
+    property LeftSplitter: TSplitter read FLeftSplitter;
     property CenterPanel: TPanel read FCenterPanel;
     property RightPanel: TPanel read FRightPanel;
+    property RightSplitter: TSplitter read FRightSplitter;
     property BottomPanel: TPanel read FBottomPanel;
     property CurrentMainControl: TControl read FCurrentMainControl;
   end;
