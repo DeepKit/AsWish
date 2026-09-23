@@ -1,0 +1,26 @@
+# ==============================================================================
+# Difference Commons Portable Anchor Slice
+# source_path: dogfood/dogfood_0038_project/.AsWish/snapshots/2026-09-22_234706-accepted-baseline-B-0001-dec-0001/snapshot.yaml
+# captured_at: 2026-09-23T23:20:00+08:00
+# source_sha256: 9d6ff4d4f4fe6592c5c7a466c0d84301a6cb73225097c25c6b8cdfe15beed872
+# ==============================================================================
+version: "1.0"
+label: "accepted-baseline-B-0001-dec-0001"
+created_at: "2026-09-22T23:47:06"
+files:
+  - "trees/data-tree.yaml"
+  - "trees/function-tree.yaml"
+  - "trees/module-tree.yaml"
+  - "trees/view-tree.yaml"
+  - "issues/doc-issues.yaml"
+baseline:
+  baseline_id: "B-0001"
+  decision_id: "dec-0001"
+  snapshot_name: "2026-09-22_234706-accepted-baseline-B-0001-dec-0001"
+  tree_type: "function"
+  content_hash: "ae6b187b9cc171ec94bc843b91321e190c0aae6197a83206bc1b2a41f085589e"
+  relation_hash: "c5610cf756acb3a90b40577da1f3618482e64fbd9a04a64f3fc36378f3176544"
+  created_at: "2026-09-22T23:47:06.381+08:00"
+  lineage:
+    change_set_id: "cs-func-payment-retry-01"
+    intent_id: "func-payment-retry"

@@ -39,6 +39,7 @@ type
     [Test] procedure Test04_ExtractLessonFromGateDecision_E2E;
     [Test] procedure Test05_DamagedMachineAnchor_RejectedBySeeding;
     [Test] procedure Test06_ExtractLesson_LineageLookup_And_NarrativeFallback;
+    [Test] procedure Test07_CommonsAnchors_CommittedSlices_Integrity;
   end;
 
 implementation
@@ -201,7 +202,8 @@ begin
   // Negative test: a machine lesson with fake/unresolvable paths must be rejected by SeedCommonsLessonsIfEmpty
   LCorrupted := TSpecCommonsLesson.CreateNew('lesson-corrupted-0099', 'Corrupted',
     'Takeaway', 'pattern', 'wrong', 'right',
-    'non/existent/fake_baseline.yaml', 'non/existent/fake_diff.yaml',
+    'WO/evidence/commons-anchors/non_existent_fake_baseline.yaml',
+    'WO/evidence/commons-anchors/non_existent_fake_diff.yaml',
     'test', 'test', 'cautionary', 'machine');
   Assert.IsFalse(TAsWishCommonsService.ResolveAnchor(LCorrupted.BaselineRef, FStore.BasePath),
     'Non-existent machine anchor must not resolve');
@@ -238,6 +240,96 @@ begin
   LLesson := FCommons.ExtractLessonFromChangeSet(LCs, LDec, LDiffReport, 'takeaway text');
   Assert.AreEqual('machine', LLesson.AnchorKind, 'Linked lesson must have machine anchor_kind');
   Assert.AreEqual('B-0001', LLesson.BaselineRef, 'Linked lesson must have B-0001 as BaselineRef');
+end;
+
+procedure TTestAsWishCommons.Test07_CommonsAnchors_CommittedSlices_Integrity;
+var
+  LSlices: TArray<string>;
+  LSlicePath, LSourcePath, LDeclaredHash, LActualHash: string;
+  LLines: TArray<string>;
+  LInHeader: Boolean;
+  LPayload, LSourceContent: string;
+  LSb: TStringBuilder;
+  I: Integer;
+begin
+  LSlices := [
+    'WO/evidence/commons-anchors/lesson-0002-baseline.yaml',
+    'WO/evidence/commons-anchors/lesson-0002-difference.yaml',
+    'WO/evidence/commons-anchors/lesson-0003-baseline.yaml',
+    'WO/evidence/commons-anchors/lesson-0003-decisions.yaml',
+    'WO/evidence/commons-anchors/lesson-0009-baseline.yaml',
+    'WO/evidence/commons-anchors/lesson-0009-difference.yaml'
+  ];
+
+  for var LRelSlice in LSlices do
+  begin
+    Assert.IsTrue(TAsWishCommonsService.ResolveAnchor(LRelSlice, FStore.BasePath),
+      'Committed anchor slice must resolve portably: ' + LRelSlice);
+
+    LSlicePath := LRelSlice.Replace('/', TPath.DirectorySeparatorChar);
+    if not TFile.Exists(LSlicePath) then
+    begin
+      var LExeDir := ExtractFilePath(ParamStr(0));
+      LSlicePath := TPath.GetFullPath(TPath.Combine(LExeDir, '..\' + LRelSlice.Replace('/', TPath.DirectorySeparatorChar)));
+      if not TFile.Exists(LSlicePath) then
+        LSlicePath := TPath.GetFullPath(TPath.Combine(LExeDir, '..\..\' + LRelSlice.Replace('/', TPath.DirectorySeparatorChar)));
+    end;
+    Assert.IsTrue(TFile.Exists(LSlicePath), 'Slice file must physically exist on disk: ' + LSlicePath);
+
+    LLines := TFile.ReadAllLines(LSlicePath, TEncoding.UTF8);
+    LSourcePath := '';
+    LDeclaredHash := '';
+    LSb := TStringBuilder.Create;
+    try
+      LInHeader := True;
+      for I := 0 to High(LLines) do
+      begin
+        var LLine := LLines[I];
+        if LInHeader and LLine.StartsWith('#') then
+        begin
+          if LLine.StartsWith('# source_path:') then
+            LSourcePath := LLine.Substring(Length('# source_path:')).Trim
+          else if LLine.StartsWith('# source_sha256:') then
+            LDeclaredHash := LLine.Substring(Length('# source_sha256:')).Trim.ToLower;
+        end
+        else
+        begin
+          LInHeader := False;
+          LSb.AppendLine(LLine);
+        end;
+      end;
+      LPayload := LSb.ToString;
+    finally
+      LSb.Free;
+    end;
+
+    Assert.IsNotEmpty(LSourcePath, 'Slice must declare source_path: ' + LRelSlice);
+    Assert.IsNotEmpty(LDeclaredHash, 'Slice must declare source_sha256: ' + LRelSlice);
+
+    var LResolvedSource := LSourcePath.Replace('/', TPath.DirectorySeparatorChar);
+    if not TFile.Exists(LResolvedSource) then
+    begin
+      var LExeDir := ExtractFilePath(ParamStr(0));
+      LResolvedSource := TPath.GetFullPath(TPath.Combine(LExeDir, '..\' + LSourcePath.Replace('/', TPath.DirectorySeparatorChar)));
+      if not TFile.Exists(LResolvedSource) then
+        LResolvedSource := TPath.GetFullPath(TPath.Combine(LExeDir, '..\..\' + LSourcePath.Replace('/', TPath.DirectorySeparatorChar)));
+    end;
+
+    if TFile.Exists(LResolvedSource) then
+    begin
+      LActualHash := TSpecHash.FileSha256Hex(LResolvedSource).ToLower;
+      Assert.AreEqual(LDeclaredHash, LActualHash,
+        Format('Source hash mismatch for %s: declared %s vs actual %s', [LSourcePath, LDeclaredHash, LActualHash]));
+
+      LSourceContent := TFile.ReadAllText(LResolvedSource, TEncoding.UTF8);
+      Assert.AreEqual(LSourceContent.Trim, LPayload.Trim,
+        'Slice payload must match source file content (anti-drift): ' + LSourcePath);
+    end
+    else
+    begin
+      System.Writeln('    [NOTE] Dogfood source absent in clone, anti-drift check skipped: ' + LSourcePath);
+    end;
+  end;
 end;
 
 initialization

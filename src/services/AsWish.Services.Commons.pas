@@ -56,16 +56,16 @@ begin
     '从未赋值|never assigned|partially read|evidence empty',
     '读了半个函数直接断言变量从未被赋值，并在文档中写死虚假结论',
     '遍历 AST 全路径与调用流，通过 SourceRef 精确行号与内容哈希佐证 [dec-provenance-0038]',
-    'dogfood/dogfood_0038_project/.AsWish/snapshots/2026-09-22_234706-accepted-baseline-B-0001-dec-0001/snapshot.yaml',
-    'dogfood/dogfood_0038_project/.AsWish/difference.yaml',
+    'WO/evidence/commons-anchors/lesson-0002-baseline.yaml',
+    'WO/evidence/commons-anchors/lesson-0002-difference.yaml',
     'evidence-provenance', 'cautionary', 'machine');
   Add(2, 'lesson-0003', '样本时效与旧构建污染陷阱',
     '旧二进制产物的 PASS 不是当前代码的真实状态；必须隔离构建与真实执行以拆穿虚假安全感。',
     'stale artifact|cached build|旧产物|build bypass',
     '直接复用历史 build 产物跑测试，忽略新增改动引发的潜在失效',
     'Clean build 强制重编译，并比对构建时间戳与源码 hash 保证同步 [dec-build-0033]',
-    'dogfood/dogfood_0036_project/.AsWish/snapshots/2026-09-21_231648-accepted-baseline-B-0002-dec-0002/snapshot.yaml',
-    'dogfood/dogfood_0036_project/.AsWish/decisions/requirement-decisions.yaml',
+    'WO/evidence/commons-anchors/lesson-0003-baseline.yaml',
+    'WO/evidence/commons-anchors/lesson-0003-decisions.yaml',
     'build-discipline', 'cautionary', 'machine');
   Add(3, 'lesson-0004', '未锚定降级与单点阻断陷阱',
     '缺少降级路径的硬编码会导致整链瘫痪；必须设计可恢复分级防护与 L1 本地降级。',
@@ -102,8 +102,8 @@ begin
     'func-payment-retry|retry without backoff|payment loop|支付重试',
     '支付失败直接无脑递归重试，导致渠道风控拦截与订单重复扣款',
     '引入指数退避、幂等 Token 校验及 3 次熔断限制 [dec-payment-0002]',
-    'dogfood/dogfood_0036_project/.AsWish/snapshots/2026-09-21_231648-accepted-baseline-B-0001-dec-0001/snapshot.yaml',
-    'dogfood/dogfood_0036_project/.AsWish/difference.yaml',
+    'WO/evidence/commons-anchors/lesson-0009-baseline.yaml',
+    'WO/evidence/commons-anchors/lesson-0009-difference.yaml',
     'business-logic', 'anti_pattern', 'machine');
   Add(9, 'lesson-0010', '现实漂移顺势接受陷阱',
     '不可把 AI 引入的无意漂移当成基线演进；变更审计必须区分人类主动决策与 AI 静默偏航。',
@@ -122,6 +122,8 @@ begin
   Result := False;
   LRef := AAnchorRef.Trim;
   if LRef = '' then Exit;
+
+  LRef := LRef.Replace('/', TPath.DirectorySeparatorChar);
 
   LHashPos := Pos('#', LRef);
   if LHashPos > 0 then

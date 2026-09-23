@@ -1,0 +1,10 @@
+# ==============================================================================
+# Difference Commons Portable Anchor Slice
+# source_path: dogfood/dogfood_0038_project/.AsWish/difference.yaml
+# captured_at: 2026-09-23T23:20:00+08:00
+# source_sha256: 6a6826d81f913823c466feaff36ea2d33e56c88afbc77931a6294e3eb89c7d11
+# ==============================================================================
+baseline_id: "B-0001"
+tree_type: "function"
+computed_at: "2026-09-22T23:47:07.455+08:00"
+items: []

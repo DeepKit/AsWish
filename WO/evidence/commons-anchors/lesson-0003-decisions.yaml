@@ -1,0 +1,103 @@
+# ==============================================================================
+# Difference Commons Portable Anchor Slice
+# source_path: dogfood/dogfood_0036_project/.AsWish/decisions/requirement-decisions.yaml
+# captured_at: 2026-09-23T23:20:00+08:00
+# source_sha256: 2f092853e29895589095776c0c30273588e5cbe66bb076ec8a62ccc58b234497
+# ==============================================================================
+version: "1.0"
+
+decisions:
+  - id: "dec-0001"
+    type: confirm
+    title: "Accept ChangeSet: cs-func-payment-retry-01"
+    decision: "Accept interpreted changes for node func-payment-retry based on intent: Implement retry policy with max 3 attempts"
+    rationale: "Human approved automatic payment retry policy"
+    target_nodes:
+      - "func-payment-retry"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_set_id: "cs-func-payment-retry-01"
+  - id: "dec-0002"
+    type: confirm
+    title: "Accepted Visual Baseline for View Spec"
+    decision: "Human confirmed current View Spec representation (wireframe-v1.0) as Accepted Visual Baseline."
+    rationale: "Confirmed visual preview wireframe"
+    target_nodes:
+      - "view-dogfood-0036-project"
+      - "view-ordersystem-main"
+      - "view-ctrl-lblstatus"
+      - "view-ctrl-edtcustomerid"
+      - "view-ctrl-btncheckout"
+      - "view-form-mainorderform"
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_item_index: 0
+  - id: "dec-0003"
+    type: accept_difference
+    title: "Accept Difference for Baseline B-0001"
+    decision: "Accept structural differences (0 items) against baseline B-0001"
+    rationale: "Reality changes in Billing and Notification accepted"
+    target_nodes: []
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    decided_by: human
+    confidence: low
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_item_index: 0
+  - id: "dec-0004"
+    type: accept_difference
+    title: "Accept Difference for Baseline B-0001"
+    decision: "Accept structural differences (0 items) against baseline B-0001"
+    rationale: "Evolved baseline from reality"
+    target_nodes: []
+    affected_relations: []
+    affected_requirements: []
+    affected_views: []
+    affected_modules: []
+    resolved_issues: []
+    source_refs: []
+    ai_instruction: null
+    priority: null
+    release: null
+    created_at: "2026-09-21T23:16:49+08:00"
+    updated_at: "2026-09-21T23:16:49+08:00"
+    decided_by: human
+    confidence: high
+    status: accepted
+    superseded_by: null
+    supersedes: []
+    change_set_id: "cs-evolve-B-0001"
+    change_item_index: 0

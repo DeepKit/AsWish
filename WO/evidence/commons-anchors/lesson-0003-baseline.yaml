@@ -1,0 +1,28 @@
+# ==============================================================================
+# Difference Commons Portable Anchor Slice
+# source_path: dogfood/dogfood_0036_project/.AsWish/snapshots/2026-09-21_231648-accepted-baseline-B-0002-dec-0002/snapshot.yaml
+# captured_at: 2026-09-23T23:20:00+08:00
+# source_sha256: 86526bb7d45eb881f09224062bc9d859e2eb88d809060a637c69c4a3cbab0458
+# ==============================================================================
+version: "1.0"
+label: "accepted-baseline-B-0002-dec-0002"
+created_at: "2026-09-21T23:16:48"
+files:
+  - "trees/data-tree.yaml"
+  - "trees/function-tree.yaml"
+  - "trees/module-tree.yaml"
+  - "trees/view-tree.yaml"
+  - "issues/doc-issues.yaml"
+baseline:
+  baseline_id: "B-0002"
+  decision_id: "dec-0002"
+  snapshot_name: "2026-09-21_231648-accepted-baseline-B-0002-dec-0002"
+  tree_type: "view"
+  content_hash: "db4e5b87da7f21bad3146696952c0cb686469d25a01c4fe0dd8e3a8303918195"
+  relation_hash: "96c09733387f7a89bd1bb8f1eb50a44578a8a1689f7eb4cef3a16a2d111a3481"
+  created_at: "2026-09-21T23:16:48.561+08:00"
+  renderer_version: "wireframe-v1.0"
+  visual_binding: "html/visual-preview.html"
+  lineage:
+    change_set_id: "cs-visual-baseline"
+    intent_id: "root-view"
