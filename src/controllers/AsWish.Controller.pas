@@ -29,6 +29,7 @@ uses
   AsWish.Services.Difference,
   AsWish.Services.EvidenceCollector,
   AsWish.Services.VisualWorkflow,
+  AsWish.Services.Commons,
   AsWish.Models;
 
 type
@@ -44,6 +45,7 @@ type
     FLLM: TAsWishLLMService;
     FSettings: TAsWishSettingsService;
     FSnapshot: TAsWishSnapshotService;
+    FCommons: TAsWishCommonsService;
     FStatus: IShellStatusManager;
     FContext: IShellContextManager;
     FBus: IShellEventBus;
@@ -136,6 +138,10 @@ type
       out ANewBaseline: TAsWishBaseline): string;
     function ListDecisions: TArray<TSpecDecision>;
 
+    // Difference Commons (WO-20260923-0041)
+    function ExtractCommonsLesson(const AChangeSetId: string;
+      const ATakeaway: string = ''): TSpecCommonsLesson;
+
     destructor Destroy; override;
     function IsProjectOpen: Boolean;
     property ProjectService: TAsWishProjectService read FProjectService;
@@ -144,6 +150,7 @@ type
     property Decisions: TAsWishDecisionsService read FDecisions;
     property LLM: TAsWishLLMService read FLLM;
     property Settings: TAsWishSettingsService read FSettings;
+    property Commons: TAsWishCommonsService read FCommons;
     property SnapshotService: TAsWishSnapshotService read FSnapshot;
     property DocsFiles: TArray<string> read FDocsFiles;
   end;
@@ -182,6 +189,7 @@ begin
   FLLM := ALLM;
   FSettings := ASettings;
   FSnapshot := TAsWishSnapshotService.Create(FSpecStore);
+  FCommons := TAsWishCommonsService.Create(FSpecStore);
   FStatus := AStatus;
   FContext := AContext;
   FBus := ABus;
@@ -189,6 +197,7 @@ end;
 
 destructor TAsWishController.Destroy;
 begin
+  FCommons.Free;
   FSnapshot.Free;
   inherited;
 end;
@@ -215,6 +224,7 @@ begin
   FPrompts.Initialize(FProjectService.AsWishPath);
   FDecisions.Initialize(FProjectService.AsWishPath);
   FDecisions.Load;
+  FCommons.SeedCommonsLessonsIfEmpty;
 
   // Run scan (includes docs-first reading)
   RunScan;
@@ -1323,6 +1333,9 @@ function TAsWishController.ReviewChangeSet(const AChangeSetId: string): string;
 var
   LIngest: TAsWishCandidateIngest;
   LCS: TChangeSet;
+  LMatches: TArray<TSpecCommonsLesson>;
+  LWarningMsg: string;
+  LNodeIds: TArray<string>;
 begin
   Result := '';
   if not FProjectService.IsOpen then
@@ -1339,8 +1352,60 @@ begin
       Result := 'No change set found.';
       Exit;
     end;
-    FRender.RenderChangeSetReviewPage(LCS, FTreeBuilder.FunctionNodes, FProjectService.ProjectName);
+
+    SetLength(LNodeIds, Length(LCS.Items) + 1);
+    LNodeIds[0] := LCS.IntentNodeId;
+    for var I := 0 to High(LCS.Items) do
+      LNodeIds[I + 1] := LCS.Items[I].TargetNodeId;
+
+    LMatches := FCommons.FindMatchingLessons(LCS.RawUserIntent + ' ' + LCS.IntentNodeId, LNodeIds);
+    LWarningMsg := '';
+    if Length(LMatches) > 0 then
+      LWarningMsg := Format('历史经验：同类分叉曾错在 %s（%s）', [LMatches[0].Title, LMatches[0].Id]);
+
+    FRender.RenderChangeSetReviewPage(LCS, FTreeBuilder.FunctionNodes, FProjectService.ProjectName, LWarningMsg);
     Result := LIngest.FormatChangeSetReviewSummary(LCS, FTreeBuilder.FunctionNodes);
+    if LWarningMsg <> '' then
+      Result := Result + sLineBreak + '[Difference Commons Warning]' + sLineBreak + LWarningMsg + sLineBreak;
+  finally
+    LIngest.Free;
+  end;
+end;
+
+function TAsWishController.ExtractCommonsLesson(const AChangeSetId: string;
+  const ATakeaway: string): TSpecCommonsLesson;
+var
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LDec: TSpecDecision;
+  LDiff: TSpecDifferenceReport;
+  LBaselines: TArray<TAsWishBaseline>;
+begin
+  Result := Default(TSpecCommonsLesson);
+  if not FProjectService.IsOpen then Exit;
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LCS := LIngest.LoadChangeSet(FProjectService.ProjectPath, AChangeSetId);
+    if LCS.Id = '' then Exit;
+
+    LDec := Default(TSpecDecision);
+    if FDecisions <> nil then
+      for var LD in FDecisions.Decisions do
+        if LD.ChangeSetId = AChangeSetId then
+        begin
+          LDec := LD;
+          Break;
+        end;
+
+    LDiff := Default(TSpecDifferenceReport);
+    LBaselines := FSnapshot.ListBaselines;
+    if Length(LBaselines) > 0 then
+      LDiff.BaselineId := LBaselines[0].BaselineId;
+
+    Result := FCommons.ExtractLessonFromChangeSet(LCS, LDec, LDiff, ATakeaway);
+    FCommons.SaveLessonDraft(Result);
+    FStatus.Info('AsWish.Commons', Format('Extracted lesson draft: %s (%s)', [Result.Id, Result.Title]));
   finally
     LIngest.Free;
   end;

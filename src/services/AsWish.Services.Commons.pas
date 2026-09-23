@@ -173,7 +173,7 @@ begin
   LWrong := Format('AI 提议变更: Node=%s, Intent="%s"', [AChangeSet.IntentNodeId, AChangeSet.RawUserIntent]);
   LRight := Format('人类裁定 [%s]: %s (决策=%s)', [ADecision.Id, ADecision.DecisionText,
     TSpecEnums.DecisionStatusToStr(ADecision.Status)]);
-  if ADecision.Status = rsRejected then LMode := 'anti_pattern' else LMode := 'divergence_resolved';
+  if ADecision.Status = dsRejected then LMode := 'anti_pattern' else LMode := 'divergence_resolved';
 
   Result := TSpecCommonsLesson.CreateNew(LId, LTitle, LTakeaway,
     AChangeSet.IntentNodeId + '|' + AChangeSet.RawUserIntent, LWrong, LRight,

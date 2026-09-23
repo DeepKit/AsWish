@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.Render
 
@@ -69,7 +69,8 @@ type
     /// <summary>Render the 4-layer ChangeSet review surface (changeset-review.html)
     ///  implementing 0-9 universal choice protocol and decision actions.</summary>
     procedure RenderChangeSetReviewPage(const AChangeSet: TChangeSet;
-      ANodes: TList<TSpecNode>; const AProjectName: string = '');
+      ANodes: TList<TSpecNode>; const AProjectName: string = '';
+      const ACommonsWarning: string = '');
     /// <summary>Render deterministic View Spec Visual Preview (visual-preview.html)
     ///  representing structural wireframes (Page -> Section -> Component -> Hierarchy, WO-20260830-0028).</summary>
     procedure RenderVisualPreview(AViewNodes: TList<TSpecNode>;
@@ -1352,7 +1353,7 @@ end;
 
 procedure TAsWishRenderService.RenderChangeSetReviewPage(
   const AChangeSet: TChangeSet; ANodes: TList<TSpecNode>;
-  const AProjectName: string);
+  const AProjectName: string; const ACommonsWarning: string);
 var
   LSb: TStringBuilder;
   LTargetTitle: string;
@@ -1379,6 +1380,13 @@ begin
     LSb.AppendLine('  <a href="index.html">&#8592; ' + T('Back to Project Dashboard', '返回项目概览') + '</a>');
     LSb.AppendLine('  <span class="badge badge-doc">' + T('ChangeSet ID: ', '变更集编号：') + HtmlEscape(AChangeSet.Id) + '</span>');
     LSb.AppendLine('</div>');
+
+    if ACommonsWarning <> '' then
+    begin
+      LSb.AppendLine('<div class="card card-commons-warning" style="background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; padding: 12px; margin-bottom: 1.5em; border-radius: 6px;">');
+      LSb.AppendLine('  <strong>&#9888; ' + HtmlEscape(ACommonsWarning) + '</strong>');
+      LSb.AppendLine('</div>');
+    end;
 
     LSb.AppendLine('<h1>' + T('AI Understanding & Proposed Changes', 'AI 理解与变更提议') + '</h1>');
     LSb.AppendLine('<p style="color: #64748b; margin-top: -0.5em;">' +
