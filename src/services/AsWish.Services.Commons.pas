@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   AsWish.Services.Commons
   Difference Commons Service (WO-20260923-0041).
   ============================================================================ }
@@ -46,7 +46,7 @@ begin
   SetLength(Result, 10);
   Add(0, 'lesson-0001', 'Disable vs Delete 混淆',
     '停用是状态迁移，删除是物理抹除；AI 倾向用删除代替停用，必须以领域契约约束生命周期边界。',
-    'status=disabled vs action=delete|停用 vs 删除|disable vs delete',
+    'status=disabled|action=delete|停用 vs 删除|disable vs delete',
     'delete_user(id) / nodes.remove(id) 直接物理删除',
     'status := "disabled"; is_active := false; 保留溯源历史 [dec-lifecycle-001]',
     'bl-user-lifecycle-001', 'diff-20260901-001', 'domain-lifecycle', 'anti_pattern');

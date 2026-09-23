@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Controller
 
@@ -224,7 +224,6 @@ begin
   FPrompts.Initialize(FProjectService.AsWishPath);
   FDecisions.Initialize(FProjectService.AsWishPath);
   FDecisions.Load;
-  FCommons.SeedCommonsLessonsIfEmpty;
 
   // Run scan (includes docs-first reading)
   RunScan;
@@ -1046,6 +1045,7 @@ begin
 
     // Step 4: Write .AsWish structure
     FSpecStore.CreateDirectoryStructure;
+    FCommons.SeedCommonsLessonsIfEmpty;
     FStatus.Progress('scan', 'AsWish.Scan', 55, 'Writing .AsWish...');
     FSpecStore.WriteScanReport(FScanService);
     FSpecStore.WriteProjectSpec(FProjectService.ProjectName, LType, 0);
