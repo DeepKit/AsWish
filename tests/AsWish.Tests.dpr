@@ -17,6 +17,7 @@ uses
   Test.AsWish.Yaml.Parser in 'Test.AsWish.Yaml.Parser.pas',
   Test.AsWish.Validation in 'Test.AsWish.Validation.pas',
   Test.AsWish.Models in 'Test.AsWish.Models.pas',
+  Test.AsWish.Scan in 'Test.AsWish.Scan.pas',
   Test.AsWish.CandidateIngest in 'Test.AsWish.CandidateIngest.pas',
   Test.AsWish.Decisions in 'Test.AsWish.Decisions.pas',
   Test.AsWish.SpecStore in 'Test.AsWish.SpecStore.pas',

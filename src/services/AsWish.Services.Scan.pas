@@ -44,6 +44,15 @@ type
     function GetFilesByCategory(ACategory: TFileCategory): TArray<string>;
     function TotalFiles: Integer;
     function CategoryCount(ACategory: TFileCategory): Integer;
+    /// <summary>Name the stack this project is written in, from the files the
+    ///  scan already classified. There is exactly one implementation because
+    ///  there were two: the CLI reported "mixed" for code it could not name,
+    ///  the desktop app reported "unknown", so the same repository got a
+    ///  different recorded type depending on which entry point scanned it.
+    ///  The value is metadata only -- displayed and written into project.yaml,
+    ///  nothing branches on it -- but a project's own type must not depend on
+    ///  which door you walked in through.</summary>
+    function DetectProjectType: string;
     property Results: TList<TScanResult> read FResults;
   end;
 
@@ -226,6 +235,44 @@ begin
   for var LEntry in FResults do
     if LEntry.Category = ACategory then
       Inc(Result);
+end;
+
+function TAsWishScanService.DetectProjectType: string;
+
+  function HasAnyExt(const ACodeFiles: TArray<string>;
+    const AExts: TArray<string>): Boolean;
+  begin
+    for var LFile in ACodeFiles do
+      for var LExt in AExts do
+        if LFile.EndsWith(LExt) then
+          Exit(True);
+    Result := False;
+  end;
+
+var
+  LCodeFiles: TArray<string>;
+begin
+  Result := 'unknown';
+  if CategoryCount(fcCode) = 0 then
+    Exit;
+
+  LCodeFiles := GetFilesByCategory(fcCode);
+  // A fixed priority, not the order the files happen to be listed in: with a
+  // file-order scan a repo holding both Python and TypeScript answered
+  // differently after someone added an unrelated file.
+  if HasAnyExt(LCodeFiles, ['.pas', '.dpr']) then
+    Exit('delphi_vcl');
+  if HasAnyExt(LCodeFiles, ['.ts', '.tsx']) then
+    Exit('web_react');
+  if HasAnyExt(LCodeFiles, ['.py']) then
+    Exit('python_backend');
+  if HasAnyExt(LCodeFiles, ['.go']) then
+    Exit('mixed');
+
+  // Code we have no name for still counts as a code project, and "mixed" is
+  // what both previous implementations answered for Go; that fallback is kept
+  // so a stack this build has never heard of is not downgraded to "unknown".
+  Result := 'mixed';
 end;
 
 end.

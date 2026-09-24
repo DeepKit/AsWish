@@ -51,25 +51,9 @@ uses
   AsWish.Version in '..\src\core\AsWish.Version.pas',
   System.JSON;
 
-function DetectProjectType(AScan: TAsWishScanService): string;
-var
-  LCodeFiles: TArray<string>;
-begin
-  Result := 'unknown';
-  if AScan.CategoryCount(fcCode) = 0 then Exit;
-  LCodeFiles := AScan.GetFilesByCategory(fcCode);
-  for var LFile in LCodeFiles do
-    if LFile.EndsWith('.pas') or LFile.EndsWith('.dpr') then
-      Exit('delphi_vcl');
-  for var LFile in LCodeFiles do
-  begin
-    if LFile.EndsWith('.ts') or LFile.EndsWith('.tsx') then
-      Exit('web_react');
-    if LFile.EndsWith('.py') then
-      Exit('python_backend');
-  end;
-  Result := 'mixed';
-end;
+// The project type is named by the scan service itself. The CLI used to carry
+// its own copy, which disagreed with the desktop app about code it could not
+// name; the scan already did the classification, so it owns the answer.
 
 var
   GJsonOutput: Boolean = False;
@@ -967,7 +951,7 @@ begin
 
     Writeln('[scan] scanning ' + ADir);
     LScan.ScanDirectory(ADir);
-    LType := DetectProjectType(LScan);
+    LType := LScan.DetectProjectType;
     LProject.SetProjectType(LType);
     Writeln(Format('[scan] %d files, type=%s',
       [LScan.TotalFiles, LType]));
@@ -1083,10 +1067,9 @@ begin
     LProject.OpenProject(ADir);
     LPrompts.Initialize(LProject.AsWishPath);
     LScan.ScanDirectory(ADir);
-    LPrompts.WriteContextPack(LScan, LProject.ProjectName,
-      DetectProjectType(LScan));
-    LPrompts.WriteGenerationPrompt(LProject.ProjectName,
-      DetectProjectType(LScan));
+    var LType := LScan.DetectProjectType;
+    LPrompts.WriteContextPack(LScan, LProject.ProjectName, LType);
+    LPrompts.WriteGenerationPrompt(LProject.ProjectName, LType);
     Writeln('[generate] prompts written to ' + LProject.AsWishPath
       + '\prompts\');
     Writeln('[generate] note: the LLM call itself runs in the desktop app '

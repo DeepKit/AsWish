@@ -973,37 +973,11 @@ begin
     FStatus.Progress('scan', 'AsWish.Scan', 40,
       'Classified ' + FScanService.TotalFiles.ToString + ' files');
 
-    // Step 3: Detect project type
-    var LType := 'unknown';
-    if FScanService.CategoryCount(fcCode) > 0 then
-    begin
-      var LCodeFiles := FScanService.GetFilesByCategory(fcCode);
-      for var LFile in LCodeFiles do
-        if LFile.EndsWith('.pas') or LFile.EndsWith('.dpr') then
-        begin
-          LType := 'delphi_vcl';
-          Break;
-        end;
-      if LType = 'unknown' then
-        for var LFile in LCodeFiles do
-        begin
-          if LFile.EndsWith('.ts') or LFile.EndsWith('.tsx') then
-          begin
-            LType := 'web_react';
-            Break;
-          end;
-          if LFile.EndsWith('.py') then
-          begin
-            LType := 'python_backend';
-            Break;
-          end;
-          if LFile.EndsWith('.go') then
-          begin
-            LType := 'mixed';
-            Break;
-          end;
-        end;
-    end;
+    // Step 3: Detect project type. The scan service owns this: the desktop app
+    // used to carry its own copy, which reported "unknown" for code it could
+    // not name where the CLI reported "mixed", so a repository's recorded type
+    // depended on which entry point scanned it.
+    var LType := FScanService.DetectProjectType;
     FProjectService.SetProjectType(LType);
     FStatus.Progress('scan', 'AsWish.Scan', 50,
       'Detected project type: ' + LType);
