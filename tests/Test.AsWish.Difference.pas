@@ -31,7 +31,9 @@ uses
   AsWish.Services.SpecStore,
   AsWish.Services.Snapshot,
   AsWish.Services.EvidenceCollector,
-  AsWish.Services.Difference;
+  AsWish.Services.Difference,
+  AsWish.Services.Decisions,
+  AsWish.Services.VisualWorkflow;
 
 type
   [TestFixture]
@@ -71,6 +73,10 @@ type
     procedure Test09_Difference_GracefulDegradation_WhenEvidenceEmpty;
     [Test]
     procedure Test10_Difference_NonVisual_GracefulHandling;
+    [Test]
+    procedure Test11_ControllerPath_NeverRegistersTheVCLComparator;
+    [Test]
+    procedure Test12_CliPath_RegistersTheVCLComparator;
   end;
 
 implementation
@@ -558,6 +564,131 @@ begin
     Assert.AreEqual<TDifferenceKind>(dkExtra, LReport.Items[0].Kind);
   finally
     LNodes.Free;
+  end;
+end;
+
+// ---------------------------------------------------------------------------
+// WO-20260925-0053 · the two entry points compute difference through two
+// different call chains. The desktop app (MainForm -> Controller -> Difference
+// service) and the CLI (VisualWorkflow -> Difference service) are supposed to
+// answer the same question for the same baseline. They do not.
+// ---------------------------------------------------------------------------
+
+procedure TTestAsWishDifference.Test11_ControllerPath_NeverRegistersTheVCLComparator;
+var
+  LViewNodes: TList<TSpecNode>;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LB: TAsWishBaseline;
+  LBaseId: string;
+  LReport: TSpecDifferenceReport;
+begin
+  // A view baseline: the only kind for which the VCL comparator can handle.
+  LViewNodes := TList<TSpecNode>.Create;
+  try
+    LViewNodes.Add(MakeTestNode('view-main', 'Main View', 'page', '', 'Top view'));
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LViewNodes);
+
+    LDec := Default(TSpecDecision);
+    LDec.Id := 'dec-fork-001';
+    LDec.DecisionType := dtConfirm;
+    LDec.Status := dsAccepted;
+    LDec.DecidedBy := dbHuman;
+
+    LCS := Default(TChangeSet);
+    LCS.Id := 'cs-fork-001';
+    LCS.IntentTree := ttView;
+    LCS.IntentNodeId := 'view-main';
+
+    LBaseId := FSnapshot.CreateBaseline(LDec, LCS, nil, nil, LViewNodes, nil, LB);
+    WriteMockEvidenceFile('view-main');
+
+    // Exactly what TAsWishController.ComputeDifference calls: the Difference
+    // service directly, with a nil resolver and no observation/constraints.
+    LReport := FDifference.ComputeDifference(FTestDir, LBaseId, nil, '', '', '', True);
+
+    Assert.AreEqual<string>('view', LReport.TreeType, 'fixture sanity: this must be a view baseline');
+    Assert.IsTrue(LReport.IsDegraded,
+      'the Controller path must report the degraded visual comparison it actually did');
+    Assert.IsTrue(Pos('No platform visual comparator handled baseline',
+      LReport.DegradedReason) > 0,
+      'reason must name the missing comparator, not something vaguer: got "' +
+      LReport.DegradedReason + '"');
+  finally
+    LViewNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishDifference.Test12_CliPath_RegistersTheVCLComparator;
+var
+  LStore: TAsWishStoreService;
+  LSnapshot: TAsWishSnapshotService;
+  LDecisions: TAsWishDecisionsService;
+  LDifference: TAsWishDifferenceService;
+  LWorkflow: TAsWishVisualWorkflowService;
+  LViewNodes: TList<TSpecNode>;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LB: TAsWishBaseline;
+  LBaseId: string;
+  LReport: TSpecDifferenceReport;
+begin
+  // Same fixture, same baseline kind, entered through the CLI's call chain.
+  LStore := TAsWishStoreService.Create;
+  try
+    LStore.Initialize(FTestDir);
+    LSnapshot := TAsWishSnapshotService.Create(LStore);
+    try
+      LDecisions := TAsWishDecisionsService.Create;
+      try
+        LDecisions.Initialize(TPath.Combine(FTestDir, '.AsWish'));
+        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
+        try
+          LWorkflow := TAsWishVisualWorkflowService.Create(
+            LStore, LSnapshot, LDecisions, LDifference);
+          try
+            LViewNodes := TList<TSpecNode>.Create;
+            try
+              LViewNodes.Add(MakeTestNode('view-main', 'Main View', 'page', '', 'Top view'));
+              FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LViewNodes);
+
+              LDec := Default(TSpecDecision);
+              LDec.Id := 'dec-fork-002';
+              LDec.DecisionType := dtConfirm;
+              LDec.Status := dsAccepted;
+              LDec.DecidedBy := dbHuman;
+
+              LCS := Default(TChangeSet);
+              LCS.Id := 'cs-fork-002';
+              LCS.IntentTree := ttView;
+              LCS.IntentNodeId := 'view-main';
+
+              LBaseId := FSnapshot.CreateBaseline(LDec, LCS, nil, nil, LViewNodes, nil, LB);
+              WriteMockEvidenceFile('view-main');
+
+              LReport := LWorkflow.ComputeDifference(FTestDir, LBaseId);
+
+              Assert.AreEqual<string>('view', LReport.TreeType, 'fixture sanity: this must be a view baseline');
+              Assert.IsFalse(LReport.IsDegraded,
+                'the CLI path registers the VCL comparator, so it is not degraded -- ' +
+                'which is the whole point: the two entry points disagree');
+            finally
+              LViewNodes.Free;
+            end;
+          finally
+            LWorkflow.Free;
+          end;
+        finally
+          LDifference.Free;
+        end;
+      finally
+        LDecisions.Free;
+      end;
+    finally
+      LSnapshot.Free;
+    end;
+  finally
+    LStore.Free;
   end;
 end;
 
