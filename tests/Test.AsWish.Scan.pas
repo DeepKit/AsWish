@@ -35,6 +35,8 @@ type
     procedure UnrecognizedCode_IsMixed;
     [Test]
     procedure LanguagePriority_DoesNotDependOnFileOrder;
+    [Test]
+    procedure TsxOnlyProject_IsNotRecognisedAsCode;
   end;
 
 implementation
@@ -151,6 +153,23 @@ begin
   LScan := ScanProjectWith(TArray<string>.Create('a.py', 'z.ts'));
   try
     Assert.AreEqual('web_react', LScan.DetectProjectType);
+  finally
+    LScan.Free;
+  end;
+end;
+
+// A React app written entirely in .tsx files. ".tsx" is classified fcUI, not
+// fcCode, and DetectProjectType only looks at fcCode -- so the ".tsx" half of
+// the React check can never fire and this project is not a code project at all.
+// Recorded as the current (wrong) answer so the fix cannot land silently.
+procedure TScanProjectTypeTests.TsxOnlyProject_IsNotRecognisedAsCode;
+var
+  LScan: TAsWishScanService;
+begin
+  LScan := ScanProjectWith(TArray<string>.Create('App.tsx', 'index.tsx'));
+  try
+    Assert.AreEqual('unknown', LScan.DetectProjectType,
+      'expected "unknown" while .tsx is classified fcUI; see WO-20260925-0054');
   finally
     LScan.Free;
   end;
