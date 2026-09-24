@@ -486,33 +486,13 @@ begin
       FProjectService.ProjectType);
     var LIssuesR := LoadIssuesForRender;
     try
-      FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles,
-        FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
-        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR,
-        FTreeBuilder.DataNodes.Count > 0);
-      FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
-      FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
-      FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
-      if FTreeBuilder.DataNodes.Count > 0 then
-        FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
-      FRender.RenderProblemsPage(FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
-        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR);
+      FRender.RenderStandardPages(FProjectService.ProjectName,
+        FScanService.TotalFiles, FTreeBuilder.FunctionNodes,
+        FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes,
+        FTreeBuilder.DataNodes, LIssuesR, FSpecStore);
     finally
       LIssuesR.Free;
     end;
-
-    var LBundlePath := TPath.Combine(FProjectService.AsWishPath, 'bundles.yaml');
-    if TFile.Exists(LBundlePath) then
-    begin
-      var LBundles := FSpecStore.ReadBundlesFile(LBundlePath);
-      try
-        FRender.RenderBundlesPage(LBundles, FTreeBuilder.FunctionNodes,
-          FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes);
-      finally
-        LBundles.Free;
-      end;
-    end;
-
     // Render active ChangeSet review page if present
     var LIngestR := TAsWishCandidateIngest.Create(FSpecStore);
     try
@@ -560,32 +540,15 @@ begin
         LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
 
       // Reload path: data tree presence follows the loaded LData, not
-      // FTreeBuilder (which may be stale here). Mirrors the render guard below.
+      // FTreeBuilder (which may be stale here); RenderStandardPages derives it
+      // the same way from an empty list.
       var LIssuesR := LoadIssuesForRender;
       try
-        FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles,
-          LFunc, LModule, LView, LData, LIssuesR,
-          (LData <> nil) and (LData.Count > 0));
-        FRender.RenderTree('function-tree', 'Function Tree', LFunc);
-        FRender.RenderTree('module-tree', 'Module Tree', LModule);
-        FRender.RenderTree('view-tree', 'View Tree', LView);
-        if (LData <> nil) and (LData.Count > 0) then
-          FRender.RenderTree('data-tree', 'Data Tree', LData);
-        FRender.RenderProblemsPage(LFunc, LModule, LView, LData, LIssuesR);
+        FRender.RenderStandardPages(FProjectService.ProjectName,
+          FScanService.TotalFiles, LFunc, LModule, LView, LData, LIssuesR,
+          FSpecStore);
       finally
         LIssuesR.Free;
-      end;
-
-      // Bundles page
-      var LBundlePath := TPath.Combine(FProjectService.AsWishPath, 'bundles.yaml');
-      if TFile.Exists(LBundlePath) then
-      begin
-        var LBundles := FSpecStore.ReadBundlesFile(LBundlePath);
-        try
-          FRender.RenderBundlesPage(LBundles, LFunc, LModule, LView, LData);
-        finally
-          LBundles.Free;
-        end;
       end;
 
       var LMsg := Format('Refreshed HTML from YAML: %d func / %d module / %d view',
@@ -1090,34 +1053,13 @@ begin
     FRender.RenderScanReport(FScanService, FProjectService.ProjectName, LType);
     var LIssuesR := LoadIssuesForRender;
     try
-      FRender.RenderIndex(FProjectService.ProjectName, FScanService.TotalFiles,
-        FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
-        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR,
-        FTreeBuilder.DataNodes.Count > 0);
-      FRender.RenderTree('function-tree', 'Function Tree', FTreeBuilder.FunctionNodes);
-      FRender.RenderTree('module-tree', 'Module Tree', FTreeBuilder.ModuleNodes);
-      FRender.RenderTree('view-tree', 'View Tree', FTreeBuilder.ViewNodes);
-      if FTreeBuilder.DataNodes.Count > 0 then
-        FRender.RenderTree('data-tree', 'Data Tree', FTreeBuilder.DataNodes);
-      FRender.RenderProblemsPage(FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
-        FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LIssuesR);
+      FRender.RenderStandardPages(FProjectService.ProjectName,
+        FScanService.TotalFiles, FTreeBuilder.FunctionNodes,
+        FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes,
+        FTreeBuilder.DataNodes, LIssuesR, FSpecStore);
     finally
       LIssuesR.Free;
     end;
-
-    // Bundles page
-    var LBundlePath := TPath.Combine(FProjectService.AsWishPath, 'bundles.yaml');
-    if TFile.Exists(LBundlePath) then
-    begin
-      var LBundles := FSpecStore.ReadBundlesFile(LBundlePath);
-      try
-        FRender.RenderBundlesPage(LBundles, FTreeBuilder.FunctionNodes,
-          FTreeBuilder.ModuleNodes, FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes);
-      finally
-        LBundles.Free;
-      end;
-    end;
-
     // Step 6b: Render decisions and difference pages (WO-20260905-0029)
     var LDecList := ListDecisions;
     if Length(LDecList) > 0 then

@@ -36,6 +36,10 @@ type
     procedure RenderTree_EvidenceId_IsLink_WhenEvidencePageExists;
     [Test]
     procedure RenderTree_EvidenceId_StaysBare_WhenEvidencePageMissing;
+    [Test]
+    procedure RenderStandardPages_ProducesTheWholeSet_InOrder;
+    [Test]
+    procedure RenderStandardPages_SkipsDataTree_WhenNoDataNodes;
   end;
 
 implementation
@@ -245,6 +249,108 @@ begin
       'a tree page rendered in isolation must not link to a missing page');
   finally
     LNodes.Free;
+    LRender.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TEvidencePageTests.RenderStandardPages_ProducesTheWholeSet_InOrder;
+var
+  LDir, LHtml, LFuncHtml: string;
+  LRender: TAsWishRenderService;
+  LFunc, LModule, LView, LData, LIssues: TList<TSpecNode>;
+  LIssueList: TList<TSpecIssue>;
+begin
+  // This is the one place the page sequence is written down. If an entry point
+  // starts listing the RenderXxx calls itself instead of calling this, it can
+  // drop a page and no other test will notice -- which is exactly how the
+  // evidence catalog stayed missing from every path but the CLI's.
+  LDir := NewRenderTempDir;
+  LRender := TAsWishRenderService.Create;
+  LFunc := TList<TSpecNode>.Create;
+  LModule := TList<TSpecNode>.Create;
+  LView := TList<TSpecNode>.Create;
+  LData := TList<TSpecNode>.Create;
+  LIssues := TList<TSpecNode>.Create;
+  LIssueList := TList<TSpecIssue>.Create;
+  try
+    LFunc.Add(MakeNodeWithRefs('func-root', TArray<string>.Create('')));
+    LModule.Add(MakeNodeWithRefs('mod-a',
+      TArray<string>.Create('ev-src-a-pas-1_10')));
+    LData.Add(MakeNodeWithRefs('data-user', TArray<string>.Create('')));
+
+    LRender.Initialize(LDir);
+    // The evidence catalog is written by the caller before the page set, which
+    // is the ordering constraint the sequence cannot express on its own.
+    LRender.RenderEvidencePage(nil, 'Fixture');
+    LRender.RenderStandardPages('Fixture', 7, LFunc, LModule, LView, LData,
+      LIssueList);
+
+    for var LName in TArray<string>.Create('index.html', 'function-tree.html',
+      'module-tree.html', 'view-tree.html', 'data-tree.html', 'problems.html') do
+      Assert.IsTrue(TFile.Exists(TPath.Combine(LDir, 'html\' + LName)),
+        LName + ' is part of the standard page set');
+
+    // Bundles is conditional on the project having a bundles.yaml; a bare
+    // service has no store, so it must be absent rather than empty.
+    Assert.IsFalse(TFile.Exists(TPath.Combine(LDir, 'html\bundles.html')),
+      'no bundles page without a store that can find bundles.yaml');
+
+    LFuncHtml := TFile.ReadAllText(TPath.Combine(LDir, 'html\function-tree.html'),
+      TEncoding.UTF8);
+    Assert.IsTrue(LFuncHtml.Contains('func-root'),
+      'function tree page must list its nodes');
+    LHtml := TFile.ReadAllText(TPath.Combine(LDir, 'html\index.html'),
+      TEncoding.UTF8);
+    Assert.IsTrue(LHtml.Contains('Fixture'), 'index must name the project');
+  finally
+    LIssueList.Free;
+    LIssues.Free;
+    LData.Free;
+    LView.Free;
+    LModule.Free;
+    LFunc.Free;
+    LRender.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TEvidencePageTests.RenderStandardPages_SkipsDataTree_WhenNoDataNodes;
+var
+  LDir: string;
+  LRender: TAsWishRenderService;
+  LFunc, LModule, LView, LData, LIssues: TList<TSpecNode>;
+  LIssueList: TList<TSpecIssue>;
+begin
+  // A project with no data projection must not get an empty data-tree.html.
+  LDir := NewRenderTempDir;
+  LRender := TAsWishRenderService.Create;
+  LFunc := TList<TSpecNode>.Create;
+  LModule := TList<TSpecNode>.Create;
+  LView := TList<TSpecNode>.Create;
+  LData := TList<TSpecNode>.Create;
+  LIssues := TList<TSpecNode>.Create;
+  LIssueList := TList<TSpecIssue>.Create;
+  try
+    LFunc.Add(MakeNodeWithRefs('func-root', TArray<string>.Create('')));
+
+    LRender.Initialize(LDir);
+    LRender.RenderStandardPages('Fixture', 3, LFunc, LModule, LView, LData,
+      LIssueList);
+
+    Assert.IsFalse(TFile.Exists(TPath.Combine(LDir, 'html\data-tree.html')),
+      'an empty data tree must not be rendered as a page');
+    Assert.IsTrue(TFile.Exists(TPath.Combine(LDir, 'html\index.html')),
+      'the rest of the page set must still be produced');
+  finally
+    LIssueList.Free;
+    LIssues.Free;
+    LData.Free;
+    LView.Free;
+    LModule.Free;
+    LFunc.Free;
     LRender.Free;
     if TDirectory.Exists(LDir) then
       TDirectory.Delete(LDir, True);

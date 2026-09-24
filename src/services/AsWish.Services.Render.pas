@@ -15,7 +15,8 @@ uses
   System.Classes,
   System.Generics.Collections,
   AsWish.Services.Scan,
-  AsWish.Models;
+  AsWish.Models,
+  AsWish.Services.SpecStore;
 
 type
   /// <summary>Health metrics for the index dashboard (BUG-9 §2.2).
@@ -70,6 +71,18 @@ type
     procedure RenderEvidencePage(
       AEvidence: System.Generics.Collections.TList<TSpecEvidence>;
       const AProjectName: string = '');
+    /// <summary>The one canonical page sequence: dashboard, then the four
+    ///  trees in a fixed order, then the problem list, then the bundles page
+    ///  when the project has one. Every entry point (desktop scan, desktop
+    ///  reload, CLI scan) calls this instead of listing the RenderXxx calls
+    ///  itself -- the sequences had drifted apart, and a page added to one
+    ///  entry point stayed missing from the others with nothing to catch it.
+    ///  Pages that only some entry points produce (scan report, evidence
+    ///  catalog, decisions, difference) stay explicit call sites before or
+    ///  after this one.</summary>
+    procedure RenderStandardPages(const AProjectName: string;
+      ATotalFiles: Integer; AFunc, AModule, AView, AData: TList<TSpecNode>;
+      AIssues: TList<TSpecIssue>; AStore: TAsWishStoreService = nil);
     procedure RenderProblemsPage(
       AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>;
       AIssues: TList<TSpecIssue>);
@@ -939,6 +952,44 @@ begin
       LSb.ToString, TEncoding.UTF8);
   finally
     LSb.Free;
+  end;
+end;
+
+procedure TAsWishRenderService.RenderStandardPages(const AProjectName: string;
+  ATotalFiles: Integer; AFunc, AModule, AView, AData: TList<TSpecNode>;
+  AIssues: TList<TSpecIssue>; AStore: TAsWishStoreService);
+var
+  LHasData: Boolean;
+begin
+  LHasData := (AData <> nil) and (AData.Count > 0);
+
+  RenderIndex(AProjectName, ATotalFiles, AFunc, AModule, AView, AData,
+    AIssues, LHasData);
+
+  RenderTree('function-tree', 'Function Tree', AFunc);
+  RenderTree('module-tree', 'Module Tree', AModule);
+  RenderTree('view-tree', 'View Tree', AView);
+  if LHasData then
+    RenderTree('data-tree', 'Data Tree', AData);
+
+  RenderProblemsPage(AFunc, AModule, AView, AData, AIssues);
+
+  // The bundles page is the one part of the sequence that depends on a file
+  // the scan did not necessarily produce, so the store is optional: without
+  // it the caller is rendering a page set that has no bundles.
+  if AStore <> nil then
+  begin
+    var LBundlePath := TPath.Combine(TPath.GetDirectoryName(FBasePath),
+      'bundles.yaml');
+    if TFile.Exists(LBundlePath) then
+    begin
+      var LBundles := AStore.ReadBundlesFile(LBundlePath);
+      try
+        RenderBundlesPage(LBundles, AFunc, AModule, AView, AData);
+      finally
+        LBundles.Free;
+      end;
+    end;
   end;
 end;
 

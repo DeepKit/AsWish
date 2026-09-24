@@ -1018,34 +1018,11 @@ begin
     LRender.RenderScanReport(LScan, LProject.ProjectName, LType);
     var LIssues := LStore.ReadIssuesFile('issues/doc-issues.yaml');
     try
-      LRender.RenderIndex(LProject.ProjectName, LScan.TotalFiles,
-        LBuilder.FunctionNodes, LBuilder.ModuleNodes,
-        LBuilder.ViewNodes, LBuilder.DataNodes, LIssues,
-        LBuilder.DataNodes.Count > 0);
-      LRender.RenderTree('function-tree', 'Function Tree',
-        LBuilder.FunctionNodes);
-      LRender.RenderTree('module-tree', 'Module Tree',
-        LBuilder.ModuleNodes);
-      LRender.RenderTree('view-tree', 'View Tree', LBuilder.ViewNodes);
-      if LBuilder.DataNodes.Count > 0 then
-        LRender.RenderTree('data-tree', 'Data Tree', LBuilder.DataNodes);
-      LRender.RenderProblemsPage(LBuilder.FunctionNodes,
-        LBuilder.ModuleNodes, LBuilder.ViewNodes, LBuilder.DataNodes,
-        LIssues);
+      LRender.RenderStandardPages(LProject.ProjectName, LScan.TotalFiles,
+        LBuilder.FunctionNodes, LBuilder.ModuleNodes, LBuilder.ViewNodes,
+        LBuilder.DataNodes, LIssues, LStore);
     finally
       LIssues.Free;
-    end;
-
-    var LBundlePath := TPath.Combine(LProject.AsWishPath, 'bundles.yaml');
-    if TFile.Exists(LBundlePath) then
-    begin
-      var LBundles := LStore.ReadBundlesFile('bundles.yaml');
-      try
-        LRender.RenderBundlesPage(LBundles, LBuilder.FunctionNodes,
-          LBuilder.ModuleNodes, LBuilder.ViewNodes, LBuilder.DataNodes);
-      finally
-        LBundles.Free;
-      end;
     end;
 
     LPrompts.WriteContextPack(LScan, LProject.ProjectName, LType);
@@ -1212,28 +1189,15 @@ begin
 
     var LIssues := LStore.ReadIssuesFile('issues/doc-issues.yaml');
     try
-      LRender.RenderIndex(LProject.ProjectName, LFunc.Count + LModule.Count
-        + LView.Count, LFunc, LModule, LView, LData, LIssues,
-        (LData <> nil) and (LData.Count > 0));
-      LRender.RenderTree('function-tree', 'Function Tree', LFunc);
-      LRender.RenderTree('module-tree', 'Module Tree', LModule);
-      LRender.RenderTree('view-tree', 'View Tree', LView);
-      if (LData <> nil) and (LData.Count > 0) then
-        LRender.RenderTree('data-tree', 'Data Tree', LData);
-      LRender.RenderProblemsPage(LFunc, LModule, LView, LData, LIssues);
+      // The reload path has no scan service to ask, so the file count on the
+      // dashboard is the node total. Every other entry point passes the real
+      // scanned file count; that difference is a per-entry input, not a second
+      // copy of the page sequence.
+      LRender.RenderStandardPages(LProject.ProjectName,
+        LFunc.Count + LModule.Count + LView.Count, LFunc, LModule, LView,
+        LData, LIssues, LStore);
     finally
       LIssues.Free;
-    end;
-
-    var LBundlePath := TPath.Combine(LProject.AsWishPath, 'bundles.yaml');
-    if TFile.Exists(LBundlePath) then
-    begin
-      var LBundles := LStore.ReadBundlesFile('bundles.yaml');
-      try
-        LRender.RenderBundlesPage(LBundles, LFunc, LModule, LView, LData);
-      finally
-        LBundles.Free;
-      end;
     end;
 
     var LDecFile := TPath.Combine(LProject.AsWishPath, 'decisions.yaml');
