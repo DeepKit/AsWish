@@ -12,9 +12,12 @@ interface
 
 uses
   System.SysUtils,
+  System.Generics.Collections,
   DUnitX.TestFramework,
+  AsWish.Models,
   AsWish.Yaml.Parser,
-  AsWish.Validation;
+  AsWish.Validation,
+  AsWish.Services.TreeBuilder;
 
 type
   [TestFixture]
@@ -123,6 +126,29 @@ type
 
     [Test]
     procedure DuplicateId_ReportedAsError;
+
+    [Test]
+    procedure IdAtMaxLength_IsAccepted;
+
+    [Test]
+    procedure IdBeyondMaxLength_IsRejected;
+  end;
+
+  [TestFixture]
+  /// <summary>The generator must obey the validator's own rule. GAP-02 was
+  ///  TreeBuilder emitting 85-char ids against a 54-char cap, which made
+  ///  "validate" fail on every scan of a real project (206 errors on DeepAxis,
+  ///  52 on DeepCompare).</summary>
+  TTreeBuilderNodeIdContractTests = class
+  public
+    [Test]
+    procedure UniqueId_OverlongBase_IsTruncatedToValidatorLimit;
+
+    [Test]
+    procedure UniqueId_CollisionSuffix_StillSatisfiesValidatorLimit;
+
+    [Test]
+    procedure UniqueId_ManyOverlongBases_StayDistinct;
   end;
 
   [TestFixture]
@@ -861,6 +887,100 @@ begin
   end;
 end;
 
+procedure TValidationNodeIdTests.IdAtMaxLength_IsAccepted;
+var
+  LId: string;
+begin
+  // 5-char prefix + exactly the slug length the regex allows.
+  LId := 'data-' + StringOfChar('a', CAsWishMaxNodeIdLength - 5);
+  Assert.AreEqual(CAsWishMaxNodeIdLength, LId.Length,
+    'this id is meant to sit exactly on the cap');
+  Assert.IsTrue(AsWishIsValidNodeId(LId),
+    'an id at the maximum length is legal and must not be rejected');
+end;
+
+procedure TValidationNodeIdTests.IdBeyondMaxLength_IsRejected;
+var
+  LId: string;
+begin
+  LId := 'data-' + StringOfChar('a', CAsWishMaxNodeIdLength - 5 + 1);
+  Assert.IsFalse(AsWishIsValidNodeId(LId),
+    'one character past the cap must be rejected, or the cap means nothing');
+end;
+
+{ TTreeBuilderNodeIdContractTests }
+
+procedure TTreeBuilderNodeIdContractTests.UniqueId_OverlongBase_IsTruncatedToValidatorLimit;
+var
+  LBuilder: TAsWishTreeBuilder;
+  LId: string;
+begin
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    // The real GAP-02 shape: a data-field id built from a long entity + field
+    // name, which used to reach 85 characters against a 54-char cap.
+    LId := LBuilder.UniqueId('data-field-' + StringOfChar('x', 80));
+    Assert.IsTrue(AsWishIsValidNodeId(LId),
+      Format('generator emitted id "%s" (%d chars) that its own validator ' +
+        'rejects; the generator must not outgrow the rule it is judged by',
+        [LId, LId.Length]));
+  finally
+    LBuilder.Free;
+  end;
+end;
+
+procedure TTreeBuilderNodeIdContractTests.UniqueId_CollisionSuffix_StillSatisfiesValidatorLimit;
+var
+  LBuilder: TAsWishTreeBuilder;
+  LId: string;
+begin
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    // Two identical overlong bases: the second must get a suffix AND still fit.
+    LBuilder.UniqueId('data-field-' + StringOfChar('x', 80));
+    LId := LBuilder.UniqueId('data-field-' + StringOfChar('x', 80));
+    Assert.IsTrue(LId.Contains('-1'),
+      'a repeated base must be disambiguated with a suffix');
+    Assert.IsTrue(AsWishIsValidNodeId(LId),
+      Format('the disambiguated id "%s" (%d chars) also has to satisfy the ' +
+        'validator; reserving room for the suffix is the point',
+        [LId, LId.Length]));
+  finally
+    LBuilder.Free;
+  end;
+end;
+
+procedure TTreeBuilderNodeIdContractTests.UniqueId_ManyOverlongBases_StayDistinct;
+var
+  LBuilder: TAsWishTreeBuilder;
+  LSeen: TDictionary<string, Boolean>;
+  LId: string;
+  LCount: Integer;
+  I: Integer;
+begin
+  LBuilder := TAsWishTreeBuilder.Create;
+  LSeen := TDictionary<string, Boolean>.Create;
+  try
+    // Truncation alone would collapse every long base onto one id. The callers
+    // of UniqueId expect distinct ids, so truncation must not destroy that.
+    for I := 1 to 12 do
+    begin
+      LId := LBuilder.UniqueId('data-field-class-hist-' + IntToStr(I) + '-' +
+        StringOfChar('y', 80));
+      Assert.IsTrue(AsWishIsValidNodeId(LId),
+        Format('id "%s" (%d chars) must satisfy the validator', [LId, LId.Length]));
+      Assert.IsFalse(LSeen.ContainsKey(LId),
+        Format('distinct sources collapsed onto the same id "%s"', [LId]));
+      LSeen.Add(LId, True);
+    end;
+    LCount := LSeen.Count;
+    Assert.AreEqual(12, LCount);
+  finally
+    LSeen.Free;
+    LBuilder.Free;
+  end;
+end;
+
 { TValidationKindTests }
 
 procedure TValidationKindTests.ExtensionKind_NoError;
@@ -1329,6 +1449,7 @@ initialization
   TDUnitX.RegisterTestFixture(TValidationReportTests);
   TDUnitX.RegisterTestFixture(TValidationParseErrorTests);
   TDUnitX.RegisterTestFixture(TValidationNodeIdTests);
+  TDUnitX.RegisterTestFixture(TTreeBuilderNodeIdContractTests);
   TDUnitX.RegisterTestFixture(TValidationKindTests);
   TDUnitX.RegisterTestFixture(TValidationParentRefTests);
   TDUnitX.RegisterTestFixture(TValidationStatusTests);

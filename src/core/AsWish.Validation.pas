@@ -18,6 +18,12 @@ uses
   AsWish.Yaml.Parser,
   AsWish.Models;
 
+/// <summary>The one definition of a legal node id. The generator and the
+///  validator must not each carry their own copy of this rule: when the
+///  generator's cap and the validator's cap drift apart, every scan fails
+///  validation for a defect the tool inflicted on itself.</summary>
+function AsWishIsValidNodeId(const AId: string): Boolean;
+
 type
   TValidationSeverity = (vsError, vsWarning);
 
@@ -52,7 +58,6 @@ type
 
   TYamlValidator = class
   private
-    FNodeIdRegex: TRegex;
     procedure ValidateNodeId(const AId, APath: string;
       AReport: TValidationReport);
     procedure ValidateKind(const AKind, ATree, APath: string;
@@ -157,11 +162,20 @@ end;
 
 { TYamlValidator }
 
+function AsWishIsValidNodeId(const AId: string): Boolean;
+const
+  // Keep in sync with CAsWishMaxNodeIdLength in AsWish.Models. The regex is
+  // the rule; the constant is what the generator truncates to, so a mismatch
+  // shows up as a build-time length assertion in the tests.
+  PATTERN = '^(func|mod|view|data)-[a-z0-9][a-z0-9\-]{0,49}$';
+begin
+  Result := TRegEx.IsMatch(AId, PATTERN) and
+    (AId.Length <= CAsWishMaxNodeIdLength);
+end;
+
 constructor TYamlValidator.Create;
 begin
   inherited Create;
-  FNodeIdRegex := TRegEx.Create(
-    '^(func|mod|view|data)-[a-z0-9][a-z0-9\-]{0,49}$', [roCompiled]);
 end;
 
 function TYamlValidator.IsValidFunctionKind(const AKind: string): Boolean;
@@ -226,7 +240,7 @@ begin
     Exit;
   end;
 
-  if not FNodeIdRegex.IsMatch(AId) then
+  if not AsWishIsValidNodeId(AId) then
     AReport.AddError('invalid_id_format', vsError, APath,
       'Node id "' + AId + '" does not match required pattern',
       'Use format {func|mod|view|data}-{slug}, lowercase letters/digits/hyphens only');

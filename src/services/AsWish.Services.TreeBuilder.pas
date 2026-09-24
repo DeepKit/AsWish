@@ -41,7 +41,6 @@ type
     FEvidenceIdCollisions: Integer;
     FNonUtf8Files: TStringList;
     function MakeSlug(const ATitle: string): string;
-    function UniqueId(const ABaseId: string): string;
     /// <summary>Allocate an evidence id that is unique across the whole list.
     ///  The base id encodes the file and its line range, so the common case
     ///  (one file split into per-section evidence) is distinguishable by
@@ -66,6 +65,13 @@ type
       const AProjectName: string);
     procedure SetGenStatusGenerated(ANodes: TList<TSpecNode>);
   public
+    /// <summary>Allocate a node id that is unique across the whole tree and
+    ///  that satisfies the validator's id rule. Callers pass a base that
+    ///  already carries the tree prefix; the length cap is applied here,
+    ///  because the prefix length is the caller's business and a cap on the
+    ///  slug alone cannot see it. Public so a test can assert the generator
+    ///  against the validator's own rule instead of a copied number.</summary>
+    function UniqueId(const ABaseId: string): string;
     constructor Create;
     destructor Destroy; override;
     procedure BuildFromScan(AScan: TAsWishScanService;
@@ -197,18 +203,40 @@ end;
 function TAsWishTreeBuilder.UniqueId(const ABaseId: string): string;
 var
   LExisting: Integer;
+  LBase, LSuffix: string;
 begin
-  if not FUsedIds.TryGetValue(ABaseId, LExisting) then
+  // The cap is enforced here on the finished id, not inside MakeSlug: callers
+  // prepend their own prefix ('data-field-', 'mod-pkg-', ...), so a cap on the
+  // slug alone still lets the total overflow the validator's limit. That drift
+  // is what made 206 nodes fail validation on every DeepAxis scan.
+  LBase := ABaseId;
+  if LBase.Length > CAsWishMaxNodeIdLength then
+    LBase := LBase.Substring(0, CAsWishMaxNodeIdLength).Trim(['-']);
+  if LBase = '' then
+    LBase := 'unnamed';
+
+  if FUsedIds.TryGetValue(LBase, LExisting) then
   begin
-    Result := ABaseId;
-    FUsedIds.Add(ABaseId, 0);
+    Inc(LExisting);
+    FUsedIds[LBase] := LExisting;
   end
   else
   begin
-    var LCount := LExisting + 1;
-    FUsedIds[ABaseId] := LCount;
-    Result := ABaseId + '-' + IntToStr(LCount);
+    LExisting := 0;
+    FUsedIds.Add(LBase, 0);
   end;
+
+  if LExisting > 0 then
+    LSuffix := '-' + IntToStr(LExisting)
+  else
+    LSuffix := '';
+
+  if LSuffix = '' then
+    Result := LBase
+  else
+    // Reserve room for the suffix so a disambiguated id also satisfies the cap.
+    Result := LBase.Substring(0, CAsWishMaxNodeIdLength - LSuffix.Length)
+      .Trim(['-']) + LSuffix;
 end;
 
 function TAsWishTreeBuilder.UniqueEvidenceId(const APathSlug, ALines: string): string;

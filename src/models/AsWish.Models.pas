@@ -15,6 +15,13 @@ uses
   System.Classes,
   System.Generics.Collections;
 
+const
+  /// <summary>Longest node id the schema accepts. Shared with the validator's
+  ///  regex in AsWish.Validation so the generator cannot quietly outgrow the
+  ///  limit it is judged against: a generator that emits 85-char ids against a
+  ///  54-char cap makes "validate" fail on every scan.</summary>
+  CAsWishMaxNodeIdLength = 54;
+
 type
   TTreeType = (ttFunction, ttModule, ttView, ttData);
 
