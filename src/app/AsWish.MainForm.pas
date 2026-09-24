@@ -81,6 +81,10 @@ type
     FScanEventToken: string;
     FCaptureDone: Boolean;
     FCaptureResult: HResult;
+    FCaptureWarnings: TStringList;
+    // Held between captures so a timed-out capture is never freed while the
+    // WebView2 RPC thread may still be writing into it.
+    FPendingStream: TMemoryStream;
     FLastHtmlPath: string;
 
     // HB Choice Deck UI & Binding
@@ -91,6 +95,7 @@ type
     FHBCommitBtn: TSpeedButton;
     FHBRejectBtn: TSpeedButton;
     FHBExtractBtn: TSpeedButton;
+    FHBShareConsentChk: TCheckBox;
     FHBFullscreenBtn: TSpeedButton;
     FLastGateCsId: string;
     FLastGateRationale: string;
@@ -140,9 +145,13 @@ type
     procedure TriggerHbReject;
     procedure TriggerHbExtractLesson;
     procedure UpdateHbDeckStatus(const AMsg: string);
+    procedure SetHbExtractControlsVisible(const AVisible: Boolean);
+    function GetHBShareConsent: Boolean;
+    function DomExcerptForLog(const ARaw: string): string;
 
     procedure ExecuteCommandSync(const ACommandLine: string);
     function StripHtmlToInnerText(const AHtml: string): string;
+    procedure DrainCaptureWarnings(const ALog: TStringList);
 
     procedure HandleScanEvent(const AEvent: TDeepShellEvent);
     procedure PopulateTreeFromSpec(ATree: TTreeView; ANodes: TList<TSpecNode>);
@@ -158,6 +167,9 @@ type
     function WaitForBrowserReady(const AExpectedSnippet: string; ATimeoutMs: Integer; out ADomText: string): Boolean;
     procedure OpenView(const ARef: TShellObjectRef);
     procedure SaveWindowScreenshot(const AFilePath: string);
+    procedure SaveControlImage(AControl: TWinControl; const AFilePath: string);
+    function CaptureControlBitmap(AControl: TWinControl; ABmp: Vcl.Graphics.TBitmap): Boolean;
+    function CaptureBrowserToStream(ABrowser: TEdgeBrowser; AStream: TMemoryStream): Boolean;
     procedure RunGuiVerification(const AProjectPath: string);
   protected
     procedure InitializeShell; override;
@@ -170,6 +182,9 @@ type
     property Controller: TAsWishController read FController;
     property HBBinding: TAsWishHBBinding read FHBBinding;
     property HBExtractBtn: TSpeedButton read FHBExtractBtn;
+    // WO-20260924-0049 P-4: read-only view of the share-to-hub checkbox so
+    // automation can assert the default-unchecked invariant.
+    property HBShareConsent: Boolean read GetHBShareConsent;
     property LastGateCsId: string read FLastGateCsId;
     property InspectorIntentEdit: TEdit read FInspectorIntentEdit;
     property InspectorNodeLabel: TLabel read FInspectorNodeLabel;
@@ -188,6 +203,7 @@ uses
   System.IOUtils,
   Winapi.Windows,
   Winapi.Messages,
+  Winapi.ShellAPI,
   AsWish.Commands,
   AsWish.Providers,
   AsWish.Localization,
@@ -668,6 +684,8 @@ begin
   FreeAndNil(FDecisions);
   FreeAndNil(FSettings);
   FreeAndNil(FLLMService);
+  FreeAndNil(FCaptureWarnings);
+  FreeAndNil(FPendingStream);
   inherited ShutdownShell;
 end;
 
@@ -885,6 +903,34 @@ begin
     if (AExpectedSnippet = '') or ADomText.Contains(AExpectedSnippet) then
       Result := True;
   end;
+end;
+
+function TAsWishMainForm.DomExcerptForLog(const ARaw: string): string;
+var
+  LBytes: TBytes;
+  LRepaired: string;
+  I: Integer;
+begin
+  if ARaw.Trim = '' then Exit('[dom-empty]');
+  for I := 1 to Length(ARaw) do
+    if ARaw[I] > #$7F then
+    begin
+      // WebView2 ExecuteScript returns its JSON payload double-encoded
+      // (UTF-8 bytes read back as GBK) and the '?' substitutions make it
+      // lossy. Repair only what round-trips cleanly; never log a corrupt
+      // excerpt as if it were evidence.
+      try
+        LBytes := TEncoding.GetEncoding(936).GetBytes(ARaw);
+        LRepaired := TEncoding.UTF8.GetString(LBytes);
+        if (LRepaired <> ARaw) and (not LRepaired.Contains(#$FFFD)) then
+          Exit(Copy(LRepaired.Replace(#13, ' ').Replace(#10, ' '), 1, 160));
+      except
+        // Unmappable character (e.g. '€' has no GBK encoding) proves the
+        // payload is already corrupt, so fall through to the placeholder.
+      end;
+      Exit(Format('[dom-text-undecodable len=%d]', [Length(ARaw)]));
+    end;
+  Result := Copy(ARaw.Replace(#13, ' ').Replace(#10, ' '), 1, 160);
 end;
 
 procedure TAsWishMainForm.DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
@@ -1350,6 +1396,21 @@ begin
   FHBExtractBtn.Visible := False;
   FHBExtractBtn.OnClick := DoHbButtonClick;
 
+  // WO-20260924-0049 P-4: share-to-hub consent. Unchecked by default — a
+  // lesson only reaches the public PG hub when the human opts in explicitly.
+  FHBShareConsentChk := TCheckBox.Create(FHBDeckPanel);
+  FHBShareConsentChk.Parent := FHBDeckPanel;
+  FHBShareConsentChk.Align := alLeft;
+  FHBShareConsentChk.Width := 132;
+  FHBShareConsentChk.Caption := '愿分享到公共库';
+  FHBShareConsentChk.Checked := False;
+  FHBShareConsentChk.Visible := False;
+  FHBShareConsentChk.Font.Size := 8;
+  FHBShareConsentChk.Hint :=
+    '默认不勾。勾选后本条经验经脱敏推送到 Difference Commons 公共库（PG），' +
+    '其他客户端的 Ghosts 才能命中；不勾仅保存在本机。';
+  FHBShareConsentChk.ShowHint := True;
+
   FHBFullscreenBtn := TSpeedButton.Create(FHBDeckPanel);
   FHBFullscreenBtn.Parent := FHBDeckPanel;
   FHBFullscreenBtn.Align := alLeft;
@@ -1565,11 +1626,7 @@ begin
   begin
     FLastGateCsId := LCsId;
     FLastGateRationale := LRationale;
-    if FHBExtractBtn <> nil then
-    begin
-      FHBExtractBtn.Visible := True;
-      FHBExtractBtn.Enabled := True;
-    end;
+    SetHbExtractControlsVisible(True);
     UpdateHbDeckStatus(Format('[Commit Gate ACCEPTED] ChangeSet %s committed across boundary [🚩 存为避坑经验]', [LCsId]));
     if FProjectService <> nil then
       FController.OpenAndScan(FProjectService.ProjectPath);
@@ -1597,11 +1654,7 @@ begin
   begin
     FLastGateCsId := LCsId;
     FLastGateRationale := LRationale;
-    if FHBExtractBtn <> nil then
-    begin
-      FHBExtractBtn.Visible := True;
-      FHBExtractBtn.Enabled := True;
-    end;
+    SetHbExtractControlsVisible(True);
     UpdateHbDeckStatus(Format('[Reject Gate RECORDED] ChangeSet %s rejected (Spec untouched) [🚩 存为避坑经验]', [LCsId]));
     if FProjectService <> nil then
     begin
@@ -1628,15 +1681,41 @@ begin
     Exit;
   end;
 
-  LLesson := FController.ExtractCommonsLesson(LCsId, FLastGateRationale);
+  LLesson := FController.ExtractCommonsLesson(LCsId, FLastGateRationale, GetHBShareConsent);
   if LLesson.Id <> '' then
   begin
     LYamlPath := TPath.Combine(FProjectService.AsWishPath, 'commons\' + LLesson.Id + '.yaml');
-    UpdateHbDeckStatus(Format('[Commons 🚩] Lesson %s drafted: %s', [LLesson.Id, LLesson.Title]));
+    if LLesson.PublishConsent then
+      UpdateHbDeckStatus(Format('[Commons 🚩] Lesson %s drafted: %s —— 已勾选，将经脱敏推送公共库',
+        [LLesson.Id, LLesson.Title]))
+    else
+      UpdateHbDeckStatus(Format('[Commons 🚩] Lesson %s drafted: %s —— 仅存本机，未推送公共库',
+        [LLesson.Id, LLesson.Title]));
     if TFile.Exists(LYamlPath) then
       // Open preview within shell host preview panel (OpenView, WO-0043 F-4)
       OpenView(TShellObjectRef.Make(LLesson.Id, 'yaml', LLesson.Title, LYamlPath));
   end;
+end;
+
+procedure TAsWishMainForm.SetHbExtractControlsVisible(const AVisible: Boolean);
+begin
+  if FHBExtractBtn <> nil then
+  begin
+    FHBExtractBtn.Visible := AVisible;
+    FHBExtractBtn.Enabled := AVisible;
+  end;
+  // A new gate decision starts a fresh opt-in decision, so a stale checkbox
+  // from the previous lesson must not silently carry consent forward.
+  if FHBShareConsentChk <> nil then
+  begin
+    FHBShareConsentChk.Visible := AVisible;
+    FHBShareConsentChk.Checked := False;
+  end;
+end;
+
+function TAsWishMainForm.GetHBShareConsent: Boolean;
+begin
+  Result := (FHBShareConsentChk <> nil) and FHBShareConsentChk.Checked;
 end;
 
 procedure TAsWishMainForm.TriggerExtractLesson;
@@ -1651,13 +1730,164 @@ begin
   SetStatusMessage(AMsg);
 end;
 
+procedure TAsWishMainForm.DrainCaptureWarnings(const ALog: TStringList);
+var
+  I: Integer;
+begin
+  if (ALog = nil) or (FCaptureWarnings = nil) then
+    Exit;
+  for I := 0 to FCaptureWarnings.Count - 1 do
+    ALog.Add('       ' + FCaptureWarnings[I]);
+  FCaptureWarnings.Clear;
+end;
+
+function TAsWishMainForm.CaptureBrowserToStream(ABrowser: TEdgeBrowser;
+  AStream: TMemoryStream): Boolean;
+var
+  LStart: UInt64;
+begin
+  Result := False;
+  FCaptureDone := False;
+  FCaptureResult := E_FAIL;
+  ABrowser.OnCapturePreviewCompleted := BrowserCapturePreviewCompleted;
+  try
+    ABrowser.CapturePreview(AStream, TCustomEdgeBrowser.TPreviewFormat.PNG);
+  except
+    on E: Exception do
+    begin
+      FCaptureDone := False;
+      if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
+      FCaptureWarnings.Add(Format('[CAPTURE-WARN] CapturePreview(stream) raised %s: %s',
+        [E.ClassName, E.Message]));
+      Exit;
+    end;
+  end;
+
+  // Measured 7-9s per capture here. Never free the stream before the callback
+  // fires: the adapter holds this object and the browser process writes into
+  // it from its own RPC thread.
+  LStart := GetTickCount64;
+  while not FCaptureDone and (GetTickCount64 - LStart < 30000) do
+  begin
+    Application.ProcessMessages;
+    Sleep(20);
+  end;
+  ABrowser.OnCapturePreviewCompleted := nil;
+  Result := FCaptureDone and (FCaptureResult = S_OK) and (AStream.Size > 0);
+end;
+
+function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
+var
+  X, Y: Integer;
+  LSeen: TStringList;
+  LC: TColor;
+begin
+  LSeen := TStringList.Create;
+  try
+    LSeen.Sorted := True;
+    LSeen.Duplicates := TDuplicates.dupIgnore;
+    for Y := 0 to ABmp.Height - 1 do
+      for X := 0 to ABmp.Width - 1 do
+      begin
+        LC := ABmp.Canvas.Pixels[X, Y];
+        LSeen.Add(Format('%.6x', [ColorToRGB(LC)]));
+      end;
+    Result := LSeen.Count;
+  finally
+    LSeen.Free;
+  end;
+end;
+
+function TAsWishMainForm.CaptureControlBitmap(AControl: TWinControl;
+  ABmp: Vcl.Graphics.TBitmap): Boolean;
+var
+  Ldc: HDC;
+  LDiag: string;
+begin
+  Result := False;
+  if (AControl = nil) or (not AControl.HandleAllocated) then
+    Exit;
+  ABmp.PixelFormat := pf32bit;
+  ABmp.SetSize(AControl.Width, AControl.Height);
+  ABmp.Canvas.Brush.Color := clBtnFace;
+  ABmp.Canvas.FillRect(Rect(0, 0, ABmp.Width, ABmp.Height));
+  if FCaptureWarnings = nil then
+    FCaptureWarnings := TStringList.Create;
+  // PrintWindow(hWnd, dc, 0) returns TRUE yet paints a uniformly clBtnFace
+  // bitmap for a VCL TCheckBox, so read what is actually on the screen. This
+  // requires the control to be on screen and unoccluded.
+  if not AControl.Visible then
+    Exit;
+  Ldc := GetWindowDC(AControl.Handle);
+  if Ldc = 0 then
+  begin
+    FCaptureWarnings.Add(Format('[CAPTURE-WARN] GetWindowDC(%s) failed, err=%d',
+      [AControl.ClassName, GetLastError]));
+    Exit;
+  end;
+  try
+    if not BitBlt(ABmp.Canvas.Handle, 0, 0, AControl.Width, AControl.Height,
+      Ldc, 0, 0, SRCCOPY) then
+    begin
+      FCaptureWarnings.Add(Format('[CAPTURE-WARN] BitBlt(%s) failed, err=%d',
+        [AControl.ClassName, GetLastError]));
+      Exit;
+    end;
+  finally
+    ReleaseDC(AControl.Handle, Ldc);
+  end;
+  // A capture that is a single uniform colour carries no information about the
+  // control's state, so it must never pass as visual evidence.
+  LDiag := Format('%s at (%d,%d,%d,%d) formVisible=%s windowState=%d ' +
+    'isWindowVisible=%s isIconic=%s distinctColors=%d',
+    [AControl.ClassName, AControl.Left, AControl.Top, AControl.Width,
+     AControl.Height, BoolToStr(Visible, True), Ord(WindowState),
+     BoolToStr(IsWindowVisible(Handle), True),
+     BoolToStr(IsIconic(Handle), True),
+     BitmapDistinctColors(ABmp)]);
+  if BitmapDistinctColors(ABmp) <= 1 then
+  begin
+    FCaptureWarnings.Add('[CAPTURE-WARN] ' + LDiag +
+      '; no visual evidence emitted');
+    Exit;
+  end;
+  FCaptureWarnings.Add('[CAPTURE-DIAG] ' + LDiag);
+  Result := True;
+end;
+
+procedure TAsWishMainForm.SaveControlImage(AControl: TWinControl; const AFilePath: string);
+var
+  LBmp: Vcl.Graphics.TBitmap;
+  LPng: TPngImage;
+begin
+  if (AControl = nil) or (not AControl.HandleAllocated) then
+    Exit;
+  LBmp := Vcl.Graphics.TBitmap.Create;
+  try
+    if not CaptureControlBitmap(AControl, LBmp) then
+      Exit;
+    TDirectory.CreateDirectory(TPath.GetDirectoryName(AFilePath));
+    // TBitmap.SaveToFile always writes a BMP regardless of the file name, so
+    // route through TPngImage to keep the .png evidence extension honest.
+    LPng := TPngImage.Create;
+    try
+      LPng.Assign(LBmp);
+      LPng.SaveToFile(AFilePath);
+    finally
+      LPng.Free;
+    end;
+  finally
+    LBmp.Free;
+  end;
+end;
+
 procedure TAsWishMainForm.SaveWindowScreenshot(const AFilePath: string);
 var
   LBmp: Vcl.Graphics.TBitmap;
   LPng, LBrowserPng: TPngImage;
   LBrowser: TEdgeBrowser;
   LTempPng, LScript, LCmd, LRepoRoot: string;
-  LStart: UInt64;
+  LStream: TMemoryStream;
   LRect: TRect;
   LComposited: Boolean;
 begin
@@ -1679,36 +1909,54 @@ begin
       LBrowser := TEdgeBrowser(CurrentMainControl);
       if LBrowser.WebViewCreated then
       begin
-        LTempPng := TPath.Combine(TPath.GetTempPath,
-          Format('aswish-preview-%d-%d.png', [GetCurrentProcessId, GetTickCount64]));
-        FCaptureDone := False;
-        FCaptureResult := E_FAIL;
-        LBrowser.OnCapturePreviewCompleted := BrowserCapturePreviewCompleted;
-        LBrowser.CapturePreview(LTempPng, TCustomEdgeBrowser.TPreviewFormat.PNG);
-
-        LStart := GetTickCount64;
-        while not FCaptureDone and (GetTickCount64 - LStart < 4000) do
+        // Vcl.Edge's file-based CapturePreview goes through SHCreateStreamOnFile
+        // with STGM_READWRITE and no share mode, so WebView2 holds an exclusive
+        // handle on the PNG long past the completion callback: reads failed with
+        // a sharing violation and the temp file could never be reclaimed. The
+        // TStream overload writes straight into memory, with no file handle.
+        FreeAndNil(FPendingStream);
+        LStream := TMemoryStream.Create;
+        FPendingStream := LStream;
+        if not CaptureBrowserToStream(LBrowser, LStream) then
         begin
-          Application.ProcessMessages;
-          Sleep(20);
+          // WebView2 rejects a capture issued while the page is still settling
+          // (every observed failure followed a navigation). One bounded retry
+          // recovers those without extending the fast-fail path.
+          Sleep(800);
+          LStream.Size := 0;
+          if not CaptureBrowserToStream(LBrowser, LStream) then
+          begin
+            if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
+            FCaptureWarnings.Add(Format('[CAPTURE-WARN] browser capture did not complete ' +
+              '(result=$%.8x, size=%d); browser region covered by the HTML ' +
+              'render fallback', [FCaptureResult, LStream.Size]));
+          end;
         end;
 
-        if FCaptureDone and (FCaptureResult = S_OK) and TFile.Exists(LTempPng) then
+        if FCaptureDone and (LStream.Size > 0) then
         begin
           try
+            LStream.Position := 0;
             LBrowserPng := TPngImage.Create;
             try
-              LBrowserPng.LoadFromFile(LTempPng);
+              LBrowserPng.LoadFromStream(LStream);
               LBmp.Canvas.StretchDraw(LRect, LBrowserPng);
               LComposited := True;
             finally
               LBrowserPng.Free;
             end;
-          finally
-            try TFile.Delete(LTempPng); except end;
+          except
+            on E: Exception do
+            begin
+              if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
+              FCaptureWarnings.Add(Format('[CAPTURE-WARN] browser capture unreadable: %s: %s',
+                [E.ClassName, E.Message]));
+            end;
           end;
         end;
-        LBrowser.OnCapturePreviewCompleted := nil;
+
+        if FCaptureDone then
+          FreeAndNil(FPendingStream);
       end;
     end;
 
@@ -1756,6 +2004,9 @@ var
   LRepoRoot, LEvidenceDir, LShotDir, LLogFile: string;
   LDiffPath, LDecPath: string;
   LDec1, LDec2, LEvolveId, LDomText: string;
+  LCommonsDir, LCommonsYaml: string;
+  LFiles: TArray<string>;
+  LAct: THbChoiceAction;
   LNewBaseline: TAsWishBaseline;
 begin
   LRepoRoot := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)), '..'));
@@ -1774,6 +2025,22 @@ begin
       LLog.Add('Timestamp: ' + FormatDateTime('yyyy-mm-dd hh:nn:ss', Now));
       LLog.Add(Format('Process ID: %d | Window Handle: %d', [GetCurrentProcessId, Handle]));
       LLog.Add('Window Caption: ' + Caption);
+      // AfterShellShown runs from DoShow, which VCL raises while the handle is
+      // being created, i.e. before Application.Run ever calls ShowWindow. The
+      // VCL Visible property is already True by then, so TWinControl.Show is a
+      // no-op; only the raw Win32 call puts the window on the screen. Without
+      // WS_VISIBLE every screen-pixel capture (PrintWindow, GetWindowDC+
+      // BitBlt) silently yields a blank image.
+      if not IsWindowVisible(Handle) then
+      begin
+        ShowWindow(Handle, SW_SHOW);
+        Update;
+        Application.ProcessMessages;
+      end;
+      LLog.Add('Form On Screen: ' + BoolToStr(IsWindowVisible(Handle), True));
+      if not IsWindowVisible(Handle) then
+        raise Exception.Create('gui-verify precondition failed: main form is ' +
+          'not on screen (IsWindowVisible=False); screen captures would be blank');
       LLog.Add('Project Path: ' + AProjectPath);
       if CurrentMainControl <> nil then
       begin
@@ -1796,10 +2063,11 @@ begin
       Application.ProcessMessages;
       WaitForBrowserReady('AsWish', 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-01-project-open.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 1: OpenAndScan executed in GUI.');
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-01-project-open.png');
       LLog.Add('       [DOM-ASSERT] index.html rendered in WebView2, DOM excerpt: ' +
-        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 120));
+        Copy(DomExcerptForLog(LDomText), 1, 120));
 
       // Step 2: Navigate to structural difference view
       SetStatusMessage('GUI Step 2: Navigating to difference view...');
@@ -1811,11 +2079,12 @@ begin
       Application.ProcessMessages;
       WaitForBrowserReady('21', 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-02-difference-view.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 2: Difference view loaded. Path: ' + LDiffPath);
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-02-difference-view.png');
       LLog.Add('       [DOM-ASSERT] difference.html rendered, difference count verified in DOM: 21 items');
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
-        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
+        Copy(DomExcerptForLog(LDomText), 1, 160));
 
       // Step 3: Trigger Unacceptable judgment via GUI Controller channel
       SetStatusMessage('GUI Step 3: Triggering Unacceptable judgment...');
@@ -1827,11 +2096,12 @@ begin
       Application.ProcessMessages;
       WaitForBrowserReady(LDec1, 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-03-judge-unacceptable.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 3: Recorded Unacceptable decision %s in GUI.', [LDec1]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-03-judge-unacceptable.png');
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec1]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
-        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
+        Copy(DomExcerptForLog(LDomText), 1, 160));
 
       // Step 4: Trigger Acceptable judgment via GUI Controller channel
       SetStatusMessage('GUI Step 4: Triggering Acceptable judgment...');
@@ -1842,11 +2112,12 @@ begin
       Application.ProcessMessages;
       WaitForBrowserReady(LDec2, 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-04-judge-acceptable.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 4: Recorded Acceptable decision %s in GUI.', [LDec2]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-04-judge-acceptable.png');
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec2]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
-        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
+        Copy(DomExcerptForLog(LDomText), 1, 160));
 
       // Step 5: Trigger Evolve Baseline via GUI Controller channel
       SetStatusMessage('GUI Step 5: Triggering Baseline Evolution...');
@@ -1858,12 +2129,13 @@ begin
       Application.ProcessMessages;
       WaitForBrowserReady(LEvolveId, 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-05-evolve-baseline.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 5: Evolved new baseline %s (parent: %s) in GUI.',
         [LEvolveId, LNewBaseline.Lineage.ParentBaselineId]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-05-evolve-baseline.png');
       LLog.Add(Format('       [DOM-ASSERT] difference.html rendered for evolved baseline %s (0 differences) in DOM', [LEvolveId]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
-        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 160));
+        Copy(DomExcerptForLog(LDomText), 1, 160));
 
       // Step 6: Verify updated decisions history page
       SetStatusMessage('GUI Step 6: Viewing updated decisions history...');
@@ -1873,11 +2145,12 @@ begin
       Application.ProcessMessages;
       WaitForBrowserReady('dec-0004', 2000, LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-06-decisions-history.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 6: Decisions history displayed in GUI.');
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-06-decisions-history.png');
       LLog.Add('       [DOM-ASSERT] decisions.html rendered, contains full history dec-0001..dec-0004 in DOM');
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
-        Copy(LDomText.Replace(#13, ' ').Replace(#10, ' ').Replace('"', '"'), 1, 220));
+        Copy(DomExcerptForLog(LDomText), 1, 220));
 
       // Step 7: Verify D-1 Inspector Sidebar Dialog (WO-0044)
       SetStatusMessage('GUI Step 7: Verifying D-1 Inspector Sidebar Dialog...');
@@ -1902,6 +2175,7 @@ begin
       Update;
       Application.ProcessMessages;
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-07-inspector-dialog.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 7: D-1 Inspector Sidebar verified. ChangeSet: %s submitted via SSOT.', [LSubmittedCs]));
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-07-inspector-dialog.png');
 
@@ -1925,6 +2199,7 @@ begin
       Update;
       Application.ProcessMessages;
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-08-ghosts-hints.png'));
+      DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 8: D-2 Ghosts context chips (matching, narrative badges, dismiss) verified.');
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-08-ghosts-hints.png');
 
@@ -1937,12 +2212,88 @@ begin
       Update;
       Application.ProcessMessages;
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-09-immersive-review.png'));
+      DrainCaptureWarnings(LLog);
 
       ToggleFullscreenReview;
       if not LeftPanel.Visible then
         raise Exception.Create('D-3 assertion failed: Restoring review must restore left panel');
       LLog.Add('[PASS] Step 9: D-3 Immersive review surface (F11 toggle, panel hide/restore) verified.');
       LLog.Add('       Screenshot: WO/evidence/screenshots/gui-09-immersive-review.png');
+
+      // Step 9.5: Verify WO-20260924-0049 P-4 share-to-hub consent (HB Deck)
+      SetStatusMessage('GUI Step 9.5: Verifying Commons share-to-hub consent...');
+      if HBShareConsent then
+        raise Exception.Create('P-4 assertion failed: consent checkbox must default to unchecked');
+      // Drive the real keyboard "9" path (free-input override) so the deck
+      // holds a live ChangeSet; automation supplies the text instead of the
+      // modal InputQuery used by TriggerHbOverride.
+      LAct := THbChoiceAction.Create(cakFreeInput, 9,
+        'Automated intent: preserve provenance instead of physical delete', 0,
+        cisKeyboard, eokAlternativeExpression, esHuman, eipProvide);
+      FHBBinding.ProcessHbAction(LAct);
+      if FHBBinding.LastChangeSetId = '' then
+        raise Exception.Create('P-4 assertion failed: free-input override must hand a ChangeSet to the deck');
+      TriggerHbReject;
+      if not HBExtractBtn.Visible then
+        raise Exception.Create('P-4 assertion failed: extract button must surface after a gate rejection');
+      if not FHBShareConsentChk.Visible then
+        raise Exception.Create('P-4 assertion failed: consent checkbox must surface with the extract button');
+      if FHBShareConsentChk.Checked then
+        raise Exception.Create('P-4 assertion failed: consent checkbox must stay unchecked until the human opts in');
+      // A stale opt-in from the previous lesson must never carry forward silently.
+      FHBShareConsentChk.Checked := True;
+      SetHbExtractControlsVisible(True);
+      if FHBShareConsentChk.Checked then
+        raise Exception.Create('P-4 assertion failed: a new gate decision must reset stale consent');
+      Update;
+      Application.ProcessMessages;
+      LLog.Add(Format('       [STATE] consent checkbox Checked=%s, Visible=%s',
+        [BoolToStr(FHBShareConsentChk.Checked, True), BoolToStr(FHBShareConsentChk.Visible, True)]));
+      SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-10-consent-unchecked.png'));
+      SaveControlImage(FHBShareConsentChk,
+        TPath.Combine(LShotDir, 'gui-10-consent-checkbox.png'));
+      DrainCaptureWarnings(LLog);
+      LLog.Add('[PASS] Step 9.5a: Share-to-hub consent defaults unchecked and never carries stale opt-in forward.');
+      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-10-consent-unchecked.png');
+      LLog.Add('       Control capture: WO/evidence/screenshots/gui-10-consent-checkbox.png');
+
+      // Opt-in path: extraction must persist publish_consent and report the share status.
+      FHBShareConsentChk.Checked := True;
+      TriggerHbExtractLesson;
+      LCommonsDir := TPath.Combine(FProjectService.AsWishPath, 'commons');
+      LFiles := TDirectory.GetFiles(LCommonsDir, 'lesson-*.yaml');
+      if Length(LFiles) = 0 then
+        raise Exception.Create('P-4 assertion failed: opted-in extraction must write a lesson draft');
+      LCommonsYaml := TFile.ReadAllText(LFiles[High(LFiles)], TEncoding.UTF8);
+      if not LCommonsYaml.Contains('publish_consent: true') then
+        raise Exception.Create('P-4 assertion failed: opted-in lesson must persist publish_consent: true');
+      if Pos('已勾选', FHBDeckStatusLabel.Caption) <= 0 then
+        raise Exception.Create('P-4 assertion failed: status line must report the granted share consent');
+      LLog.Add(Format('       [STATE] consent checkbox Checked=%s before opt-in screenshot',
+        [BoolToStr(FHBShareConsentChk.Checked, True)]));
+      Update;
+      Application.ProcessMessages;
+      SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-11-consent-checked.png'));
+      SaveControlImage(FHBShareConsentChk,
+        TPath.Combine(LShotDir, 'gui-11-consent-checkbox.png'));
+      DrainCaptureWarnings(LLog);
+      LLog.Add('[PASS] Step 9.5b: Opted-in extraction persists publish_consent: true and reports the share status.');
+      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-11-consent-checked.png');
+      LLog.Add('       Control capture: WO/evidence/screenshots/gui-11-consent-checkbox.png');
+
+      // Opt-out path: same lesson re-extracted without consent must not publish.
+      FHBShareConsentChk.Checked := False;
+      TriggerHbExtractLesson;
+      LFiles := TDirectory.GetFiles(LCommonsDir, 'lesson-*.yaml');
+      if Length(LFiles) = 0 then
+        raise Exception.Create('P-4 assertion failed: opted-out extraction must still write a local draft');
+      LCommonsYaml := TFile.ReadAllText(LFiles[High(LFiles)], TEncoding.UTF8);
+      if LCommonsYaml.Contains('publish_consent: true') then
+        raise Exception.Create('P-4 assertion failed: opted-out lesson must not publish');
+      if Pos('仅存本机', FHBDeckStatusLabel.Caption) <= 0 then
+        raise Exception.Create('P-4 assertion failed: status line must report local-only storage');
+      LLog.Add('[PASS] Step 9.5c: Opted-out extraction stays local-only; no publish_consent on disk.');
+      LLog.Add('       Lesson draft: ' + LFiles[High(LFiles)]);
 
       // Step 10: Verify disk artifacts
       LLog.Add('------------------------------------------------------------');
@@ -1965,6 +2316,17 @@ begin
     except
       on E: Exception do
       begin
+        // A silent non-zero exit makes every failure look identical and costs
+        // an operator a full re-run to localise; persist the reason instead.
+        LLog.Add('============================================================');
+        LLog.Add('[FAILED] ' + E.ClassName + ': ' + E.Message);
+        LLog.Add('GUI Verification Exit Code: 1');
+        try
+          TDirectory.CreateDirectory(TPath.GetDirectoryName(LLogFile));
+          LLog.SaveToFile(LLogFile, TEncoding.UTF8);
+        except
+        end;
+        WriteLn(ErrOutput, '[GUI-VERIFY FAILED] ' + E.ClassName + ': ' + E.Message);
         System.ExitCode := 1;
         Winapi.Windows.ExitProcess(1);
       end;
