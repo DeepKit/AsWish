@@ -36,8 +36,17 @@ type
     FEvidenceList: TList<TSpecEvidence>;
     FProjectRootPath: string;
     FUsedIds: TDictionary<string, Integer>;
+    FUsedEvidenceIds: TDictionary<string, Integer>;
+    FEvidenceIdCollisions: Integer;
     function MakeSlug(const ATitle: string): string;
     function UniqueId(const ABaseId: string): string;
+    /// <summary>Allocate an evidence id that is unique across the whole list.
+    ///  The base id encodes the file and its line range, so the common case
+    ///  (one file split into per-section evidence) is distinguishable by
+    ///  construction. Two entries that still collide fall back to a numeric
+    ///  suffix and are counted, because a collision means the caller asked for
+    ///  the same file+range twice with different content.</summary>
+    function UniqueEvidenceId(const APathSlug, ALines: string): string;
     procedure EnhanceFromDelphi(AScan: TAsWishScanService);
     /// <summary>Extract H1/H2 headings from docs markdown files into
     ///  function-tree children under the stub root.</summary>
@@ -53,13 +62,22 @@ type
     procedure BuildFromScan(AScan: TAsWishScanService;
       const AProjectName, AProjectRootPath: string);
     function FindNodeById(const ANodeId: string): TSpecNode;
-    function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
+    function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence; overload;
+    /// <summary>Same as the single-argument overload, but the caller already
+    ///  knows which line range the evidence covers. The range must be passed in
+    ///  rather than assigned afterwards, because the id is derived from it.</summary>
+    function MakeEvidenceForFile(const ARelPath: string;
+      const ALines: string): TSpecEvidence; overload;
     property ProjectRootPath: string read FProjectRootPath write FProjectRootPath;
     property FunctionNodes: TList<TSpecNode> read FFunctionNodes;
     property ModuleNodes: TList<TSpecNode> read FModuleNodes;
     property ViewNodes: TList<TSpecNode> read FViewNodes;
     property DataNodes: TList<TSpecNode> read FDataNodes;
     property EvidenceList: TList<TSpecEvidence> read FEvidenceList;
+    /// <summary>How many times two evidence entries asked for the same
+    ///  file+range. Zero means every id is unique by construction. A non-zero
+    ///  value is reported by the scan rather than silently absorbed.</summary>
+    property EvidenceIdCollisions: Integer read FEvidenceIdCollisions;
   end;
 
 implementation
@@ -84,6 +102,8 @@ begin
   FDataNodes := TList<TSpecNode>.Create;
   FEvidenceList := TList<TSpecEvidence>.Create;
   FUsedIds := TDictionary<string, Integer>.Create;
+  FUsedEvidenceIds := TDictionary<string, Integer>.Create;
+  FEvidenceIdCollisions := 0;
 end;
 
 destructor TAsWishTreeBuilder.Destroy;
@@ -94,6 +114,7 @@ begin
   FDataNodes.Free;
   FEvidenceList.Free;
   FUsedIds.Free;
+  FUsedEvidenceIds.Free;
   inherited;
 end;
 
@@ -152,7 +173,35 @@ begin
   end;
 end;
 
+function TAsWishTreeBuilder.UniqueEvidenceId(const APathSlug, ALines: string): string;
+var
+  LBase: string;
+  LExisting: Integer;
+begin
+  LBase := 'ev-' + APathSlug;
+  if ALines <> '' then
+    LBase := LBase + '-' + StringReplace(ALines, '-', '_', [rfReplaceAll]);
+
+  if not FUsedEvidenceIds.TryGetValue(LBase, LExisting) then
+  begin
+    Result := LBase;
+    FUsedEvidenceIds.Add(LBase, 0);
+  end
+  else
+  begin
+    Inc(FEvidenceIdCollisions);
+    Result := LBase + '-' + IntToStr(LExisting + 1);
+    FUsedEvidenceIds[LBase] := LExisting + 1;
+  end;
+end;
+
 function TAsWishTreeBuilder.MakeEvidenceForFile(const ARelPath: string): TSpecEvidence;
+begin
+  Result := MakeEvidenceForFile(ARelPath, '');
+end;
+
+function TAsWishTreeBuilder.MakeEvidenceForFile(const ARelPath: string;
+  const ALines: string): TSpecEvidence;
 var
   LAbsPath: string;
   LLines: TArray<string>;
@@ -161,10 +210,10 @@ var
   I: Integer;
 begin
   Result := Default(TSpecEvidence);
-  Result.Id := 'ev-' + MakeSlug(ARelPath);
   Result.SourceLayer := slParsedFromA;
   Result.Path := ARelPath;
-  Result.Lines := '';
+  // ALines (a section range) wins over the whole-file default computed below.
+  Result.Lines := ALines;
   Result.Excerpt := '';
   Result.ExcerptTruncated := False;
   Result.Confidence := clHigh;
@@ -187,7 +236,8 @@ begin
       LLineCount := Length(LLines);
       if LLineCount > 0 then
       begin
-        Result.Lines := Format('1-%d', [LLineCount]);
+        if ALines = '' then
+          Result.Lines := Format('1-%d', [LLineCount]);
         LFirstLine := '';
         for I := 0 to High(LLines) do
         begin
@@ -229,6 +279,10 @@ begin
 
   if Result.Excerpt <> '' then
     Result.ContentHash := TSpecHash.Sha256Hex(Result.Excerpt);
+
+  // The id must be derived from the final line range: deriving it up front is
+  // what let 91 per-section entries of one file share a single id.
+  Result.Id := UniqueEvidenceId(MakeSlug(ARelPath), Result.Lines);
 end;
 
 function TAsWishTreeBuilder.FindNodeById(const ANodeId: string): TSpecNode;
@@ -253,6 +307,8 @@ begin
   FDataNodes.Clear;
   FEvidenceList.Clear;
   FUsedIds.Clear;
+  FUsedEvidenceIds.Clear;
+  FEvidenceIdCollisions := 0;
   FProjectRootPath := AProjectRootPath;
 
   // ============ Function Tree: stub root + doc-derived placeholders ============
@@ -550,8 +606,8 @@ begin
           end;
           if LEndLine < LStartLine then LEndLine := LStartLine;
 
-          var LEv := MakeEvidenceForFile(LFile);
-          LEv.Lines := Format('%d-%d', [LStartLine, LEndLine]);
+          var LEv := MakeEvidenceForFile(LFile,
+            Format('%d-%d', [LStartLine, LEndLine]));
           LEv.Excerpt := LTrimmed;
           LEv.ExcerptTruncated := Length(LTrimmed) > 200;
           if Length(LTrimmed) > 200 then
@@ -837,9 +893,10 @@ begin
             end;
           end;
 
-          var LEv := MakeEvidenceForFile(LFile);
+          var LClassLines := '';
           if LClassStart > 1 then
-            LEv.Lines := Format('%d-%d', [LClassStart, LClassEnd]);
+            LClassLines := Format('%d-%d', [LClassStart, LClassEnd]);
+          var LEv := MakeEvidenceForFile(LFile, LClassLines);
           LEv.Excerpt := LClassExcerpt;
           LEv.ContentHash := TSpecHash.Sha256Hex(LEv.Excerpt);
           FEvidenceList.Add(LEv);

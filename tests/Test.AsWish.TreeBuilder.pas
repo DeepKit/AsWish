@@ -12,6 +12,7 @@ interface
 uses
   System.SysUtils,
   System.IOUtils,
+  System.Generics.Collections,
   DUnitX.TestFramework,
   AsWish.Models,
   AsWish.Services.Scan,
@@ -30,7 +31,11 @@ type
     [Test]
     procedure MakeEvidenceForFile_CalculatesHash_Lines_And_Excerpt;
     [Test]
+    procedure MakeEvidenceForFile_SectionRanges_ProduceDistinctIds;
+    [Test]
     procedure BuildFromScan_PopulatesEvidenceWithNonEmptyHashAndLines;
+    [Test]
+    procedure BuildFromScan_EvidenceIds_AreUniqueAcrossWholeList;
   end;
 
 implementation
@@ -185,7 +190,9 @@ begin
     LBuilder.ProjectRootPath := LDir;
     LEv := LBuilder.MakeEvidenceForFile('SampleOrder.pas');
 
-    Assert.AreEqual('ev-sampleorder-pas', LEv.Id);
+    Assert.AreEqual('ev-sampleorder-pas-1_7', LEv.Id,
+      'Whole-file evidence must carry its line range in the id, otherwise ' +
+      'per-section entries of the same file collide');
     Assert.IsNotEmpty(LEv.SourceFileHash, 'SourceFileHash must not be empty');
     Assert.AreEqual<Integer>(64, Length(LEv.SourceFileHash), 'SourceFileHash must be 64-char sha256');
     Assert.AreEqual('1-7', LEv.Lines, 'Lines must match file line count 1-N');
@@ -195,6 +202,110 @@ begin
     Assert.AreEqual<Integer>(64, Length(LEv.ContentHash), 'ContentHash must be 64-char sha256');
   finally
     LBuilder.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.MakeEvidenceForFile_SectionRanges_ProduceDistinctIds;
+var
+  LDir: string;
+  LBuilder: TAsWishTreeBuilder;
+  LEvA, LEvB, LEvC: TSpecEvidence;
+begin
+  LDir := NewTreeBuilderTempDir;
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    TFile.WriteAllText(TPath.Combine(LDir, 'corpus.txt'),
+      StringOfChar('#', 1) + ' heading one' + sLineBreak +
+      'body' + sLineBreak +
+      '## heading two' + sLineBreak +
+      'body' + sLineBreak, TEncoding.UTF8);
+
+    LBuilder.ProjectRootPath := LDir;
+    LEvA := LBuilder.MakeEvidenceForFile('corpus.txt', '1-2');
+    LEvB := LBuilder.MakeEvidenceForFile('corpus.txt', '3-4');
+
+    // Same file, different section: the ids must differ, because these are two
+    // distinct claims about where different content lives.
+    Assert.AreNotEqual(LEvA.Id, LEvB.Id,
+      'Two sections of one file must not share an evidence id');
+    Assert.AreEqual('1-2', LEvA.Lines);
+    Assert.AreEqual('3-4', LEvB.Lines);
+    Assert.IsTrue(LEvA.Id.Contains('1_2'), 'Id must encode its range: ' + LEvA.Id);
+    Assert.IsTrue(LEvB.Id.Contains('3_4'), 'Id must encode its range: ' + LEvB.Id);
+
+    // The same range asked for twice is a genuine collision and must still
+    // yield distinct ids rather than silently collapsing.
+    LEvC := LBuilder.MakeEvidenceForFile('corpus.txt', '1-2');
+    Assert.AreNotEqual(LEvA.Id, LEvC.Id,
+      'Repeated file+range must not collapse into one id');
+    Assert.AreEqual(1, LBuilder.EvidenceIdCollisions,
+      'A repeated file+range must be counted, not silently absorbed');
+  finally
+    LBuilder.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.BuildFromScan_EvidenceIds_AreUniqueAcrossWholeList;
+var
+  LDir: string;
+  LScan: TAsWishScanService;
+  LBuilder: TAsWishTreeBuilder;
+  LSeen: TDictionary<string, Integer>;
+  LEv: TSpecEvidence;
+begin
+  LDir := NewTreeBuilderTempDir;
+  LScan := TAsWishScanService.Create;
+  LBuilder := TAsWishTreeBuilder.Create;
+  LSeen := TDictionary<string, Integer>.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    TDirectory.CreateDirectory(TPath.Combine(LDir, 'docs'));
+
+    // One doc whose headings all cite the same file is the shape that used to
+    // collapse N evidence entries onto a single id.
+    TFile.WriteAllText(TPath.Combine(LDir, 'docs\corpus.md'),
+      '# Alpha' + sLineBreak + 'a' + sLineBreak +
+      '## Beta' + sLineBreak + 'b' + sLineBreak +
+      '## Gamma' + sLineBreak + 'c' + sLineBreak +
+      '# Delta' + sLineBreak + 'd' + sLineBreak, TEncoding.UTF8);
+
+    TFile.WriteAllText(TPath.Combine(LDir, 'App.pas'),
+      'unit App;' + sLineBreak +
+      'interface' + sLineBreak +
+      'type' + sLineBreak +
+      '  TAppEntity = class' + sLineBreak +
+      '  published' + sLineBreak +
+      '    Title: string;' + sLineBreak +
+      '  end;' + sLineBreak +
+      'implementation' + sLineBreak +
+      'end.' + sLineBreak, TEncoding.UTF8);
+
+    LScan.ScanDirectory(LDir);
+    LBuilder.BuildFromScan(LScan, 'DemoProject', LDir);
+
+    Assert.IsTrue(LBuilder.EvidenceList.Count >= 4,
+      'This fixture must produce at least 4 evidence entries');
+
+    for LEv in LBuilder.EvidenceList do
+    begin
+      Assert.IsFalse(LSeen.ContainsKey(LEv.Id),
+        Format('Duplicate evidence id "%s" (path %s, lines %s): a ref cannot ' +
+          'be resolved to one entry unambiguously',
+          [LEv.Id, LEv.Path, LEv.Lines]));
+      LSeen.Add(LEv.Id, 0);
+    end;
+
+    Assert.AreEqual(LBuilder.EvidenceList.Count, LSeen.Count,
+      'Distinct ids must equal entry count: every entry must be reachable');
+  finally
+    LSeen.Free;
+    LBuilder.Free;
+    LScan.Free;
     if TDirectory.Exists(LDir) then
       TDirectory.Delete(LDir, True);
   end;

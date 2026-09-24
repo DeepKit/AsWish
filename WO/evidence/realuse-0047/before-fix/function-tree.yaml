@@ -1,0 +1,5834 @@
+﻿version: "1.0"
+tree: function
+generated_at: "2026-09-24T16:29:22+08:00"
+generator: "aswish-treebuilder"
+
+nodes:
+  - id: "func-deepaxis"
+    tree: function
+    title: "DeepAxis"
+    kind: capability
+    parent_id: null
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "0f865be677b6ab61629b82bdcdcc19d75c6b7afc3718795cb4f480a9a5089a8b"
+    relation_hash: "0b60732f22cb4929e5d875b75df42ab970a261afeec2e4e78e1a60067c8ce50a"
+    revision: 1
+    summary: "Project root capability (stub - run LLM generation for semantic content)"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    fog_state: unknown_unknowns
+    source_layer: ai_inferred
+    source_refs: []
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-deepaxis-bug"
+    tree: function
+    title: "DeepAxis Bug 修复记录"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "40658ca11cb90c22b8e41f0ff9a22bd49ba1bddf894ae123d7a2fdf566ee1b30"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-09-22-bug-062-da132-live"
+    tree: function
+    title: "2026-09-22 — BUG-062: 测试数据门闸落空占位库，DA132 四组 Live* 断言恒败"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "06fb161e2b554a72a944eba2d51ef3da68775a25233c04162ba168fae90afe4e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-09-21-bug-063-readallmessages-floor"
+    tree: function
+    title: "2026-09-21 — BUG-063: `ReadAllMessages` 单值游标按表取 floor 的隐性漏扫（DA-151 交付）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "ac172ef12d03aa2301522a6644d43999c0308bdd8eacd648e12229dca23b666e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-09-21-bug-061-v2-rva-0x54595d0"
+    tree: function
+    title: "2026-09-21 — BUG-061: v2 页解密 RVA `0x54595D0` 版本归属未标注，跨版本误用风险"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "9a13de82048147542f3bbb773a729533d891ba14811c5c6ab98718b483de096a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-18-bug-053-057-hook-5-93a-93b"
+    tree: function
+    title: "2026-08-18 — BUG-053~057: Hook 密钥抓取链 5 连修 (#93a/#93b)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7509dad8064eaef1e90a1c3859eecec2daf909e31fb2f72b5bc5fa5ed1422785"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-07-bug-052-2-runtime-217"
+    tree: function
+    title: "2026-08-07 — BUG-052: 微信进程误检 + 按钮2重启微信 + 关闭 Runtime 217"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "3ad97f6b951e8e14f3fd82356978bb521483ce4fb6030b34f1f4aafe319e52ca"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-bug-051-body-zero-p0c"
+    tree: function
+    title: "2026-08-06 — BUG-051: 功能实现核查 — 存储层/审计/body-zero 三大 P0c 门禁缺口"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "4017f5342ca9f71c1c727bb3654563600535d38cabfa64f271fe7bde1ee46816"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-bug-050-vcl-autofix-halt"
+    tree: function
+    title: "2026-08-06 — BUG-050: 启动卡死/退出 (VCL 句柄时序 + AutoFix Halt) 根治"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "c06a762fcdd9b99043f62d656e01ec6a6d5587d523fa1cf305d58a2ff1b20929"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-03-bug-048-tlogger-api-mainform"
+    tree: function
+    title: "2026-08-03 — BUG-048: 全量编译损坏 (TLogger 幻影 API + MainForm 结构损坏)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fc399c8454784142ba5838e7b4ba7427e37295ada450d024a817d51181dcf498"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-01-p0"
+    tree: function
+    title: "2026-08-01 — P0 架构反模式发现与整改"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "24d0a8c4fd3f03cf831b92d7d2d8139479f335b919590f4a79bf7f92bdffb59d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-16-bug-043-no-parent-window-v3"
+    tree: function
+    title: "2026-07-16 — BUG-043 启动崩溃 'no parent window' (三版演进，✅ v3 根治)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "9d98efe3a31d6e53a46b625f0ce460f1bf492080c8e008c54a35b8e124e8328d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-8-ui-bug-038-040"
+    tree: function
+    title: "2026-07-08 — 阶段8 标签建议 UI 开发期修复 (BUG-038~040)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "08045084fa50ea3dcfb7a79922eaa5288bdcb26ea1afd64b6feaef111181ce1b"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-bug-035-037"
+    tree: function
+    title: "2026-07-08 — 发送双模式/标签矩阵/闲人漏斗开发期修复 (BUG-035~037)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7c51dbb7854dc229684ff1ebee8cbd426adc2fb059600dc67f7e31a830d6a715"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-bug-032-034"
+    tree: function
+    title: "2026-07-08 — 联系人分级系统开发期修复 (BUG-032~034)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "6288401270c84cab621f373403403aca3766fef19e037e1da2ba7ab986d889ab"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-bug-028-031"
+    tree: function
+    title: "2026-07-08 — 配置向导 / 雷达面板审阅问题修复 (BUG-028~031)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "9be37d373100a4f3521083d924e048f88e7fd0779dbede27ed17e11fe2536305"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-07"
+    tree: function
+    title: "2026-07-07 — 配置向导 + 空状态引导 + 雷达面板增强 (审阅发现)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "902a8d9692f9b3e9cd83f9eced8d418616f32ef4bfc05bfb1724400d3eaf7947"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-04-wcdb"
+    tree: function
+    title: "2026-07-04 — WCDB 消息读取链路"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "4a4093224a6009747ec3326ea93633f67ab72aa2aef6f1f2de897715e0840399"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-04-wcdb-1"
+    tree: function
+    title: "2026-07-04 — WCDB 消息读取链路"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "a3e8517cd3eef20504b468be41c02ed73443fbe0a0b13d298fd41b156b23a4b6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-04-uia"
+    tree: function
+    title: "2026-07-04 — UIA 引擎升级"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "a8f9c9e6a9186621cb5ae5e80ec2fd49878b0238c0112ac3da14b536ef66ae34"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-04"
+    tree: function
+    title: "2026-07-04 — 五专家审阅发现"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7c90e9710988159e89143efba6c2a19004c9ee6047e6a6d8768b8fd1051dcdf1"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-bug-2026-06-20"
+    tree: function
+    title: "历史 Bug (2026-06-20 及之前)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fd3576ca372669312ca7bc6c998e8010302c8a6046ffbb019fb724b7a57f4c25"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from bugfix.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-bugfix-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-axis"
+    tree: function
+    title: "Axis 开发会话交接文档"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "bc33b9ca9f4036fbea592fa398166b024198c548496a6ad19a773a54901292cd"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from handoff.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-handoff-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-1"
+    tree: function
+    title: "1. 最近完成的工作"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "a28632adbce0f1d7122bf6b984f6c0ec8805a98a0e7c775829bc0e6785f86310"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from handoff.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-handoff-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2"
+    tree: function
+    title: "2. 当前阻塞与风险"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "2508d5b921464fcc8b7232da56d5dfd9ffcc6e8f9da6ea117f7c5dab58299fa2"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from handoff.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-handoff-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-3"
+    tree: function
+    title: "3. 下一步计划"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "77bf35cdef9fb8c9c18c4767f37a0c7616d43c411b56b3433015a3389501221b"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from handoff.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-handoff-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-4"
+    tree: function
+    title: "4. 关键指令"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "286a097e0312528eceefe007541a8f714777d0e960a0bfaec4040fd8c89e713a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from handoff.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-handoff-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5"
+    tree: function
+    title: "5. 相关文件"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "b6900a12ae24e7876e67347a189ff183070e7c430ceedb2cf16bef34afec4992"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from handoff.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-handoff-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-deepaxis"
+    tree: function
+    title: "DeepAxis 已完成任务"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "79b9b43e42c821822618d666d529323a3ce03405a002844d7068123b9af9c572"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-19-a-b"
+    tree: function
+    title: "2026-08-19 — 实施顺序调整：单机 A/B 先行"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7110d5af558968985feab58dcb10a9ce53457f29ac98cd6f90d9d863ceebbf4a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-18-v2-93a-93b"
+    tree: function
+    title: "2026-08-18 — 密钥获取工具链 v2 就绪并实机验证 (#93a/#93b)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "e66d4766b21f0080e1486ca2e7813e5fb4f6a6fc2c64c20483044d6ae5511eed"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-09-bug-052"
+    tree: function
+    title: "2026-08-09 — BUG-052 实机修复 + 多模型密钥架构方案定稿"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "eefa67c2db457625782402c28ea99ad46b6196d3b63eaef26d6a44020c724067"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-p2-i18n-tagprofile-db1store"
+    tree: function
+    title: "2026-08-06 — P2 阶段演进: i18n + 阈值参数化确认 + TagProfile DB1Store"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "9256a7fe28e0325526991f45b960686d29058d9ad3da5ad7f3038376a54da32a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-85-90-bug-051-p1"
+    tree: function
+    title: "2026-08-06 — #85-#90: 功能闭环缺口全部补齐 (BUG-051 P1)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "1e477ce9a8422344949aa32ed66d8d9ad2127aaee0dddfa045e12c0c985cdfa6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-83-84-bug-051-p0c"
+    tree: function
+    title: "2026-08-06 — #83/#84: 审计日志实现 + 证据哈希合规 (BUG-051 P0c 补齐)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "2282a2c066298fa5e30325f5402b011b9f97f45c53bd9729f94d929dc56b082f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-81-82-body-zero-bug-051"
+    tree: function
+    title: "2026-08-06 — #81/#82: 存储层真相 + body-zero 审计器接线 (BUG-051)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "f3f65bb727694dfb651a75875c3d29db33fcc4b17dfa6cb1e31b753c98569a2c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-06-bug-048-050"
+    tree: function
+    title: "2026-08-06 — BUG-048/050 根治 + 功能实现全面核查"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "d3bbeb5cd517535590a9b5fd9d3ab55777154c414778f60a76dbe8636d6e9d07"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-03-p0-phase-3-tagprofile-bug-044"
+    tree: function
+    title: "2026-08-03 — P0 Phase 3: TagProfile 参数化落地 (BUG-044 收尾) + 编译修复"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "3140840e1097fbff5b027dc7ab262c096e57c4c8fd5115d6c9c4d11989f4de75"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-01-deepbase-p0"
+    tree: function
+    title: "2026-08-01 — DeepBase 集成深度审计与 P0 架构反模式发现"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "92372cee785293ba88288fcc00c04af3d4f598ffb175c31f9b5a9c6c0a82a685"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-25-deepbase-phase-1-2a-2b"
+    tree: function
+    title: "2026-07-25 — DeepBase 深度集成 Phase 1+2a+2b 全面完成 ✅"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "3d601dd89e386e77046c6233e5ab9ab9fdf530f94915c1339dfc8d7683a411df"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-16-bug-043"
+    tree: function
+    title: "2026-07-16 — BUG-043 启动崩溃三版演进至根治"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "6c6ec0dfc0b4b4958019da65942a12fe4b4ff083aad1d7fa6b8789a48529b905"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-8-ui-tasks-68-69"
+    tree: function
+    title: "2026-07-08 — 阶段 8 标签建议 UI (Tasks #68-#69)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "53fa66393a80e3d757ae421f3eeceb91301591a16de3ad56e287dc31f10a5b6c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-9-76-77-deletecontact"
+    tree: function
+    title: "2026-07-08 — 阶段 9 #76/#77: DeleteContact 降级 + 广告观测列"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7535abccac6adbad06fd5ecea2456f27cd3dae1ca3353dbbb8abcdfb83627ac4"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-9-75-l2a-updateremark"
+    tree: function
+    title: "2026-07-08 — 阶段 9 #75: L2a UpdateRemark 写回链路 (标签建议执行)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "89c19bbca79537c698f76f98d79a503da824af7e8a79a621302569d94c5d437a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-9-74-onadsent-ad-count-db1-ov"
+    tree: function
+    title: "2026-07-08 — 阶段 9 #74: OnAdSent ad_count 持久化 (本地 DB1 overlay)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "254ae586edf69376ffb6674420228974634d33a8654fb58104cf47f2e2069c3f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-07-08-9-73-sendresultpoller-getter"
+    tree: function
+    title: "2026-07-08 — 阶段 9 #73: SendResultPoller 真实 getter 接入"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "e9241be424052698e9f5d781e53e19e008843c84368b720542d15abe27ac4346"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from history.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-history-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-deepaxis-1"
+    tree: function
+    title: "DeepAxis / 序枢"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "e2343b83d1b319618d16c93a32aa1163f5800fefb1d2492278403d38ef977730"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from README.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-readme-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed"
+    tree: function
+    title: "当前状态"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "47ff9e7418b114f8098fa4c52ead8e2ad81de5daf6fd55c932e9e4fe877f1721"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from README.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-readme-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-19"
+    tree: function
+    title: "当前产品架构（2026-08-19）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "73724e66e763faba4a692e3ab178ebd23a4eba09d3aefa0ea6eb7bca0d0098b6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from README.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-readme-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-1"
+    tree: function
+    title: "文档"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "a36fd0e332ba0e5e5feef14b7f9b2c6ebc343ace5d13b142c3cb108610f427f3"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from README.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-readme-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-2"
+    tree: function
+    title: "理论基础"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "3f46d62d4adeea8a02e1f989eb924c2ece770481e608125fea53a1e3efa66d00"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from README.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-readme-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2026-08-20"
+    tree: function
+    title: "唤金四版本产品矩阵（2026-08-20）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "9264909de9ef964c3a8f3a5cf582be5d1c969f643cb8c3e6d4e65b13b3e12686"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from README.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-readme-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-deepaxis-2"
+    tree: function
+    title: "DeepAxis 开发任务"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "85f603c5c02219c0f78b78dc396dc5078d479809cd30239b335aa40dd2fb49c9"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-1-2026-08-19"
+    tree: function
+    title: "1. 老板已裁定的当前实施口径（2026-08-19）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "d8628b2f2112dd3d9ce6d3df92ea717edcfe4309f2ed14e80b721d8acb179a07"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2-1"
+    tree: function
+    title: "2. 当前真实状态"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fa91bdd7b50062193dfeff692d351608000c29e61848035938a346501cc690e1"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-3-1"
+    tree: function
+    title: "3. 当前开发主线"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "044b5e56ab11bed4dcc9c345fc91458e545c40a84f390018842375ddde4d3696"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-4-1"
+    tree: function
+    title: "4. 明确不做"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "690451e43ae8001c68616ad2a62cbcb919f1ad961fc5ff919b23a145dcdf2187"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5-da-097-a-b"
+    tree: function
+    title: "5. 最新大工单：DA-097 单机 A/B 密钥数据库闭环"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "16f08815b565e815dba75bf0321f0e1127db706749a7970818a6f12c41405e34"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-6-history-md"
+    tree: function
+    title: "6. 已完成里程碑（详见 history.md）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "17b59aeb4770da8cc345851a63ee97aa900e901db4edf4200299041ffb1a4af0"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-7-da-101-2026-08-19"
+    tree: function
+    title: "7. DA-101：插件架构、价值计费与用户分销（2026-08-19 新增）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "cf5e99f119426236e1a3db189419311af2fde69a1b43b329f9363688039d1a21"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-8-da-103-2026-08-19"
+    tree: function
+    title: "8. DA-103：基础版权益、消费分佣与自销售闭环（2026-08-19）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "6ba22a0c8223964e46a331a778477a3b71a195aad226b1cdb1706a062585c32f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-9-da-105-2026-08-20"
+    tree: function
+    title: "9. DA-105：唤金商业能力技术架构（2026-08-20）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "f0b7b2733c921696c38fdf000e9510f232194bec799eba258c770f99d4cdb229"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-10-da-107-2026-08-20"
+    tree: function
+    title: "10. DA-107：四版本与优先实现（2026-08-20老板同意）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "dcb1f1da1cf987e7a07779b6ef1a576e4eeb3eb318042abd3640a3d50fbd32e9"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-hb-20260824-p0-deepbase-vcl-hb-hb-v1-0"
+    tree: function
+    title: "[HB-20260824] 换脸计划 P0 旗舰（依赖 DeepBase.VCL.HB.* hb-v1.0，主干合入当天启动）"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "4a6753af9506914ea3a710e9c58827006d519b2d7974a0fe40ad83850c717edb"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from tasks.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-tasks-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-context-pack"
+    tree: function
+    title: "Context Pack"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fdbd95abae0c6fe7595aa059702b5df1b2cd46cf9c8ba5839bce62943f3a05ef"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-1-project"
+    tree: function
+    title: "1. Project"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "61a07ca47e16358a0a43f30bb7f83e11851a5b8709a8c4151b8d45a080fe19b4"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2-file-statistics"
+    tree: function
+    title: "2. File Statistics"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fbcb3046b81084e5b73db6a3b2ffa3984dd73cfeda62da063b98204a3d2f8ea4"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-3-key-documents"
+    tree: function
+    title: "3. Key Documents"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "ffd9a6072c9edbb644755bbc5e03d7bb615c6a5aab3d79b46d74eb50efb5426e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-4-ai-rules-files"
+    tree: function
+    title: "4. AI Rules Files"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "b30b4060df35ba62d63957ffb702abd611b9390d9e799319d0e0495d035b038b"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5-code-structure-sample"
+    tree: function
+    title: "5. Code Structure (sample)"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "e105d6acc063aca55b52c637d71442260a41dc8ac874561f089d443bee22cee8"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-6-task"
+    tree: function
+    title: "6. Task"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "34fc49878ea6e658c9469c8e1e08a257dc2e30f3cde0c583c03a5356b548cf55"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-7-constraints"
+    tree: function
+    title: "7. Constraints"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "0e6ac54dc61b6586a4e50bd76616c2e6a8abc91fae14aab9dfa110a9901d281f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-8-output-format"
+    tree: function
+    title: "8. Output Format"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "31bdba45794b4c92c347a884029403a675a7f9b33c441cb12b1c2c344c7b056e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-file-trees-function-tree-yaml"
+    tree: function
+    title: "file: trees/function-tree.yaml"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "2e8507c2768159238e9d7473788c27c102c8cc3d1ce1e2805f335284d99e89ff"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-file-trees-module-tree-yaml"
+    tree: function
+    title: "file: trees/module-tree.yaml"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "1e22410e06611f3750ad8c5cd462c49d82194d71cdc60b6d374709c17a7d36b1"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/context-pack.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-context-pack-md"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-a-b-generation-prompt"
+    tree: function
+    title: "A → B Generation Prompt"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "3e1af111922ef1506fbc314db3b843cf8f6479744778ddc1fa95a084f20d4817"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/doc-optimization-prompt.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-doc-optimization-prompt"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-process"
+    tree: function
+    title: "Process"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "bb338b7bf27ac08698f8ad3b217f4dd27f28408a61afeb8325cee62f7d6bb13f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/doc-optimization-prompt.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-doc-optimization-prompt"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-output-files"
+    tree: function
+    title: "Output Files"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "15a4ac6c05c28a09213be313523164eeb322d184f50a65412d018471a7babd92"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/doc-optimization-prompt.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-doc-optimization-prompt"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-quality-bar"
+    tree: function
+    title: "Quality Bar"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7f81f28140e81df27737c2bdd4b78adec08bead30bfccf671ac5539265c3d380"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .deepspec/prompts/doc-optimization-prompt.md"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-deepspec-prompts-doc-optimization-prompt"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-3"
+    tree: function
+    title: "为什么做微信流"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "f30777c43ee5664f8e82858e83e0d032e6e0d37336e9ec3efca687810ad4141d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-4"
+    tree: function
+    title: "核心能力"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "b1e2600c6be464db7d43e9822b457170cd3fd37bb44c3150e7dcad00f82bc5cd"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-5"
+    tree: function
+    title: "实际效果"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "e1fd207de2d0f9a7619f30b69b38a593be898de920a8fbc513a765d19c4124fe"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-6"
+    tree: function
+    title: "隐私设计"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fa1f2717b700348d24eb91b6dfe2429a9984c7dd1877b385840b877a4f0edd39"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-7"
+    tree: function
+    title: "系统要求"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "34ae6737971de5376c1e110d51c968f9155504724b9fb9f35a75d2f08b6634b6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-8"
+    tree: function
+    title: "下载安装"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "abb730ffea2be6bb20308851d17b3711bc11cefbc42d41be4cc17e32bb729397"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-9"
+    tree: function
+    title: "从源码构建"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "24cbb405b99b0c495db559ba06beaaea298cb085907f5648a21128f3c8f5dd90"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-10"
+    tree: function
+    title: "项目结构"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "dd5a23acceffeb07ea4a3a43bc7dffef910f059c88fb8a1b113b8aacd8bcb643"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-11"
+    tree: function
+    title: "开发与验证"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "b4c21b26b9e4db4a9867e236d3679ce2836224da9caf52a2d7fe4d7682c00be6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-12"
+    tree: function
+    title: "运行测试"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "0c532b56b4612ae8bd86078d8f78d17574f23abb754738f4344daf4d47145e92"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-13"
+    tree: function
+    title: "校验中英文资源"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "d39502fda824f0ad0f8d705b98e899b29269473bab777a6a7b0b4ee12cd711a1"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-bundle-id-app-group"
+    tree: function
+    title: "检查签名、Bundle ID、App Group 与发布配置"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "68c736f1fcf47790c95041b3c9ea5800d46915e8664a1b4228fd120883c3984c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-14"
+    tree: function
+    title: "构建、安装并打开开发版本"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "8f77018558c32190aeff3cce52165a3276d97ff1a82e7743f4a4e3e1082409fb"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-15"
+    tree: function
+    title: "参与贡献"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "0950d276361730315200fd64f9b9bd9d63edd54831db22eb61218a17349135ba"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-16"
+    tree: function
+    title: "路线图"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "804ec7b4809161c0557452c843aafd135886501fdc1c19389a32a8fd1c176722"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-17"
+    tree: function
+    title: "交流群"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "ec9fc958b8760e1d9bb4aa2a162f5769a6e2256f760cdb7473d5dc3ebf69eb5a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-18"
+    tree: function
+    title: "关于我们"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "188fb7e16447674a36a289f848891455755d17c49a1fae74697968b205cced62"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-19"
+    tree: function
+    title: "许可证"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "0d0ac85239727107e728f06ea72cb4b60bc38484517a837c768445d766899034"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-20"
+    tree: function
+    title: "致谢"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "42e99bb8bf2e69c15d433d0abdb972f8827258288d4747752a25ce01584c915a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-wechatbridge"
+    tree: function
+    title: "微信流（WeChatBridge）产品能力文档"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "d8a2dd361ec5599c178b05cffa74246b8d28838266541cd412279a62f5de197e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-1-1"
+    tree: function
+    title: "1. 产品定义"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "8b8299c687f88e8f0764994dfdaa6ce3f65bb3bc2876a5636c399a6911fb2997"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2-2"
+    tree: function
+    title: "2. 核心能力总览"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "c55761431801cf49eb2d165eb8c296e3f3c4f1b657f0e9b1f31d33161e5eff8c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-3-2"
+    tree: function
+    title: "3. 微信分享入口"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "523584cd30c6ce9ba428d0436c6f5c363273385523a1e3d30018a5037c20b8f3"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-4-2"
+    tree: function
+    title: "4. 文件与批处理能力"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "69d1ea56fef5e4210673aa6c99e925156cb9ea03e56ac8ad1b57ea2f28cbbff7"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5-1"
+    tree: function
+    title: "5. 记录"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fc400c3b421bb624e0d736b4c1ffe886a84a1cedd0e3e51b64b9f704d6b1294c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-6"
+    tree: function
+    title: "6. 场景、技能与快捷键"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "057aff99cf1e8b2c98e7349d6d6f1d8f3f60f1d00eca1c68ecd4c22703ba3edd"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-7"
+    tree: function
+    title: "7. 设置与个性化"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "95480c5ac5c0c1cd73e80f92f73fbc42ccdfa09754281357f1706abcff7bfa5c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-8"
+    tree: function
+    title: "8. 权限与隐私边界"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "ae87ade2e149afb190b11974d82af338f70676fd627ad670b3c79fa860ae80f2"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-9"
+    tree: function
+    title: "9. 交付与更新能力"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "0451236f3b6c79431d95a27c34e93becb13ddc925982699a357231656c3739f0"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-10"
+    tree: function
+    title: "10. 已知限制"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "325137473601662db90752e8c66782140a88d02fe71e484400456fa81cf8e616"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-11"
+    tree: function
+    title: "11. 关键实现位置"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "fcaa560bcbccc3b0bde6e97b30c4132078ee8c1934d534af83e2ccbe959b9494"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/canary.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-canary"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-swift-toolchain-comes-from-xcode-whi"
+    tree: function
+    title: "The Swift toolchain comes from Xcode, which mise does not manage."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "ba9f02c853049168a2fc959972e8a2250a49c9a11682f53b55c59905dae77276"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-wechatbridge-1"
+    tree: function
+    title: "微信流（WeChatBridge）产品能力文档"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "2e0c82786124fab3d85348a71701b50c945ef4aae8ef9e6aee5dd4190826b0c7"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-1-2"
+    tree: function
+    title: "1. 产品定义"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "551414fb50106f4037b194d49fffe1ea4647ee5c0f30e2eafaae5a916238b400"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2-3"
+    tree: function
+    title: "2. 核心能力总览"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "88208976aa4f689163040efcf40743b2f0a911656cb87c9f95b08646af2ce9d2"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-3-3"
+    tree: function
+    title: "3. 微信分享入口"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "028ef949926b5ec26ad85014c40c039be6e817483209b759ac267ac4eb89cfc7"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-4-3"
+    tree: function
+    title: "4. 文件与批处理能力"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "879146ea7983051e09a7a4351bbfbeb960a7980ba23abd2c1c3c289fa1d51791"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5-2"
+    tree: function
+    title: "5. 记录"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "1e260bf0252af01c594b4277c4f48b57241c3d45e54a62ee479ab0970140f47a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-6-1"
+    tree: function
+    title: "6. 场景、技能与快捷键"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "a9402332ccd37215104ae9ea36687df9e38f54894d0f799e6a6eab08fca591f0"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-7-1"
+    tree: function
+    title: "7. 设置与个性化"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "9cea8dbba9996d08d9c84812a852d104dc64f1bbfc384fcf9f5d65fe1f74aec9"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-8-1"
+    tree: function
+    title: "8. 权限与隐私边界"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "7910bd7857150c50c75ad5071088b76eacbadc319125236e920fbc88e1799b98"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-9-1"
+    tree: function
+    title: "9. 交付与更新能力"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "72dc767f88bfb2682ad5606bcb3b8ef1d917979d2f4c429ce4a744d4d73fd5c8"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-10-1"
+    tree: function
+    title: "10. 已知限制"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "1a7508dd6c5b089a2a03f32b21e28005f272a18846596381c4c2513ff8bf4b94"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-11-1"
+    tree: function
+    title: "11. 关键实现位置"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "8bc0df33b5e741fc5eb315fe2f87e2e302206c17c6df77d145bc0bf72473d214"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-why-wechatbridge"
+    tree: function
+    title: "Why WeChatBridge"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "eeae3229895a755ff5e7a1f6d04df2420c504b70bece5958764b6b786b89395d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-highlights"
+    tree: function
+    title: "Highlights"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "2fd0c52dd851e28b1bc4c99ae19c85d16231cccb9d10482ae296821715d2fadd"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-in-action"
+    tree: function
+    title: "In action"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "99e5d02e1e2d8ceab36cccdb92e9308ef25c65eb51114e36503e40c399106ee2"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-privacy-by-design"
+    tree: function
+    title: "Privacy by design"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "d5c0e0853c185c3f3f2c0f420499d54da34881ef5ecf372315757fe4035dae41"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-requirements"
+    tree: function
+    title: "Requirements"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "93f2a4275eb83a13c8e1cd03f3a45ac1ecc4a786aca91ffa6c15e9d1376f28df"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-download"
+    tree: function
+    title: "Download"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "1d47f486e423ad84ee690d0438fe725d577d1cd0e1a6f0a6338b7d62ad43b559"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-build-from-source"
+    tree: function
+    title: "Build from source"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:13+08:00"
+    updated_at: "2026-09-24T16:29:13+08:00"
+    content_hash: "5cffc0cfac1d82059fedbead3c9e2fd9d1a6850ba679fdce1ec8e3adca803537"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-project-layout"
+    tree: function
+    title: "Project layout"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "b3a094839140f0bd9c3b02dd179ec5dc8e2ee274e3699143139817fbb2fbd1cc"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-development-checks"
+    tree: function
+    title: "Development checks"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "7d4c656d21047d9719285d21ebdf60a9b545cb8b86898808ad203c50ccd456de"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-run-tests"
+    tree: function
+    title: "Run tests"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "c6e1068bec36f449ba951563025d8029bb11727790c3f6e6cdce6d105e979542"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-validate-simplified-chinese-and-english"
+    tree: function
+    title: "Validate Simplified Chinese and English resources"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "ddced35cc000d6107390bcdb653cbfedec07017047bfb3a331ffec3e9960377d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-check-signing-metadata-bundle-identifier"
+    tree: function
+    title: "Check signing metadata, bundle identifiers, app group, and release configuration"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "e82d7ed8ad782777f5c1d65182154c4a7384e9522ffca5d76837dcee56591ef7"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-build-install-and-open-a-development-cop"
+    tree: function
+    title: "Build, install, and open a development copy"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "640284702419efa5ceedf71ff2da23666c3896451e75047f7259f488f05aa4ca"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-contributing"
+    tree: function
+    title: "Contributing"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "cec2fcb44ad35291a8468cc4bf4474d55017db2e49b8ef5464a937cb5a8593a5"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-roadmap"
+    tree: function
+    title: "Roadmap"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "2f9ed31d5fb4ce23a7dc3d6f639f0e25644c3fe565e4a7a3d5e006407037582a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-community-group"
+    tree: function
+    title: "Community Group"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "8cdd9c57022ea403612dc472384063056bac8e45e0395fb37169a70578f15ac7"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-about-us"
+    tree: function
+    title: "About Us"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "6b6563678fc22313d6a8ef9e1aac2f17906e607949a87e079a09eabe8497dfa4"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-license"
+    tree: function
+    title: "License"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "d16ad3ec4e194e4f89963a4a1cc88999cc5a85b7d27888b0d3b386188807d616"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-acknowledgements"
+    tree: function
+    title: "Acknowledgements"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "8b8502cf57520349f473a023cae7af9b518611a09ea1d3a74f3b5c163dbcac37"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-21"
+    tree: function
+    title: "为什么做微信流"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "5ccf0221a3d3d7a62a63737e7b14faa9c9ba108be26440351fac1776e1166f52"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-22"
+    tree: function
+    title: "核心能力"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "820b0385b323ddb67a38dc556e2585a7b67f99f4848e6bd733a2b023f8b26dc5"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-23"
+    tree: function
+    title: "实际效果"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "4a54bae5bc6ed44a501e629dab43af4e74c28ab7b4c9f1da438f31ae00ed5bb3"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-24"
+    tree: function
+    title: "隐私设计"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "f98ed8a50105be33143e9173f5173b1de287abe5d7710cf06a726dfacbfd12ba"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-25"
+    tree: function
+    title: "系统要求"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "1f87289ff9f0bee496a51ed3f52bc4c301935fb5e4ca0d466bcda3a5b93041fa"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-26"
+    tree: function
+    title: "下载安装"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "3a2969f9ed138d4bb74c5377c28c53b03e52b74983f8034b11a3481c99a95dae"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-27"
+    tree: function
+    title: "从源码构建"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "001e656b4bad441eb101b997db79cb1b94978fba4a7b777bb755ef253dc9c68e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-28"
+    tree: function
+    title: "项目结构"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "da8de2cceb7b4797cd8b7f138f245f78e738d0681e21819284f75fd17df6dadf"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-29"
+    tree: function
+    title: "开发与验证"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "051b677ce807a71315c212b42e1f0e8d8d5c257fb890e3704e2076155c312426"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-30"
+    tree: function
+    title: "运行测试"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "162c15bb78907484c178d1dfd86f5cb11bee1d33ecbb6907066ed4ac4f96cc4d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-31"
+    tree: function
+    title: "校验中英文资源"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "f67fea3eb4c44a24554184c0edb055f3b31a9cdf7b889d03b490c64bb6d13764"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-bundle-id-app-group-1"
+    tree: function
+    title: "检查签名、Bundle ID、App Group 与发布配置"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "5adfb803c5e39c4124ba9f5b6795cd34f4dc46cc256ca5eda7c471e888be8278"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-32"
+    tree: function
+    title: "构建、安装并打开开发版本"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "29322c6e9d2debb18f27d806cd357fb98a00a2166dae795e350f63e499b6e1d0"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-33"
+    tree: function
+    title: "参与贡献"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "157053daec3d6233d556db30842358051a88e84b39a27b22507e189caa52725f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-34"
+    tree: function
+    title: "路线图"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "dc223b6bb010133b5e16e867376bc9d5759ad5847c5743fe3969afadb9a1e12a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-35"
+    tree: function
+    title: "交流群"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "4494fbe73ad26d5b8095d5ef04d0e26710cc02398d69fd01813a9712bc34971f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-36"
+    tree: function
+    title: "关于我们"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "133c27881eea7d115bf70d09f2e929e77b68eee95cf073273a0bc0cc23073fd2"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-37"
+    tree: function
+    title: "许可证"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "cdd2b8c633316fea044a82cb3f5777bba48a13fa9c4646bf10fd647c6f23f8d0"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unnamed-38"
+    tree: function
+    title: "致谢"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "a78ad5795e7f4280c96d813adb6da95728d83b990d69c21dde2db8445d68fa2d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-fast-secret-free-checks-on-the-metadata"
+    tree: function
+    title: "Fast, secret-free checks on the metadata that ties the app, its extensions,"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "e3e8c624c89848b4c394f49ca7a4e7757fb44682225cbeab45bb5771598ad8e8"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-shared-container-and-the-sparkle-fee"
+    tree: function
+    title: "the shared container and the Sparkle feed together."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "ec895c97f151e10f068a8fe483e94f035181aa47640bf36911f8851b2adfe2b8"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-four-plists-have-to-agree-or-wechatb"
+    tree: function
+    title: "The four plists have to agree or WeChatBridge fails in the one way that produces no"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "bcf3a36d3452530ab1d6dec480ef1822d23c459404aa8d6c0ec04684535f11cc"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-error-anywhere-the-extension-writes-into"
+    tree: function
+    title: "error anywhere: the extension writes into a container the app cannot read, and"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "685c1453c3698e1226f1a8c2051c57db51d7a57d4dfee15f8dfc7fb651b5929b"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-every-share-silently-disappears-this-bel"
+    tree: function
+    title: "every share silently disappears. This belongs in normal CI; signing and"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "56baf21325bb8a3a58920bba49817bde35fc005775595ec19679a90b99b85c96"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-notarization-stay-explicit-release-opera"
+    tree: function
+    title: "notarization stay explicit release operations."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "6c73ca3ecad69f8948854e854f79a5199fb6332586ae31bb43513bea40f567cd"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-1-one-app-group-declared-in-four-places"
+    tree: function
+    title: "1. One app group, declared in four places."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "855d7fd950e4b69fe63540e510dd5acd8c3ca69a84119de6e288691019bf9b3d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-compiled-in-fallback-is-what-swift-r"
+    tree: function
+    title: "The compiled-in fallback is what `swift run` and the tests use. If it drifts"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "cca58414f0576e8c4d16d71de512fa7e481e82bcd2405283178a2eaabc95cfb8"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-from-the-shipped-value-a-development-bui"
+    tree: function
+    title: "from the shipped value, a development build quietly uses another container."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "b505b6abb7b49a8cf40fc578ed10746770dc881888517b24e9df77ccaf3d0f5d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2-every-share-menu-entry-a-unique-identi"
+    tree: function
+    title: "2. Every Share-menu entry: a unique identifier under the app's, a known"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "64d169da9af0eb6040199f11821754118cbf1ffc326acbf24d9b0764707cf6dd"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-action-and-a-localized-display-name-in-b"
+    tree: function
+    title: "action, and a localized display name in both languages. A slot that is"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "d63b86ae3286e41c867804d2609f85828d2d8437152f2ef52b830413f8e494e6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-declared-but-has-no-name-silently-ships"
+    tree: function
+    title: "declared but has no name silently ships an entry called \"WeChatBridgeShare\"."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "9b4c4def0fc6f1976dbeefb39fc39038f66f66fb61dc6410e90832624224839d"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-every-action-the-code-can-handle-should"
+    tree: function
+    title: "Every action the code can handle should be reachable from the Share menu; an"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "a3401fe158fbfeea5616a48cc01e260b0cf4d17893e107e656ba7716b4526e7e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-unreachable-one-is-either-dead-code-or-a"
+    tree: function
+    title: "unreachable one is either dead code or a slot someone forgot to add."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "407a45ced79b89caf6fc90d646a83743daa695eaac3753e753a73e390aeaeb7c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-2a-the-wechatbridge-scheme-the-app-route"
+    tree: function
+    title: "2a. The `wechatbridge://` scheme the app routes to a settings pane. Written for the"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "e581fdff06ac7e3617a948537ac2139a88e19e715348183b4b0ff4c903c3ec94"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-share-panel-which-is-gone-with-the-rest"
+    tree: function
+    title: "「发送到自定义」 share panel, which is gone with the rest of the extension's"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "e7698aaee0e66c49baedb2073f79417926353b3e09943bcbce460b4ab7f1c480"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-ui-the-scheme-stays-registered-and-this"
+    tree: function
+    title: "UI; the scheme stays registered and this keeps Info.plist and AppLink from"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "42de576d45f862842cbff92a0b34ed903974f7da1e9d682ad717d32aa4a7ac57"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-drifting-apart-because-an-unregistered-s"
+    tree: function
+    title: "drifting apart, because an unregistered scheme fails by doing nothing at"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "e3dfafd9b1a10cce420da1d84c189b366a6b5bfe9554f1c1603ce17b29c1b8c6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-all-no-app-answers-and-nothing-says-why"
+    tree: function
+    title: "all — no app answers and nothing says why."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "dc7058461de482ca8088807f275b0c25f50a9f2ce10b388fcb60ba2c877bd38c"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-3-extension-point-and-principal-class-bo"
+    tree: function
+    title: "3. Extension point and principal class, both of which fail silently when wrong:"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "a4513dac05e678a7f47e5be24704a9591a56666eb7c784dd66cd519adeef7968"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-extension-simply-never-appears-in-th"
+    tree: function
+    title: "the extension simply never appears in the Share menu."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "46ae8c18054fd657a3474307ecc09a8d37707e2f99d0ee46b93d2d4421e558a5"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-4-truepredicate-is-a-development-only-ac"
+    tree: function
+    title: "4. TRUEPREDICATE is a development-only activation rule; Apple rejects a"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "1c76e0b3c26ad046e59aeca4558432e1eff028c5136854f6e2a54c0186f49601"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-submission-that-ships-one-and-it-would-o"
+    tree: function
+    title: "submission that ships one, and it would offer WeChatBridge for content it cannot"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "06c87b8eea03826c347ab87d9da0e3446b428a70cfe53acf5603766f5b0cef31"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-save"
+    tree: function
+    title: "save."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "7fcfed75ee13692aba4c8a03d1bef35dec9c4183e007d3ad13d9c8d0c74b09b3"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5-no-entitlement-wechatbridge-has-no-use"
+    tree: function
+    title: "5. No entitlement WeChatBridge has no use for. The extensions handle the user's"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "dbbeac4d9e870475031b690281da4377ebcfbdd86f963b571d0d5671d3d874da"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-files-and-must-not-be-able-to-send-them"
+    tree: function
+    title: "files and must not be able to send them anywhere; the app is not sandboxed,"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "eb9bdf911270b83467f450baf72210fa1e405143eae09ad8c292f54349d6fa7e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-so-this-keeps-its-file-free-of-anything"
+    tree: function
+    title: "so this keeps its file free of anything it does not need rather than"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "b5c48b23d661dea8f42649b2aa29e142c4df720d6b2d33b9d605bee71abc3d88"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-granting-or-denying-it-the-network-the-o"
+    tree: function
+    title: "granting or denying it the network — the one thing it uses the network"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "dcdfb67e87c536fb9286152cc1e870c906282ec03d519870d989608c59c60ba8"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-for-is-sparkle-checked-in-section-8"
+    tree: function
+    title: "for is Sparkle, checked in section 8."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "a19d115836688578dad3534fbd090f7e6c8f16fa3c5cc8869e6342e36f3bc5e6"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-5a-the-two-halves-sit-on-opposite-sides"
+    tree: function
+    title: "5a. The two halves sit on opposite sides of the sandbox, on purpose, and both"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "06caf72493bb81969d767e68ff13755aae0e34a5375b8c28f543e39936b1b74a"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-sides-are-load-bearing"
+    tree: function
+    title: "sides are load-bearing."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "05054ad3f493a845e57e9e9edc7bbb13de4ff281f19f6d5afbe89fdca8597247"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-app-must-not-be-sandboxed-the-pane-s"
+    tree: function
+    title: "The app must NOT be sandboxed: the 入口 pane switches Share-menu entries on"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "a95ebe1d1e391fc77d315eb9596f20038d34501ba19ce9616250dc3238500dce"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-and-off-with-pluginkit-e-use-ignore-and"
+    tree: function
+    title: "and off with `pluginkit -e use|ignore`, and pkd refuses a sandboxed client."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "26bafc342ad5d54e3c670b3fa3ed347f8c6c5fe8e4b6cf111f69574b1b3b3c26"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-measured-2026-09-05-on-the-signed-bundle"
+    tree: function
+    title: "Measured 2026-09-05 on the signed bundle: inside the sandbox every call —"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "d06774e43fc4ae50a409c8a8304aa36a0c83dc2339aa1e9d4dfcbf37580d897f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-m-included-exits-1-with-an-empty-stdout"
+    tree: function
+    title: "`-m` included — exits 1 with an empty stdout and `match: unauthorized"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "38904dbb1ac0691e3cdb5fe617bc3d1aa431f6af21233caedb816cb6297e76eb"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-discovery-flag-pkdiscoverall-without-the"
+    tree: function
+    title: "discovery flag (PKDiscoverAll)`; without the entitlement the same calls"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "ad0f87e14cd1ae66ebc4c180764d55227c24f727df8a82da0fdeccb9dc90f4ea"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-exit-0-and-print-re-adding-app-sandbox-h"
+    tree: function
+    title: "exit 0 and print `+`/`-`. Re-adding app-sandbox here silently turns that"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "42e306b924067baa741dda1afe54e57d879e83cf38fe3fa2852524c084092a5f"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-pane-back-into-nine-dead-switches"
+    tree: function
+    title: "pane back into nine dead switches."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "0f801d713dba72a92fc68d112018f0e7cd287c31c5012c45f49ef6b4918480eb"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-the-extensions-must-stay-sandboxed-they"
+    tree: function
+    title: "The extensions must stay sandboxed: they run inside another app's share"
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "f7727f529f7d602aa7696014b098b629d5c702272a99da7d88a5fbf8050d110e"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []
+  - id: "func-sheet-on-attachments-wechatbridge-did-no"
+    tree: function
+    title: "sheet on attachments WeChatBridge did not produce, and they never call pluginkit."
+    kind: feature
+    parent_id: "func-deepaxis"
+    created_at: "2026-09-24T16:29:14+08:00"
+    updated_at: "2026-09-24T16:29:14+08:00"
+    content_hash: "82940f5334aba6411e704fa364dda5018070c128b23c9f8eac076eac5faeb8bc"
+    relation_hash: "1335ca3d57df6f101d12dfbc42e16d30b2529bf7154bbabf9ad35565dc1a3867"
+    revision: 1
+    summary: "Requirement extracted from .flash-input/wechatbridge-reading/full-corpus.txt"
+    status: candidate
+    gen_status: generated
+    review_status: unreviewed
+    confidence: low
+    source_layer: parsed_from_a
+    source_refs:
+      - ref_id: "ev-flash-input-wechatbridge-reading-full-co"
+        relevance: primary
+    decision_refs: []
+    issue_refs: []
+    related_functions: []
+    related_modules: []
+    related_views: []
+    related_data: []
+    children: []
+    tags: []
+    acceptance_criteria: []
+    not_doing: []

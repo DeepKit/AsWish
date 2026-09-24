@@ -31,6 +31,7 @@ implementation
 uses
   System.IOUtils,
   System.DateUtils,
+  System.Math,
   AsWish.Hash;
 
 constructor TAsWishEvidenceCollectorService.Create(AStore: TAsWishStoreService;
@@ -136,6 +137,7 @@ var
   LExistingEvidence: TList<TSpecEvidence>;
   LExistingHashMap: TDictionary<string, string>; // Path -> SourceFileHash
   LEv: TSpecEvidence;
+  LDupSourceIds: TStringList;
   LUnresolvedCount: Integer;
   LTreeFiles: TArray<string>;
   LTreeFile: string;
@@ -192,8 +194,32 @@ begin
 
       if LSourceEvList <> nil then
       begin
-        for var LSev in LSourceEvList do
-          LSourceEvMap.AddOrSetValue(LSev.Id, LSev);
+        // A duplicate id means two different evidence entries claim the same
+        // identity, so which one a node's ref resolves to would be decided by
+        // list order rather than by content. That is a data defect, not a
+        // tie to break: refuse rather than pick one silently.
+        LDupSourceIds := TStringList.Create;
+        try
+          LDupSourceIds.Sorted := True;
+          LDupSourceIds.Duplicates := TDuplicates.dupIgnore;
+          for var LSev in LSourceEvList do
+            if LSev.Id <> '' then
+            begin
+              if LSourceEvMap.ContainsKey(LSev.Id) then
+                LDupSourceIds.Add(LSev.Id)
+              else
+                LSourceEvMap.Add(LSev.Id, LSev);
+            end;
+          if LDupSourceIds.Count > 0 then
+            raise Exception.Create(Format(
+              'source-evidence.yaml has %d duplicate evidence id(s); ' +
+              'refs cannot be resolved unambiguously. First offenders: %s',
+              [LDupSourceIds.Count,
+               string.Join(', ', Copy(LDupSourceIds.ToStringArray, 0,
+                 Min(5, LDupSourceIds.Count)))]));
+        finally
+          LDupSourceIds.Free;
+        end;
       end;
     finally
       LSourceEvList.Free;
