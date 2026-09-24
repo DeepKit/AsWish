@@ -1052,6 +1052,11 @@ begin
     LPrompts.WriteGenerationPrompt(LProject.ProjectName, LType);
 
     Writeln('[scan] done -> ' + LProject.AsWishPath + '\html\');
+    // The scan writes the spec state into the user's repository, which leaves
+    // their "git status" dirty. Say so instead of letting them discover it.
+    Writeln('[scan] note: derived output is gitignored; spec state ' +
+      '(trees/ evidence/ issues/ decisions/ relations/) is not. ' +
+      'Add ".AsWish/" to your .gitignore if you do not want it tracked.');
   finally
     LPrompts.Free;
     LRender.Free;

@@ -338,24 +338,37 @@ end;
 
 procedure TAsWishStoreService.WriteGitIgnore;
 begin
+  // Everything listed here is derived: re-running the scan regenerates all of
+  // it. Anything omitted stays behind as untracked noise in the scanned
+  // project's "git status" and is picked up by a plain "git add -A", so the
+  // list has to cover the generated state, not only the view layer.
+  //
+  // prompts/ is ignored as a directory rather than file-by-file: the old
+  // per-file list already missed prompts/optimization-prompt.md, which the
+  // "Export optimization prompt" action writes. llm/ stays file-by-file
+  // because llm/candidate-intent.yaml is captured human input, not output.
   var LContent :=
     '# AsWish generated artifacts (regenerable)' + sLineBreak +
+    '#' + sLineBreak +
+    '# The entries below are derived: re-running the scan rebuilds all of them, so' + sLineBreak +
+    '# they are ignored rather than tracked. What is deliberately NOT ignored is' + sLineBreak +
+    '# the spec state itself -- trees/, evidence/, issues/, decisions/, relations/' + sLineBreak +
+    '# and this file. Whether that belongs in version control is your call; if it' + sLineBreak +
+    '# does not, add ".AsWish/" to the repository root .gitignore.' + sLineBreak +
+    '' + sLineBreak +
     'html/' + sLineBreak +
+    'logs/' + sLineBreak +
+    'prompts/' + sLineBreak +
+    'snapshots/' + sLineBreak +
     'llm/candidate-output.yaml' + sLineBreak +
     'llm/last-run.yaml' + sLineBreak +
-    'logs/' + sLineBreak +
-    '' + sLineBreak +
-    '# Auto-generated prompt templates' + sLineBreak +
-    'prompts/context-pack.md' + sLineBreak +
-    'prompts/doc-optimization-prompt.md' + sLineBreak +
-    'prompts/node-prompt.md' + sLineBreak +
-    'prompts/grilling-ticket-*.md' + sLineBreak +
-    'prompts/agents-draft.md' + sLineBreak +
-    'prompts/claude-draft.md' + sLineBreak +
-    'prompts/cursor-rules-draft.md' + sLineBreak;
+    'scan-report.yaml' + sLineBreak +
+    'project-spec.yaml' + sLineBreak;
 
-  if not TFile.Exists(TPath.Combine(FBasePath, '.gitignore')) then
-    WriteYamlFile('.gitignore', LContent);
+  // Rewritten on every call rather than only when missing. The write-once
+  // guard meant a project scanned by an older build kept an outdated list
+  // forever, with nothing signalling that it had gone stale.
+  WriteYamlFile('.gitignore', LContent);
 end;
 
 procedure TAsWishStoreService.WriteTreeFile(const ARelPath: string;

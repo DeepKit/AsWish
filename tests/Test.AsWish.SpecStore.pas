@@ -30,6 +30,10 @@ type
     procedure Test_WriteTreeFile_CreatesSnapshotBackup;
     [Test]
     procedure Test_WriteDataTreeFile_RoundTrip;
+    [Test]
+    procedure Test_WriteGitIgnore_CoversRegenerableArtifacts;
+    [Test]
+    procedure Test_WriteGitIgnore_RefreshesStaleContent;
   end;
 
 implementation
@@ -225,7 +229,71 @@ begin
   end;
 end;
 
+procedure TTestAsWishSpecStore.Test_WriteGitIgnore_CoversRegenerableArtifacts;
+var
+  LDir, LPath, LContent: string;
+  LStore: TAsWishStoreService;
+begin
+  LDir := NewTempDir;
+  LStore := TAsWishStoreService.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    LStore.Initialize(LDir);
+    LStore.CreateDirectoryStructure;
+    LStore.WriteGitIgnore;
+
+    LPath := TPath.Combine(LDir, '.AsWish\.gitignore');
+    Assert.IsTrue(TFile.Exists(LPath), '.AsWish/.gitignore should be written');
+    LContent := TFile.ReadAllText(LPath, TEncoding.UTF8);
+
+    // Every artifact a scan regenerates from scratch must be ignored, or a
+    // plain "git add -A" in the scanned project commits generated churn.
+    Assert.IsTrue(LContent.Contains('snapshots/'),
+      'rolling .bak.yaml backups are regenerated on every scan');
+    Assert.IsTrue(LContent.Contains('scan-report.yaml'),
+      'scan-report.yaml is pure scan output');
+    Assert.IsTrue(LContent.Contains('project-spec.yaml'),
+      'project-spec.yaml is pure scan output');
+    Assert.IsTrue(LContent.Contains('html/'), 'html/ is a derived view');
+  finally
+    LStore.Free;
+    TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTestAsWishSpecStore.Test_WriteGitIgnore_RefreshesStaleContent;
+var
+  LDir, LPath, LContent: string;
+  LStore: TAsWishStoreService;
+begin
+  LDir := NewTempDir;
+  LStore := TAsWishStoreService.Create;
+  try
+    TDirectory.CreateDirectory(LDir);
+    LStore.Initialize(LDir);
+    LStore.CreateDirectoryStructure;
+
+    // A .gitignore written by an older build must be refreshed, otherwise a
+    // generated file silently stays stale for every existing project and the
+    // fix never reaches anyone who already ran the tool.
+    LPath := TPath.Combine(LDir, '.AsWish\.gitignore');
+    TFile.WriteAllText(LPath, '# stale' + sLineBreak + 'html/', TEncoding.UTF8);
+
+    LStore.WriteGitIgnore;
+    LContent := TFile.ReadAllText(LPath, TEncoding.UTF8);
+
+    Assert.IsTrue(LContent.Contains('snapshots/'),
+      'an existing .gitignore must be refreshed, not left stale');
+    Assert.IsFalse(LContent.Contains('# stale'),
+      'refreshing should replace the outdated content');
+  finally
+    LStore.Free;
+    TDirectory.Delete(LDir, True);
+  end;
+end;
+
 initialization
   TDUnitX.RegisterTestFixture(TTestAsWishSpecStore);
 
 end.
+
