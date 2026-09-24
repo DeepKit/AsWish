@@ -1078,6 +1078,12 @@ begin
         FTreeBuilder.DataNodes);
     FSpecStore.WriteEvidenceFile('evidence/source-evidence.yaml',
       FTreeBuilder.EvidenceList);
+    // The evidence catalog has to be rendered before the tree pages so the
+    // evidence ids they print resolve to a real anchor. RenderAll and
+    // RefreshFromYaml deliberately do not repeat this: they re-render from
+    // in-memory state, and the page written here stays on disk.
+    FRender.RenderEvidencePage(FTreeBuilder.EvidenceList,
+      FProjectService.ProjectName);
 
     // Step 6: Render HTML
     FStatus.Progress('scan', 'AsWish.Scan', 85, 'Rendering HTML...');

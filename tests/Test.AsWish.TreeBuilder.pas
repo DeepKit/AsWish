@@ -38,6 +38,8 @@ type
     procedure BuildFromScan_EvidenceIds_AreUniqueAcrossWholeList;
     [Test]
     procedure BuildFromScan_NonUtf8Docs_DoNotAbortScan;
+    [Test]
+    procedure BuildFromScan_DocDerivedNodes_AreAttachedToFunctionRoot;
   end;
 
 implementation
@@ -429,6 +431,60 @@ begin
 
     Assert.IsTrue(Length(LBuilder.NonUtf8Files) >= 1,
       'At least one file fell back to the system code page; that must be reported');
+  finally
+    LBuilder.Free;
+    LScan.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.BuildFromScan_DocDerivedNodes_AreAttachedToFunctionRoot;
+var
+  LDir, LRootId: string;
+  LScan: TAsWishScanService;
+  LBuilder: TAsWishTreeBuilder;
+  LFound, LAttached: Boolean;
+  LNode: TSpecNode;
+begin
+  // RenderTree recurses through Children, not ParentId, so a doc-derived node
+  // that is only listed with a parent_id never reaches function-tree.html --
+  // and neither does the evidence id it carries. BuildDocsFunctions collected
+  // the child ids and dropped them, orphaning every requirement extracted
+  // from a heading while the YAML still looked correct.
+  LDir := NewTreeBuilderTempDir;
+  LScan := TAsWishScanService.Create;
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    TDirectory.CreateDirectory(TPath.Combine(LDir, 'docs'));
+    TFile.WriteAllText(TPath.Combine(LDir, 'docs\req.md'),
+      '# Must record payments' + sLineBreak + 'Body text.', TEncoding.UTF8);
+
+    LScan.ScanDirectory(LDir);
+    LBuilder.BuildFromScan(LScan, 'DemoProject', LDir);
+
+    LRootId := '';
+    LFound := False;
+    for LNode in LBuilder.FunctionNodes do
+    begin
+      if LNode.Title = 'DemoProject' then
+        LRootId := LNode.Id;
+      if LNode.Title = 'Must record payments' then
+        LFound := True;
+    end;
+
+    Assert.IsTrue(LFound, 'the doc heading must become a function node');
+    Assert.IsNotEmpty(LRootId, 'the function root must exist');
+
+    LAttached := False;
+    for LNode in LBuilder.FunctionNodes do
+      if LNode.Id = LRootId then
+        for var LChild in LNode.Children do
+          if LChild.Contains('must-record-payments') then
+            LAttached := True;
+
+    Assert.IsTrue(LAttached,
+      'the function root must list the doc-derived child so it is rendered');
   finally
     LBuilder.Free;
     LScan.Free;

@@ -77,6 +77,11 @@ type
     procedure BuildFromScan(AScan: TAsWishScanService;
       const AProjectName, AProjectRootPath: string);
     function FindNodeById(const ANodeId: string): TSpecNode;
+    /// <summary>Fill in every node's Children from the ParentId recorded
+    ///  across the list, so Children and ParentId cannot disagree. RenderTree
+    ///  walks Children, so a node that only sets ParentId is invisible in the
+    ///  HTML pages even though it is persisted.</summary>
+    procedure LinkChildren(ANodes: TList<TSpecNode>);
     function MakeEvidenceForFile(const ARelPath: string): TSpecEvidence; overload;
     /// <summary>Same as the single-argument overload, but the caller already
     ///  knows which line range the evidence covers. The range must be passed in
@@ -390,7 +395,13 @@ begin
   var LRootSlug := MakeSlug(AProjectName);
   if LRootSlug = '' then LRootSlug := 'project';
 
-  var LFuncRoot := TSpecNode.MakeNew('func-' + LRootSlug, ttFunction,
+  // The root id must go through UniqueId so it is reserved before any child
+  // claims a slug. Building it by hand let a doc heading whose slug matches the
+  // project name take the very same id: RenderTree then resolved that id to the
+  // child instead of the root, and every sibling was orphaned out of the page
+  // (201 persisted function nodes, 1 rendered).
+  var LFuncRootId := UniqueId('func-' + LRootSlug);
+  var LFuncRoot := TSpecNode.MakeNew(LFuncRootId, ttFunction,
     AProjectName, 'capability');
   LFuncRoot.Summary := 'Project root capability (stub - run LLM generation for semantic content)';
   LFuncRoot.Status := nsCandidate;
@@ -407,7 +418,7 @@ begin
 
   // Doc-derived function nodes: H1/H2 headings from docs markdown become
   // capability/feature children, so the function tree is not just a stub.
-  BuildDocsFunctions(AScan, LFuncRoot.Id);
+  BuildDocsFunctions(AScan, LFuncRootId);
 
   // ============ Module Tree: hierarchical directory structure ============
   // Every directory that contains code files (plus all its ancestors)
@@ -430,7 +441,7 @@ begin
       end;
     end;
 
-    var LModRootId := 'mod-' + LRootSlug;
+    var LModRootId := UniqueId('mod-' + LRootSlug);
     var LModRoot := TSpecNode.MakeNew(LModRootId, ttModule,
       AProjectName + ' Modules', 'package');
     LModRoot.Summary := 'Module structure derived from directory layout';
@@ -533,7 +544,7 @@ begin
   var LUIFiles := AScan.GetFilesByCategory(fcUI);
   if Length(LUIFiles) > 0 then
   begin
-    var LViewRootId := 'view-' + LRootSlug;
+    var LViewRootId := UniqueId('view-' + LRootSlug);
     var LViewRoot := TSpecNode.MakeNew(LViewRootId, ttView,
       AProjectName + ' Views', 'application');
     LViewRoot.Summary := 'UI structure derived from UI files';
@@ -619,6 +630,12 @@ begin
   else
     BuildDataTreeFromGeneric(AScan, AProjectName);
 
+  // ============ Derive Children from ParentId ============
+  LinkChildren(FFunctionNodes);
+  LinkChildren(FModuleNodes);
+  LinkChildren(FViewNodes);
+  LinkChildren(FDataNodes);
+
   // ============ Set gen_status = generated for all scan-built nodes ============
   SetGenStatusGenerated(FFunctionNodes);
   SetGenStatusGenerated(FModuleNodes);
@@ -629,19 +646,16 @@ end;
 procedure TAsWishTreeBuilder.BuildDocsFunctions(
   AScan: TAsWishScanService; const ARootId: string);
 var
-  LFuncChildren: TList<string>;
   LCount: Integer;
 begin
-  LFuncChildren := TList<string>.Create;
-  try
-    LCount := 0;
-    for var LFile in AScan.GetFilesByCategory(fcDocuments) do
-    begin
-      var LExt := LowerCase(TPath.GetExtension(LFile));
-      if (LExt <> '.md') and (LExt <> '.txt') and (LExt <> '.rst') then Continue;
+  LCount := 0;
+  for var LFile in AScan.GetFilesByCategory(fcDocuments) do
+  begin
+    var LExt := LowerCase(TPath.GetExtension(LFile));
+    if (LExt <> '.md') and (LExt <> '.txt') and (LExt <> '.rst') then Continue;
 
-      var LFullPath := TPath.Combine(FProjectRootPath, LFile.Replace('/', '\\'));
-      if not TFile.Exists(LFullPath) then Continue;
+    var LFullPath := TPath.Combine(FProjectRootPath, LFile.Replace('/', '\\'));
+    if not TFile.Exists(LFullPath) then Continue;
 
       var LLines := ReadLinesTolerant(LFullPath, LFile);
       for var LI := 0 to High(LLines) do
@@ -697,15 +711,48 @@ begin
           LNode.ContentHash := TSpecHash.NodeContentHash(LNode);
           LNode.RelationHash := TSpecHash.NodeRelationHash(LNode);
           FFunctionNodes.Add(LNode);
-          LFuncChildren.Add(LId);
           Inc(LCount);
           if LCount >= 200 then Break;
         end;
+        if LCount >= 200 then Break;
       end;
       if LCount >= 200 then Break;
     end;
+end;
+
+procedure TAsWishTreeBuilder.LinkChildren(ANodes: TList<TSpecNode>);
+var
+  LGroups: TDictionary<string, TList<string>>;
+  LPair: TPair<string, TList<string>>;
+begin
+  LGroups := TDictionary<string, TList<string>>.Create;
+  try
+    for var LNode in ANodes do
+      // A self-parent would make RenderNode recurse into itself forever; that
+      // id collision is what produced the orphaned trees this pass fixes.
+      if (LNode.ParentId <> '') and (LNode.ParentId <> LNode.Id) then
+      begin
+        if not LGroups.ContainsKey(LNode.ParentId) then
+          LGroups.Add(LNode.ParentId, TList<string>.Create);
+        LGroups[LNode.ParentId].Add(LNode.Id);
+      end;
+
+    for var LI := 0 to ANodes.Count - 1 do
+    begin
+      var LNode := ANodes[LI];
+      var LKids: TList<string>;
+      if LGroups.TryGetValue(LNode.Id, LKids) then
+      begin
+        LNode.Children := LKids.ToArray;
+        LNode.ContentHash := TSpecHash.NodeContentHash(LNode);
+        LNode.RelationHash := TSpecHash.NodeRelationHash(LNode);
+        ANodes[LI] := LNode;
+      end;
+    end;
   finally
-    LFuncChildren.Free;
+    for LPair in LGroups do
+      LPair.Value.Free;
+    LGroups.Free;
   end;
 end;
 

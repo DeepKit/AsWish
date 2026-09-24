@@ -128,6 +128,7 @@ type
     [Test] procedure Test_ChangeSet_EndToEnd_Reject;
     [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
     [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
+    [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
     [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
   end;
@@ -780,6 +781,42 @@ begin
   LHtml := TFile.ReadAllText(TPath.Combine(FStore.BasePath, 'html\difference.html'), TEncoding.UTF8);
   Assert.IsTrue(LHtml.Contains('B-0001'), 'difference.html must contain baseline ID');
   Assert.IsTrue(LHtml.Contains('difference-judge'), 'difference.html must contain judgment action bridge');
+end;
+
+procedure TTestAsWishController.Test_RunScan_RendersEvidencePageBeforeTreePages;
+var
+  LHtmlDir: string;
+  LFiles: TArray<string>;
+  LFile: string;
+  LAnyLink, LBareId: Boolean;
+begin
+  // GUI regression for the CLI/GUI fork: the Controller's own scan sequence
+  // rendered the tree pages without ever writing evidence.html, so every
+  // evidence id it printed stayed an unresolvable code in the desktop app
+  // while the CLI already showed the fixed links.
+  FController.RunScan;
+
+  LHtmlDir := TPath.Combine(FStore.BasePath, 'html');
+  Assert.IsTrue(TFile.Exists(TPath.Combine(LHtmlDir, 'evidence.html')),
+    'Controller scan must write evidence.html, not just the tree pages');
+
+  LAnyLink := False;
+  LBareId := False;
+  LFiles := TDirectory.GetFiles(LHtmlDir, '*-tree.html');
+  Assert.IsTrue(Length(LFiles) > 0, 'fixture must produce tree pages');
+  for LFile in LFiles do
+  begin
+    var LHtml := TFile.ReadAllText(LFile, TEncoding.UTF8);
+    if LHtml.Contains('href="evidence.html#') then
+      LAnyLink := True;
+    if LHtml.Contains('<span class="trust-item trust-ref">') then
+      LBareId := True;
+  end;
+
+  Assert.IsTrue(LAnyLink,
+    'tree pages must link evidence ids into the evidence catalog');
+  Assert.IsFalse(LBareId,
+    'no tree page may print a bare evidence id once evidence.html exists');
 end;
 
 procedure TTestAsWishController.Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
