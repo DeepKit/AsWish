@@ -38,6 +38,7 @@ uses
   AsWish.Services.Context in 'src\services\AsWish.Services.Context.pas',
   AsWish.Models in 'src\models\AsWish.Models.pas',
   AsWish.Hash in 'src\core\AsWish.Hash.pas',
+  AsWish.TextIO in 'src\core\AsWish.TextIO.pas',
   AsWish.Yaml.Writer in 'src\core\AsWish.Yaml.Writer.pas',
   AsWish.Yaml.Parser in 'src\core\AsWish.Yaml.Parser.pas',
   AsWish.Delphi.DfmParser in 'src\core\AsWish.Delphi.DfmParser.pas',

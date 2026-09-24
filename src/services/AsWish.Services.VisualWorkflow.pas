@@ -251,6 +251,7 @@ function TAsWishVisualWorkflowService.EvolveBaseline(const ABaselineId,
   ADecisionId: string; out ANewBaseline: TAsWishBaseline): string;
 var
   LDec: TSpecDecision;
+  LParent: TAsWishBaseline;
   LCS: TChangeSet;
   LFunc, LMod, LView, LData: TList<TSpecNode>;
 begin
@@ -270,8 +271,20 @@ begin
 
   LCS := Default(TChangeSet);
   LCS.Id := 'cs-evolve-' + ABaselineId;
-  LCS.IntentTree := ttView;
   LCS.IntentNodeId := 'diff-evolve';
+
+  // The evolved baseline covers the same slice of the spec as its parent, so
+  // the tree type has to be inherited rather than invented. Hardcoding ttView
+  // here stamped tree_type "view" onto every evolved baseline regardless of
+  // what the parent covered: `difference` then read only the view tree and
+  // reported no differences for a project whose function tree had changed.
+  if not FSnapshot.LoadBaseline(ABaselineId, LParent) then
+    raise Exception.CreateFmt('Baseline "%s" not found for evolution', [ABaselineId]);
+  // A parent with tree_type "all" hashes the first non-empty tree (function
+  // wins) and so has no TTreeType spelling; keep such lineages on the view
+  // tree the visual diff was built on rather than guessing a narrower scope.
+  if not TSpecEnums.TryTreeTypeFromStr(LParent.TreeType, LCS.IntentTree) then
+    LCS.IntentTree := ttView;
 
   LFunc := FStore.ReadTreeFile('trees/function-tree.yaml');
   LMod := FStore.ReadTreeFile('trees/module-tree.yaml');

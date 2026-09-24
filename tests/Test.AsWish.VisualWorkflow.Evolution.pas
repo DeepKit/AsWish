@@ -31,6 +31,8 @@ type
     [Test] procedure Test05_EvolveBaseline_RequiresApprovedDecision;
     [Test] procedure Test06_Equivalence_DeterministicBaselineHash;
     [Test] procedure Test07_DecisionsAuthority_NoPrivateRationaleRules;
+    [Test] procedure Test08_EvolveBaseline_InheritsParentTreeType;
+    [Test] procedure Test09_EvolveBaseline_UnknownParent_IsRejected;
   end;
 
 implementation
@@ -178,7 +180,100 @@ begin
   Assert.IsTrue(LDec.Id <> '', 'Decision must be stored in FDecisions');
 end;
 
+procedure TTestAsWishVisualWorkflowEvolution.Test08_EvolveBaseline_InheritsParentTreeType;
+var
+  LFuncNodes, LViewNodes: TList<TSpecNode>;
+  LReport: TSpecDifferenceReport;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LParentFunc, LParentView, LEvolved: TAsWishBaseline;
+  LParentFuncId, LParentViewId, LEvolvedId: string;
+begin
+  // A baseline is only comparable against the tree it was frozen from:
+  // `difference` picks the tree named by tree_type. An evolved baseline that
+  // lost its parent's tree_type therefore silently compares the wrong tree
+  // and reports "no differences" for a project that changed elsewhere. This
+  // was observed on DeepAxis: B-0001 (function) evolved into B-0002 (view),
+  // and a node injected into the function tree was found against B-0001 but
+  // invisible against B-0002.
+  LFuncNodes := TList<TSpecNode>.Create;
+  LViewNodes := TList<TSpecNode>.Create;
+  try
+    LFuncNodes.Add(MakeViewNode('func-main', 'Main Feature', 'feature', ''));
+    LViewNodes.Add(MakeViewNode('view-main', 'Main Form', 'page', ''));
+    FStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LFuncNodes);
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LViewNodes);
+
+  LDec := Default(TSpecDecision);
+  LDec.Id := 'dec-evo';
+  LDec.DecisionType := dtConfirm;
+  LDec.Status := dsAccepted;
+
+  LCS := Default(TChangeSet);
+  LCS.Id := 'cs-func';
+  LCS.IntentTree := ttFunction;
+  LCS.IntentNodeId := 'func-main';
+  LParentFuncId := FSnapshot.CreateBaseline(LDec, LCS, LFuncNodes, nil, LViewNodes, nil, LParentFunc);
+  Assert.AreEqual<string>('function', LParentFunc.TreeType,
+    'Precondition: the parent baseline must be a function baseline');
+
+  LCS := Default(TChangeSet);
+  LCS.Id := 'cs-view';
+  LCS.IntentTree := ttView;
+  LCS.IntentNodeId := 'view-main';
+  LParentViewId := FSnapshot.CreateBaseline(LDec, LCS, LFuncNodes, nil, LViewNodes, nil, LParentView);
+  Assert.AreEqual<string>('view', LParentView.TreeType,
+    'Precondition: the second parent baseline must be a view baseline');
+
+  LReport := Default(TSpecDifferenceReport);
+  LReport.BaselineId := LParentFuncId;
+  LReport.TreeType := 'function';
+  var LDecId := FWorkflow.RecordDifferenceDecision(LReport, djAcceptable, 'evolve');
+  LEvolvedId := FWorkflow.EvolveBaseline(LParentFuncId, LDecId, LEvolved);
+
+  Assert.AreEqual<string>('function', LEvolved.TreeType,
+    'Evolved baseline must keep its parent''s tree_type, not fall back to view');
+
+  LReport := Default(TSpecDifferenceReport);
+  LReport.BaselineId := LParentViewId;
+  LReport.TreeType := 'view';
+  LDecId := FWorkflow.RecordDifferenceDecision(LReport, djAcceptable, 'evolve');
+  FWorkflow.EvolveBaseline(LParentViewId, LDecId, LEvolved);
+  Assert.AreEqual<string>('view', LEvolved.TreeType,
+    'Evolving a view baseline must still yield a view baseline');
+
+  Assert.IsTrue(LEvolvedId.StartsWith('B-'), 'Evolved baseline must have a valid ID');
+  finally
+    LViewNodes.Free;
+    LFuncNodes.Free;
+  end;
+end;
+
+procedure TTestAsWishVisualWorkflowEvolution.Test09_EvolveBaseline_UnknownParent_IsRejected;
+var
+  LNodes: TList<TSpecNode>;
+  LNewBaseline: TAsWishBaseline;
+  LReport: TSpecDifferenceReport;
+begin
+  // Evolving from a baseline that does not exist used to fall through to the
+  // hardcoded default and freeze a new baseline whose lineage pointed at a
+  // parent nobody can resolve. Fail closed instead.
+  LNodes := CreateSampleViewTree;
+  try
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LNodes);
+  finally
+    LNodes.Free;
+  end;
+
+  LReport := Default(TSpecDifferenceReport);
+  LReport.BaselineId := 'B-9999';
+  LReport.TreeType := 'view';
+  var LDecId := FWorkflow.RecordDifferenceDecision(LReport, djAcceptable, 'evolve');
+
+  Assert.WillRaise(procedure begin FWorkflow.EvolveBaseline('B-9999', LDecId, LNewBaseline); end,
+    Exception, 'Evolving an unknown baseline must be rejected');
+end;
+
 initialization
   TDUnitX.RegisterTestFixture(TTestAsWishVisualWorkflowEvolution);
-
 end.
