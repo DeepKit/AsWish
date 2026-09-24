@@ -21,6 +21,7 @@ uses
   Test.AsWish.Decisions in 'Test.AsWish.Decisions.pas',
   Test.AsWish.SpecStore in 'Test.AsWish.SpecStore.pas',
   Test.AsWish.TreeBuilder in 'Test.AsWish.TreeBuilder.pas',
+  Test.AsWish.TextIO in 'Test.AsWish.TextIO.pas',
   Test.AsWish.Render in 'Test.AsWish.Render.pas',
   Test.AsWish.Prompts in 'Test.AsWish.Prompts.pas',
   Test.AsWish.Controller in 'Test.AsWish.Controller.pas',

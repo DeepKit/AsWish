@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.TreeBuilder
 
   Verifies that a non-Delphi project receives a useful data projection and
@@ -36,6 +36,8 @@ type
     procedure BuildFromScan_PopulatesEvidenceWithNonEmptyHashAndLines;
     [Test]
     procedure BuildFromScan_EvidenceIds_AreUniqueAcrossWholeList;
+    [Test]
+    procedure BuildFromScan_NonUtf8Docs_DoNotAbortScan;
   end;
 
 implementation
@@ -372,6 +374,61 @@ begin
       Assert.AreEqual<Integer>(64, Length(LEv.ContentHash),
         'ContentHash must be 64-char SHA256 hex');
     end;
+  finally
+    LBuilder.Free;
+    LScan.Free;
+    if TDirectory.Exists(LDir) then
+      TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTreeBuilderDataTests.BuildFromScan_NonUtf8Docs_DoNotAbortScan;
+var
+  LDir: string;
+  LScan: TAsWishScanService;
+  LBuilder: TAsWishTreeBuilder;
+  LFoundGbk, LFoundUtf16: Boolean;
+  LNode: TSpecNode;
+begin
+  LDir := NewTreeBuilderTempDir;
+  LScan := TAsWishScanService.Create;
+  LBuilder := TAsWishTreeBuilder.Create;
+  try
+    TDirectory.CreateDirectory(TPath.Combine(LDir, 'docs'));
+
+    // GBK: not valid UTF-8. A strict UTF-8 read raised EEncodingError here and
+    // killed the whole scan, leaving trees/*.yaml as empty stubs.
+    // Literal bytes for "# 遗留文档标题" + CRLF + "正文" in code page 936:
+    // TEncoding.GetEncoding(936) is not guaranteed to be GBK on this machine.
+    TFile.WriteAllBytes(TPath.Combine(LDir, 'docs', 'gbk.md'),
+      [$23, $20, $D2, $C5, $C1, $F4, $CE, $C4, $B5, $B5, $B1, $EA, $CC, $E2,
+       $0D, $0A, $D5, $FD, $CE, $C4, $C4, $DA, $C8, $DD, $0A]);
+
+    // UTF-16LE with no BOM: also not valid UTF-8.
+    TFile.WriteAllBytes(TPath.Combine(LDir, 'docs', 'utf16.txt'),
+      TEncoding.Unicode.GetBytes('# UTF16 标题' + sLineBreak + '第二行'));
+
+    // The scan must survive both files and still extract their headings.
+    LScan.ScanDirectory(LDir);
+    LBuilder.BuildFromScan(LScan, 'DemoProject', LDir);
+
+    LFoundGbk := False;
+    LFoundUtf16 := False;
+    for LNode in LBuilder.FunctionNodes do
+    begin
+      if LNode.Title.Contains('遗留文档标题') then
+        LFoundGbk := True;
+      if LNode.Title.Contains('UTF16 标题') then
+        LFoundUtf16 := True;
+    end;
+
+    Assert.IsTrue(LFoundGbk,
+      'A GBK-encoded doc must still yield its heading instead of aborting the scan');
+    Assert.IsTrue(LFoundUtf16,
+      'A BOM-less UTF-16 doc must still yield its heading instead of aborting the scan');
+
+    Assert.IsTrue(Length(LBuilder.NonUtf8Files) >= 1,
+      'At least one file fell back to the system code page; that must be reported');
   finally
     LBuilder.Free;
     LScan.Free;

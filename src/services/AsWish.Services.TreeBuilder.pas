@@ -24,6 +24,7 @@ uses
   System.Classes,
   System.Generics.Collections,
   AsWish.Models,
+  AsWish.TextIO,
   AsWish.Services.Scan;
 
 type
@@ -38,6 +39,7 @@ type
     FUsedIds: TDictionary<string, Integer>;
     FUsedEvidenceIds: TDictionary<string, Integer>;
     FEvidenceIdCollisions: Integer;
+    FNonUtf8Files: TStringList;
     function MakeSlug(const ATitle: string): string;
     function UniqueId(const ABaseId: string): string;
     /// <summary>Allocate an evidence id that is unique across the whole list.
@@ -47,6 +49,13 @@ type
     ///  suffix and are counted, because a collision means the caller asked for
     ///  the same file+range twice with different content.</summary>
     function UniqueEvidenceId(const APathSlug, ALines: string): string;
+    /// <summary>Reads a text file as lines, never raising. Records a file that
+    ///  had to be decoded as non-UTF-8 so the lossy read stays visible.</summary>
+    function ReadLinesTolerant(const APath, ARelPath: string): TArray<string>;
+    /// <summary>Same, but also reports which encoding actually decoded the file.</summary>
+    function ReadLinesTolerantEnc(const APath, ARelPath: string;
+      out AEncoding: TAsWishTextEncoding): TArray<string>;
+    function GetNonUtf8Files: TArray<string>;
     procedure EnhanceFromDelphi(AScan: TAsWishScanService);
     /// <summary>Extract H1/H2 headings from docs markdown files into
     ///  function-tree children under the stub root.</summary>
@@ -78,6 +87,10 @@ type
     ///  file+range. Zero means every id is unique by construction. A non-zero
     ///  value is reported by the scan rather than silently absorbed.</summary>
     property EvidenceIdCollisions: Integer read FEvidenceIdCollisions;
+    /// <summary>Files whose bytes did not decode as UTF-8 and had to fall back
+    ///  to the system code page. Non-empty means some excerpts are lossy; the
+    ///  scan reports this instead of pretending the decode was clean.</summary>
+    property NonUtf8Files: TArray<string> read GetNonUtf8Files;
   end;
 
 implementation
@@ -104,6 +117,9 @@ begin
   FUsedIds := TDictionary<string, Integer>.Create;
   FUsedEvidenceIds := TDictionary<string, Integer>.Create;
   FEvidenceIdCollisions := 0;
+  FNonUtf8Files := TStringList.Create;
+  FNonUtf8Files.Sorted := True;
+  FNonUtf8Files.Duplicates := TDuplicates.dupIgnore;
 end;
 
 destructor TAsWishTreeBuilder.Destroy;
@@ -115,7 +131,29 @@ begin
   FEvidenceList.Free;
   FUsedIds.Free;
   FUsedEvidenceIds.Free;
+  FNonUtf8Files.Free;
   inherited;
+end;
+
+function TAsWishTreeBuilder.GetNonUtf8Files: TArray<string>;
+begin
+  Result := FNonUtf8Files.ToStringArray;
+end;
+
+function TAsWishTreeBuilder.ReadLinesTolerant(const APath, ARelPath: string): TArray<string>;
+var
+  LEnc: TAsWishTextEncoding;
+begin
+  Result := ReadLinesTolerantEnc(APath, ARelPath, LEnc);
+end;
+
+function TAsWishTreeBuilder.ReadLinesTolerantEnc(const APath, ARelPath: string;
+  out AEncoding: TAsWishTextEncoding): TArray<string>;
+begin
+  Result := ReadTextLinesTolerant(APath, AEncoding);
+  // teUtf8Bom is still UTF-8; only a genuine code-page fallback is lossy.
+  if (AEncoding = teAnsi) or (AEncoding = teUnknown) then
+    FNonUtf8Files.Add(ARelPath);
 end;
 
 function TAsWishTreeBuilder.MakeSlug(const ATitle: string): string;
@@ -207,6 +245,7 @@ var
   LLines: TArray<string>;
   LLineCount: Integer;
   LFirstLine: string;
+  LEnc: TAsWishTextEncoding;
   I: Integer;
 begin
   Result := Default(TSpecEvidence);
@@ -232,7 +271,7 @@ begin
   begin
     Result.SourceFileHash := TSpecHash.FileSha256Hex(LAbsPath);
     try
-      LLines := TFile.ReadAllLines(LAbsPath, TEncoding.UTF8);
+      LLines := ReadLinesTolerantEnc(LAbsPath, ARelPath, LEnc);
       LLineCount := Length(LLines);
       if LLineCount > 0 then
       begin
@@ -263,7 +302,15 @@ begin
       end
       else
         Result.Lines := '1-1';
+
+      // A code-page fallback means the excerpt is a best-effort decode. Say so
+      // on the evidence itself rather than letting a lossy read look clean.
+      if (LEnc = teAnsi) or (LEnc = teUnknown) then
+        Result.Note := Format('decoded as %s, not utf8; excerpt may be lossy',
+          [CAsWishTextEncodingNames[LEnc]]);
     except
+      // The tolerant reader already absorbs decode failures; reaching here means
+      // the hash or line-count step itself failed, so the excerpt is unproven.
       if Result.Lines = '' then
         Result.Lines := '1-1';
       if Result.Excerpt = '' then
@@ -568,7 +615,7 @@ begin
       var LFullPath := TPath.Combine(FProjectRootPath, LFile.Replace('/', '\\'));
       if not TFile.Exists(LFullPath) then Continue;
 
-      var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
+      var LLines := ReadLinesTolerant(LFullPath, LFile);
       for var LI := 0 to High(LLines) do
       begin
         var LL := LLines[LI];
@@ -866,7 +913,7 @@ begin
           LEntityNode.Confidence := clMedium;
           LEntityNode.SourceLayer := slParsedFromA;
 
-          var LLines := TFile.ReadAllLines(LFullPath, TEncoding.UTF8);
+          var LLines := ReadLinesTolerant(LFullPath, LFile);
           var LClassStart := 1;
           var LClassEnd := Length(LLines);
           var LClassExcerpt := 'type ' + LItem.Name + ' = class';
@@ -1352,8 +1399,8 @@ var
     LPos, LEnd: Integer;
   begin
     try
-      LLines := TFile.ReadAllLines(
-        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), TEncoding.UTF8);
+      LLines := ReadLinesTolerant(
+        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), APath);
     except
       Exit;
     end;
@@ -1398,8 +1445,8 @@ var
     LEntityIndex: Integer;
   begin
     try
-      LLines := TFile.ReadAllLines(
-        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), TEncoding.UTF8);
+      LLines := ReadLinesTolerant(
+        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), APath);
     except
       Exit;
     end;
@@ -1599,8 +1646,8 @@ var
     LEntityIndex: Integer;
   begin
     try
-      LLines := TFile.ReadAllLines(
-        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), TEncoding.UTF8);
+      LLines := ReadLinesTolerant(
+        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), APath);
     except
       Exit;
     end;
@@ -1660,8 +1707,8 @@ var
     LPos, LEnd, LSpace: Integer;
   begin
     try
-      LLines := TFile.ReadAllLines(
-        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), TEncoding.UTF8);
+      LLines := ReadLinesTolerant(
+        TPath.Combine(FProjectRootPath, APath.Replace('/', '\')), APath);
     except
       Exit;
     end;

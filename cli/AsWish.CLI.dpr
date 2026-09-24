@@ -39,6 +39,7 @@ uses
   AsWish.Services.Snapshot in '..\src\services\AsWish.Services.Snapshot.pas',
   AsWish.Models in '..\src\models\AsWish.Models.pas',
   AsWish.Hash in '..\src\core\AsWish.Hash.pas',
+  AsWish.TextIO in '..\src\core\AsWish.TextIO.pas',
   AsWish.Yaml.Writer in '..\src\core\AsWish.Yaml.Writer.pas',
   AsWish.Yaml.Parser in '..\src\core\AsWish.Yaml.Parser.pas',
   AsWish.Validation in '..\src\core\AsWish.Validation.pas',
@@ -981,6 +982,22 @@ begin
     Writeln(Format('[scan] trees: function %d / module %d / view %d / data %d',
       [LBuilder.FunctionNodes.Count, LBuilder.ModuleNodes.Count,
        LBuilder.ViewNodes.Count, LBuilder.DataNodes.Count]));
+
+    // Degradation must be visible, not silent: a code-page fallback means the
+    // excerpts for these files are best-effort decodes.
+    var LNonUtf8 := LBuilder.NonUtf8Files;
+    if Length(LNonUtf8) > 0 then
+    begin
+      Writeln(Format('[scan] warning: %d file(s) are not UTF-8 and were read ' +
+        'with a code-page fallback; their excerpts may be lossy:',
+        [Length(LNonUtf8)]));
+      for var LF in LNonUtf8 do
+        Writeln('[scan]   ' + LF);
+    end;
+    if LBuilder.EvidenceIdCollisions > 0 then
+      Writeln(Format('[scan] warning: %d evidence id collision(s) were ' +
+        'disambiguated with a numeric suffix',
+        [LBuilder.EvidenceIdCollisions]));
 
     LStore.WriteTreeFile('trees/function-tree.yaml', ttFunction,
       LBuilder.FunctionNodes);
