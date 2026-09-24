@@ -6,6 +6,18 @@
 
 > 规范指针：详见《非睿智轻量门禁规范-v1》（`08_元管理/BCW/docs/非睿智轻量门禁规范-v1.md`），所有非睿智工作流之下的常规项目 WP 必须遵守五项硬门禁（G1–G5）。
 
+# 本机构建与运行约定（踩坑固化，见 WO-20260924-0051）
+
+* **两个可执行文件，别认错**：仓库根 `_build.bat` 构建的是 **GUI**
+  （`AsWish.dpr` → `bin/AsWish.exe`）；**CLI** 由 `cli/_build_cli.bat` 构建到
+  `cli/bin/AsWish.CLI.exe`。跑命令行管线一律用后者。
+* **CLI 参数语法**：`AsWish.CLI.exe <command> <project-dir>`，
+  没有 `--project` 这种写法。
+* **本机解释器用 `python`，不要用 `python3`**：`python3` 是 Microsoft Store
+  占位程序，静默退出码 49、不报错、不执行。
+* **不要把本机 Windows 可执行文件的输出管到 `tail`**：`tail` 读完全部才输出，
+  管道缓冲（64KB）写满后进程永久阻塞。一律 `> file 2>&1` 再读文件。
+
 # 项目身份第一入口（任何 AI 任务开始前必读）
 
 接手本仓库的任何 AI，禁止按旧 DeepSpec 时代认知理解项目，禁止把 AsWish 简化为 Spec Tool / Spec Editor / AI Requirement Tool / AI Coding Tool / WYSIWYG Spec Editor。
