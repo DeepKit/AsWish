@@ -1647,6 +1647,7 @@ end;
 function TAsWishController.ComputeDifference(const ABaselineId: string): TSpecDifferenceReport;
 var
   LDifference: TAsWishDifferenceService;
+  LWorkflow: TAsWishVisualWorkflowService;
   LEvidencePath: string;
 begin
   if not FProjectService.IsOpen then
@@ -1658,7 +1659,20 @@ begin
 
   LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
   try
-    Result := LDifference.ComputeDifference(FProjectService.ProjectPath, ABaselineId, nil, '', '', '', True);
+    // Through the workflow, not the Difference service directly: the workflow
+    // is what registers the VCL comparator and discovers the observation,
+    // binding, constraint and style inputs. Calling the service directly -- as
+    // this method used to -- left FComparators empty, so every view baseline
+    // came back "Degraded: No platform visual comparator handled baseline" and
+    // the L2/L3 visual comparison silently never ran in the desktop app. The
+    // CLI had already gone through the workflow, so the two entry points were
+    // answering different questions about the same repository.
+    LWorkflow := TAsWishVisualWorkflowService.Create(FSpecStore, FSnapshot, FDecisions, LDifference);
+    try
+      Result := LWorkflow.ComputeDifference(FProjectService.ProjectPath, ABaselineId);
+    finally
+      LWorkflow.Free;
+    end;
     FRender.RenderDifferencePage(Result, FProjectService.ProjectName);
     if Result.IsDegraded then
       FStatus.Info('AsWish.Difference', Format('Computed %d differences against baseline %s (Degraded: %s)',

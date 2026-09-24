@@ -40,6 +40,9 @@ uses
   AsWish.Services.Decisions,
   AsWish.Services.Settings,
   AsWish.Services.LLM,
+  AsWish.Services.Snapshot,
+  AsWish.Services.Difference,
+  AsWish.Services.VisualWorkflow,
   AsWish.Shell.Headless,
   AsWish.Controller;
 
@@ -166,6 +169,8 @@ type
     procedure HeadlessScan_RecordsStatusAndContextAndEvent;
     [Test]
     procedure SilentStatusManager_StillRecordsEntries;
+    [Test]
+    procedure DifferencePath_MatchesWhatTheVisualWorkflowComputes;
   end;
 
 implementation
@@ -1015,6 +1020,86 @@ begin
       'silent mode must still record every entry');
   finally
     LStatus.Free;
+  end;
+end;
+
+// The desktop app and the CLI are two doors into the same computation. This
+// pins them together: whatever TAsWishController.ComputeDifference answers must
+// be what the visual workflow answers, item for item. Before WO-20260925-0053
+// the Controller called the Difference service directly with a nil resolver,
+// which left the VCL comparator unregistered -- so the desktop app never ran
+// the L2/L3 visual comparison and always reported it as degraded, while the
+// CLI ran it. The two doors answered different questions.
+procedure THeadlessShellTests.DifferencePath_MatchesWhatTheVisualWorkflowComputes;
+var
+  LBaseId: string;
+  LControllerReport, LWorkflowReport: TSpecDifferenceReport;
+  LSnapshot: TAsWishSnapshotService;
+  LDifference: TAsWishDifferenceService;
+  LWorkflow: TAsWishVisualWorkflowService;
+  LControllerIds, LWorkflowIds: TStringList;
+  LItem: TSpecDifferenceItem;
+begin
+  // A .dfm gives the scan View Spec nodes, which is what a visual baseline is
+  // built from -- and a view baseline is the only kind the VCL comparator can
+  // handle, so it is the only kind that can expose the divergence.
+  ForceDirectories(TPath.Combine(FDir, 'src'));
+  TFile.WriteAllText(TPath.Combine(FDir, 'src\MainForm.dfm'),
+    'object MainForm: TMainForm' + sLineBreak +
+    '  Caption = ''Main''' + sLineBreak +
+    'end' + sLineBreak, TEncoding.UTF8);
+  FController.OpenAndScan(FDir);
+
+  LBaseId := FController.ConfirmVisualBaseline('visual baseline for difference comparison');
+  Assert.AreEqual('B-0001', LBaseId, 'fixture must produce a visual baseline');
+  Assert.AreEqual('view', FController.ListBaselines[0].TreeType,
+    'fixture sanity: the baseline must be a view baseline');
+
+  LControllerReport := FController.ComputeDifference(LBaseId);
+  Assert.IsFalse(LControllerReport.IsDegraded,
+    'the Controller path must not degrade the visual comparison; it did before ' +
+    'WO-20260925-0053 because it never registered the VCL comparator. Reason: ' +
+    LControllerReport.DegradedReason);
+
+  // Now the same computation through the workflow, which is what the CLI uses.
+  LSnapshot := TAsWishSnapshotService.Create(FStore);
+  try
+    LDifference := TAsWishDifferenceService.Create(FStore, LSnapshot);
+    try
+      LWorkflow := TAsWishVisualWorkflowService.Create(FStore, LSnapshot,
+        FDecisions, LDifference);
+      try
+        LWorkflowReport := LWorkflow.ComputeDifference(FDir, LBaseId);
+      finally
+        LWorkflow.Free;
+      end;
+    finally
+      LDifference.Free;
+    end;
+  finally
+    LSnapshot.Free;
+  end;
+
+  LControllerIds := TStringList.Create;
+  LWorkflowIds := TStringList.Create;
+  try
+    LControllerIds.Sorted := True;
+    LWorkflowIds.Sorted := True;
+    LControllerIds.Duplicates := TDuplicates.dupAccept;
+    LWorkflowIds.Duplicates := TDuplicates.dupAccept;
+    for LItem in LControllerReport.Items do
+      LControllerIds.Add(LItem.NodeId + '|' + TSpecEnums.DifferenceKindToStr(LItem.Kind));
+    for LItem in LWorkflowReport.Items do
+      LWorkflowIds.Add(LItem.NodeId + '|' + TSpecEnums.DifferenceKindToStr(LItem.Kind));
+
+    Assert.AreEqual(LWorkflowIds.Count, LControllerIds.Count,
+      'the Controller and the workflow must find the same number of differences');
+    for var I := 0 to LWorkflowIds.Count - 1 do
+      Assert.AreEqual(LWorkflowIds[I], LControllerIds[I],
+        'difference ' + IntToStr(I) + ' must match between the two entry points');
+  finally
+    LControllerIds.Free;
+    LWorkflowIds.Free;
   end;
 end;
 
