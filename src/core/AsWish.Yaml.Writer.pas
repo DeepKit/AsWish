@@ -506,6 +506,9 @@ begin
   WriteQuotedKV('contributed_by', ALesson.ContributedBy);
   WriteQuotedKV('story_mode', ALesson.StoryMode);
   WriteQuotedKV('anchor_kind', ALesson.AnchorKind);
+  // publish_consent is publishing metadata, deliberately excluded from
+  // LessonContentHash (consent flip must update, not version, the hub row).
+  WriteBoolKV('publish_consent', ALesson.PublishConsent);
   if ALesson.CreatedAt <> 0 then
     WriteQuotedKV('created_at', FormatTimestamp(ALesson.CreatedAt))
   else

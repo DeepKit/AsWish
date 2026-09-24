@@ -139,8 +139,10 @@ type
     function ListDecisions: TArray<TSpecDecision>;
 
     // Difference Commons (WO-20260923-0041)
+    // WO-20260924-0049 P-4: AShareConsent defaults False so an unchecked
+    // GUI checkbox can never publish a lesson to the public hub.
     function ExtractCommonsLesson(const AChangeSetId: string;
-      const ATakeaway: string = ''): TSpecCommonsLesson;
+      const ATakeaway: string = ''; AShareConsent: Boolean = False): TSpecCommonsLesson;
 
     destructor Destroy; override;
     function IsProjectOpen: Boolean;
@@ -1380,7 +1382,7 @@ begin
 end;
 
 function TAsWishController.ExtractCommonsLesson(const AChangeSetId: string;
-  const ATakeaway: string): TSpecCommonsLesson;
+  const ATakeaway: string; AShareConsent: Boolean): TSpecCommonsLesson;
 var
   LIngest: TAsWishCandidateIngest;
   LCS: TChangeSet;
@@ -1423,6 +1425,9 @@ begin
     end;
 
     Result := FCommons.ExtractLessonFromChangeSet(LCS, LDec, LDiff, ATakeaway);
+    // WO-20260924-0049 P-4: consent is applied before the single atomic
+    // write so the yaml on disk is correct in one pass (no double write).
+    Result.PublishConsent := AShareConsent;
     FCommons.SaveLessonDraft(Result);
     FStatus.Info('AsWish.Commons', Format('Extracted lesson draft: %s (%s)', [Result.Id, Result.Title]));
   finally

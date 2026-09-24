@@ -40,6 +40,8 @@ type
     [Test] procedure Test05_DamagedMachineAnchor_RejectedBySeeding;
     [Test] procedure Test06_ExtractLesson_LineageLookup_And_NarrativeFallback;
     [Test] procedure Test07_CommonsAnchors_CommittedSlices_Integrity;
+    [Test] procedure Test08_PublishConsent_DefaultFlipHashStable_LegacyFileFalse;
+    [Test] procedure Test09_ExtractCommonsLesson_ConsentPlumbing;
   end;
 
 implementation
@@ -333,6 +335,92 @@ begin
       System.Writeln('    [NOTE] Dogfood source absent in clone, anti-drift check skipped: ' + LSourcePath);
     end;
   end;
+end;
+
+procedure TTestAsWishCommons.Test08_PublishConsent_DefaultFlipHashStable_LegacyFileFalse;
+var
+  LL: TSpecCommonsLesson;
+  LRel, LAbs, LHashBefore, LHashAfter: string;
+  LRead: TSpecCommonsLesson;
+  LLines: array of string;
+begin
+  // 1) default no-consent, round-trip stable
+  LL := TSpecCommonsLesson.CreateNew('lesson-consent-01', 't', 'k', 'p', 'w', 'r');
+  Assert.IsFalse(LL.PublishConsent, 'CreateNew default must be no-consent');
+  LRel := 'commons/lesson-consent-01.yaml';
+  FStore.WriteCommonsLessonFile(LRel, LL);
+  Assert.IsFalse(FStore.ReadCommonsLessonFile(LRel).PublishConsent, 'round-trip default false');
+
+  // 2) flip consent; content hash must NOT change (metadata, not content)
+  LHashBefore := TSpecHash.LessonContentHash(LL);
+  Assert.IsTrue(FCommons.SetPublishConsent('lesson-consent-01', True), 'flip must find lesson');
+  LRead := FStore.ReadCommonsLessonFile(LRel);
+  Assert.IsTrue(LRead.PublishConsent, 'consent must persist to disk');
+  LHashAfter := TSpecHash.LessonContentHash(LRead);
+  Assert.AreEqual(LHashBefore, LHashAfter, 'consent flip must not change content hash');
+
+  // 3) legacy file without the key reads as no-consent
+  LAbs := TPath.Combine(FStore.BasePath, StringReplace(LRel, '/', PathDelim, [rfReplaceAll]));
+  LLines := TFile.ReadAllLines(LAbs, TEncoding.UTF8);
+  var LFoundKey: Boolean;
+  var LText: string;
+  LFoundKey := False;
+  LText := '';
+  for var LLine in LLines do
+    if LLine.Contains('publish_consent') then
+      LFoundKey := True
+    else
+      LText := LText + LLine + sLineBreak;
+  Assert.IsTrue(LFoundKey, 'precondition: publish_consent line must exist before stripping');
+  TFile.WriteAllText(LAbs, LText, TEncoding.UTF8);
+  Assert.IsFalse(FStore.ReadCommonsLessonFile(LRel).PublishConsent,
+    'legacy file without key must read False');
+
+  // 4) unknown lesson id -> False (fail-closed)
+  Assert.IsFalse(FCommons.SetPublishConsent('lesson-does-not-exist', True),
+    'unknown lesson id must not report success');
+end;
+
+procedure TTestAsWishCommons.Test09_ExtractCommonsLesson_ConsentPlumbing;
+var
+  LCsDir, LCsFile, LYaml: string;
+  LLesson: TSpecCommonsLesson;
+
+  procedure PrepareRejectedCs(const ACsId: string);
+  begin
+    TDirectory.CreateDirectory(LCsDir);
+    TFile.WriteAllText(LCsFile, Format('id: "%s"'#10 +
+      'intent_node_id: "func-delete-user"'#10 + 'intent_tree: "function"'#10 +
+      'raw_user_intent: "Physical deletion requested"'#10 +
+      'author: "ai-assistant"'#10 + 'items: []'#10, [ACsId]), TEncoding.UTF8);
+    Assert.IsTrue(FController.RejectChangeSet(ACsId, 'Must preserve provenance'),
+      Format('ChangeSet %s reject must succeed', [ACsId]));
+  end;
+
+begin
+  LCsDir := TPath.Combine(FDir, '.AsWish\llm');
+
+  // 1) unchecked (GUI default) -> lesson saved with no-consent
+  LCsFile := TPath.Combine(LCsDir, 'change-set-cs-consent-off.yaml');
+  PrepareRejectedCs('cs-consent-off');
+  LLesson := FController.ExtractCommonsLesson('cs-consent-off', 'unchecked flow');
+  LYaml := TPath.Combine(FDir, '.AsWish\commons\' + LLesson.Id + '.yaml');
+  Assert.IsFalse(LLesson.PublishConsent, 'unchecked flow must not set consent');
+  Assert.IsFalse(FStore.ReadCommonsLessonFile('commons\' + LLesson.Id + '.yaml').PublishConsent,
+    'unchecked flow must persist no-consent');
+  Assert.IsFalse(TFile.ReadAllText(LYaml, TEncoding.UTF8).Contains('publish_consent: true'),
+    'unchecked flow must not write publish_consent: true');
+
+  // 2) checked by human -> consent written to disk in the same pass
+  LCsFile := TPath.Combine(LCsDir, 'change-set-cs-consent-on.yaml');
+  PrepareRejectedCs('cs-consent-on');
+  LLesson := FController.ExtractCommonsLesson('cs-consent-on', 'opt-in flow', True);
+  LYaml := TPath.Combine(FDir, '.AsWish\commons\' + LLesson.Id + '.yaml');
+  Assert.IsTrue(LLesson.PublishConsent, 'checked flow must set consent');
+  Assert.IsTrue(FStore.ReadCommonsLessonFile('commons\' + LLesson.Id + '.yaml').PublishConsent,
+    'checked flow must persist consent');
+  Assert.IsTrue(TFile.ReadAllText(LYaml, TEncoding.UTF8).Contains('publish_consent: true'),
+    'checked flow must write publish_consent: true');
 end;
 
 initialization

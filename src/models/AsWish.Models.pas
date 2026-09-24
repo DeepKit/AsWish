@@ -368,13 +368,17 @@ type
     ContributedBy: string;
     StoryMode: string;
     AnchorKind: string; // 'machine' | 'narrative' (WO-20260923-0043)
+    /// <summary>WO-20260924-0049 P-4: share-to-hub consent, default False.
+    /// A lesson never leaves the machine without explicit human opt-in.</summary>
+    PublishConsent: Boolean;
     CreatedAt: TDateTime;
     class function CreateNew(const AId, ATitle, ATakeaway, ATrigger,
       AWrong, ARight: string; const ABaselineRef: string = '';
       const ADifferenceRef: string = ''; const ADomain: string = 'general';
       const AContributedBy: string = 'seed:aswish-dogfood';
       const AStoryMode: string = 'cautionary';
-      const AAnchorKind: string = 'narrative'): TSpecCommonsLesson; static;
+      const AAnchorKind: string = 'narrative';
+      APublishConsent: Boolean = False): TSpecCommonsLesson; static;
   end;
 
   /// <summary>
@@ -604,7 +608,8 @@ end;
 
 class function TSpecCommonsLesson.CreateNew(const AId, ATitle, ATakeaway,
   ATrigger, AWrong, ARight: string; const ABaselineRef, ADifferenceRef,
-  ADomain, AContributedBy, AStoryMode, AAnchorKind: string): TSpecCommonsLesson;
+  ADomain, AContributedBy, AStoryMode, AAnchorKind: string;
+  APublishConsent: Boolean): TSpecCommonsLesson;
 begin
   Result := Default(TSpecCommonsLesson);
   Result.Id := AId;
@@ -620,6 +625,7 @@ begin
   Result.StoryMode := AStoryMode;
   Result.AnchorKind := AAnchorKind;
   if Result.AnchorKind = '' then Result.AnchorKind := 'narrative';
+  Result.PublishConsent := APublishConsent;
   Result.CreatedAt := Now;
 end;
 

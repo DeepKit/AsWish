@@ -25,6 +25,10 @@ type
     function ExtractLessonFromChangeSet(const AChangeSet: TChangeSet; const ADecision: TSpecDecision;
       const ADiffReport: TSpecDifferenceReport; const ATakeaway: string = ''): TSpecCommonsLesson;
     function SaveLessonDraft(const ALesson: TSpecCommonsLesson): string;
+    /// <summary>WO-20260924-0049 P-4: flip share-to-hub consent on a stored
+    /// lesson (metadata only; content hash deliberately unchanged). Returns
+    /// False when the lesson id is not found.</summary>
+    function SetPublishConsent(const ALessonId: string; AConsent: Boolean): Boolean;
   end;
 
 implementation
@@ -262,6 +266,25 @@ begin
   LRelPath := TPath.Combine('commons', ALesson.Id + '.yaml');
   FStore.WriteCommonsLessonFile(LRelPath, ALesson);
   Result := TPath.Combine(FStore.BasePath, LRelPath);
+end;
+
+function TAsWishCommonsService.SetPublishConsent(const ALessonId: string;
+  AConsent: Boolean): Boolean;
+begin
+  Result := False;
+  if (FStore = nil) or (ALessonId = '') then Exit;
+  for var LFile in FStore.ListCommonsLessonFiles do
+  begin
+    // ListCommonsLessonFiles returns absolute paths; normalize like
+    // ListCommonsLessons so reads/writes stay relative.
+    var LRelPath := TPath.Combine('commons', TPath.GetFileName(LFile));
+    var LLesson := FStore.ReadCommonsLessonFile(LRelPath);
+    if LLesson.Id <> ALessonId then Continue;
+    if LLesson.PublishConsent = AConsent then Exit(True);
+    LLesson.PublishConsent := AConsent;
+    FStore.WriteCommonsLessonFile(LRelPath, LLesson);
+    Exit(True);
+  end;
 end;
 
 end.

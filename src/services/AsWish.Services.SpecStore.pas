@@ -836,6 +836,8 @@ begin
       Result.ContributedBy := LRoot.GetString('contributed_by', 'seed:aswish-dogfood');
       Result.StoryMode := LRoot.GetString('story_mode', 'cautionary');
       Result.AnchorKind := LRoot.GetString('anchor_kind', 'narrative');
+      // WO-20260924-0049: pre-consent files lack this key; default False.
+      Result.PublishConsent := LRoot.GetBoolean('publish_consent', False);
       LCreatedAtStr := LRoot.GetString('created_at', '');
       if LCreatedAtStr <> '' then
       begin
