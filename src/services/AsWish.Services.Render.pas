@@ -48,6 +48,11 @@ type
     ///  human-visible chrome (titles/buttons/hints), never for YAML keys.</summary>
     function T(const AEn, AZh: string): string;
     function YamlEscape(const S: string): string;
+    /// <summary>Evidence id rendered as a link into evidence.html when that
+    ///  page has been written, otherwise the bare code. Tree pages are also
+    ///  rendered standalone (and in isolation), so a link must never point at
+    ///  a page that was not generated in the same run.</summary>
+    function EvidenceRefHtml(const ARefId, ARelevance: string): string;
   public
     procedure Initialize(const AAsWishPath: string);
     procedure RenderScanReport(AScan: TAsWishScanService;
@@ -57,6 +62,14 @@ type
       AIssues: TList<TSpecIssue>; AHasDataTree: Boolean = True);
     procedure RenderTree(const ATreeName, ATreeTitle: string;
       ANodes: System.Generics.Collections.TList<AsWish.Models.TSpecNode>);
+    /// <summary>Render the evidence catalog (source-evidence.yaml) as
+    ///  evidence.html, one anchored entry per row, so the evidence ids
+    ///  printed in tree pages resolve to a real path / lines / excerpt
+    ///  instead of being an opaque code. nil or an empty list renders the
+    ///  "no evidence" state rather than failing.</summary>
+    procedure RenderEvidencePage(
+      AEvidence: System.Generics.Collections.TList<TSpecEvidence>;
+      const AProjectName: string = '');
     procedure RenderProblemsPage(
       AFuncNodes, AModuleNodes, AViewNodes, ADataNodes: TList<TSpecNode>;
       AIssues: TList<TSpecIssue>);
@@ -402,6 +415,9 @@ begin
     LSb.AppendLine('  <li><a href="problems.html">Problems</a></li>');
     if TFile.Exists(TPath.Combine(FBasePath, 'bundles.html')) then
       LSb.AppendLine('  <li><a href="bundles.html">Bundles</a></li>');
+    if TFile.Exists(TPath.Combine(FBasePath, 'evidence.html')) then
+      LSb.AppendLine('  <li><a href="evidence.html">' +
+        T('Evidence', '证据台账') + '</a></li>');
     if TFile.Exists(TPath.Combine(FBasePath, 'changeset-review.html')) then
       LSb.AppendLine('  <li><a href="changeset-review.html"><strong>' +
         T('ChangeSet Review (I said &rarr; AI understood &rarr; Decision)', '意图审阅与裁决（我说 &rarr; AI 理解 &rarr; 裁决）') + '</strong></a></li>');
@@ -491,6 +507,34 @@ begin
     LSb.Free;
     if LSorted <> nil then LSorted.Free;
   end;
+end;
+
+function TAsWishRenderService.EvidenceRefHtml(const ARefId, ARelevance: string): string;
+var
+  LTarget: string;
+begin
+  if TFile.Exists(TPath.Combine(FBasePath, 'evidence.html')) then
+    LTarget := 'evidence.html#' + ARefId
+  else
+    LTarget := '';
+
+  if LTarget = '' then
+  begin
+    Result := '<span class="trust-item trust-ref">';
+    Result := Result + HtmlEscape(ARefId);
+  end
+  else
+  begin
+    Result := '<a class="trust-item trust-ref" href="' + HtmlEscape(LTarget) + '">';
+    Result := Result + HtmlEscape(ARefId);
+  end;
+  if ARelevance <> '' then
+    Result := Result + ' <span class="trust-relevance">' +
+      HtmlEscape(ARelevance) + '</span>';
+  if LTarget = '' then
+    Result := Result + '</span>'
+  else
+    Result := Result + '</a>';
 end;
 
 function TAsWishRenderService.StatusBadge(const AStatus: string): string;
@@ -612,13 +656,7 @@ var
       begin
         LSb.AppendLine('<div class="trust-section"><strong>Evidence:</strong>');
         for var LRef in LNode.SourceRefs do
-        begin
-          LSb.Append('<span class="trust-item trust-ref">');
-          LSb.Append(HtmlEscape(LRef.RefId));
-          if LRef.Relevance <> '' then
-            LSb.Append(' <span class="trust-relevance">' + HtmlEscape(LRef.Relevance) + '</span>');
-          LSb.AppendLine('</span>');
-        end;
+          LSb.AppendLine(EvidenceRefHtml(LRef.RefId, LRef.Relevance));
         LSb.AppendLine('</div>');
       end;
 
@@ -743,7 +781,7 @@ begin
     LSb.AppendLine('  .trust-section strong { color: #495057; font-size: 0.85em; }');
     LSb.AppendLine('  .trust-item { display: inline-block; margin: 0.1em 0.3em;');
     LSb.AppendLine('    padding: 0.1em 0.4em; border-radius: 3px; font-size: 0.85em; }');
-    LSb.AppendLine('  .trust-ref { background: #d1ecf1; color: #0c5460; }');
+    LSb.AppendLine('  .trust-ref { background: #d1ecf1; color: #0c5460; text-decoration: none; }');
     LSb.AppendLine('  .trust-func { background: #d4edda; color: #155724; }');
     LSb.AppendLine('  .trust-mod { background: #cce5ff; color: #004085; }');
     LSb.AppendLine('  .trust-view { background: #fff3cd; color: #856404; }');
@@ -802,6 +840,105 @@ begin
   finally
     LSb.Free;
     LNodeMap.Free;
+  end;
+end;
+
+procedure TAsWishRenderService.RenderEvidencePage(
+  AEvidence: System.Generics.Collections.TList<TSpecEvidence>;
+  const AProjectName: string);
+var
+  LSb: TStringBuilder;
+  LCount, LStaleCount: Integer;
+  LEv: TSpecEvidence;
+begin
+  LCount := 0;
+  LStaleCount := 0;
+  if AEvidence <> nil then
+  begin
+    LCount := AEvidence.Count;
+    for LEv in AEvidence do
+      if LEv.IsStale then
+        Inc(LStaleCount);
+  end;
+
+  LSb := TStringBuilder.Create;
+  try
+    LSb.Append(PageHeader(T('Evidence', '证据台账')));
+    if AProjectName <> '' then
+      LSb.AppendLine('<p><span class="badge badge-doc">' +
+        HtmlEscape(AProjectName) + '</span></p>');
+    LSb.AppendLine('<h1>' + T('Evidence', '证据台账') + '</h1>');
+    LSb.AppendLine('<p><a href="index.html">'#$2190' ' +
+      T('Back to index', '返回索引') + '</a></p>');
+    LSb.AppendLine('<p>' + T('Every evidence id shown in a tree page resolves here. ' +
+      'One row is one source excerpt the spec claim rests on.',
+      '树页面里显示的每个证据编号都能在这里查到。一行就是一条规格主张所依赖的源码摘录。') +
+      '</p>');
+    LSb.AppendLine('<div class="stat"><strong>' + LCount.ToString + '</strong>' +
+      T('Evidence entries', '证据条目') + '</div>');
+    LSb.AppendLine('<div class="stat"><strong>' + LStaleCount.ToString + '</strong>' +
+      T('Stale entries', '过期条目') +
+      '<small style="display:block;color:#6c757d;">' +
+      T('The referenced file changed or could not be read.',
+        '被引用的文件已变更或无法读取。') + '</small></div>');
+
+    if LCount = 0 then
+    begin
+      LSb.AppendLine('<p><em>' + T('No evidence has been collected yet. ' +
+        'Run the evidence collector after freezing an accepted baseline.',
+        '尚未收集证据。请在冻结已接受的基线之后运行证据收集。') + '</em></p>');
+    end
+    else
+    begin
+      LSb.AppendLine('<table class="changes-table">');
+      LSb.AppendLine('  <thead><tr>');
+      LSb.AppendLine('    <th>' + T('ID', '编号') + '</th>');
+      LSb.AppendLine('    <th>' + T('Layer', '层') + '</th>');
+      LSb.AppendLine('    <th>' + T('Confidence', '置信度') + '</th>');
+      LSb.AppendLine('    <th>' + T('Path', '路径') + '</th>');
+      LSb.AppendLine('    <th>' + T('Lines', '行号') + '</th>');
+      LSb.AppendLine('    <th>' + T('Referenced by', '被引用') + '</th>');
+      LSb.AppendLine('  </tr></thead>');
+      LSb.AppendLine('  <tbody>');
+      for LEv in AEvidence do
+      begin
+        LSb.AppendLine('  <tr id="' + HtmlEscape(LEv.Id) + '">');
+        LSb.AppendLine('    <td><code>' + HtmlEscape(LEv.Id) + '</code></td>');
+        LSb.AppendLine('    <td>' + HtmlEscape(
+          AsWish.Models.TSpecEnums.SourceLayerToStr(LEv.SourceLayer)) + '</td>');
+        LSb.AppendLine('    <td>' + ConfidenceBadge(
+          AsWish.Models.TSpecEnums.ConfidenceToStr(LEv.Confidence)) + '</td>');
+        LSb.AppendLine('    <td><code>' + HtmlEscape(LEv.Path) + '</code></td>');
+        LSb.AppendLine('    <td>' + HtmlEscape(LEv.Lines) + '</td>');
+        LSb.AppendLine('    <td>' + HtmlEscape(
+          string.Join(', ', LEv.ReferencedBy)) + '</td>');
+        LSb.AppendLine('  </tr>');
+        if LEv.Excerpt <> '' then
+        begin
+          LSb.AppendLine('  <tr>');
+          LSb.AppendLine('    <td colspan="6">');
+          LSb.AppendLine('      <details><summary>' +
+            T('Excerpt', '摘录') + '</summary><pre>' +
+            HtmlEscape(LEv.Excerpt) + '</pre></details>');
+          LSb.AppendLine('    </td>');
+          LSb.AppendLine('  </tr>');
+        end;
+        if LEv.Note <> '' then
+        begin
+          LSb.AppendLine('  <tr>');
+          LSb.AppendLine('    <td colspan="6"><em>' + HtmlEscape(LEv.Note) + '</em></td>');
+          LSb.AppendLine('  </tr>');
+        end;
+      end;
+      LSb.AppendLine('  </tbody>');
+      LSb.AppendLine('</table>');
+    end;
+
+    LSb.Append(PageFooter);
+    TFile.WriteAllText(TPath.Combine(FBasePath, 'evidence.html'),
+      LSb.ToString, TEncoding.UTF8);
+  finally
+    LSb.Free;
   end;
 end;
 
@@ -1298,10 +1435,12 @@ begin
     if Length(ANode.SourceRefs) > 0 then
     begin
       LSb.AppendLine('<h2>' + T('Evidence', '证据') + '</h2>');
+      LSb.AppendLine('<style>.trust-ref { background: #d1ecf1; color: #0c5460; ' +
+        'text-decoration: none; padding: 0.1em 0.4em; border-radius: 3px; ' +
+        'font-size: 0.9em; }</style>');
       LSb.AppendLine('<ul>');
       for var LR in ANode.SourceRefs do
-        LSb.AppendLine('<li><code>' + HtmlEscape(LR.RefId) + '</code> (' +
-          HtmlEscape(LR.Relevance) + ')</li>');
+        LSb.AppendLine('<li>' + EvidenceRefHtml(LR.RefId, LR.Relevance) + '</li>');
       LSb.AppendLine('</ul>');
     end;
 

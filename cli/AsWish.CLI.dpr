@@ -1010,6 +1010,10 @@ begin
         LBuilder.DataNodes);
     LStore.WriteEvidenceFile('evidence/source-evidence.yaml',
       LBuilder.EvidenceList);
+    // The evidence catalog must be rendered before the tree pages so that the
+    // evidence ids they print resolve to a real anchor instead of being an
+    // unresolvable code.
+    LRender.RenderEvidencePage(LBuilder.EvidenceList, LProject.ProjectName);
 
     LRender.RenderScanReport(LScan, LProject.ProjectName, LType);
     var LIssues := LStore.ReadIssuesFile('issues/doc-issues.yaml');
