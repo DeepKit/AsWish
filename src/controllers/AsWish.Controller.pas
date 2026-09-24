@@ -50,6 +50,11 @@ type
     FContext: IShellContextManager;
     FBus: IShellEventBus;
     FDocsFiles: TArray<string>;
+    /// <summary>Set when RunScan could not finish. The desktop shell reports
+    ///  through the status pane and carries on, but a headless caller has no
+    ///  pane -- it needs to know the run failed so it can exit non-zero
+    ///  instead of reporting success it did not achieve.</summary>
+    FScanFailed: Boolean;
     procedure ScanDocsFirst;
     procedure WriteDocsSummary;
     /// <summary>Apply accepted/rejected formal decisions to every tree on
@@ -84,6 +89,11 @@ type
 
     procedure OpenAndScan(const APath: string);
     procedure RunScan;
+    /// <summary>True only while the last RunScan ended in an exception. Read
+    ///  it after the call: RunScan reports through the status channel and
+    ///  does not raise, so a caller with no status pane has no other way to
+    ///  learn the scan did not happen.</summary>
+    property ScanFailed: Boolean read FScanFailed;
     procedure ExportPrompt;
     procedure GenerateB;
     procedure RenderAll;
@@ -904,8 +914,10 @@ begin
   FStatus.Progress('scan', 'AsWish.Docs', 15,
     Format('Found %d document(s) in docs/', [Length(FDocsFiles)]));
 
+  // The file-by-file list is diagnostic detail, not an announcement: printed
+  // as Info it floods a console run with one line per document.
   for var I := 0 to High(FDocsFiles) do
-    FStatus.Info('AsWish.Docs', '  ' + ExtractFileName(FDocsFiles[I]));
+    FStatus.Diagnostic('AsWish.Docs', ExtractFileName(FDocsFiles[I]));
 end;
 
 procedure TAsWishController.WriteDocsSummary;
@@ -954,6 +966,9 @@ end;
 
 procedure TAsWishController.RunScan;
 begin
+  // Cleared up front so a caller reading ScanFailed after a run that never
+  // happened (no project open) does not inherit the previous run's failure.
+  FScanFailed := False;
   if not FProjectService.IsOpen then
   begin
     FStatus.Warning('AsWish', 'No project open');
@@ -1002,6 +1017,21 @@ begin
         [FTreeBuilder.ModuleNodes.Count,
          FTreeBuilder.ViewNodes.Count,
          FTreeBuilder.DataNodes.Count]));
+
+    // Degradation must be reported, not buried: a code-page fallback means the
+    // excerpts for those files are best-effort decodes, and a disambiguated
+    // evidence id is not the id the source file would have produced. The CLI
+    // printed both of these; the desktop app said nothing.
+    var LNonUtf8 := FTreeBuilder.NonUtf8Files;
+    if Length(LNonUtf8) > 0 then
+      FStatus.Warning('AsWish.Scan',
+        Format('%d file(s) are not UTF-8 and were read with a code-page ' +
+          'fallback; their excerpts may be lossy: %s',
+          [Length(LNonUtf8), string.Join(', ', LNonUtf8)]));
+    if FTreeBuilder.EvidenceIdCollisions > 0 then
+      FStatus.Warning('AsWish.Scan',
+        Format('%d evidence id collision(s) were disambiguated with a ' +
+          'numeric suffix', [FTreeBuilder.EvidenceIdCollisions]));
 
     // Write populated trees
     FSpecStore.WriteTreeFile('trees/function-tree.yaml', ttFunction,
@@ -1072,9 +1102,11 @@ begin
     LEvent.Kind := sekProjectOpened;
     LEvent.Context := FContext.Current;
     FBus.Publish(LEvent);
+    FScanFailed := False;
   except
     on E: Exception do
     begin
+      FScanFailed := True;
       FStatus.LogError('AsWish.Scan', 'Scan failed: ' + E.Message, E.ClassName);
       FStatus.TaskFinish('scan', 'Scan failed');
     end;

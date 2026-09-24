@@ -40,6 +40,7 @@ uses
   AsWish.Services.Decisions,
   AsWish.Services.Settings,
   AsWish.Services.LLM,
+  AsWish.Shell.Headless,
   AsWish.Controller;
 
 type
@@ -131,6 +132,40 @@ type
     [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
     [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
+  end;
+
+  /// <summary>Drives the Controller the way the CLI does: with the real
+  ///  headless shell (console status, in-memory context, in-process bus)
+  ///  rather than mocks. This is the construction the CLI's scan command now
+  ///  uses, so it is the only place that path is covered.</summary>
+  [TestFixture]
+  THeadlessShellTests = class
+  private
+    FDir: string;
+    FProject: TAsWishProjectService;
+    FScan: TAsWishScanService;
+    FStore: TAsWishStoreService;
+    FRender: TAsWishRenderService;
+    FBuilder: TAsWishTreeBuilder;
+    FPrompts: TAsWishPromptService;
+    FDecisions: TAsWishDecisionsService;
+    FSettings: TAsWishSettingsService;
+    FLLM: TAsWishLLMService;
+    FStatus: TConsoleStatusManager;
+    FContext: THeadlessContextManager;
+    FBus: THeadlessEventBus;
+    FController: TAsWishController;
+    FEventCount: Integer;
+    procedure OnAnyEvent(const AEvent: TDeepShellEvent);
+  public
+    [Setup] procedure SetUp;
+    [TearDown] procedure TearDown;
+    [Test]
+    procedure HeadlessScan_ProducesTheWholePageSet;
+    [Test]
+    procedure HeadlessScan_RecordsStatusAndContextAndEvent;
+    [Test]
+    procedure SilentStatusManager_StillRecordsEntries;
   end;
 
 implementation
@@ -873,7 +908,118 @@ begin
   Assert.IsTrue(FController.VerifyBaseline('B-0002'), 'B-0002 must verify');
 end;
 
+{ THeadlessShellTests }
+
+procedure THeadlessShellTests.SetUp;
+begin
+  FDir := TPath.Combine(TPath.GetTempPath, 'aswish-headless-' +
+    TGuid.NewGuid.ToString.Substring(1, 8));
+  TDirectory.CreateDirectory(FDir);
+  TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),
+    '# headless fixture' + sLineBreak + 'Sample docs for headless tests.',
+    TEncoding.UTF8);
+  TFile.WriteAllText(TPath.Combine(FDir, 'app.pas'),
+    'unit app;' + sLineBreak + 'end.' + sLineBreak, TEncoding.UTF8);
+
+  FEventCount := 0;
+  FProject := TAsWishProjectService.Create;
+  FScan := TAsWishScanService.Create;
+  FStore := TAsWishStoreService.Create;
+  FRender := TAsWishRenderService.Create;
+  FBuilder := TAsWishTreeBuilder.Create;
+  FPrompts := TAsWishPromptService.Create;
+  FDecisions := TAsWishDecisionsService.Create;
+  FSettings := TAsWishSettingsService.Create;
+  FLLM := TAsWishLLMService.Create('Default');
+  // Silent: a scan under test must not write to the test runner's console.
+  FStatus := TConsoleStatusManager.Create(True);
+  FContext := THeadlessContextManager.Create;
+  FBus := THeadlessEventBus.Create;
+
+  FController := TAsWishController.Create(FProject, FScan, FStore, FRender,
+    FBuilder, FPrompts, FDecisions, FLLM, FSettings,
+    FStatus, FContext, FBus);
+  FBus.SubscribeAll(OnAnyEvent);
+end;
+
+procedure THeadlessShellTests.TearDown;
+begin
+  // The headless shell objects are released through the controller's
+  // interface references, like the mocks above.
+  FController.Free;
+  FSettings.Free;
+  FDecisions.Free;
+  FPrompts.Free;
+  FBuilder.Free;
+  FRender.Free;
+  FStore.Free;
+  FScan.Free;
+  FProject.Free;
+  if TDirectory.Exists(FDir) then
+    TDirectory.Delete(FDir, True);
+end;
+
+procedure THeadlessShellTests.OnAnyEvent(const AEvent: TDeepShellEvent);
+begin
+  Inc(FEventCount);
+end;
+
+procedure THeadlessShellTests.HeadlessScan_ProducesTheWholePageSet;
+var
+  LHtmlDir: string;
+begin
+  // The CLI no longer lists the pages itself, so the only thing that can go
+  // wrong here is the headless shell itself failing to carry the run.
+  FController.OpenAndScan(FDir);
+
+  Assert.IsFalse(FController.ScanFailed, 'a clean scan must not report failure');
+  LHtmlDir := TPath.Combine(FStore.BasePath, 'html');
+  for var LName in TArray<string>.Create('index.html', 'scan-report.html',
+    'evidence.html', 'function-tree.html', 'module-tree.html',
+    'view-tree.html', 'problems.html') do
+    Assert.IsTrue(TFile.Exists(TPath.Combine(LHtmlDir, LName)),
+      LName + ' must be produced by a headless scan');
+
+  var LFuncHtml := TFile.ReadAllText(
+    TPath.Combine(LHtmlDir, 'function-tree.html'), TEncoding.UTF8);
+  Assert.IsTrue(LFuncHtml.Contains('href="evidence.html#'),
+    'a headless scan must render the evidence catalog before the tree pages');
+end;
+
+procedure THeadlessShellTests.HeadlessScan_RecordsStatusAndContextAndEvent;
+begin
+  FController.OpenAndScan(FDir);
+
+  Assert.IsTrue(Length(FStatus.GetEntries) > 0,
+    'the status channel must carry the run, not swallow it');
+  Assert.IsTrue(FEventCount > 0,
+    'the scan-complete event must reach a subscriber through the headless bus');
+  // The project service names a project after its directory, so that is what
+  // the context must end up holding -- the point is that the controller told
+  // the shell which project it opened.
+  Assert.AreEqual<string>(TPath.GetFileName(FDir), FContext.Current.ProjectId,
+    'the headless context must record the project the controller opened');
+end;
+
+procedure THeadlessShellTests.SilentStatusManager_StillRecordsEntries;
+var
+  LStatus: TConsoleStatusManager;
+begin
+  // Silence must suppress printing only. Dropping the entries would leave a
+  // headless caller with no way to report what happened.
+  LStatus := TConsoleStatusManager.Create(True);
+  try
+    LStatus.Warning('AsWish.Scan', 'degraded excerpt');
+    LStatus.Info('AsWish.Scan', 'plain note');
+    Assert.AreEqual<Integer>(2, Length(LStatus.GetEntries),
+      'silent mode must still record every entry');
+  finally
+    LStatus.Free;
+  end;
+end;
+
 initialization
   TDUnitX.RegisterTestFixture(TTestAsWishController);
+  TDUnitX.RegisterTestFixture(THeadlessShellTests);
 
 end.

@@ -30,6 +30,8 @@ uses
   System.Generics.Collections,
   AsWish.Services.Project in '..\src\services\AsWish.Services.Project.pas',
   AsWish.Services.Scan in '..\src\services\AsWish.Services.Scan.pas',
+  AsWish.Services.LLM in '..\src\services\AsWish.Services.LLM.pas',
+  AsWish.Services.Settings in '..\src\services\AsWish.Services.Settings.pas',
   AsWish.Services.SpecStore in '..\src\services\AsWish.Services.SpecStore.pas',
   AsWish.Services.TreeBuilder in '..\src\services\AsWish.Services.TreeBuilder.pas',
   AsWish.Services.Render in '..\src\services\AsWish.Services.Render.pas',
@@ -49,6 +51,9 @@ uses
   AsWish.Services.Difference in '..\src\services\AsWish.Services.Difference.pas',
   AsWish.Services.VisualWorkflow in '..\src\services\AsWish.Services.VisualWorkflow.pas',
   AsWish.Version in '..\src\core\AsWish.Version.pas',
+  AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
+  AsWish.Shell.Headless in '..\src\core\AsWish.Shell.Headless.pas',
+  AsWish.Controller in '..\src\controllers\AsWish.Controller.pas',
   System.JSON;
 
 // The project type is named by the scan service itself. The CLI used to carry
@@ -935,82 +940,48 @@ var
   LBuilder: TAsWishTreeBuilder;
   LRender: TAsWishRenderService;
   LPrompts: TAsWishPromptService;
-  LType: string;
+  LDecisions: TAsWishDecisionsService;
+  LLLM: TAsWishLLMService;
+  LSettings: TAsWishSettingsService;
+  LStatus: IShellStatusManager;
+  LContext: IShellContextManager;
+  LBus: IShellEventBus;
+  LController: TAsWishController;
 begin
+  // The scan is orchestrated by the Controller, exactly as the desktop app
+  // orchestrates it. This used to be a second, shorter copy of the same
+  // sequence held here in the program body -- which is how the evidence
+  // catalog came to exist in the CLI's pages and in nobody else's. The
+  // services are still built here, but only to hand them to the Controller:
+  // nothing below this line decides what a scan does.
   LProject := TAsWishProjectService.Create;
   LScan := TAsWishScanService.Create;
   LStore := TAsWishStoreService.Create;
   LBuilder := TAsWishTreeBuilder.Create;
   LRender := TAsWishRenderService.Create;
   LPrompts := TAsWishPromptService.Create;
+  LDecisions := TAsWishDecisionsService.Create;
+  LSettings := TAsWishSettingsService.Create;
+  LLLM := TAsWishLLMService.Create('Default');
+  LStatus := TConsoleStatusManager.Create;
+  LContext := THeadlessContextManager.Create;
+  LBus := THeadlessEventBus.Create;
+  LController := nil;
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LRender.Initialize(LProject.AsWishPath);
-    LPrompts.Initialize(LProject.AsWishPath);
+    LController := TAsWishController.Create(
+      LProject, LScan, LStore, LRender, LBuilder, LPrompts, LDecisions,
+      LLLM, LSettings, LStatus, LContext, LBus);
 
     Writeln('[scan] scanning ' + ADir);
-    LScan.ScanDirectory(ADir);
-    LType := LScan.DetectProjectType;
-    LProject.SetProjectType(LType);
-    Writeln(Format('[scan] %d files, type=%s',
-      [LScan.TotalFiles, LType]));
+    LController.OpenAndScan(ADir);
 
-    LStore.CreateDirectoryStructure;
-    LStore.WriteScanReport(LScan);
-    LStore.WriteProjectSpec(LProject.ProjectName, LType, 0);
-    LStore.WriteEmptyTrees;
-    LStore.WriteGitIgnore;
-
-    LBuilder.BuildFromScan(LScan, LProject.ProjectName, LProject.ProjectPath);
-    Writeln(Format('[scan] trees: function %d / module %d / view %d / data %d',
-      [LBuilder.FunctionNodes.Count, LBuilder.ModuleNodes.Count,
-       LBuilder.ViewNodes.Count, LBuilder.DataNodes.Count]));
-
-    // Degradation must be visible, not silent: a code-page fallback means the
-    // excerpts for these files are best-effort decodes.
-    var LNonUtf8 := LBuilder.NonUtf8Files;
-    if Length(LNonUtf8) > 0 then
+    if LController.ScanFailed then
     begin
-      Writeln(Format('[scan] warning: %d file(s) are not UTF-8 and were read ' +
-        'with a code-page fallback; their excerpts may be lossy:',
-        [Length(LNonUtf8)]));
-      for var LF in LNonUtf8 do
-        Writeln('[scan]   ' + LF);
+      // The Controller reports through the status channel and does not raise;
+      // a console run must not print success it did not get.
+      Writeln('[scan] failed');
+      Halt(1);
     end;
-    if LBuilder.EvidenceIdCollisions > 0 then
-      Writeln(Format('[scan] warning: %d evidence id collision(s) were ' +
-        'disambiguated with a numeric suffix',
-        [LBuilder.EvidenceIdCollisions]));
-
-    LStore.WriteTreeFile('trees/function-tree.yaml', ttFunction,
-      LBuilder.FunctionNodes);
-    LStore.WriteTreeFile('trees/module-tree.yaml', ttModule,
-      LBuilder.ModuleNodes);
-    LStore.WriteTreeFile('trees/view-tree.yaml', ttView,
-      LBuilder.ViewNodes);
-    if LBuilder.DataNodes.Count > 0 then
-      LStore.WriteTreeFile('trees/data-tree.yaml', ttData,
-        LBuilder.DataNodes);
-    LStore.WriteEvidenceFile('evidence/source-evidence.yaml',
-      LBuilder.EvidenceList);
-    // The evidence catalog must be rendered before the tree pages so that the
-    // evidence ids they print resolve to a real anchor instead of being an
-    // unresolvable code.
-    LRender.RenderEvidencePage(LBuilder.EvidenceList, LProject.ProjectName);
-
-    LRender.RenderScanReport(LScan, LProject.ProjectName, LType);
-    var LIssues := LStore.ReadIssuesFile('issues/doc-issues.yaml');
-    try
-      LRender.RenderStandardPages(LProject.ProjectName, LScan.TotalFiles,
-        LBuilder.FunctionNodes, LBuilder.ModuleNodes, LBuilder.ViewNodes,
-        LBuilder.DataNodes, LIssues, LStore);
-    finally
-      LIssues.Free;
-    end;
-
-    LPrompts.WriteContextPack(LScan, LProject.ProjectName, LType);
-    LPrompts.WriteGenerationPrompt(LProject.ProjectName, LType);
 
     Writeln('[scan] done -> ' + LProject.AsWishPath + '\html\');
     // The scan writes the spec state into the user's repository, which leaves
@@ -1019,6 +990,10 @@ begin
       '(trees/ evidence/ issues/ decisions/ relations/) is not. ' +
       'Add ".AsWish/" to your .gitignore if you do not want it tracked.');
   finally
+    LController.Free;
+    LLLM.Free;
+    LSettings.Free;
+    LDecisions.Free;
     LPrompts.Free;
     LRender.Free;
     LBuilder.Free;
