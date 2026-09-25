@@ -10,4 +10,4 @@ set "ROOT=%~dp0"
 cd /d "%ROOT%"
 if not exist dcu mkdir dcu
 
-dcc64 -B -NSSystem;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win -U"..\src\app;..\src\services;..\src\providers;..\src\controllers;..\src\core;..\src\models;..\..\DeepBase\Core;..\..\DeepBase\VCL;." -E. -N.\dcu -DDEBUG AsWish.Tests.dpr
+dcc64 -B -NSSystem;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win -U"..\src\app;..\src\services;..\src\providers;..\src\controllers;..\src\core;..\src\models;..\vendor\deepbase-ehai;." -E. -N.\dcu -DDEBUG AsWish.Tests.dpr

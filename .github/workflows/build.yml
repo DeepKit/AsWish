@@ -2,13 +2,14 @@ name: build
 
 # AsWish CI — self-hosted Windows runner with Delphi BDS 37.0.
 # Why self-hosted: BDS is commercial software, cannot run on GitHub public
-# runners. This runner lives on the same machine that has DeepBase source
-# at D:\_Progs\02Business\DeepBase, so the ..\DeepBase\ relative search paths
-# in _build.bat resolve naturally.
+# runners.
 #
-# Workflow reuses the two parameterized build scripts (BDS / DEEPBASE_HOME
-# env-overridable) rather than re-declaring compiler flags, so CI and local
-# builds stay in lockstep.
+# The build has no dependency on the private DeepBase repository: the two EHAI /
+# HB type units it needed are vendored under vendor/deepbase-ehai and are on the
+# dcc64 search path, so a clean clone of this repo builds standalone.
+#
+# DEEPBASE_HOME is set below only so the vendored-upstream drift gate can find
+# DeepBase when the runner happens to have it; the compiler never reads it.
 
 on:
   push:
@@ -32,6 +33,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Deterministic gates (vendored-upstream drift / open-source export)
+        env:
+          BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
+          DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
+        run: |
+          python -X utf8 ..\tools\spw-gates\gate_ehai_vendor_drift.py
+          if errorlevel 1 exit /b 1
+          python -X utf8 ..\tools\spw-gates\gate_open_source_build.py
+          if errorlevel 1 exit /b 1
 
       - name: Build main program (AsWish.exe)
         env:

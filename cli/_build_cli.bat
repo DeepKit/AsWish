@@ -12,4 +12,4 @@ cd /d "%ROOT%"
 if not exist dcu mkdir dcu
 if not exist bin mkdir bin
 
-dcc64 -B -NSSystem;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win -U"..\src\core;..\src\models;..\src\services;..\src\controllers;..\..\DeepBase\Core;..\..\DeepBase\VCL;..\dcu" -E.\bin -N.\dcu -DDEBUG AsWish.CLI.dpr
+dcc64 -B -NSSystem;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win -U"..\src\core;..\src\models;..\src\services;..\src\controllers;..\vendor\deepbase-ehai;..\dcu" -E.\bin -N.\dcu -DDEBUG AsWish.CLI.dpr

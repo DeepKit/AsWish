@@ -1,0 +1,29 @@
+{
+  "schema": "aswish/vendored-upstream/v1",
+  "recorded_at": "2026-09-25",
+  "fingerprint_convention": "sha256 over upstream file content with UTF-8 BOM stripped",
+  "records": [
+    {
+      "file": "DeepBase.EHAI.Types.pas",
+      "upstream_path": "Business/DeepBase/Core/DeepBase.EHAI.Types.pas",
+      "upstream_sha256_bom_stripped": "de9a32082dbf86ff1943c33677a89746eae187f646c116fd465dda9cbb2d0799",
+      "vendored_sha256": "de9a32082dbf86ff1943c33677a89746eae187f646c116fd465dda9cbb2d0799",
+      "byte_identical_to_upstream_bom_stripped": true,
+      "deviation": "无（与上游去 BOM 内容逐字节一致）",
+      "upstream_license": "Apache-2.0 (DeepBase/LICENSE; 不在 LICENSE-BSL 的 BSL 参数清单内)",
+      "ssot_baseline": "EHAI-DELPHI-SYMBOL-BASELINE-v1.0",
+      "vendored_note": "本仓 SHA256 在收存时重算；DeepBase.HB.Choice.Types.pas 顶部另有一段 AsWish 来源说明，故与上游不同"
+    },
+    {
+      "file": "DeepBase.HB.Choice.Types.pas",
+      "upstream_path": "Business/DeepBase/Core/DeepBase.HB.Choice.Types.pas",
+      "upstream_sha256_bom_stripped": "963fedd0ea91402085391af2b9ed69fa137c23ffd46b340bfe8996dd059ee79e",
+      "vendored_sha256": "52da5083520811b192677e718e8869f88e7e6652b4b7117daf29d4b1cad54785",
+      "byte_identical_to_upstream_bom_stripped": false,
+      "deviation": "uses 中的死引用 DeepBase.HB.Core 一行已移除（上游该文件声明使用但一个符号都没用到；不删则本地编译 F2613）",
+      "upstream_license": "Apache-2.0 (DeepBase/LICENSE; 不在 LICENSE-BSL 的 BSL 参数清单内)",
+      "ssot_baseline": "EHAI-DELPHI-SYMBOL-BASELINE-v1.0",
+      "vendored_note": "本仓 SHA256 在收存时重算；DeepBase.HB.Choice.Types.pas 顶部另有一段 AsWish 来源说明，故与上游不同"
+    }
+  ]
+}

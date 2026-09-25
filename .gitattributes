@@ -1,0 +1,17 @@
+# Delphi sources: LF-only in the repo, checked out as-is.
+# The repo predates this file, which is why WO-20260925-0055 E1 recorded a
+# 2373-line commit whose only real change was line endings.
+*.pas text eol=lf
+*.dpr text eol=lf
+*.inc text eol=lf
+
+# Not part of a source release: internal governance and work-order artefacts.
+# WO/ holds work orders, audit requests and test logs that reference other
+# private projects and decisions awaiting the owner; .workbuddy/ holds daily
+# working logs. They stay in the repository on purpose - they are internal
+# assets, not deletions. `git archive` is how a source release is built, and it
+# honours export-ignore.
+WO/                export-ignore
+.workbuddy/        export-ignore
+.AsWish/           export-ignore
+.ai-workbench/     export-ignore
