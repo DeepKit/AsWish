@@ -249,11 +249,33 @@ function TAsWishScanService.DetectProjectType: string;
     Result := False;
   end;
 
+  function HasAnyReactFile: Boolean;
+  begin
+    // WO-0057 1.1 (Route B): React projects may consist entirely of .tsx or .jsx
+    // files, which protocol §14.1 classifies as fcUI rather than fcCode. We inspect
+    // fcCode files (.ts) plus UI_EXTS whitelist (['.tsx', '.jsx']). Other UI extensions
+    // such as .vue, .svelte, and .astro remain in UI_EXTS for UI asset counting but are
+    // deliberately excluded here to avoid falsely classifying Vue/Svelte/Astro projects as React.
+    for var LEntry in FResults do
+    begin
+      if (LEntry.Category = fcCode) and LEntry.RelativePath.EndsWith('.ts') then
+        Exit(True);
+      if (LEntry.Category = fcUI) and
+         (LEntry.RelativePath.EndsWith('.tsx') or LEntry.RelativePath.EndsWith('.jsx')) then
+        Exit(True);
+    end;
+    Result := False;
+  end;
+
 var
   LCodeFiles: TArray<string>;
+  LHasCode, LHasReact: Boolean;
 begin
   Result := 'unknown';
-  if CategoryCount(fcCode) = 0 then
+  LHasCode := CategoryCount(fcCode) > 0;
+  LHasReact := HasAnyReactFile;
+
+  if not LHasCode and not LHasReact then
     Exit;
 
   LCodeFiles := GetFilesByCategory(fcCode);
@@ -262,7 +284,7 @@ begin
   // differently after someone added an unrelated file.
   if HasAnyExt(LCodeFiles, ['.pas', '.dpr']) then
     Exit('delphi_vcl');
-  if HasAnyExt(LCodeFiles, ['.ts', '.tsx']) then
+  if LHasReact then
     Exit('web_react');
   if HasAnyExt(LCodeFiles, ['.py']) then
     Exit('python_backend');
@@ -272,7 +294,8 @@ begin
   // Code we have no name for still counts as a code project, and "mixed" is
   // what both previous implementations answered for Go; that fallback is kept
   // so a stack this build has never heard of is not downgraded to "unknown".
-  Result := 'mixed';
+  if LHasCode then
+    Result := 'mixed';
 end;
 
 end.

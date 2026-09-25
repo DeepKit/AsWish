@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.Scan
 
   Covers the one thing the scan service decides on its own: what stack the
@@ -168,8 +168,8 @@ var
 begin
   LScan := ScanProjectWith(TArray<string>.Create('App.tsx', 'index.tsx'));
   try
-    Assert.AreEqual('unknown', LScan.DetectProjectType,
-      'expected "unknown" while .tsx is classified fcUI; see WO-20260925-0054');
+    Assert.AreEqual('web_react', LScan.DetectProjectType,
+      'tsx-only project should be recognised as web_react; see WO-0057 1.1');
   finally
     LScan.Free;
   end;
