@@ -338,13 +338,8 @@ end;
 
 procedure RunIngest(const ADir, ACandidatePath: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
-  LIngest: TAsWishCandidateIngest;
-  LFunctions, LModules, LViews, LData: TList<TSpecNode>;
-  LContent: string;
-  LResult: TCandidateIngestResult;
-  LMerged: TMergeStats;
+  LBundle: TControllerBundle;
+  LResult: TIngestResult;
 begin
   if not TFile.Exists(ACandidatePath) then
   begin
@@ -357,94 +352,55 @@ begin
     Halt(1);
   end;
 
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
-  LIngest := TAsWishCandidateIngest.Create(LStore);
+  // The Controller owns the read-merge-write-back sequence; this procedure
+  // owns how the outcome reads. The TAsWishProjectService this used to open is
+  // gone: it only recorded the path, and the store's own Initialize resolves
+  // it, so the wrapper carried no behaviour. Verified by running both builds
+  // on a .AsWish with no subdirectories: neither creates a directory.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
+    LResult := LBundle.Controller.IngestCandidateNodes(ADir, ACandidatePath);
 
-    LFunctions := LStore.ReadTreeFile('trees/function-tree.yaml');
-    LModules := LStore.ReadTreeFile('trees/module-tree.yaml');
-    LViews := LStore.ReadTreeFile('trees/view-tree.yaml');
-    LData := LStore.ReadTreeFile('trees/data-tree.yaml');
-    try
-      LContent := TFile.ReadAllText(ACandidatePath, TEncoding.UTF8);
-      LResult := LIngest.Ingest(LContent, LFunctions, LModules, LViews, LData);
-      try
-        if (LResult.Errors.Count > 0) or (LResult.Rejected > 0) then
-        begin
-          if GJsonOutput then
-          begin
-            WriteJsonHeader('ingest');
-            WriteJsonKV('status', 'error');
-            WriteJsonKVInt('errors', LResult.Errors.Count);
-            WriteJsonKVInt('rejected', LResult.Rejected);
-            WriteJsonFooter;
-          end
-          else
-          begin
-            Writeln('[ingest] validation failed');
-            for var LErr in LResult.Errors do
-              Writeln('  error: ' + LErr);
-            Writeln(Format('[ingest] rejected nodes: %d', [LResult.Rejected]));
-          end;
-          ExitCode := 1;
-          Exit;
-        end;
-
-        LMerged := LIngest.MergeInto(
-          LResult.Accepted,
-          LFunctions, LModules, LViews, LData
-        );
-
-        if LMerged.Merged + LMerged.Added > 0 then
-        begin
-          if LResult.FuncNodes.Count > 0 then
-            LStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LFunctions);
-          if LResult.ModNodes.Count > 0 then
-            LStore.WriteTreeFile('trees/module-tree.yaml', ttModule, LModules);
-          if LResult.ViewNodes.Count > 0 then
-            LStore.WriteTreeFile('trees/view-tree.yaml', ttView, LViews);
-          if LResult.DataNodes.Count > 0 then
-            LStore.WriteTreeFile('trees/data-tree.yaml', ttData, LData);
-        end;
-
-        if GJsonOutput then
-        begin
-          WriteJsonHeader('ingest');
-          WriteJsonKV('status', 'ok');
-          WriteJsonKVInt('accepted', LResult.Accepted.Count);
-          WriteJsonKVInt('rejected', LResult.Rejected);
-          WriteJsonKVInt('merged', LMerged.Merged);
-          WriteJsonKVInt('added', LMerged.Added);
-          WriteJsonKVInt('fogCleared', LMerged.FogCleared);
-          WriteJsonFooter;
-        end
-        else
-        begin
-          Writeln(Format('[ingest] accepted=%d rejected=%d merged=%d added=%d fogCleared=%d',
-            [
-              LResult.Accepted.Count,
-              LResult.Rejected,
-              LMerged.Merged,
-              LMerged.Added,
-              LMerged.FogCleared
-            ]));
-        end;
-      finally
-        LResult.FreeOwned;
+    if not LResult.Ok then
+    begin
+      if GJsonOutput then
+      begin
+        WriteJsonHeader('ingest');
+        WriteJsonKV('status', 'error');
+        WriteJsonKVInt('errors', Length(LResult.Errors));
+        WriteJsonKVInt('rejected', LResult.Rejected);
+        WriteJsonFooter;
+      end
+      else
+      begin
+        Writeln('[ingest] validation failed');
+        for var LErr in LResult.Errors do
+          Writeln('  error: ' + LErr);
+        Writeln(Format('[ingest] rejected nodes: %d', [LResult.Rejected]));
       end;
-    finally
-      LFunctions.Free;
-      LModules.Free;
-      LViews.Free;
-      LData.Free;
+      ExitCode := 1;
+      Exit;
+    end;
+
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('ingest');
+      WriteJsonKV('status', 'ok');
+      WriteJsonKVInt('accepted', LResult.Accepted);
+      WriteJsonKVInt('rejected', LResult.Rejected);
+      WriteJsonKVInt('merged', LResult.Merged);
+      WriteJsonKVInt('added', LResult.Added);
+      WriteJsonKVInt('fogCleared', LResult.FogCleared);
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('[ingest] accepted=%d rejected=%d merged=%d added=%d fogCleared=%d',
+        [LResult.Accepted, LResult.Rejected, LResult.Merged, LResult.Added,
+          LResult.FogCleared]));
     end;
   finally
-    LIngest.Free;
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 

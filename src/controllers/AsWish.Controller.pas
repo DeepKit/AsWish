@@ -121,6 +121,20 @@ type
     function TotalErrors: Integer;
   end;
 
+  /// <summary>What one candidate ingest did. The counts are what a caller
+  ///  prints; the errors are the diagnostics it prints when it refuses the
+  ///  batch. Failed is not a separate flag -- Ok is False exactly when the
+  ///  batch was refused, and the caller decides what a refusal looks like.</summary>
+  TIngestResult = record
+    Ok: Boolean;
+    Accepted: Integer;
+    Rejected: Integer;
+    Merged: Integer;
+    Added: Integer;
+    FogCleared: Integer;
+    Errors: TArray<string>;
+  end;
+
   TAsWishController = class
   private
     FProjectService: TAsWishProjectService;
@@ -212,6 +226,13 @@ type
     ///  creates the html directory -- a write, on a command whose whole job is
     ///  to report and not touch anything.</summary>
     function ValidateSpecFiles(const AProjectPath: string): TSpecValidationResult;
+    /// <summary>Validate one candidate YAML file and merge it into the four
+    ///  trees on disk. Only the trees that actually gained nodes are written
+    ///  back, so a candidate that changes nothing leaves the files untouched.
+    ///  Deliberately does not open a project: nothing here renders, and a
+    ///  read-only opening would still create three directories.</summary>
+    function IngestCandidateNodes(const AProjectPath,
+      ACandidatePath: string): TIngestResult;
     procedure OpenAndScan(const APath: string);
     procedure RunScan;
     /// <summary>True only while the last RunScan ended in an exception. Read
@@ -541,6 +562,77 @@ begin
   finally
     LFiles.Free;
     LValidator.Free;
+  end;
+end;
+
+function TAsWishController.IngestCandidateNodes(const AProjectPath,
+  ACandidatePath: string): TIngestResult;
+var
+  LIngest: TAsWishCandidateIngest;
+  LFunctions, LModules, LViews, LData: TList<TSpecNode>;
+  LContent: string;
+  LIngested: TCandidateIngestResult;
+  LMerged: TMergeStats;
+  LErrors: TList<string>;
+begin
+  Result := Default(TIngestResult);
+  FSpecStore.Initialize(AProjectPath);
+
+  LFunctions := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
+  LModules := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
+  LViews := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
+  LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LContent := TFile.ReadAllText(ACandidatePath, TEncoding.UTF8);
+    LIngested := LIngest.Ingest(LContent, LFunctions, LModules, LViews, LData);
+    try
+      Result.Accepted := LIngested.Accepted.Count;
+      Result.Rejected := LIngested.Rejected;
+      if (LIngested.Errors.Count > 0) or (LIngested.Rejected > 0) then
+      begin
+        Result.Ok := False;
+        LErrors := TList<string>.Create;
+        try
+          for var LErr in LIngested.Errors do
+            LErrors.Add(LErr);
+          Result.Errors := LErrors.ToArray;
+        finally
+          LErrors.Free;
+        end;
+        Exit;
+      end;
+
+      LMerged := LIngest.MergeInto(LIngested.Accepted,
+        LFunctions, LModules, LViews, LData);
+      Result.Merged := LMerged.Merged;
+      Result.Added := LMerged.Added;
+      Result.FogCleared := LMerged.FogCleared;
+
+      // Write back only the trees the candidate actually touched. Writing all
+      // four would rewrite (and re-stamp) files this batch had no business
+      // changing.
+      if LMerged.Merged + LMerged.Added > 0 then
+      begin
+        if LIngested.FuncNodes.Count > 0 then
+          FSpecStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LFunctions);
+        if LIngested.ModNodes.Count > 0 then
+          FSpecStore.WriteTreeFile('trees/module-tree.yaml', ttModule, LModules);
+        if LIngested.ViewNodes.Count > 0 then
+          FSpecStore.WriteTreeFile('trees/view-tree.yaml', ttView, LViews);
+        if LIngested.DataNodes.Count > 0 then
+          FSpecStore.WriteTreeFile('trees/data-tree.yaml', ttData, LData);
+      end;
+      Result.Ok := True;
+    finally
+      LIngested.FreeOwned;
+    end;
+  finally
+    LIngest.Free;
+    LData.Free;
+    LViews.Free;
+    LModules.Free;
+    LFunctions.Free;
   end;
 end;
 

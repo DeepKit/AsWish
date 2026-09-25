@@ -166,6 +166,17 @@ type
     [Test] procedure Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
     [Test] procedure Test_InitializeProject_LaysDownStructureWithoutScanning;
     [Test] procedure Test_ValidateSpecFiles_ReportsFindingsWithoutOpeningProject;
+    /// <summary>The CLI's ingest merged a candidate straight into the store and
+    ///  wrote every tree the batch had touched. Two things are worth locking:
+    ///  the node reaches disk, and the trees it did NOT touch keep their exact
+    ///  bytes -- writing all four would re-stamp them, which shows up as a
+    ///  diff in a committed spec file for a batch that never mentioned it.</summary>
+    [Test] procedure Test_IngestCandidateNodes_WritesOnlyTheTouchedTrees;
+    /// <summary>The refusal half: a rejected candidate must produce the error
+    ///  text the CLI prints and change nothing on disk. The CLI wrote back
+    ///  inside the same conditional as the merge, so this is the branch that
+    ///  stops a bad merge from being persisted.</summary>
+    [Test] procedure Test_IngestCandidateNodes_RejectedCandidateWritesNothing;
   end;
 
   /// <summary>Drives the Controller the way the CLI does: with the real
@@ -1526,6 +1537,125 @@ begin
     'validation must not create the prompts directory');
   Assert.IsFalse(TDirectory.Exists(TPath.Combine(LSub, '.AsWish', 'decisions')),
     'validation must not create the decisions directory');
+end;
+
+procedure TTestAsWishController.Test_IngestCandidateNodes_WritesOnlyTheTouchedTrees;
+const
+  // Chosen so the id cannot collide with anything the fixture scan produced:
+  // the assertions below are on this literal, not on a list that would be
+  // empty in either outcome.
+  CPROBE_ID = 'func-ingest-probe';
+var
+  LCand, LFuncPath, LModPath, LFuncBefore, LModBefore: string;
+  LResult: TIngestResult;
+begin
+  // A function-tree candidate. It names a parent that does not exist on
+  // purpose: an unknown parent is a warning-grade route, not a rejection, so
+  // the batch still merges and the counts stay real.
+  LCand := TPath.Combine(FDir, 'cand.yaml');
+  TFile.WriteAllText(LCand,
+    'tree: function' + sLineBreak +
+    'version: "1.0"' + sLineBreak +
+    'nodes:' + sLineBreak +
+    '  - id: "' + CPROBE_ID + '"' + sLineBreak +
+    '    tree: function' + sLineBreak +
+    '    title: "Ingest probe"' + sLineBreak +
+    '    kind: capability' + sLineBreak +
+    '    parent_id: null' + sLineBreak +
+    '    created_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    updated_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    revision: 1' + sLineBreak +
+    '    summary: "Written by an ingest probe"' + sLineBreak +
+    '    status: confirmed' + sLineBreak +
+    '    gen_status: generated' + sLineBreak +
+    '    review_status: unreviewed' + sLineBreak,
+    TEncoding.UTF8);
+
+  LFuncPath := TPath.Combine(FDir, '.AsWish', 'trees', 'function-tree.yaml');
+  LModPath := TPath.Combine(FDir, '.AsWish', 'trees', 'module-tree.yaml');
+  LFuncBefore := TFile.ReadAllText(LFuncPath, TEncoding.UTF8);
+  LModBefore := TFile.ReadAllText(LModPath, TEncoding.UTF8);
+
+  LResult := FController.IngestCandidateNodes(FDir, LCand);
+
+  Assert.IsTrue(LResult.Ok, 'a well-formed candidate must be accepted');
+  Assert.AreEqual(1, LResult.Accepted, 'exactly one node is in the candidate');
+  Assert.AreEqual(0, LResult.Rejected, 'nothing is rejected');
+
+  Assert.IsTrue(TFile.ReadAllText(LFuncPath, TEncoding.UTF8).Contains(CPROBE_ID),
+    'the merged node must be on disk, not only in the result');
+  Assert.IsTrue(LFuncBefore <> TFile.ReadAllText(LFuncPath, TEncoding.UTF8),
+    'the touched tree must have changed -- if it did not, the assertions '
+    + 'above are measuring nothing');
+
+  // The whole point of the conditional write-back. Byte equality, not a
+  // count: a rewritten-but-unchanged tree differs only in its stamps, which
+  // is precisely the damage this prevents.
+  Assert.AreEqual(LModBefore, TFile.ReadAllText(LModPath, TEncoding.UTF8),
+    'a candidate that mentions no module node must not re-stamp module-tree');
+  Assert.IsFalse(TFile.ReadAllText(LModPath, TEncoding.UTF8).Contains(CPROBE_ID),
+    'the probe belongs in the function tree only');
+end;
+
+procedure TTestAsWishController.Test_IngestCandidateNodes_RejectedCandidateWritesNothing;
+var
+  LCand, LFuncPath, LFuncBefore: string;
+  LResult: TIngestResult;
+begin
+  // One good node and one that fails the tree-prefix rule. The good node is
+  // the point: a partially-valid batch must be refused whole, not merged
+  // halfway -- the good node is parseable, so a write-back that stops
+  // guarding on the refusal would persist it and leave a tree half-updated
+  // with the CLI reporting failure. A bad-only batch could not catch that,
+  // because an all-rejected batch has nothing to write in the first place.
+  LCand := TPath.Combine(FDir, 'bad-cand.yaml');
+  TFile.WriteAllText(LCand,
+    'tree: function' + sLineBreak +
+    'version: "1.0"' + sLineBreak +
+    'nodes:' + sLineBreak +
+    '  - id: "func-partial-batch"' + sLineBreak +
+    '    tree: function' + sLineBreak +
+    '    title: "Valid node in a refused batch"' + sLineBreak +
+    '    kind: capability' + sLineBreak +
+    '    parent_id: null' + sLineBreak +
+    '    created_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    updated_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    revision: 1' + sLineBreak +
+    '    summary: "Must not reach disk"' + sLineBreak +
+    '    status: confirmed' + sLineBreak +
+    '    gen_status: generated' + sLineBreak +
+    '    review_status: unreviewed' + sLineBreak +
+    '  - id: "mod-wrong-tree"' + sLineBreak +
+    '    tree: function' + sLineBreak +
+    '    title: "Prefixed for the wrong tree"' + sLineBreak +
+    '    kind: capability' + sLineBreak +
+    '    parent_id: null' + sLineBreak +
+    '    created_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    updated_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    revision: 1' + sLineBreak +
+    '    summary: "Should be rejected"' + sLineBreak +
+    '    status: confirmed' + sLineBreak +
+    '    gen_status: generated' + sLineBreak +
+    '    review_status: unreviewed' + sLineBreak,
+    TEncoding.UTF8);
+
+  LFuncPath := TPath.Combine(FDir, '.AsWish', 'trees', 'function-tree.yaml');
+  LFuncBefore := TFile.ReadAllText(LFuncPath, TEncoding.UTF8);
+
+  LResult := FController.IngestCandidateNodes(FDir, LCand);
+
+  Assert.IsFalse(LResult.Ok, 'a rejected candidate is a refusal, not a success');
+  Assert.AreEqual(1, LResult.Rejected, 'one node is rejected');
+  Assert.IsTrue(Length(LResult.Errors) = 1,
+    'one error is reported, got ' + IntToStr(Length(LResult.Errors)));
+  Assert.IsTrue(LResult.Errors[0].Contains('does not match prefix'),
+    'the error must keep the wording the CLI prints: ' + LResult.Errors[0]);
+
+  Assert.AreEqual(LFuncBefore, TFile.ReadAllText(LFuncPath, TEncoding.UTF8),
+    'a refused batch must leave the trees byte-identical');
+  Assert.IsFalse(TFile.ReadAllText(LFuncPath, TEncoding.UTF8)
+    .Contains('func-partial-batch'),
+    'the valid node in a refused batch must not reach disk either');
 end;
 
 { THeadlessShellTests }
