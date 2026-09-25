@@ -12,6 +12,11 @@ this gate itself would otherwise have missed.
    internal audit reports and handover packs outside them - one audit request
    even sat at the repository root - so this gate matches by content pattern,
    not by a hardcoded prefix list it already knows about.
+3. Reverse direction: exported code referencing an internal file by its repo
+   path. WO-20260925-0056 excluded WO/ and only then found that six anchors
+   under WO/evidence/ were what the seeded Commons lessons pointed at - the
+   clean clone built fine and failed 6 tests. A reference to an ignored path
+   is invisible to the build, so it is checked statically here.
 """
 import re
 import subprocess
@@ -25,6 +30,20 @@ ROOT = Path(__file__).resolve().parents[2]
 
 BUILD_SCRIPTS = ["_build.bat", "cli/_build_cli.bat", "tests/_build_tests.bat"]
 VENDOR_PATH = "vendor\\deepbase-ehai"
+
+# Extensions the build, the compiler and the test runner actually consume. A
+# reference found here is a broken dependency in the released source and fails
+# the gate.
+CONSUMES_EXT = {".pas", ".dpr", ".inc", ".bat", ".yaml", ".yml", ".json", ".cfg", ".py", ".txt"}
+
+# Prose only. The public docs under docs/ cite their sources under docs/归档/ and
+# WO/ as provenance; those links dangle in a release but the citations are why
+# the docs can be trusted, so they are reported, not blocked on.
+PROSE_EXT = {".md"}
+
+# A path-shaped token ending in an extension. Backslash is in the class on
+# purpose: Delphi string literals carry Windows separators.
+PATH_TOKEN = re.compile(r"[A-Za-z0-9_.\-/\\一-鿿]+\.[A-Za-z0-9]{1,6}")
 
 # Matched against the *exported* path list. A missing entry here means internal
 # material shipped; that is a release blocker, not a warning.
@@ -63,6 +82,57 @@ def exported_files() -> set[str]:
     ).stdout
     with zipfile.ZipFile(io.BytesIO(out)) as zf:
         return {n.rstrip("/") for n in zf.namelist() if not n.endswith("/")}
+
+
+def tree_paths() -> set[str]:
+    """Every path committed in HEAD. `-z` because quoting of the non-ASCII names
+    under docs/ makes the default output unusable for a set difference."""
+    out = subprocess.run(
+        ["git", "ls-tree", "-r", "-z", "--name-only", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
+    ).stdout
+    return {n.decode("utf-8", "replace") for n in out.split(b"\0") if n}
+
+
+def references_to_internal(exported: set[str]) -> tuple[list[str], int]:
+    """Exported text that names a committed-but-excluded file by its repo path.
+
+    tree - archive is exactly what export-ignore removed, so any hit is a
+    reference the released source cannot satisfy. Comparing to a set instead of
+    matching prefixes is what keeps doc comments that merely mention "WO/0056"
+    from failing the gate: such a token is not a committed path.
+
+    Returns (blocking findings, count of prose-only citations).
+    """
+    try:
+        ignored = tree_paths() - exported
+    except subprocess.CalledProcessError:
+        return [], 0
+    if not ignored:
+        return [], 0
+
+    findings = []
+    prose_hits = 0
+    for rel in sorted(exported):
+        suffix = Path(rel).suffix.lower()
+        if suffix not in CONSUMES_EXT and suffix not in PROSE_EXT:
+            continue
+        p = ROOT / rel
+        if not p.is_file():
+            continue
+        hits = set()
+        for m in PATH_TOKEN.finditer(read(p)):
+            token = m.group(0).rstrip(".,;:)").replace("\\", "/")
+            if token in ignored:
+                hits.add(token)
+        if suffix in PROSE_EXT:
+            prose_hits += len(hits)
+            continue
+        for h in sorted(hits):
+            findings.append(f"{rel} 引用了导出清单外的内部文件 {h}（干净克隆里它不存在）")
+    return findings, prose_hits
 
 
 def main() -> None:
@@ -125,6 +195,11 @@ def main() -> None:
         for need in RELEASE_ESSENTIALS:
             if need not in exported:
                 findings.append(f"导出清单缺少开源必备件 {need}")
+        ref_findings, prose_hits = references_to_internal(exported)
+        findings.extend(ref_findings)
+        if prose_hits:
+            print(f"[{GATE}] 注意: 公开文档有 {prose_hits} 处指向未导出出处"
+                  f"（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）")
 
     if findings:
         print(f"[{GATE}] FAIL")

@@ -2014,7 +2014,10 @@ begin
   LLog := TStringList.Create;
   try
     try
-      LEvidenceDir := TPath.Combine(LRepoRoot, 'WO\evidence');
+      // dogfood_* is gitignored, so a verification run never dirties a fresh
+      // clone. WO/evidence was the internal evidence store and does not exist
+      // in a source release (WO-20260925-0056).
+      LEvidenceDir := TPath.Combine(LRepoRoot, 'dogfood_gui');
       LShotDir := TPath.Combine(LEvidenceDir, 'screenshots');
       LLogFile := TPath.Combine(LEvidenceDir, 'gui-dual-surface-0044-甲.txt');
       TDirectory.CreateDirectory(LShotDir);
@@ -2065,7 +2068,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-01-project-open.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 1: OpenAndScan executed in GUI.');
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-01-project-open.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-01-project-open.png');
       LLog.Add('       [DOM-ASSERT] index.html rendered in WebView2, DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 120));
 
@@ -2081,7 +2084,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-02-difference-view.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 2: Difference view loaded. Path: ' + LDiffPath);
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-02-difference-view.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-02-difference-view.png');
       LLog.Add('       [DOM-ASSERT] difference.html rendered, difference count verified in DOM: 21 items');
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 160));
@@ -2098,7 +2101,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-03-judge-unacceptable.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 3: Recorded Unacceptable decision %s in GUI.', [LDec1]));
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-03-judge-unacceptable.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-03-judge-unacceptable.png');
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec1]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 160));
@@ -2114,7 +2117,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-04-judge-acceptable.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 4: Recorded Acceptable decision %s in GUI.', [LDec2]));
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-04-judge-acceptable.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-04-judge-acceptable.png');
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec2]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 160));
@@ -2132,7 +2135,7 @@ begin
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 5: Evolved new baseline %s (parent: %s) in GUI.',
         [LEvolveId, LNewBaseline.Lineage.ParentBaselineId]));
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-05-evolve-baseline.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-05-evolve-baseline.png');
       LLog.Add(Format('       [DOM-ASSERT] difference.html rendered for evolved baseline %s (0 differences) in DOM', [LEvolveId]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 160));
@@ -2147,7 +2150,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-06-decisions-history.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 6: Decisions history displayed in GUI.');
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-06-decisions-history.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-06-decisions-history.png');
       LLog.Add('       [DOM-ASSERT] decisions.html rendered, contains full history dec-0001..dec-0004 in DOM');
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 220));
@@ -2177,7 +2180,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-07-inspector-dialog.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 7: D-1 Inspector Sidebar verified. ChangeSet: %s submitted via SSOT.', [LSubmittedCs]));
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-07-inspector-dialog.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-07-inspector-dialog.png');
 
       // Step 8: Verify D-2 Ghosts Context Hints & Badges (WO-0044)
       SetStatusMessage('GUI Step 8: Verifying D-2 Ghosts Context Hints...');
@@ -2201,7 +2204,7 @@ begin
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-08-ghosts-hints.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 8: D-2 Ghosts context chips (matching, narrative badges, dismiss) verified.');
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-08-ghosts-hints.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-08-ghosts-hints.png');
 
       // Step 9: Verify D-3 Immersive Review Surface (F11) (WO-0044)
       SetStatusMessage('GUI Step 9: Verifying D-3 Immersive Review Surface...');
@@ -2218,7 +2221,7 @@ begin
       if not LeftPanel.Visible then
         raise Exception.Create('D-3 assertion failed: Restoring review must restore left panel');
       LLog.Add('[PASS] Step 9: D-3 Immersive review surface (F11 toggle, panel hide/restore) verified.');
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-09-immersive-review.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-09-immersive-review.png');
 
       // Step 9.5: Verify WO-20260924-0049 P-4 share-to-hub consent (HB Deck)
       SetStatusMessage('GUI Step 9.5: Verifying Commons share-to-hub consent...');
@@ -2254,8 +2257,8 @@ begin
         TPath.Combine(LShotDir, 'gui-10-consent-checkbox.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 9.5a: Share-to-hub consent defaults unchecked and never carries stale opt-in forward.');
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-10-consent-unchecked.png');
-      LLog.Add('       Control capture: WO/evidence/screenshots/gui-10-consent-checkbox.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-10-consent-unchecked.png');
+      LLog.Add('       Control capture: dogfood_gui/screenshots/gui-10-consent-checkbox.png');
 
       // Opt-in path: extraction must persist publish_consent and report the share status.
       FHBShareConsentChk.Checked := True;
@@ -2278,8 +2281,8 @@ begin
         TPath.Combine(LShotDir, 'gui-11-consent-checkbox.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 9.5b: Opted-in extraction persists publish_consent: true and reports the share status.');
-      LLog.Add('       Screenshot: WO/evidence/screenshots/gui-11-consent-checked.png');
-      LLog.Add('       Control capture: WO/evidence/screenshots/gui-11-consent-checkbox.png');
+      LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-11-consent-checked.png');
+      LLog.Add('       Control capture: dogfood_gui/screenshots/gui-11-consent-checkbox.png');
 
       // Opt-out path: same lesson re-extracted without consent must not publish.
       FHBShareConsentChk.Checked := False;
