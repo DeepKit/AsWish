@@ -1390,32 +1390,27 @@ end;
 
 procedure RunEvidenceCollect(const AProjectDir, ABaselineId: string);
 var
-  LStore: TAsWishStoreService;
-  LSnapshot: TAsWishSnapshotService;
-  LCollector: TAsWishEvidenceCollectorService;
+  LBundle: TControllerBundle;
   LEvidences: TArray<TSpecEvidence>;
 begin
-  LStore := TAsWishStoreService.Create;
+  // The desktop app reaches the collector through the Controller, which counts
+  // the refs it could not resolve and reports them; this copy passed no counter
+  // and dropped them. The collection and the file it writes are the same either
+  // way -- the counter is output-only -- so this is a wiring swap, and the
+  // degraded count now exists on both entry points instead of one.
+  // The per-item listing below stays in the CLI: it is this entry point's output
+  // format, not something the Controller owes a caller.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(AProjectDir);
-    LSnapshot := TAsWishSnapshotService.Create(LStore);
-    try
-      LCollector := TAsWishEvidenceCollectorService.Create(LStore, LSnapshot);
-      try
-        LEvidences := LCollector.CollectImplementationEvidence(AProjectDir, ABaselineId);
-        Writeln(Format('Collected %d implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml',
-          [Length(LEvidences)]));
-        for var LEv in LEvidences do
-          Writeln(Format('  - %s: %s (lines: %s, hash: %s)',
-            [LEv.Id, LEv.Path, LEv.Lines, Copy(LEv.SourceFileHash, 1, 12)]));
-      finally
-        LCollector.Free;
-      end;
-    finally
-      LSnapshot.Free;
-    end;
+    LBundle.Controller.OpenProject(AProjectDir);
+    LEvidences := LBundle.Controller.CollectEvidence(ABaselineId);
+    Writeln(Format('Collected %d implementation evidence item(s) to .AsWish/evidence/implementation-evidence.yaml',
+      [Length(LEvidences)]));
+    for var LEv in LEvidences do
+      Writeln(Format('  - %s: %s (lines: %s, hash: %s)',
+        [LEv.Id, LEv.Path, LEv.Lines, Copy(LEv.SourceFileHash, 1, 12)]));
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
