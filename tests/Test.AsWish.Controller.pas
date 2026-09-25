@@ -130,6 +130,12 @@ type
     [Test] procedure Test_BundleApply_FailureCodes_WriteNoDecision;
     [Test] procedure Test_BundleApply_DiskFirst_DoesNotBlankRenderedTrees;
     [Test] procedure Test_HealthMetricsFromDisk_MatchesLiveBuilder;
+    /// <summary>The CLI's render opens the project and draws the pages without
+    ///  ever scanning, so the dashboard's file count used to be zero -- and the
+    ///  CLI's own copy of this code hid that with a node total mislabelled as
+    ///  "files". The number must be the scanned file count.</summary>
+    [Test] procedure Test_RenderFromDisk_FileCountIsScannedNotNodeTotal;
+    [Test] procedure Test_RefreshFromYaml_KeepsItsStatusWording;
     [Test] procedure Test_Restart_KeepsDecisions;
     [Test] procedure Test_ChangeSet_EndToEnd_Accept;
     [Test] procedure Test_ChangeSet_Accept_IsIdempotent;
@@ -810,6 +816,79 @@ begin
   Assert.IsTrue(LDisk.TotalNodes > 0, 'fixture must have nodes');
   Assert.AreEqual<Integer>(1, LDisk.HighRiskOpen,
     'the written issue must be counted, or the issue path is untested');
+end;
+
+procedure TTestAsWishController.Test_RenderFromDisk_FileCountIsScannedNotNodeTotal;
+var
+  LResult: TRenderResult;
+  LHtml: string;
+  LNodeTotal: Integer;
+  LFunc, LModule, LView, LData: TList<TSpecNode>;
+begin
+  // The shape of the CLI's render command: open the project, never scan.
+  RestartApp;
+  FController.OpenProject(FDir);
+  Assert.AreEqual<Integer>(0,
+    FBuilder.FunctionNodes.Count + FBuilder.ModuleNodes.Count,
+    'a project opened without scanning must start with an empty builder');
+
+  LResult := FController.RenderFromDisk;
+
+  Assert.IsTrue(LResult.Ok, 'a disk-first render must succeed');
+  Assert.IsTrue(LResult.FileCount > 0,
+    'a render that never scanned must still measure the file count, not print 0');
+  Assert.IsTrue(LResult.HtmlPath.EndsWith('html'),
+    'the caller has to be handed the html dir to print');
+
+  // The dashboard prints one number: the scanned file count. Pin it against
+  // the node total, which is what the CLI's own copy of this code used.
+  LNodeTotal := 0;
+  LFunc := FStore.ReadTreeFile('trees/function-tree.yaml');
+  LModule := FStore.ReadTreeFile('trees/module-tree.yaml');
+  LView := FStore.ReadTreeFile('trees/view-tree.yaml');
+  LData := FStore.ReadTreeFile('trees/data-tree.yaml');
+  try
+    LNodeTotal := LFunc.Count + LModule.Count + LView.Count + LData.Count;
+  finally
+    LFunc.Free;
+    LModule.Free;
+    LView.Free;
+    LData.Free;
+  end;
+
+  Assert.IsTrue(LNodeTotal <> LResult.FileCount,
+    'this fixture cannot tell a file count from a node count');
+
+  LHtml := TFile.ReadAllText(TPath.Combine(FStore.BasePath,
+    'html\index.html'), TEncoding.UTF8);
+  Assert.IsTrue(LHtml.Contains(Format('(%d files)', [LResult.FileCount])),
+    'the dashboard must show the scanned file count');
+  Assert.IsFalse(LHtml.Contains(Format('(%d files)', [LNodeTotal])),
+    'the dashboard must not show a node total under the label "files"');
+end;
+
+procedure TTestAsWishController.Test_RefreshFromYaml_KeepsItsStatusWording;
+var
+  LResult: TRenderResult;
+  LBefore: Integer;
+begin
+  // RefreshFromYaml is a GUI-only command whose entire output is one status
+  // line. It is now a wrapper over RenderFromDisk, so its wording is the one
+  // thing a refactor could silently move -- and the GUI is the surface the
+  // automated suite cannot click.
+  LResult := FController.RenderFromDisk;
+  Assert.IsTrue(LResult.Ok, 'render must succeed');
+  LBefore := FStatus.Messages.Count;
+
+  FController.RefreshFromYaml;
+
+  Assert.AreEqual(LBefore + 1, FStatus.Messages.Count,
+    'refresh must report exactly one status line');
+  Assert.AreEqual(Format(
+    'I: Refreshed HTML from YAML: %d func / %d module / %d view / %d data nodes.',
+    [LResult.FuncCount, LResult.ModuleCount, LResult.ViewCount,
+     LResult.DataCount]), FStatus.Messages[LBefore],
+    'the GUI status wording must not move because this path was refactored');
 end;
 
 procedure TTestAsWishController.Test_Restart_KeepsDecisions;

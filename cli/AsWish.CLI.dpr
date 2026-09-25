@@ -1006,65 +1006,24 @@ end;
 
 procedure RunRender(const ADir: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
-  LRender: TAsWishRenderService;
-  LFunc, LModule, LView, LData: TList<TSpecNode>;
+  LBundle: TControllerBundle;
+  LResult: TRenderResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[render] error: no .AsWish directory; run scan first');
     Halt(1);
   end;
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
-  LRender := TAsWishRenderService.Create;
-  LFunc := nil; LModule := nil; LView := nil; LData := nil;
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LRender.Initialize(LProject.AsWishPath);
-    LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
-    LModule := LStore.ReadTreeFile('trees/module-tree.yaml');
-    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-    if TFile.Exists(TPath.Combine(LStore.BasePath, 'trees\data-tree.yaml')) then
-      LData := LStore.ReadTreeFile('trees/data-tree.yaml');
+    LBundle.Controller.OpenProject(ADir);
+    LResult := LBundle.Controller.RenderFromDisk;
+    if not LResult.Ok then
+      Halt(1);
 
-    var LIssues := LStore.ReadIssuesFile('issues/doc-issues.yaml');
-    try
-      // The reload path has no scan service to ask, so the file count on the
-      // dashboard is the node total. Every other entry point passes the real
-      // scanned file count; that difference is a per-entry input, not a second
-      // copy of the page sequence.
-      LRender.RenderStandardPages(LProject.ProjectName,
-        LFunc.Count + LModule.Count + LView.Count, LFunc, LModule, LView,
-        LData, LIssues, LStore);
-    finally
-      LIssues.Free;
-    end;
-
-    var LDecFile := TPath.Combine(LProject.AsWishPath, 'decisions.yaml');
-    if TFile.Exists(LDecFile) then
-    begin
-      var LDecService := TAsWishDecisionsService.Create;
-      try
-        LDecService.Initialize(LProject.AsWishPath);
-        LDecService.Load;
-        LRender.RenderDecisionsPage(LDecService.Decisions.ToArray, LProject.ProjectName);
-      finally
-        LDecService.Free;
-      end;
-    end;
-
-    Writeln('[render] done -> ' + LProject.AsWishPath + '\html\');
+    Writeln('[render] done -> ' + LResult.HtmlPath + '\');
   finally
-    LData.Free;
-    LView.Free;
-    LModule.Free;
-    LFunc.Free;
-    LRender.Free;
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 

@@ -64,6 +64,27 @@ type
     TreesTouched: TArray<string>;
   end;
 
+  /// <summary>What a disk-first re-render produced. The GUI reads the counts
+  ///  off the status pane; a one-shot CLI process has no pane, so it must be
+  ///  handed the html path and the node totals instead of re-walking the four
+  ///  tree files to print them.</summary>
+  TRenderResult = record
+    Ok: Boolean;
+    HtmlPath: string;
+    /// <summary>Scanned file count actually printed on the dashboard. This is
+    ///  what used to diverge: a one-shot process never scanned, so the count
+    ///  was silently zero.</summary>
+    FileCount: Integer;
+    FuncCount: Integer;
+    ModuleCount: Integer;
+    ViewCount: Integer;
+    DataCount: Integer;
+    /// <summary>Whether the data-tree file existed at all. The GUI's status
+    ///  line keys off presence, not node count, and the wording must not move
+    ///  because this path was refactored.</summary>
+    HasDataTree: Boolean;
+  end;
+
   TAsWishController = class
   private
     FProjectService: TAsWishProjectService;
@@ -154,6 +175,11 @@ type
     procedure ExportPrompt;
     procedure GenerateB;
     procedure RenderAll;
+    /// <summary>Re-render the HTML pages from the four trees on disk. This is
+    ///  the single "draw the pages from YAML" path: the GUI's Refresh HTML from
+    ///  YAML command and the CLI's render command both land here, because they
+    ///  used to be two copies of the same orchestration.</summary>
+    function RenderFromDisk: TRenderResult;
     procedure RefreshFromYaml;
     /// <summary>Open an exploration ticket for a fog node (BUG-11 step 2):
     ///  defogs the node one step, validates, persists to
@@ -668,10 +694,11 @@ begin
   end;
 end;
 
-procedure TAsWishController.RefreshFromYaml;
+function TAsWishController.RenderFromDisk: TRenderResult;
 var
   LFunc, LModule, LView, LData: TList<TSpecNode>;
 begin
+  Result := Default(TRenderResult);
   if not FProjectService.IsOpen then
   begin
     FStatus.Warning('AsWish', 'No project open');
@@ -684,6 +711,18 @@ begin
   LData := nil;
   try
     try
+      // The dashboard prints a scanned-file count, and a process that only
+      // re-renders never scanned -- so it used to print 0, or (in the CLI's
+      // own copy of this code) a node total mislabelled as files.
+      // ScanDirectory is in-memory and deterministic, so measuring here is
+      // free and makes both surfaces print the real number. Only done when
+      // nothing was measured yet, so the GUI does not rescan on every click.
+      if FScanService.TotalFiles = 0 then
+      begin
+        FScanService.ScanDirectory(FProjectService.ProjectPath);
+        FProjectService.SetProjectType(FScanService.DetectProjectType);
+      end;
+
       LFunc := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
       LModule := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
       LView := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
@@ -702,13 +741,17 @@ begin
         LIssuesR.Free;
       end;
 
-      var LMsg := Format('Refreshed HTML from YAML: %d func / %d module / %d view',
-        [LFunc.Count, LModule.Count, LView.Count]);
+      Result.HtmlPath := TPath.Combine(FProjectService.AsWishPath, 'html');
+      Result.FileCount := FScanService.TotalFiles;
+      Result.FuncCount := LFunc.Count;
+      Result.ModuleCount := LModule.Count;
+      Result.ViewCount := LView.Count;
       if LData <> nil then
-        LMsg := LMsg + Format(' / %d data nodes.', [LData.Count])
-      else
-        LMsg := LMsg + '.';
-      FStatus.Info('AsWish.Render', LMsg);
+      begin
+        Result.DataCount := LData.Count;
+        Result.HasDataTree := True;
+      end;
+      Result.Ok := True;
     except
       on E: Exception do
         FStatus.LogError('AsWish.Render', 'RefreshFromYaml failed: ' + E.Message,
@@ -720,6 +763,24 @@ begin
     LView.Free;
     LData.Free;
   end;
+end;
+
+procedure TAsWishController.RefreshFromYaml;
+var
+  LResult: TRenderResult;
+  LMsg: string;
+begin
+  LResult := RenderFromDisk;
+  if not LResult.Ok then
+    Exit;
+
+  LMsg := Format('Refreshed HTML from YAML: %d func / %d module / %d view',
+    [LResult.FuncCount, LResult.ModuleCount, LResult.ViewCount]);
+  if LResult.HasDataTree then
+    LMsg := LMsg + Format(' / %d data nodes.', [LResult.DataCount])
+  else
+    LMsg := LMsg + '.';
+  FStatus.Info('AsWish.Render', LMsg);
 end;
 
 procedure TAsWishController.PromotePendingDecisions;
