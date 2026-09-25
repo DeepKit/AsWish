@@ -938,64 +938,40 @@ end;
 
 procedure RunValidate(const ADir: string);
 var
-  LStore: TAsWishStoreService;
-  LValidator: TYamlValidator;
-  LErrorCount: Integer;
-  LBase: string;
+  LBundle: TControllerBundle;
+  LResult: TSpecValidationResult;
+  LOne: TSpecFileValidation;
+  LErr: TValidationError;
 begin
-  LStore := TAsWishStoreService.Create;
-  LValidator := TYamlValidator.Create;
+  // The Controller decides which files are checked and in what order; this
+  // procedure decides how the findings read. Note there is no OpenProject
+  // here: opening initialises the renderer, which creates the html directory,
+  // and a command whose whole job is to report must not write anything.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LBase := LStore.BasePath;
-    LErrorCount := 0;
-
-    for var LRel in TArray<string>.Create(
-      'trees/function-tree.yaml', 'trees/module-tree.yaml',
-      'trees/view-tree.yaml', 'trees/data-tree.yaml') do
+    LResult := LBundle.Controller.ValidateSpecFiles(ADir);
+    for LOne in LResult.Files do
     begin
-      var LPath := TPath.Combine(LBase, LRel);
-      if not TFile.Exists(LPath) then
+      if not LOne.Present then
       begin
-        Writeln('[validate] skip (missing): ' + LRel);
+        Writeln('[validate] skip (missing): ' + LOne.RelPath);
         Continue;
       end;
-      var LReport := LValidator.ValidateTreeFile(
-        TFile.ReadAllText(LPath, TEncoding.UTF8));
       Writeln(Format('[validate] %s: %d error(s), %d warning(s)',
-        [LRel, LReport.ErrorCount, LReport.WarningCount]));
-      for var LE in LReport.Errors do
-        Writeln(Format('  [%s] %s @%s - %s', [LE.Rule, LE.MessageText,
-          LE.Path, LE.FixHint]));
-      if LReport.HasErrors then
-        Inc(LErrorCount, LReport.ErrorCount);
-      LReport.Free;
+        [LOne.RelPath, LOne.ErrorCount, LOne.WarningCount]));
+      for LErr in LOne.Errors do
+        Writeln(Format('  [%s] %s @%s - %s', [LErr.Rule, LErr.MessageText,
+          LErr.Path, LErr.FixHint]));
     end;
 
-    var LIssuesPath := TPath.Combine(LBase, 'issues\doc-issues.yaml');
-    if TFile.Exists(LIssuesPath) then
+    if not LResult.Ok then
     begin
-      var LReport := LValidator.ValidateIssuesFile(
-        TFile.ReadAllText(LIssuesPath, TEncoding.UTF8));
-      Writeln(Format('[validate] issues/doc-issues.yaml: %d error(s), %d warning(s)',
-        [LReport.ErrorCount, LReport.WarningCount]));
-      for var LE in LReport.Errors do
-        Writeln(Format('  [%s] %s @%s - %s', [LE.Rule, LE.MessageText,
-          LE.Path, LE.FixHint]));
-      if LReport.HasErrors then
-        Inc(LErrorCount, LReport.ErrorCount);
-      LReport.Free;
-    end;
-
-    if LErrorCount > 0 then
-    begin
-      Writeln(Format('[validate] FAILED: %d error(s)', [LErrorCount]));
+      Writeln(Format('[validate] FAILED: %d error(s)', [LResult.TotalErrors]));
       Halt(1);
     end;
     Writeln('[validate] OK');
   finally
-    LValidator.Free;
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 

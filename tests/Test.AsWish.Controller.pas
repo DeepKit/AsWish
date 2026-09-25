@@ -165,6 +165,7 @@ type
     [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
     [Test] procedure Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
     [Test] procedure Test_InitializeProject_LaysDownStructureWithoutScanning;
+    [Test] procedure Test_ValidateSpecFiles_ReportsFindingsWithoutOpeningProject;
   end;
 
   /// <summary>Drives the Controller the way the CLI does: with the real
@@ -1463,6 +1464,68 @@ begin
     + 'delphi_vcl), not unknown');
   Assert.IsFalse(TFile.Exists(TPath.Combine(LPath, 'scan-report.html')),
     'init must not render pages; it is the step before the first scan');
+end;
+
+procedure TTestAsWishController.Test_ValidateSpecFiles_ReportsFindingsWithoutOpeningProject;
+var
+  LSub, LTree: string;
+  LResult: TSpecValidationResult;
+  LOne: TSpecFileValidation;
+  LFound: Boolean;
+begin
+  // The pass must read the trees and report, and nothing else. Opening a
+  // project would create html/, prompts/ and decisions/ -- verified at the
+  // process level: with OpenProject in place of the store initialisation,
+  // `validate` on a bare directory creates those three directories.
+  LSub := TPath.Combine(FDir, 'validate-target');
+  TDirectory.CreateDirectory(LSub);
+  LTree := TPath.Combine(LSub, '.AsWish', 'trees');
+  TDirectory.CreateDirectory(LTree);
+  TFile.WriteAllText(TPath.Combine(LTree, 'function-tree.yaml'),
+    'version: "1.0"' + sLineBreak +
+    'tree: function' + sLineBreak +
+    'generated_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    'generator: "aswish-treebuilder"' + sLineBreak +
+    'nodes:' + sLineBreak +
+    '  - id: "BAD ID !! nope"' + sLineBreak +
+    '    tree: function' + sLineBreak +
+    '    title: ""' + sLineBreak +
+    '    kind: not_a_real_kind' + sLineBreak +
+    '    parent_id: null' + sLineBreak +
+    '    created_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    updated_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
+    '    content_hash: "x"' + sLineBreak +
+    '    relation_hash: "y"' + sLineBreak +
+    '    revision: 1' + sLineBreak +
+    '    summary: ""' + sLineBreak +
+    '    status: not_a_status' + sLineBreak +
+    '    gen_status: generated' + sLineBreak +
+    '    review_status: unreviewed' + sLineBreak,
+    TEncoding.UTF8);
+
+  LResult := FController.ValidateSpecFiles(LSub);
+
+  Assert.IsFalse(LResult.Ok, 'a tree with three illegal fields must not pass');
+  Assert.AreEqual(3, LResult.TotalErrors, 'three errors must be counted');
+
+  // The caller prints "skip (missing)" for files that were not there, so the
+  // absent ones have to still appear in the ordered result.
+  LFound := False;
+  for LOne in LResult.Files do
+    if LOne.RelPath = 'trees/module-tree.yaml' then
+    begin
+      LFound := True;
+      Assert.IsFalse(LOne.Present,
+        'a missing tree must be reported as not present, not as clean');
+    end;
+  Assert.IsTrue(LFound, 'the four trees must all be in the result, in order');
+
+  Assert.IsFalse(TDirectory.Exists(TPath.Combine(LSub, '.AsWish', 'html')),
+    'validation must not create the html directory');
+  Assert.IsFalse(TDirectory.Exists(TPath.Combine(LSub, '.AsWish', 'prompts')),
+    'validation must not create the prompts directory');
+  Assert.IsFalse(TDirectory.Exists(TPath.Combine(LSub, '.AsWish', 'decisions')),
+    'validation must not create the decisions directory');
 end;
 
 { THeadlessShellTests }

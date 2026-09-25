@@ -30,6 +30,7 @@ uses
   AsWish.Services.EvidenceCollector,
   AsWish.Services.VisualWorkflow,
   AsWish.Services.Commons,
+  AsWish.Validation,
   AsWish.Models;
 
 type
@@ -95,6 +96,29 @@ type
     Failure: string;
     BaselineId: string;
     DecisionId: string;
+  end;
+
+  /// <summary>One file a spec-validation pass looked at. Present is False when
+  ///  the file was not there at all, which a caller reports differently from a
+  ///  file that validated cleanly.</summary>
+  TSpecFileValidation = record
+    RelPath: string;
+    Present: Boolean;
+    ErrorCount: Integer;
+    WarningCount: Integer;
+    Errors: TArray<TValidationError>;
+  end;
+
+  /// <summary>What a spec-validation pass found. The Controller owns which
+  ///  files get checked and in what order; the wording stays with the caller,
+  ///  so the CLI's contract does not move because a status line exists.</summary>
+  TSpecValidationResult = record
+    Ok: Boolean;
+    Files: TArray<TSpecFileValidation>;
+    /// <summary>Errors across every file that was present. A missing file is
+    ///  not an error, but it is not silently clean either -- the caller prints
+    ///  it as skipped.</summary>
+    function TotalErrors: Integer;
   end;
 
   TAsWishController = class
@@ -183,6 +207,11 @@ type
     ///  side-effect-bounded operation. OpenAndScan performs the same four
     ///  writes and then scans, which is a different command.</summary>
     function InitializeProject(const APath: string): string;
+    /// <summary>Validate the spec files on disk without opening a project.
+    ///  Deliberately not OpenProject: that initialises the renderer, which
+    ///  creates the html directory -- a write, on a command whose whole job is
+    ///  to report and not touch anything.</summary>
+    function ValidateSpecFiles(const AProjectPath: string): TSpecValidationResult;
     procedure OpenAndScan(const APath: string);
     procedure RunScan;
     /// <summary>True only while the last RunScan ended in an exception. Read
@@ -330,7 +359,6 @@ uses
   System.IOUtils,
   System.StrUtils,
   AsWish.UI.Types,
-  AsWish.Validation,
   AsWish.Yaml.Writer;
 
 constructor TAsWishController.Create(
@@ -413,6 +441,107 @@ begin
 
   Result := FProjectService.AsWishPath;
   FStatus.Info('AsWish.Init', 'Initialized project: ' + Result);
+end;
+
+function TSpecValidationResult.TotalErrors: Integer;
+var
+  LOne: TSpecFileValidation;
+begin
+  Result := 0;
+  for LOne in Files do
+    Inc(Result, LOne.ErrorCount);
+end;
+
+function TAsWishController.ValidateSpecFiles(
+  const AProjectPath: string): TSpecValidationResult;
+const
+  TREE_FILES: TArray<string> = [
+    'trees/function-tree.yaml', 'trees/module-tree.yaml',
+    'trees/view-tree.yaml', 'trees/data-tree.yaml'];
+var
+  LValidator: TYamlValidator;
+  LBase, LRel, LPath: string;
+  LReport: TValidationReport;
+  LFiles: TList<TSpecFileValidation>;
+  LOne: TSpecFileValidation;
+  LErr: TValidationError;
+  LErrors: TList<TValidationError>;
+begin
+  Result := Default(TSpecValidationResult);
+  // Only the store is needed, so only the store is initialised. See the
+  // declaration note: opening a project would create the html directory.
+  FSpecStore.Initialize(AProjectPath);
+  LBase := FSpecStore.BasePath;
+
+  LValidator := TYamlValidator.Create;
+  LFiles := TList<TSpecFileValidation>.Create;
+  try
+    for LRel in TREE_FILES do
+    begin
+      LOne := Default(TSpecFileValidation);
+      LOne.RelPath := LRel;
+      LPath := TPath.Combine(LBase, LRel);
+      if not TFile.Exists(LPath) then
+      begin
+        LFiles.Add(LOne);
+        Continue;
+      end;
+
+      LOne.Present := True;
+      LReport := LValidator.ValidateTreeFile(
+        TFile.ReadAllText(LPath, TEncoding.UTF8));
+      try
+        LOne.ErrorCount := LReport.ErrorCount;
+        LOne.WarningCount := LReport.WarningCount;
+        LErrors := TList<TValidationError>.Create;
+        try
+          for LErr in LReport.Errors do
+            LErrors.Add(LErr);
+          LOne.Errors := LErrors.ToArray;
+        finally
+          LErrors.Free;
+        end;
+      finally
+        LReport.Free;
+      end;
+      LFiles.Add(LOne);
+    end;
+
+    // issues/doc-issues.yaml is the one non-tree file this pass checks. The
+    // separator is a forward slash on purpose: the caller prints this path
+    // verbatim and has always printed it that way.
+    LRel := 'issues/doc-issues.yaml';
+    LPath := TPath.Combine(LBase, LRel);
+    if TFile.Exists(LPath) then
+    begin
+      LOne := Default(TSpecFileValidation);
+      LOne.RelPath := LRel;
+      LOne.Present := True;
+      LReport := LValidator.ValidateIssuesFile(
+        TFile.ReadAllText(LPath, TEncoding.UTF8));
+      try
+        LOne.ErrorCount := LReport.ErrorCount;
+        LOne.WarningCount := LReport.WarningCount;
+        LErrors := TList<TValidationError>.Create;
+        try
+          for LErr in LReport.Errors do
+            LErrors.Add(LErr);
+          LOne.Errors := LErrors.ToArray;
+        finally
+          LErrors.Free;
+        end;
+      finally
+        LReport.Free;
+      end;
+      LFiles.Add(LOne);
+    end;
+
+    Result.Files := LFiles.ToArray;
+    Result.Ok := Result.TotalErrors = 0;
+  finally
+    LFiles.Free;
+    LValidator.Free;
+  end;
 end;
 
 procedure TAsWishController.OpenAndScan(const APath: string);
