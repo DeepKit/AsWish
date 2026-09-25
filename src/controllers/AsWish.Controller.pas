@@ -276,6 +276,16 @@ begin
     Exit;
   end;
 
+  // The pack describes the source tree, so it must be built from one. This
+  // method used to consume whatever state the last scan happened to leave
+  // behind, which only worked because the desktop button is reachable after a
+  // Visualize click -- the CLI's generate command, which opens the project and
+  // exports in one go, got a pack saying "Type: unknown" and zero files.
+  // ScanDirectory is in-memory and deterministic, so refreshing here is free
+  // and makes both entry points produce the same pack.
+  FScanService.ScanDirectory(FProjectService.ProjectPath);
+  FProjectService.SetProjectType(FScanService.DetectProjectType);
+
   FPrompts.WriteContextPack(FScanService, FProjectService.ProjectName,
     FProjectService.ProjectType);
   FPrompts.WriteGenerationPrompt(FProjectService.ProjectName,

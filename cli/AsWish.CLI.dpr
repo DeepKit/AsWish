@@ -1070,28 +1070,22 @@ end;
 
 procedure RunGenerate(const ADir: string);
 var
-  LProject: TAsWishProjectService;
-  LScan: TAsWishScanService;
-  LPrompts: TAsWishPromptService;
+  LBundle: TControllerBundle;
 begin
-  LProject := TAsWishProjectService.Create;
-  LScan := TAsWishScanService.Create;
-  LPrompts := TAsWishPromptService.Create;
+  // Same orchestration the desktop app's Export Prompt button follows. This
+  // used to build its own scan and prompt services and detect the project type
+  // here -- a second copy of a sequence the Controller already owns.
+  // Status echo off: the two lines below are this command's whole contract.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LPrompts.Initialize(LProject.AsWishPath);
-    LScan.ScanDirectory(ADir);
-    var LType := LScan.DetectProjectType;
-    LPrompts.WriteContextPack(LScan, LProject.ProjectName, LType);
-    LPrompts.WriteGenerationPrompt(LProject.ProjectName, LType);
-    Writeln('[generate] prompts written to ' + LProject.AsWishPath
+    LBundle.Controller.OpenProject(ADir);
+    LBundle.Controller.ExportPrompt;
+    Writeln('[generate] prompts written to ' + LBundle.Project.AsWishPath
       + '\prompts\');
     Writeln('[generate] note: the LLM call itself runs in the desktop app '
       + '(Generate B command); this command exports the prompt pack.');
   finally
-    LPrompts.Free;
-    LScan.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 

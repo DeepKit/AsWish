@@ -132,6 +132,7 @@ type
     [Test] procedure Test_ChangeSet_EndToEnd_Reject;
     [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
     [Test] procedure Test_ChangeSet_DecisionResult_CarriesParsedIds;
+    [Test] procedure Test_ExportPrompt_AfterOpenOnly_StillDescribesTheTree;
     [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
     [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
@@ -849,6 +850,31 @@ begin
   Assert.IsFalse(LResult.Ok, 'result must report failure');
   Assert.AreEqual<string>('', LResult.DecisionId,
     'a failed clarify must clear the decision id');
+end;
+
+procedure TTestAsWishController.Test_ExportPrompt_AfterOpenOnly_StillDescribesTheTree;
+var
+  LPack, LGen: string;
+begin
+  // The CLI's generate command opens the project and exports the prompt pack
+  // in one go, without a Visualize click in between. ExportPrompt used to
+  // consume whatever the last scan left behind, so that command produced a
+  // pack claiming the project had no files and an unknown type -- the pack was
+  // correct only for a caller that happened to have scanned first.
+  FController.OpenProject(FDir);
+  FController.ExportPrompt;
+
+  LPack := TFile.ReadAllText(TPath.Combine(FStore.BasePath,
+    'prompts\context-pack.md'), TEncoding.UTF8);
+  Assert.IsFalse(LPack.Contains('- Type: unknown'),
+    'the context pack must not claim an unknown project type when the source tree is readable');
+  Assert.IsFalse(LPack.Contains('| Total | 0 |'),
+    'the context pack must count the project files, not report an empty scan');
+
+  LGen := TFile.ReadAllText(TPath.Combine(FStore.BasePath,
+    'prompts\doc-optimization-prompt.md'), TEncoding.UTF8);
+  Assert.IsFalse(LGen.Contains('unknown project'),
+    'the generation prompt must name the real project type');
 end;
 
 procedure TTestAsWishController.Test_ComputeDifference_GeneratesReportAndHtml;
