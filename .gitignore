@@ -16,6 +16,10 @@ __history/
 *.bpl
 *.dcu
 *.res
+# ...except AsWish.res: AsWish.dpr has {$R *.res}, so a clean clone fails with
+# E1026 File not found: 'AsWish.res' without it. It is the compiled app
+# icon/version resource from the tracked AsWish.ico, not a build by-product.
+!AsWish.res
 
 # Test run output (regenerable)
 tests/dunitx-results.xml

@@ -94,6 +94,27 @@ def main() -> None:
         findings.append(f"git archive HEAD 失败: {exc}")
         exported = set()
 
+    # A {$R x.res} directive whose file is not version-controlled compiles fine
+    # on a reused working directory and fails with E1026 on any clean checkout.
+    # AsWish.res was ignored by *.res for exactly that reason.
+    for dpr in [ROOT / "AsWish.dpr"] + sorted((ROOT / "cli").glob("*.dpr")) + \
+               sorted((ROOT / "tests").glob("*.dpr")):
+        if not dpr.is_file():
+            continue
+        rel = dpr.relative_to(ROOT).as_posix()
+        for m in re.finditer(r"\{\$R\s+([^}]+)\}", read(dpr)):
+            res = m.group(1).strip()
+            # Delphi convention: the '*' in {$R *.res} is a placeholder for the
+            # project file's base name, so AsWish.dpr + {$R *.res} -> AsWish.res.
+            if "*" in res:
+                res = res.replace("*", dpr.stem)
+            if not res.startswith(("src/", "cli/", "tests/")):
+                res = (dpr.parent / res).relative_to(ROOT).as_posix()
+            if res not in exported:
+                findings.append(
+                    f"{rel} 引用了未入库的资源 {res}（干净克隆将 E1026 File not found）"
+                )
+
     if exported:
         for pattern, label in INTERNAL_PATTERNS:
             hits = sorted(n for n in exported if re.search(pattern, n))
