@@ -204,8 +204,8 @@ begin
   // Negative test: a machine lesson with fake/unresolvable paths must be rejected by SeedCommonsLessonsIfEmpty
   LCorrupted := TSpecCommonsLesson.CreateNew('lesson-corrupted-0099', 'Corrupted',
     'Takeaway', 'pattern', 'wrong', 'right',
-    'WO/evidence/commons-anchors/non_existent_fake_baseline.yaml',
-    'WO/evidence/commons-anchors/non_existent_fake_diff.yaml',
+    'tests/fixtures/commons-anchors/non_existent_fake_baseline.yaml',
+    'tests/fixtures/commons-anchors/non_existent_fake_diff.yaml',
     'test', 'test', 'cautionary', 'machine');
   Assert.IsFalse(TAsWishCommonsService.ResolveAnchor(LCorrupted.BaselineRef, FStore.BasePath),
     'Non-existent machine anchor must not resolve');
@@ -255,12 +255,12 @@ var
   I: Integer;
 begin
   LSlices := [
-    'WO/evidence/commons-anchors/lesson-0002-baseline.yaml',
-    'WO/evidence/commons-anchors/lesson-0002-difference.yaml',
-    'WO/evidence/commons-anchors/lesson-0003-baseline.yaml',
-    'WO/evidence/commons-anchors/lesson-0003-decisions.yaml',
-    'WO/evidence/commons-anchors/lesson-0009-baseline.yaml',
-    'WO/evidence/commons-anchors/lesson-0009-difference.yaml'
+    'tests/fixtures/commons-anchors/lesson-0002-baseline.yaml',
+    'tests/fixtures/commons-anchors/lesson-0002-difference.yaml',
+    'tests/fixtures/commons-anchors/lesson-0003-baseline.yaml',
+    'tests/fixtures/commons-anchors/lesson-0003-decisions.yaml',
+    'tests/fixtures/commons-anchors/lesson-0009-baseline.yaml',
+    'tests/fixtures/commons-anchors/lesson-0009-difference.yaml'
   ];
 
   for var LRelSlice in LSlices do
