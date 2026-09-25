@@ -1097,32 +1097,25 @@ end;
 
 procedure RunVisualPreview(const ADir: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
-  LRender: TAsWishRenderService;
-  LView: TList<TSpecNode>;
+  LBundle: TControllerBundle;
+  LPath: string;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[visual] error: no .AsWish directory');
     Halt(1);
   end;
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
-  LRender := TAsWishRenderService.Create;
-  LView := nil;
+  // The wireframe is drawn from the builder, which a one-shot process has not
+  // filled. Without this load the page would be rendered from an empty node
+  // list and silently overwrite the real one.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LRender.Initialize(LProject.AsWishPath);
-    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-    LRender.RenderVisualPreview(LView, LProject.ProjectName);
-    Writeln('[visual preview] rendered -> ' + TPath.Combine(LProject.AsWishPath, 'html\visual-preview.html'));
+    LBundle.Controller.OpenProject(ADir);
+    LBundle.Controller.LoadPersistedTrees;
+    LPath := LBundle.Controller.RenderVisualPreviewPage;
+    Writeln('[visual preview] rendered -> ' + LPath);
   finally
-    LView.Free;
-    LRender.Free;
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 

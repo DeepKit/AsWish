@@ -145,6 +145,7 @@ type
     ///  load the trees first -- this is the #21 defect class, and it is the
     ///  reason the CLI's own copy of this command read the tree file itself.</summary>
     [Test] procedure Test_VisualConfirm_FromDisk_FindsViewNodesAndReturnsIds;
+    [Test] procedure Test_RenderVisualPreviewPage_WiresEveryViewNodeFromDisk;
     [Test] procedure Test_VisualConfirm_NoViewNodes_ReportsNoViewNodes;
     /// <summary>The other half of the same invariant: the view nodes are on
     ///  disk, so a caller that skips the load gets told there are none. This is
@@ -923,6 +924,33 @@ begin
   finally
     LView.Free;
   end;
+end;
+
+procedure TTestAsWishController.Test_RenderVisualPreviewPage_WiresEveryViewNodeFromDisk;
+var
+  LPath, LText: string;
+begin
+  // The wireframe is drawn from the builder, so a one-shot process must have
+  // loaded it first. Removing that load from the CLI does not fail loudly --
+  // verified at the process level: the command prints its success line, exits
+  // 0, and writes a page with zero wireframes over the real one.
+  // The ids below are the two PutViewNodesOnDisk writes and are asserted by
+  // name. Looping over FBuilder.ViewNodes instead asserts nothing at all when
+  // the load is missing, because that list is precisely what ends up empty.
+  PutViewNodesOnDisk;
+  RestartApp;
+  FController.OpenProject(FDir);
+  FController.LoadPersistedTrees;
+
+  LPath := FController.RenderVisualPreviewPage;
+  Assert.IsTrue(TFile.Exists(LPath), 'the preview page must be written');
+  LText := TFile.ReadAllText(LPath, TEncoding.UTF8);
+  Assert.IsTrue(LText.Contains('view-test-1'),
+    'the wireframe must contain view-test-1; an unloaded builder silently '
+    + 'drops it and still reports success');
+  Assert.IsTrue(LText.Contains('view-test-2'),
+    'the wireframe must contain view-test-2; an unloaded builder silently '
+    + 'drops it and still reports success');
 end;
 
 procedure TTestAsWishController.Test_VisualConfirm_FromDisk_FindsViewNodesAndReturnsIds;

@@ -193,6 +193,12 @@ type
     ///  used to be two copies of the same orchestration.</summary>
     function RenderFromDisk: TRenderResult;
     procedure RefreshFromYaml;
+    /// <summary>Render just the deterministic View Spec wireframe page and
+    ///  return the file written. Unlike RefreshFromYaml this draws one page, so
+    ///  it is the entry point behind the CLI's visual preview command -- which
+    ///  used to read the view tree itself instead of using the builder the rest
+    ///  of the app renders from.</summary>
+    function RenderVisualPreviewPage: string;
     /// <summary>Open an exploration ticket for a fog node (BUG-11 step 2):
     ///  defogs the node one step, validates, persists to
     ///  issues/doc-issues.yaml, and re-renders. No-op if no project open.</summary>
@@ -805,6 +811,22 @@ begin
   else
     LMsg := LMsg + '.';
   FStatus.Info('AsWish.Render', LMsg);
+end;
+
+function TAsWishController.RenderVisualPreviewPage: string;
+begin
+  Result := '';
+  if not FProjectService.IsOpen then
+  begin
+    FStatus.Warning('AsWish', 'No project open');
+    Exit;
+  end;
+  // The builder is the source of truth everywhere else in the app; a one-shot
+  // process must have loaded it, or this would draw an empty wireframe over
+  // the real page -- the same defect class as #21.
+  FRender.RenderVisualPreview(FTreeBuilder.ViewNodes, FProjectService.ProjectName);
+  Result := TPath.Combine(FProjectService.AsWishPath, 'html\visual-preview.html');
+  FStatus.Info('AsWish.Render', 'Rendered visual preview -> ' + Result);
 end;
 
 procedure TAsWishController.PromotePendingDecisions;
