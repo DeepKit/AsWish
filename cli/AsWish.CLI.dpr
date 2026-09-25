@@ -84,7 +84,13 @@ type
     FLLM: TAsWishLLMService;
     FController: TAsWishController;
   public
-    constructor Create;
+    /// <summary>ASilentStatus suppresses the status channel's console echo.
+    /// Commands that own a strict output format (JSON, or a fixed human line
+    /// set) must pass True: the Controller narrates decisions through
+    /// FStatus.Info, and that echo lands in the middle of the JSON stream.
+    /// Commands that narrate themselves through the status channel -- scan
+    /// above all -- need the default False.</summary>
+    constructor Create(ASilentStatus: Boolean = False);
     destructor Destroy; override;
     property Controller: TAsWishController read FController;
     property Project: TAsWishProjectService read FProject;
@@ -855,108 +861,89 @@ end;
 
 procedure RunChangeSetReject(const ADir, AChangeSetId, ARationale: string);
 var
-  LStore: TAsWishStoreService;
-  LIngest: TAsWishCandidateIngest;
-  LDecisions: TAsWishDecisionsService;
-  LCS: TChangeSet;
-  LDecId: string;
+  LBundle: TControllerBundle;
+  LResult: TChangeSetDecisionResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
     Halt(1);
   end;
-  LStore := TAsWishStoreService.Create;
-  LIngest := TAsWishCandidateIngest.Create(LStore);
-  LDecisions := TAsWishDecisionsService.Create;
+  // The decision is recorded by the Controller, exactly as the desktop app
+  // records it. This used to build the ingest and decisions services here and
+  // call RecordChangeSetDecision itself -- a second copy of the orchestration
+  // that could drift from the one the GUI follows. The status channel is
+  // silenced: this command owns its output format.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LDecisions.Initialize(TPath.Combine(ADir, '.AsWish'));
-    LDecisions.Load;
-
-    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
-    if LCS.Id = '' then
+    LBundle.Controller.OpenProject(ADir);
+    if not LBundle.Controller.RejectChangeSet(AChangeSetId, ARationale, LResult) then
     begin
       Writeln('[changeset] error: change set not found: ' + AChangeSetId);
       Halt(1);
     end;
-
-    // Record reject decision (Canonical Spec trees remain untouched)
-    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsRejected, ARationale);
 
     if GJsonOutput then
     begin
       WriteJsonHeader('changeset_reject');
       WriteJsonKV('status', 'ok');
-      WriteJsonKV('decision_id', LDecId);
-      WriteJsonKV('change_set_id', LCS.Id);
+      WriteJsonKV('decision_id', LResult.DecisionId);
+      WriteJsonKV('change_set_id', LResult.ChangeSetId);
       WriteJsonKV('canonical_spec', 'untouched');
       WriteJsonFooter;
     end
     else
     begin
-      Writeln(Format('[changeset] REJECTED %s -> recorded Decision %s (Canonical Spec untouched)', [LCS.Id, LDecId]));
+      Writeln(Format('[changeset] REJECTED %s -> recorded Decision %s (Canonical Spec untouched)',
+        [LResult.ChangeSetId, LResult.DecisionId]));
     end;
   finally
-    LDecisions.Free;
-    LIngest.Free;
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
 procedure RunChangeSetClarify(const ADir, AChangeSetId, AClarification: string);
 var
-  LStore: TAsWishStoreService;
-  LIngest: TAsWishCandidateIngest;
-  LDecisions: TAsWishDecisionsService;
-  LCS: TChangeSet;
-  LDecId: string;
+  LBundle: TControllerBundle;
+  LResult: TChangeSetDecisionResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
     Halt(1);
   end;
-  LStore := TAsWishStoreService.Create;
-  LIngest := TAsWishCandidateIngest.Create(LStore);
-  LDecisions := TAsWishDecisionsService.Create;
+  // Same as RunChangeSetReject: the Controller owns the orchestration, this
+  // command only renders the result.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LDecisions.Initialize(TPath.Combine(ADir, '.AsWish'));
-    LDecisions.Load;
-
-    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
-    if LCS.Id = '' then
+    LBundle.Controller.OpenProject(ADir);
+    if not LBundle.Controller.ClarifyChangeSet(AChangeSetId, AClarification, LResult) then
     begin
       Writeln('[changeset] error: change set not found: ' + AChangeSetId);
       Halt(1);
     end;
 
-    // Record clarify decision with rsDeferred (Canonical Spec trees remain untouched)
-    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsDeferred, AClarification);
-
     if GJsonOutput then
     begin
       WriteJsonHeader('changeset_clarify');
       WriteJsonKV('status', 'ok');
-      WriteJsonKV('decision_id', LDecId);
-      WriteJsonKV('change_set_id', LCS.Id);
+      WriteJsonKV('decision_id', LResult.DecisionId);
+      WriteJsonKV('change_set_id', LResult.ChangeSetId);
       WriteJsonKV('canonical_spec', 'untouched');
       WriteJsonFooter;
     end
     else
     begin
-      Writeln(Format('[changeset] CLARIFIED %s -> recorded Decision %s (Canonical Spec untouched)', [LCS.Id, LDecId]));
+      Writeln(Format('[changeset] CLARIFIED %s -> recorded Decision %s (Canonical Spec untouched)',
+        [LResult.ChangeSetId, LResult.DecisionId]));
       Writeln('  Clarification detail: ' + AClarification);
     end;
   finally
-    LDecisions.Free;
-    LIngest.Free;
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
-constructor TControllerBundle.Create;
+constructor TControllerBundle.Create(ASilentStatus: Boolean);
 var
   LStatus: IShellStatusManager;
   LContext: IShellContextManager;
@@ -971,7 +958,7 @@ begin
   FDecisions := TAsWishDecisionsService.Create;
   FSettings := TAsWishSettingsService.Create;
   FLLM := TAsWishLLMService.Create('Default');
-  LStatus := TConsoleStatusManager.Create;
+  LStatus := TConsoleStatusManager.Create(ASilentStatus);
   LContext := THeadlessContextManager.Create;
   LBus := THeadlessEventBus.Create;
   try

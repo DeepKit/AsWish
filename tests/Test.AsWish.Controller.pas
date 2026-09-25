@@ -131,6 +131,7 @@ type
     [Test] procedure Test_ChangeSet_Accept_IsIdempotent;
     [Test] procedure Test_ChangeSet_EndToEnd_Reject;
     [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
+    [Test] procedure Test_ChangeSet_DecisionResult_CarriesParsedIds;
     [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
     [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
@@ -794,6 +795,60 @@ begin
   finally
     LDiskNodes.Free;
   end;
+end;
+
+procedure TTestAsWishController.Test_ChangeSet_DecisionResult_CarriesParsedIds;
+var
+  LCsDir, LCsFile: string;
+  LResult: TChangeSetDecisionResult;
+  procedure WriteCs(const AId, AIntent: string);
+  begin
+    TFile.WriteAllText(LCsFile, 'change_set_id: "' + AId + '"'#10 +
+      'intent_node_id: "func-alias-probe"'#10 + 'intent_tree: "function"'#10 +
+      'raw_user_intent: "' + AIntent + '"'#10 +
+      'author: "test"'#10 + 'items: []'#10, TEncoding.UTF8);
+  end;
+begin
+  // The CLI prints change_set_id straight out of this record. It has to be the
+  // id the change set declares, not the id the caller typed: LoadChangeSet
+  // resolves a filename alias down to whatever change_set_id the file holds,
+  // so the two legitimately differ. A caller that echoed its own argument back
+  // would print the alias -- which is what the CLI did before this record
+  // existed, and what a shortcut implementation of it reverts to.
+  LCsDir := TPath.Combine(TPath.Combine(FDir, '.AsWish'), 'llm');
+  TDirectory.CreateDirectory(LCsDir);
+  LCsFile := TPath.Combine(LCsDir, 'change-set-cs-alias.yaml');
+  WriteCs('cs-internal-777', 'alias resolution probe');
+
+  Assert.IsTrue(FController.RejectChangeSet('cs-alias', 'rejected by alias', LResult),
+    'reject by filename alias must succeed');
+  Assert.IsTrue(LResult.Ok, 'result must report success');
+  Assert.AreEqual<string>('cs-internal-777', LResult.ChangeSetId,
+    'the result must carry the parsed change set id, not the alias the caller passed');
+  Assert.IsNotEmpty(LResult.DecisionId, 'the result must carry the recorded decision id');
+
+  WriteCs('cs-internal-778', 'alias resolution probe 2');
+  Assert.IsTrue(FController.ClarifyChangeSet('cs-alias', 'clarify by alias', LResult),
+    'clarify by filename alias must succeed');
+  Assert.AreEqual<string>('cs-internal-778', LResult.ChangeSetId,
+    'clarify must carry the parsed change set id too');
+
+  // A miss must leave every field empty, not whatever was on the stack.
+  LResult.ChangeSetId := 'stale';
+  LResult.DecisionId := 'stale';
+  Assert.IsFalse(FController.RejectChangeSet('cs-no-such-set', 'x', LResult),
+    'rejecting an unknown change set must fail');
+  Assert.IsFalse(LResult.Ok, 'result must report failure');
+  Assert.AreEqual<string>('', LResult.ChangeSetId,
+    'a failed reject must clear the change set id');
+  Assert.AreEqual<string>('', LResult.DecisionId,
+    'a failed reject must clear the decision id');
+
+  Assert.IsFalse(FController.ClarifyChangeSet('cs-no-such-set', 'x', LResult),
+    'clarifying an unknown change set must fail');
+  Assert.IsFalse(LResult.Ok, 'result must report failure');
+  Assert.AreEqual<string>('', LResult.DecisionId,
+    'a failed clarify must clear the decision id');
 end;
 
 procedure TTestAsWishController.Test_ComputeDifference_GeneratesReportAndHtml;

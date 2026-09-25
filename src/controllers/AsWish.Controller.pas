@@ -33,6 +33,16 @@ uses
   AsWish.Models;
 
 type
+  /// <summary>What a change-set decision actually produced. The two-argument
+  /// Boolean methods below stay for the four callers that only need success;
+  /// this carries the ids a headless caller must print, so it no longer has
+  /// to re-read the change set off disk to learn what was decided.</summary>
+  TChangeSetDecisionResult = record
+    Ok: Boolean;
+    ChangeSetId: string;
+    DecisionId: string;
+  end;
+
   TAsWishController = class
   private
     FProjectService: TAsWishProjectService;
@@ -130,9 +140,15 @@ type
     function AcceptChangeSet(const AChangeSetId: string;
       const ARationale: string = ''): Boolean;
     function RejectChangeSet(const AChangeSetId: string;
-      const ARationale: string = ''): Boolean;
+      const ARationale: string = ''): Boolean; overload;
+    function RejectChangeSet(const AChangeSetId: string;
+      const ARationale: string;
+      out AResult: TChangeSetDecisionResult): Boolean; overload;
     function ClarifyChangeSet(const AChangeSetId: string;
-      const AClarificationText: string): Boolean;
+      const AClarificationText: string): Boolean; overload;
+    function ClarifyChangeSet(const AChangeSetId: string;
+      const AClarificationText: string;
+      out AResult: TChangeSetDecisionResult): Boolean; overload;
     function ListCandidateIntents: TArray<TCandidateIntent>;
 
     // Accepted Baseline & Visual Baseline (WO-20260830-0027E, WO-20260830-0028)
@@ -1475,10 +1491,19 @@ end;
 
 function TAsWishController.RejectChangeSet(const AChangeSetId, ARationale: string): Boolean;
 var
+  LResult: TChangeSetDecisionResult;
+begin
+  Result := RejectChangeSet(AChangeSetId, ARationale, LResult);
+end;
+
+function TAsWishController.RejectChangeSet(const AChangeSetId, ARationale: string;
+  out AResult: TChangeSetDecisionResult): Boolean;
+var
   LIngest: TAsWishCandidateIngest;
   LCS: TChangeSet;
   LDecId: string;
 begin
+  AResult := Default(TChangeSetDecisionResult);
   Result := False;
   if not FProjectService.IsOpen then
   begin
@@ -1500,6 +1525,9 @@ begin
 
     FStatus.Info('AsWish.ChangeSet', Format('Rejected %s -> Decision %s recorded (Canonical Spec untouched)',
       [LCS.Id, LDecId]));
+    AResult.Ok := True;
+    AResult.ChangeSetId := LCS.Id;
+    AResult.DecisionId := LDecId;
     Result := True;
   finally
     LIngest.Free;
@@ -1508,10 +1536,19 @@ end;
 
 function TAsWishController.ClarifyChangeSet(const AChangeSetId, AClarificationText: string): Boolean;
 var
+  LResult: TChangeSetDecisionResult;
+begin
+  Result := ClarifyChangeSet(AChangeSetId, AClarificationText, LResult);
+end;
+
+function TAsWishController.ClarifyChangeSet(const AChangeSetId, AClarificationText: string;
+  out AResult: TChangeSetDecisionResult): Boolean;
+var
   LIngest: TAsWishCandidateIngest;
   LCS: TChangeSet;
   LDecId: string;
 begin
+  AResult := Default(TChangeSetDecisionResult);
   Result := False;
   if not FProjectService.IsOpen then
   begin
@@ -1533,6 +1570,9 @@ begin
 
     FStatus.Info('AsWish.ChangeSet', Format('Clarification requested for %s -> Decision %s recorded',
       [LCS.Id, LDecId]));
+    AResult.Ok := True;
+    AResult.ChangeSetId := LCS.Id;
+    AResult.DecisionId := LDecId;
     Result := True;
   finally
     LIngest.Free;
