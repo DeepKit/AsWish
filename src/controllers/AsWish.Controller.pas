@@ -48,6 +48,22 @@ type
     UpdatedNodes: Integer;
   end;
 
+  /// <summary>What ApplyBundleDecisions did. The GUI reads the outcome off
+  ///  the status pane; a one-shot CLI process has no pane, so it must be
+  ///  handed the ids and the list of rewritten trees instead of re-deriving
+  ///  them by walking the four tree files again.</summary>
+  TBundleApplyResult = record
+    Ok: Boolean;
+    /// <summary>Why not, as a short code the caller maps to its own wording:
+    ///  'bundle-not-found' or 'bundle-no-nodes'.</summary>
+    Failure: string;
+    BundleId: string;
+    BundleTitle: string;
+    DecisionId: string;
+    NodeCount: Integer;
+    TreesTouched: TArray<string>;
+  end;
+
   TAsWishController = class
   private
     FProjectService: TAsWishProjectService;
@@ -95,6 +111,16 @@ type
     function AcceptChangeSetCore(const AChangeSetId, ARationale: string;
       ALoadTreesFromDisk: Boolean;
       out AResult: TChangeSetDecisionResult): Boolean;
+    /// <summary>The one body behind both ApplyBundleDecisions entry shapes.
+    ///  Silent by design: the desktop wrapper speaks through the status pane
+    ///  and the headless wrapper returns the record, so neither surface has
+    ///  to keep its own copy of the bundle lookup and decision recording.
+    ///  AOriginNote is the provenance sentence stored in the decision's
+    ///  impact field -- it must name the surface that really recorded the
+    ///  decision, because the ledger is the audit trail for who decided
+    ///  what and a false origin there is a false record.</summary>
+    function ApplyBundleDecisionsCore(const AAction, ABundleId,
+      AOriginNote: string; out AResult: TBundleApplyResult): Boolean;
   public
     /// <summary>Replace the builder's four trees with what is persisted on
     ///  disk. Only a headless caller needs this: a one-shot process has no scan
@@ -142,7 +168,14 @@ type
     ///  all anchored nodes, apply state transitions to every tree, and
     ///  re-render. AAction is 'bundle-accept' or 'bundle-reject'.
     ///  No-op if no project open.</summary>
-    procedure ApplyBundleDecisions(const AAction, ABundleId: string);
+    procedure ApplyBundleDecisions(const AAction, ABundleId: string); overload;
+    /// <summary>Same batch review, but hands back what it did instead of
+    ///  only narrating it through the status pane, and lets the caller name
+    ///  the surface that recorded the decision. See AOriginNote on the core:
+    ///  the GUI's default says WebView2, which would be a false statement
+    ///  in the ledger if a CLI had written it.</summary>
+    function ApplyBundleDecisions(const AAction, ABundleId,
+      AOriginNote: string; out AResult: TBundleApplyResult): Boolean; overload;
     procedure PromotePendingDecisions; overload;
     /// <summary>Same promotion, but reports what it did. A headless caller has
     ///  no status pane, so "promoted N" and the per-tree lines it prints were
@@ -769,21 +802,56 @@ end;
 procedure TAsWishController.ApplyBundleDecisions(
   const AAction, ABundleId: string);
 var
+  LResult: TBundleApplyResult;
+begin
+  if not ApplyBundleDecisionsCore(AAction, ABundleId,
+    'Recorded via WebView2 JS Bridge (batch review)', LResult) then
+  begin
+    // Delphi case needs an ordinal selector, so this is a chain, not a case.
+    if LResult.Failure = 'no-project' then
+      FStatus.Warning('AsWish', 'No project open — cannot review bundles')
+    else if LResult.Failure = 'bad-action' then
+      FStatus.LogError('AsWish', 'Unknown bundle action: ' + AAction, '')
+    else if LResult.Failure = 'bundle-not-found' then
+      FStatus.LogError('AsWish', 'Bundle not found: ' + ABundleId, '')
+    else if LResult.Failure = 'bundle-no-nodes' then
+      FStatus.LogError('AsWish',
+        'Bundle has no anchored nodes: ' + ABundleId, '');
+  end
+  else
+    FStatus.Info('AsWish',
+      Format('%s bundle %s (%d nodes): %s',
+        [IfThen(AAction = 'bundle-accept', 'Accepted', 'Rejected'),
+         LResult.BundleId, LResult.NodeCount, LResult.DecisionId]));
+end;
+
+function TAsWishController.ApplyBundleDecisions(const AAction, ABundleId,
+  AOriginNote: string; out AResult: TBundleApplyResult): Boolean;
+begin
+  Result := ApplyBundleDecisionsCore(AAction, ABundleId, AOriginNote, AResult);
+end;
+
+function TAsWishController.ApplyBundleDecisionsCore(const AAction, ABundleId,
+  AOriginNote: string; out AResult: TBundleApplyResult): Boolean;
+var
   LBundles: TList<TSemanticBundle>;
   LFound: Boolean;
   LDecisionType: TDecisionType;
   LDecId: string;
 begin
+  AResult := Default(TBundleApplyResult);
+  AResult.BundleId := ABundleId;
+
   if not FProjectService.IsOpen then
   begin
-    FStatus.Warning('AsWish', 'No project open — cannot review bundles');
-    Exit;
+    AResult.Failure := 'no-project';
+    Exit(False);
   end;
 
   if (AAction <> 'bundle-accept') and (AAction <> 'bundle-reject') then
   begin
-    FStatus.LogError('AsWish', 'Unknown bundle action: ' + AAction, '');
-    Exit;
+    AResult.Failure := 'bad-action';
+    Exit(False);
   end;
 
   LBundles := FSpecStore.ReadBundlesFile('bundles.yaml');
@@ -795,8 +863,8 @@ begin
       LFound := True;
       if Length(LB.NodeIds) = 0 then
       begin
-        FStatus.LogError('AsWish', 'Bundle has no anchored nodes: ' + ABundleId, '');
-        Exit;
+        AResult.Failure := 'bundle-no-nodes';
+        Exit(False);
       end;
 
       if AAction = 'bundle-accept' then
@@ -811,27 +879,28 @@ begin
         (IfThen(AAction = 'bundle-accept', 'Accept bundle: ',
           'Reject bundle: ') + LB.Title),
         AAction + ' (bundle: ' + ABundleId + ')',
-        'Recorded via WebView2 JS Bridge (batch review)', LB.NodeIds);
+        AOriginNote, LB.NodeIds);
       if AAction = 'bundle-accept' then
         FDecisions.AcceptDecision(LDecId)
       else
         FDecisions.RejectDecision(LDecId);
 
-      ApplyAllTreeTransitions;
+      AResult.TreesTouched := ApplyAllTreeTransitions;
       // Disk-first pass leaves the in-memory builder trees stale; reload
       // them so RenderAll / FindNodeById reflect the new state.
       ReloadInMemoryTrees;
       RenderAll;
 
-      FStatus.Info('AsWish',
-        Format('%s bundle %s (%d nodes): %s',
-          [IfThen(AAction = 'bundle-accept', 'Accepted', 'Rejected'),
-           ABundleId, Length(LB.NodeIds), LDecId]));
-      Break;
+      AResult.Ok := True;
+      AResult.BundleTitle := LB.Title;
+      AResult.DecisionId := LDecId;
+      AResult.NodeCount := Length(LB.NodeIds);
+      Exit(True);
     end;
 
     if not LFound then
-      FStatus.LogError('AsWish', 'Bundle not found: ' + ABundleId, '');
+      AResult.Failure := 'bundle-not-found';
+    Result := False;
   finally
     LBundles.Free;
   end;

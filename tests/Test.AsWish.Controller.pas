@@ -126,6 +126,9 @@ type
     [Test] procedure Test_CreateTicket_DefogsAndPersists;
     [Test] procedure Test_ApplyBundleDecisions_Accept;
     [Test] procedure Test_ApplyBundleDecisions_Reject;
+    [Test] procedure Test_BundleApply_ResultContract_AndOriginNote;
+    [Test] procedure Test_BundleApply_FailureCodes_WriteNoDecision;
+    [Test] procedure Test_BundleApply_DiskFirst_DoesNotBlankRenderedTrees;
     [Test] procedure Test_Restart_KeepsDecisions;
     [Test] procedure Test_ChangeSet_EndToEnd_Accept;
     [Test] procedure Test_ChangeSet_Accept_IsIdempotent;
@@ -632,6 +635,130 @@ begin
   Assert.AreEqual<Integer>(Ord(gsSkipped), Ord(LNode.GenStatus),
     'Reject All must skip anchored nodes (bugfix #15 semantics)');
   Assert.AreEqual<Integer>(Ord(rsRejected), Ord(LNode.ReviewStatus));
+end;
+
+procedure TTestAsWishController.Test_BundleApply_ResultContract_AndOriginNote;
+var
+  LBundles: TList<TSemanticBundle>;
+  LB: TSemanticBundle;
+  LFuncId, LModId: string;
+  LResult: TBundleApplyResult;
+  LDec: TSpecDecision;
+begin
+  // The four-argument overload exists for a caller with no status pane: it
+  // must hand back everything that surface prints instead of only narrating
+  // it, which is what let the CLI drop its own copy of the whole batch
+  // review (bundle lookup, decision recording, four-tree transition pass).
+  LFuncId := RootNodeId;
+  LModId := '';
+  if FBuilder.ModuleNodes.Count > 0 then
+    LModId := FBuilder.ModuleNodes[0].Id;
+  Assert.IsNotEmpty(LModId, 'module node must exist');
+
+  LB := Default(TSemanticBundle);
+  LB.Id := 'bnd-r1';
+  LB.Title := 'Result contract bundle';
+  SetLength(LB.NodeIds, 2);
+  LB.NodeIds[0] := LFuncId;
+  LB.NodeIds[1] := LModId;
+  LBundles := TList<TSemanticBundle>.Create;
+  try
+    LBundles.Add(LB);
+    FStore.WriteBundlesFile('bundles.yaml', LBundles);
+  finally
+    LBundles.Free;
+  end;
+
+  Assert.IsTrue(FController.ApplyBundleDecisions('bundle-accept', 'bnd-r1',
+    'Recorded via test', LResult), 'accepting a real bundle must succeed');
+  Assert.IsTrue(LResult.Ok);
+  Assert.AreEqual<string>('bnd-r1', LResult.BundleId);
+  Assert.AreEqual<string>('Result contract bundle', LResult.BundleTitle);
+  Assert.IsNotEmpty(LResult.DecisionId);
+  Assert.AreEqual<Integer>(2, LResult.NodeCount);
+  Assert.IsTrue(Length(LResult.TreesTouched) > 0,
+    'the rewritten-tree list is what the per-tree lines are printed from');
+
+  // The origin note is the ledger's "who decided". It has to arrive verbatim:
+  // the GUI default names WebView2, and a CLI that reused it would file a
+  // decision crediting a browser bridge that was never involved.
+  LDec := FDecisions.FindById(LResult.DecisionId);
+  Assert.AreEqual<string>('Recorded via test', LDec.Rationale);
+end;
+
+procedure TTestAsWishController.Test_BundleApply_FailureCodes_WriteNoDecision;
+var
+  LBundles: TList<TSemanticBundle>;
+  LB: TSemanticBundle;
+  LResult: TBundleApplyResult;
+begin
+  LB := Default(TSemanticBundle);
+  LB.Id := 'bnd-empty';
+  LB.Title := 'No anchored nodes';
+  SetLength(LB.NodeIds, 0);
+  LBundles := TList<TSemanticBundle>.Create;
+  try
+    LBundles.Add(LB);
+    FStore.WriteBundlesFile('bundles.yaml', LBundles);
+  finally
+    LBundles.Free;
+  end;
+
+  Assert.IsFalse(FController.ApplyBundleDecisions('bundle-accept', 'nope',
+    'Recorded via test', LResult), 'an unknown bundle must fail');
+  Assert.AreEqual<string>('bundle-not-found', LResult.Failure);
+
+  // The old CLI kept no such guard: it recorded a formal decision anchored
+  // to zero nodes, then reported success. A decision nothing can ever act
+  // on is a ledger entry that only looks like a decision.
+  Assert.IsFalse(FController.ApplyBundleDecisions('bundle-accept', 'bnd-empty',
+    'Recorded via test', LResult), 'a bundle with no anchored nodes must fail');
+  Assert.AreEqual<string>('bundle-no-nodes', LResult.Failure);
+
+  // Neither failure may leave anything behind: dec-0001 is the first id the
+  // service hands out, so its absence proves no decision was recorded.
+  Assert.IsEmpty(FDecisions.FindById('dec-0001').Id,
+    'a refused batch review must not write a decision');
+end;
+
+procedure TTestAsWishController.Test_BundleApply_DiskFirst_DoesNotBlankRenderedTrees;
+var
+  LBundles: TList<TSemanticBundle>;
+  LB: TSemanticBundle;
+  LFuncId, LTreeHtml: string;
+  LResult: TBundleApplyResult;
+begin
+  // A one-shot CLI process has no scan and no live builder, so this is the
+  // state it batch-reviews in. The Controller reloads the builder from disk
+  // after the transition pass precisely so the closing RenderAll describes
+  // real trees; drop that reload and the pages get rewritten as blanks.
+  LFuncId := RootNodeId;
+  Assert.IsNotEmpty(LFuncId, 'fixture must have a root function node');
+
+  LB := Default(TSemanticBundle);
+  LB.Id := 'bnd-df';
+  LB.Title := 'Disk-first bundle';
+  SetLength(LB.NodeIds, 1);
+  LB.NodeIds[0] := LFuncId;
+  LBundles := TList<TSemanticBundle>.Create;
+  try
+    LBundles.Add(LB);
+    FStore.WriteBundlesFile('bundles.yaml', LBundles);
+  finally
+    LBundles.Free;
+  end;
+
+  RestartApp;
+  Assert.AreEqual<Integer>(0, FBuilder.FunctionNodes.Count,
+    'a restarted controller starts with an empty builder, like a one-shot CLI');
+
+  Assert.IsTrue(FController.ApplyBundleDecisions('bundle-accept', 'bnd-df',
+    'Recorded via test', LResult), 'disk-first bundle accept must succeed');
+
+  LTreeHtml := TFile.ReadAllText(TPath.Combine(FStore.BasePath, 'html',
+    'function-tree.html'), TEncoding.UTF8);
+  Assert.IsTrue(LTreeHtml.Contains(LFuncId),
+    'RenderAll after a disk-first accept must not blank the rendered tree');
 end;
 
 procedure TTestAsWishController.Test_Restart_KeepsDecisions;

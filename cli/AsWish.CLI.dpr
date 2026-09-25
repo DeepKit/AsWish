@@ -284,16 +284,9 @@ end;
 
 procedure RunBundleApply(const ADir, ABundleId, AAction: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
-  LDecisions: TAsWishDecisionsService;
-  LBundles: TList<TSemanticBundle>;
-  LFound: TSemanticBundle;
-  LDecisionType: TDecisionType;
-  LDecId: string;
-  LTreeNames: TArray<string>;
-  LNodes: TList<TSpecNode>;
-  LAppliedCount: Integer;
+  LBundle: TControllerBundle;
+  LControllerAction: string;
+  LResult: TBundleApplyResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
@@ -307,106 +300,67 @@ begin
     Halt(1);
   end;
 
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
-  LDecisions := TAsWishDecisionsService.Create;
+  // The CLI's own copy of this command re-implemented the bundle lookup, the
+  // decision recording and the four-tree transition pass. The Controller
+  // already owns all three; it just reported through the status pane and
+  // returned nothing, so the ids and the rewritten-tree list had no source.
+  // It now returns them. No LoadPersistedTrees is needed here: the Controller
+  // reloads the builder from disk itself before it re-renders.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LDecisions.Initialize(LProject.AsWishPath);
-    LDecisions.Load;
+    LBundle.Controller.OpenProject(ADir);
 
-    var LBundlePath := TPath.Combine(LProject.AsWishPath, 'bundles.yaml');
+    var LBundlePath := TPath.Combine(ADir, '.AsWish', 'bundles.yaml');
     if not TFile.Exists(LBundlePath) then
     begin
       Writeln('[bundle-apply] error: bundles.yaml not found');
       Halt(1);
     end;
 
-    LBundles := LStore.ReadBundlesFile('bundles.yaml');
-    try
-      LFound.Id := '';
-      for var LB in LBundles do
-        if SameText(LB.Id, ABundleId) then
-        begin
-          LFound := LB;
-          Break;
-        end;
+    if AAction = 'accept' then
+      LControllerAction := 'bundle-accept'
+    else
+      LControllerAction := 'bundle-reject';
 
-      if LFound.Id = '' then
-      begin
-        Writeln(Format('[bundle-apply] error: bundle not found: %s', [ABundleId]));
-        Halt(1);
-      end;
-
-      if AAction = 'accept' then
-        LDecisionType := dtConfirm
+    if not LBundle.Controller.ApplyBundleDecisions(LControllerAction, ABundleId,
+      'Recorded via AsWish.CLI bundle apply', LResult) then
+    begin
+      if LResult.Failure = 'bundle-not-found' then
+        Writeln(Format('[bundle-apply] error: bundle not found: %s', [ABundleId]))
+      else if LResult.Failure = 'bundle-no-nodes' then
+        Writeln(Format('[bundle-apply] error: bundle has no anchored nodes: %s',
+          [ABundleId]))
       else
-        LDecisionType := dtReject;
-
-      LDecId := LDecisions.AddDecision(
-        LDecisionType,
-        Format('%s: %s', [AAction, LFound.Title]),
-        Format('CLI %s for bundle %s', [AAction, LFound.Id]),
-        Format('Applied to %d nodes via CLI', [Length(LFound.NodeIds)]),
-        LFound.NodeIds
-      );
-
-      if AAction = 'accept' then
-        LDecisions.AcceptDecision(LDecId)
-      else
-        LDecisions.RejectDecision(LDecId);
-      LAppliedCount := 1;
-      if GJsonOutput then
-      begin
-        WriteJsonHeader('bundle-apply');
-        WriteJsonKV('bundleId', LFound.Id);
-        WriteJsonKV('action', AAction);
-        WriteJsonKVInt('nodes', Length(LFound.NodeIds));
-        WriteJsonKV('decisionId', LDecId);
-        WriteJsonKVInt('promoted', LAppliedCount);
-      end
-      else
-        Writeln(Format('[bundle-apply] %s bundle %s (%d nodes, decision %s)',
-          [AAction, LFound.Id, Length(LFound.NodeIds), LDecId]));
-
-      if LAppliedCount > 0 then
-      begin
-        LTreeNames := TArray<string>.Create(
-          'trees/function-tree.yaml', 'trees/module-tree.yaml',
-          'trees/view-tree.yaml', 'trees/data-tree.yaml');
-        for var LTree in LTreeNames do
-        begin
-          if not TFile.Exists(TPath.Combine(LStore.BasePath, LTree)) then Continue;
-          LNodes := LStore.ReadTreeFile(LTree);
-          try
-            if (LNodes <> nil) and (LNodes.Count > 0) then
-            begin
-              LDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
-              LStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
-              if not GJsonOutput then
-                Writeln(Format('[bundle-apply] transitions applied to %s', [LTree]));
-            end;
-          finally
-            LNodes.Free;
-          end;
-        end;
-      end;
-
-      if GJsonOutput then
-      begin
-        WriteJsonKV('status', 'ok');
-        WriteJsonFooter;
-      end
-      else
-        Writeln('[bundle-apply] done');
-    finally
-      LBundles.Free;
+        Writeln(Format('[bundle-apply] error: %s', [LResult.Failure]));
+      Halt(1);
     end;
+
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('bundle-apply');
+      WriteJsonKV('bundleId', LResult.BundleId);
+      WriteJsonKV('action', AAction);
+      WriteJsonKVInt('nodes', LResult.NodeCount);
+      WriteJsonKV('decisionId', LResult.DecisionId);
+      WriteJsonKVInt('promoted', 1);
+    end
+    else
+      Writeln(Format('[bundle-apply] %s bundle %s (%d nodes, decision %s)',
+        [AAction, LResult.BundleId, LResult.NodeCount, LResult.DecisionId]));
+
+    for var LTree in LResult.TreesTouched do
+      if not GJsonOutput then
+        Writeln(Format('[bundle-apply] transitions applied to %s', [LTree]));
+
+    if GJsonOutput then
+    begin
+      WriteJsonKV('status', 'ok');
+      WriteJsonFooter;
+    end
+    else
+      Writeln('[bundle-apply] done');
   finally
-    LDecisions.Free;
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 
