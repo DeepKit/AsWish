@@ -162,6 +162,7 @@ type
     [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
     [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
+    [Test] procedure Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
   end;
 
   /// <summary>Drives the Controller the way the CLI does: with the real
@@ -1377,8 +1378,31 @@ begin
   Assert.IsTrue(FController.VerifyBaseline('B-0002'), 'B-0002 must verify');
 end;
 
-{ THeadlessShellTests }
+procedure TTestAsWishController.Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
+var
+  LFuncId, LCSId, LFile, LText: string;
+  LNewBaseline: TAsWishBaseline;
+begin
+  // The CLI used to build five services to reach ExportAgentHandoff. What a
+  // caller needs back is the path it must print -- and the package has to name
+  // the baseline it was asked for, so a refactor wired to the wrong baseline
+  // cannot pass by writing something plausible.
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Handoff export test');
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
 
+  LFile := FController.ExportAgentHandoff('B-0001');
+  Assert.IsTrue(LFile <> '', 'handoff export must return the file it wrote');
+  Assert.IsTrue(TFile.Exists(LFile), 'the returned path must exist on disk');
+  Assert.IsTrue(LFile.Contains('handoff'),
+    'the package must land in the handoff directory the CLI prints');
+
+  LText := TFile.ReadAllText(LFile, TEncoding.UTF8);
+  Assert.IsTrue(LText.Contains('B-0001'),
+    'the package itself must name the baseline, not just the filename');
+end;
+
+{ THeadlessShellTests }
 procedure THeadlessShellTests.SetUp;
 begin
   FDir := TPath.Combine(TPath.GetTempPath, 'aswish-headless-' +

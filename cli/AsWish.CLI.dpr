@@ -1165,11 +1165,7 @@ end;
 
 procedure RunHandoff(const ADir, ABaselineId: string);
 var
-  LStore: TAsWishStoreService;
-  LSnap: TAsWishSnapshotService;
-  LDecService: TAsWishDecisionsService;
-  LDiff: TAsWishDifferenceService;
-  LWorkflow: TAsWishVisualWorkflowService;
+  LBundle: TControllerBundle;
   LBaseId, LFile: string;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
@@ -1177,37 +1173,20 @@ begin
     Writeln('[handoff] error: no .AsWish directory');
     Halt(1);
   end;
+  // Which baseline to package is this command's own policy, not the
+  // Controller's: a GUI caller always has a selected baseline. Kept here so a
+  // future desktop entry point is not silently handed the first one.
   LBaseId := ABaselineId;
   if LBaseId = '' then LBaseId := 'B-0001';
-  LStore := TAsWishStoreService.Create;
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LSnap := TAsWishSnapshotService.Create(LStore);
-    try
-      LDecService := TAsWishDecisionsService.Create;
-      try
-        LDecService.Initialize(TPath.Combine(ADir, '.AsWish'));
-        LDecService.Load;
-        LDiff := TAsWishDifferenceService.Create(LStore, LSnap);
-        try
-          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnap, LDecService, LDiff);
-          try
-            LFile := LWorkflow.ExportAgentHandoff(ADir, LBaseId);
-            Writeln('[handoff] exported agent handoff package to ' + LFile);
-          finally
-            LWorkflow.Free;
-          end;
-        finally
-          LDiff.Free;
-        end;
-      finally
-        LDecService.Free;
-      end;
-    finally
-      LSnap.Free;
-    end;
+    LBundle.Controller.OpenProject(ADir);
+    // Previously this built store + snapshot + decisions + difference +
+    // workflow here, purely to reach ExportAgentHandoff.
+    LFile := LBundle.Controller.ExportAgentHandoff(LBaseId);
+    Writeln('[handoff] exported agent handoff package to ' + LFile);
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 

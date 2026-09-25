@@ -285,6 +285,12 @@ type
     ///  orchestration just to learn it.</summary>
     function EvolveBaseline(const ABaselineId, ANote: string;
       out ANewBaseline: TAsWishBaseline; out ADecisionId: string): string; overload;
+    /// <summary>Write the agent handoff package for one baseline and return the
+    ///  file written. The CLI built a five-service chain (store, snapshot,
+    ///  decisions, difference, workflow) to call this single method, while the
+    ///  Controller already owns four of the five and builds the remaining two
+    ///  for every other call in this same block.</summary>
+    function ExportAgentHandoff(const ABaselineId: string = ''): string;
     function ListDecisions: TArray<TSpecDecision>;
 
     // Difference Commons (WO-20260923-0041)
@@ -2149,6 +2155,28 @@ begin
       ADecisionId := LDecId;
       FStatus.Info('AsWish.Evolve', Format('Evolved new Accepted Baseline %s (snapshot: %s, parent: %s)',
         [Result, ANewBaseline.SnapshotName, ABaselineId]));
+    finally
+      LWorkflow.Free;
+    end;
+  finally
+    LDifference.Free;
+  end;
+end;
+
+function TAsWishController.ExportAgentHandoff(const ABaselineId: string): string;
+var
+  LWorkflow: TAsWishVisualWorkflowService;
+  LDifference: TAsWishDifferenceService;
+begin
+  Result := '';
+  if not FProjectService.IsOpen then
+    raise Exception.Create('No project open');
+  LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
+  try
+    LWorkflow := TAsWishVisualWorkflowService.Create(FSpecStore, FSnapshot, FDecisions, LDifference);
+    try
+      Result := LWorkflow.ExportAgentHandoff(FProjectService.ProjectPath, ABaselineId);
+      FStatus.Info('AsWish.Handoff', 'Exported agent handoff package to ' + Result);
     finally
       LWorkflow.Free;
     end;
