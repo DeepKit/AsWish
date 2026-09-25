@@ -164,6 +164,7 @@ type
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
     [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
     [Test] procedure Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
+    [Test] procedure Test_InitializeProject_LaysDownStructureWithoutScanning;
   end;
 
   /// <summary>Drives the Controller the way the CLI does: with the real
@@ -1428,6 +1429,40 @@ begin
   LText := TFile.ReadAllText(LFile, TEncoding.UTF8);
   Assert.IsTrue(LText.Contains('B-0001'),
     'the package itself must name the baseline, not just the filename');
+end;
+
+procedure TTestAsWishController.Test_InitializeProject_LaysDownStructureWithoutScanning;
+var
+  LSub, LPath, LSpec: string;
+begin
+  // init is the cheap "start a project" step and must stop after laying down
+  // the structure. OpenAndScan performs the same four writes and then scans,
+  // so what tells the two apart afterwards is what init did NOT record: a
+  // project type and a scan report.
+  // The fresh directory holds a .pas file on purpose. An empty directory
+  // detects as "unknown" whether or not anything scanned it, so an assertion
+  // on that alone passes either way and proves nothing.
+  LSub := TPath.Combine(FDir, 'fresh-project');
+  TDirectory.CreateDirectory(LSub);
+  TFile.WriteAllText(TPath.Combine(LSub, 'core.pas'),
+    'unit core;' + sLineBreak + 'interface' + sLineBreak + 'implementation' + sLineBreak + 'end.',
+    TEncoding.UTF8);
+  LPath := FController.InitializeProject(LSub);
+
+  Assert.AreEqual(TPath.Combine(LSub, '.AsWish'), LPath,
+    'initialize must return the .AsWish path the CLI prints');
+  Assert.IsTrue(TFile.Exists(TPath.Combine(LPath, 'trees\function-tree.yaml')),
+    'the four tree skeletons must exist');
+  Assert.IsTrue(TDirectory.Exists(TPath.Combine(LPath, 'html')),
+    'the html directory must exist');
+
+  LSpec := TFile.ReadAllText(TPath.Combine(LPath, 'project-spec.yaml'),
+    TEncoding.UTF8);
+  Assert.IsTrue(LSpec.Contains('"unknown"'),
+    'init must not scan: a scanned project records its detected type (here '
+    + 'delphi_vcl), not unknown');
+  Assert.IsFalse(TFile.Exists(TPath.Combine(LPath, 'scan-report.html')),
+    'init must not render pages; it is the step before the first scan');
 end;
 
 { THeadlessShellTests }

@@ -177,6 +177,12 @@ type
       const ABus: IShellEventBus);
 
     procedure OpenProject(const APath: string);
+    /// <summary>Create the .AsWish structure in an existing directory and
+    ///  return the .AsWish path. Deliberately does not scan: this is the
+    ///  "start a project" step, and the CLI's init command must stay a cheap,
+    ///  side-effect-bounded operation. OpenAndScan performs the same four
+    ///  writes and then scans, which is a different command.</summary>
+    function InitializeProject(const APath: string): string;
     procedure OpenAndScan(const APath: string);
     procedure RunScan;
     /// <summary>True only while the last RunScan ended in an exception. Read
@@ -391,6 +397,22 @@ begin
   FPrompts.Initialize(FProjectService.AsWishPath);
   FDecisions.Initialize(FProjectService.AsWishPath);
   FDecisions.Load;
+end;
+
+function TAsWishController.InitializeProject(const APath: string): string;
+begin
+  Result := '';
+  // OpenProject owns the "does this directory exist" question and raising is
+  // its contract; the CLI keeps its own guard so the message stays its own.
+  OpenProject(APath);
+
+  FSpecStore.CreateDirectoryStructure;
+  FSpecStore.WriteEmptyTrees;
+  FSpecStore.WriteProjectSpec(FProjectService.ProjectName, 'unknown', 0);
+  FSpecStore.WriteGitIgnore;
+
+  Result := FProjectService.AsWishPath;
+  FStatus.Info('AsWish.Init', 'Initialized project: ' + Result);
 end;
 
 procedure TAsWishController.OpenAndScan(const APath: string);

@@ -896,27 +896,22 @@ end;
 
 procedure RunInit(const ADir: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
+  LBundle: TControllerBundle;
 begin
   if not TDirectory.Exists(ADir) then
   begin
     Writeln('[init] error: directory does not exist: ' + ADir);
     Halt(1);
   end;
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
+  // This command only lays down the .AsWish structure; it must not scan. The
+  // Controller already performs the same four writes inside OpenAndScan, but
+  // that one scans and builds trees afterwards, so this needed its own
+  // capability rather than reuse of an existing one.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LStore.CreateDirectoryStructure;
-    LStore.WriteEmptyTrees;
-    LStore.WriteProjectSpec(LProject.ProjectName, 'unknown', 0);
-    LStore.WriteGitIgnore;
-    Writeln('[init] initialized: ' + LProject.AsWishPath);
+    Writeln('[init] initialized: ' + LBundle.Controller.InitializeProject(ADir));
   finally
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 
