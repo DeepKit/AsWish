@@ -163,6 +163,12 @@ type
     ///  issues, write an optimization prompt (Markdown) into prompts\, and
     ///  report via status. No-op if no project open.</summary>
     procedure ExportOptimizationPrompt;
+    /// <summary>Health metrics measured against what is persisted on disk.
+    ///  ExportOptimizationPrompt measures the live session's builder, which
+    ///  a one-shot CLI process does not have; without this it had to load
+    ///  the four trees and the issue list itself just to call the same
+    ///  calculator, and that load-or-don't-load logic is orchestration.</summary>
+    function ComputeHealthMetricsFromDisk: THealthMetrics;
     /// <summary>Batch bundle review from bundles.html (Accept All /
     ///  Reject All): find the bundle, record one formal human decision over
     ///  all anchored nodes, apply state transitions to every tree, and
@@ -589,6 +595,32 @@ begin
   finally
     LIssues.Free;
     LSb.Free;
+  end;
+end;
+
+function TAsWishController.ComputeHealthMetricsFromDisk: THealthMetrics;
+var
+  LFunc, LModule, LView, LData: TList<TSpecNode>;
+  LIssues: TList<TSpecIssue>;
+begin
+  // No existence checks: ReadTreeFile and ReadIssuesFile already hand back an
+  // empty list for a missing file, and the calculator treats empty and nil
+  // the same. The CLI guarded every read individually, which read as care but
+  // changed nothing.
+  LFunc := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
+  LModule := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
+  LView := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
+  LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
+  LIssues := FSpecStore.ReadIssuesFile('issues/doc-issues.yaml');
+  try
+    Result := TAsWishRenderService.ComputeHealthMetrics(
+      LFunc, LModule, LView, LData, LIssues);
+  finally
+    LIssues.Free;
+    LData.Free;
+    LView.Free;
+    LModule.Free;
+    LFunc.Free;
   end;
 end;
 

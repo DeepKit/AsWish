@@ -129,6 +129,7 @@ type
     [Test] procedure Test_BundleApply_ResultContract_AndOriginNote;
     [Test] procedure Test_BundleApply_FailureCodes_WriteNoDecision;
     [Test] procedure Test_BundleApply_DiskFirst_DoesNotBlankRenderedTrees;
+    [Test] procedure Test_HealthMetricsFromDisk_MatchesLiveBuilder;
     [Test] procedure Test_Restart_KeepsDecisions;
     [Test] procedure Test_ChangeSet_EndToEnd_Accept;
     [Test] procedure Test_ChangeSet_Accept_IsIdempotent;
@@ -759,6 +760,56 @@ begin
     'function-tree.html'), TEncoding.UTF8);
   Assert.IsTrue(LTreeHtml.Contains(LFuncId),
     'RenderAll after a disk-first accept must not blank the rendered tree');
+end;
+
+procedure TTestAsWishController.Test_HealthMetricsFromDisk_MatchesLiveBuilder;
+var
+  LIssues: TList<TSpecIssue>;
+  LI: TSpecIssue;
+  LDisk, LLive: THealthMetrics;
+begin
+  // "health" has to mean the same number whichever surface asked for it: the
+  // GUI measures the live builder, the CLI measures disk. The CLI used to do
+  // its own loading, so the two could drift without anything noticing -- which
+  // is exactly the class of bug this whole work order exists to close.
+  LI := Default(TSpecIssue);
+  LI.Id := 'iss-0001';
+  LI.Severity := isHigh;
+  LI.IssueType := itMissingRequirement;
+  LI.Title := 'A high-severity open issue';
+  LI.Status := issOpen;
+  SetLength(LI.AffectedNodes, 1);
+  LI.AffectedNodes[0] := RootNodeId;
+  LIssues := TList<TSpecIssue>.Create;
+  try
+    LIssues.Add(LI);
+    FStore.WriteIssuesFile('issues/doc-issues.yaml', LIssues);
+  finally
+    LIssues.Free;
+  end;
+
+  LIssues := FStore.ReadIssuesFile('issues/doc-issues.yaml');
+  try
+    LLive := TAsWishRenderService.ComputeHealthMetrics(FBuilder.FunctionNodes,
+      FBuilder.ModuleNodes, FBuilder.ViewNodes, FBuilder.DataNodes, LIssues);
+  finally
+    LIssues.Free;
+  end;
+
+  LDisk := FController.ComputeHealthMetricsFromDisk;
+
+  Assert.AreEqual<Integer>(LLive.TotalNodes, LDisk.TotalNodes, 'totalNodes');
+  Assert.AreEqual<Integer>(LLive.ConfirmedNodes, LDisk.ConfirmedNodes, 'confirmedNodes');
+  Assert.AreEqual<Double>(LLive.CoveragePct, LDisk.CoveragePct, 'coveragePct');
+  Assert.AreEqual<Double>(LLive.AvgConfidence, LDisk.AvgConfidence, 'avgConfidence');
+  Assert.AreEqual<Integer>(LLive.DecisionBacklog, LDisk.DecisionBacklog, 'decisionBacklog');
+  Assert.AreEqual<Integer>(LLive.FogCount, LDisk.FogCount, 'fogCount');
+  Assert.AreEqual<Integer>(LLive.HighRiskOpen, LDisk.HighRiskOpen, 'highRiskOpen');
+
+  // Stop the comparison above from passing on an all-zero fixture.
+  Assert.IsTrue(LDisk.TotalNodes > 0, 'fixture must have nodes');
+  Assert.AreEqual<Integer>(1, LDisk.HighRiskOpen,
+    'the written issue must be counted, or the issue path is untested');
 end;
 
 procedure TTestAsWishController.Test_Restart_KeepsDecisions;

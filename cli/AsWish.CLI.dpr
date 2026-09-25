@@ -207,11 +207,7 @@ end;
 
 procedure RunHealth(const ADir: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
-  LRender: TAsWishRenderService;
-  LFunc, LModule, LView, LData: TList<TSpecNode>;
-  LIssues: TList<TSpecIssue>;
+  LBundle: TControllerBundle;
   LMetrics: THealthMetrics;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
@@ -219,66 +215,42 @@ begin
     Writeln('[health] error: no .AsWish directory; run scan first');
     Halt(1);
   end;
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
-  LRender := TAsWishRenderService.Create;
+  // The CLI loaded the four trees and the issue list itself, guarding each
+  // read with TFile.Exists. Those guards changed nothing (the readers already
+  // return an empty list for a missing file, and the calculator treats empty
+  // and nil alike), and the load itself is orchestration the Controller owns.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LRender.Initialize(LProject.AsWishPath);
+    LBundle.Controller.OpenProject(ADir);
+    LMetrics := LBundle.Controller.ComputeHealthMetricsFromDisk;
 
-    LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
-    LModule := LStore.ReadTreeFile('trees/module-tree.yaml');
-    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-    if TFile.Exists(TPath.Combine(LStore.BasePath, 'trees\data-tree.yaml')) then
-      LData := LStore.ReadTreeFile('trees/data-tree.yaml')
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('health');
+      WriteJsonKVInt('totalNodes', LMetrics.TotalNodes);
+      WriteJsonKVInt('confirmedNodes', LMetrics.ConfirmedNodes);
+      WriteJsonKVDouble('coveragePct', LMetrics.CoveragePct);
+      WriteJsonKVDouble('avgConfidence', LMetrics.AvgConfidence);
+      WriteJsonKVInt('decisionBacklog', LMetrics.DecisionBacklog);
+      WriteJsonKVInt('fogCount', LMetrics.FogCount);
+      WriteJsonKVInt('highRiskOpen', LMetrics.HighRiskOpen);
+      WriteJsonKV('status', 'ok');
+      WriteJsonFooter;
+    end
     else
-      LData := nil;
-
-    if TFile.Exists(TPath.Combine(LStore.BasePath, 'issues\doc-issues.yaml')) then
-      LIssues := LStore.ReadIssuesFile('issues/doc-issues.yaml')
-    else
-      LIssues := nil;
-
-    try
-      LMetrics := LRender.ComputeHealthMetrics(LFunc, LModule, LView, LData, LIssues);
-
-      if GJsonOutput then
-      begin
-        WriteJsonHeader('health');
-        WriteJsonKVInt('totalNodes', LMetrics.TotalNodes);
-        WriteJsonKVInt('confirmedNodes', LMetrics.ConfirmedNodes);
-        WriteJsonKVDouble('coveragePct', LMetrics.CoveragePct);
-        WriteJsonKVDouble('avgConfidence', LMetrics.AvgConfidence);
-        WriteJsonKVInt('decisionBacklog', LMetrics.DecisionBacklog);
-        WriteJsonKVInt('fogCount', LMetrics.FogCount);
-        WriteJsonKVInt('highRiskOpen', LMetrics.HighRiskOpen);
-        WriteJsonKV('status', 'ok');
-        WriteJsonFooter;
-      end
-      else
-      begin
-        Writeln('[health]');
-        Writeln(Format('  totalNodes       : %d', [LMetrics.TotalNodes]));
-        Writeln(Format('  confirmedNodes   : %d', [LMetrics.ConfirmedNodes]));
-        Writeln(Format('  coveragePct      : %.1f%%', [LMetrics.CoveragePct]));
-        Writeln(Format('  avgConfidence    : %.2f', [LMetrics.AvgConfidence]));
-        Writeln(Format('  decisionBacklog  : %d', [LMetrics.DecisionBacklog]));
-        Writeln(Format('  fogCount         : %d', [LMetrics.FogCount]));
-        Writeln(Format('  highRiskOpen     : %d', [LMetrics.HighRiskOpen]));
-        Writeln('[health] done');
-      end;
-    finally
-      LIssues.Free;
-      LData.Free;
-      LView.Free;
-      LModule.Free;
-      LFunc.Free;
+    begin
+      Writeln('[health]');
+      Writeln(Format('  totalNodes       : %d', [LMetrics.TotalNodes]));
+      Writeln(Format('  confirmedNodes   : %d', [LMetrics.ConfirmedNodes]));
+      Writeln(Format('  coveragePct      : %.1f%%', [LMetrics.CoveragePct]));
+      Writeln(Format('  avgConfidence    : %.2f', [LMetrics.AvgConfidence]));
+      Writeln(Format('  decisionBacklog  : %d', [LMetrics.DecisionBacklog]));
+      Writeln(Format('  fogCount         : %d', [LMetrics.FogCount]));
+      Writeln(Format('  highRiskOpen     : %d', [LMetrics.HighRiskOpen]));
+      Writeln('[health] done');
     end;
   finally
-    LRender.Free;
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 
