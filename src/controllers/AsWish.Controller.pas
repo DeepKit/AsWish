@@ -93,11 +93,14 @@ type
     function AcceptChangeSetCore(const AChangeSetId, ARationale: string;
       ALoadTreesFromDisk: Boolean;
       out AResult: TChangeSetDecisionResult): Boolean;
-    /// <summary>Replace the builder's four trees with what is persisted. Used
-    ///  by the disk-first accept path so a fresh process applies the change set
-    ///  to the Canonical Spec as it stands, not to an empty tree.</summary>
-    procedure LoadPersistedTreesIntoBuilder;
   public
+    /// <summary>Replace the builder's four trees with what is persisted on
+    ///  disk. Only a headless caller needs this: a one-shot process has no scan
+    ///  and no live builder, so anything that re-renders through the Controller
+    ///  would otherwise describe empty trees and overwrite the real pages with
+    ///  blanks. Never call this from a live session -- it discards whatever the
+    ///  builder currently holds.</summary>
+    procedure LoadPersistedTrees;
     constructor Create(
       AProjectService: TAsWishProjectService;
       AScanService: TAsWishScanService;
@@ -185,7 +188,14 @@ type
     function ComputeDifference(const ABaselineId: string): TSpecDifferenceReport;
     function RecordDifferenceDecision(const ABaselineId, AAction, ARationale: string): string;
     function EvolveBaseline(const ABaselineId, ANote: string;
-      out ANewBaseline: TAsWishBaseline): string;
+      out ANewBaseline: TAsWishBaseline): string; overload;
+    /// <summary>Same evolution, but hands back the decision it recorded. The
+    ///  three-argument form above computes that id and only reports it through
+    ///  the status pane, which a headless caller does not have -- so a CLI that
+    ///  prints "Decision ID: ..." had to keep its own copy of the whole
+    ///  orchestration just to learn it.</summary>
+    function EvolveBaseline(const ABaselineId, ANote: string;
+      out ANewBaseline: TAsWishBaseline; out ADecisionId: string): string; overload;
     function ListDecisions: TArray<TSpecDecision>;
 
     // Difference Commons (WO-20260923-0041)
@@ -1463,7 +1473,7 @@ begin
   Result := AcceptChangeSetCore(AChangeSetId, ARationale, ALoadTreesFromDisk, AResult);
 end;
 
-procedure TAsWishController.LoadPersistedTreesIntoBuilder;
+procedure TAsWishController.LoadPersistedTrees;
 var
   LFunc, LMod, LView, LData: TList<TSpecNode>;
 
@@ -1555,7 +1565,7 @@ begin
     // are the ones on disk. Without this the builder is empty and the
     // write-back below would overwrite the Canonical Spec with empty trees.
     if ALoadTreesFromDisk then
-      LoadPersistedTreesIntoBuilder;
+      LoadPersistedTrees;
 
     // Record formal decision
     LDecId := FDecisions.RecordChangeSetDecision(LCS, rsAccepted, ARationale);
@@ -1877,12 +1887,21 @@ end;
 function TAsWishController.EvolveBaseline(const ABaselineId, ANote: string;
   out ANewBaseline: TAsWishBaseline): string;
 var
+  LDecId: string;
+begin
+  Result := EvolveBaseline(ABaselineId, ANote, ANewBaseline, LDecId);
+end;
+
+function TAsWishController.EvolveBaseline(const ABaselineId, ANote: string;
+  out ANewBaseline: TAsWishBaseline; out ADecisionId: string): string;
+var
   LWorkflow: TAsWishVisualWorkflowService;
   LDifference: TAsWishDifferenceService;
   LReport: TSpecDifferenceReport;
   LDecId: string;
 begin
   ANewBaseline := Default(TAsWishBaseline);
+  ADecisionId := '';
   if not FProjectService.IsOpen then
     raise Exception.Create('No project open');
   LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
@@ -1894,6 +1913,7 @@ begin
       Result := LWorkflow.EvolveBaseline(ABaselineId, LDecId, ANewBaseline);
       RenderAll;
       FRender.RenderDecisionsPage(ListDecisions, FProjectService.ProjectName);
+      ADecisionId := LDecId;
       FStatus.Info('AsWish.Evolve', Format('Evolved new Accepted Baseline %s (snapshot: %s, parent: %s)',
         [Result, ANewBaseline.SnapshotName, ABaselineId]));
     finally

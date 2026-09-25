@@ -132,6 +132,7 @@ type
     [Test] procedure Test_ChangeSet_EndToEnd_Reject;
     [Test] procedure Test_ChangeSet_EndToEnd_Clarify;
     [Test] procedure Test_ChangeSet_DecisionResult_CarriesParsedIds;
+    [Test] procedure Test_Accept_DiskFirst_DoesNotEmptyPersistedTree;
     [Test] procedure Test_ExportPrompt_AfterOpenOnly_StillDescribesTheTree;
     [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
     [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
@@ -850,6 +851,36 @@ begin
   Assert.IsFalse(LResult.Ok, 'result must report failure');
   Assert.AreEqual<string>('', LResult.DecisionId,
     'a failed clarify must clear the decision id');
+end;
+
+procedure TTestAsWishController.Test_Accept_DiskFirst_DoesNotEmptyPersistedTree;
+var
+  LFuncId, LCSId, LTreeText: string;
+  LResult: TChangeSetDecisionResult;
+begin
+  // Reproduces the CLI's state exactly: a controller opened from disk with
+  // nothing in the builder. AcceptChangeSet applies to the live trees and then
+  // writes them back, so if the disk-first path does not read the persisted
+  // trees in first, ApplyChangeSet finds no nodes to update and the write-back
+  // that follows replaces the Canonical Spec with empty tree files.
+  LFuncId := RootNodeId;
+  Assert.IsNotEmpty(LFuncId, 'fixture must have a root function node');
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Disk-first accept test');
+
+  RestartApp;
+  Assert.AreEqual<Integer>(0, FBuilder.FunctionNodes.Count,
+    'a restarted controller starts with an empty builder, like a one-shot CLI');
+
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept from disk', True, LResult),
+    'disk-first accept must succeed');
+  Assert.IsTrue(LResult.Ok);
+  Assert.AreEqual(LCSId, LResult.ChangeSetId);
+
+  LTreeText := TFile.ReadAllText(TPath.Combine(FStore.BasePath,
+    'trees\function-tree.yaml'), TEncoding.UTF8);
+  Assert.IsTrue(LTreeText.Contains(LFuncId),
+    'the persisted function tree must still hold the root node -- an empty tree '
+    + 'file means the change set was applied to nothing and then written back');
 end;
 
 procedure TTestAsWishController.Test_ExportPrompt_AfterOpenOnly_StillDescribesTheTree;

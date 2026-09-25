@@ -1538,59 +1538,36 @@ end;
 
 procedure RunEvolve(const AProjectDir, ABaselineId, ANote: string);
 var
-  LStore: TAsWishStoreService;
-  LSnapshot: TAsWishSnapshotService;
-  LDifference: TAsWishDifferenceService;
-  LDecisions: TAsWishDecisionsService;
-  LWorkflow: TAsWishVisualWorkflowService;
-  LReport: TSpecDifferenceReport;
-  LDecId, LNewBaseId: string;
+  LBundle: TControllerBundle;
   LNewBaseline: TAsWishBaseline;
+  LDecId, LNewBaseId: string;
 begin
-  LStore := TAsWishStoreService.Create;
+  // Two divergences this removes. First, the Controller's ComputeDifference
+  // collects implementation evidence when none is on disk; calling the
+  // workflow directly left the CLI computing a difference against missing
+  // evidence. Second, the CLI rendered only the difference and decisions pages,
+  // so the tree pages kept describing the pre-evolve state. The four-argument
+  // overload exists only because the CLI prints the decision id, which the
+  // three-argument form reports through the status pane a headless caller has.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(AProjectDir);
-    LSnapshot := TAsWishSnapshotService.Create(LStore);
-    try
-      LDecisions := TAsWishDecisionsService.Create;
-      try
-        LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-        LDecisions.Load;
-        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
-        try
-          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnapshot, LDecisions, LDifference);
-          try
-            LReport := LWorkflow.ComputeDifference(AProjectDir, ABaselineId);
-            LDecId := LWorkflow.RecordDifferenceDecision(LReport, djAcceptable, ANote, 'cs-evolve-' + ABaselineId);
-            LNewBaseId := LWorkflow.EvolveBaseline(ABaselineId, LDecId, LNewBaseline);
-            Writeln(Format('Evolved new Accepted Baseline "%s" (snapshot: %s) from current implementation reality.',
-              [LNewBaseId, LNewBaseline.SnapshotName]));
-            Writeln(Format('  - Decision ID: %s', [LDecId]));
-            Writeln(Format('  - Content Hash: %s', [Copy(LNewBaseline.ContentHash, 1, 16)]));
-            Writeln(Format('  - Relation Hash: %s', [Copy(LNewBaseline.RelationHash, 1, 16)]));
-            var LRender := TAsWishRenderService.Create;
-            try
-              LRender.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-              LRender.RenderDifferencePage(LReport, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
-              LRender.RenderDecisionsPage(LDecisions.Decisions.ToArray, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
-              Writeln('Rendered decisions history to .AsWish/html/decisions.html');
-            finally
-              LRender.Free;
-            end;
-          finally
-            LWorkflow.Free;
-          end;
-        finally
-          LDifference.Free;
-        end;
-      finally
-        LDecisions.Free;
-      end;
-    finally
-      LSnapshot.Free;
-    end;
+    LBundle.Controller.OpenProject(AProjectDir);
+    // The Controller re-renders as part of evolving, and a re-render reads the
+    // builder -- which in this process is empty. Without this line the tree
+    // pages get rewritten as blanks (coverage 0%, no nodes listed). The old CLI
+    // left them stale instead of emptying them, which is why this is not a
+    // wash: it must load before anything renders.
+    LBundle.Controller.LoadPersistedTrees;
+    LNewBaseId := LBundle.Controller.EvolveBaseline(ABaselineId, ANote,
+      LNewBaseline, LDecId);
+    Writeln(Format('Evolved new Accepted Baseline "%s" (snapshot: %s) from current implementation reality.',
+      [LNewBaseId, LNewBaseline.SnapshotName]));
+    Writeln(Format('  - Decision ID: %s', [LDecId]));
+    Writeln(Format('  - Content Hash: %s', [Copy(LNewBaseline.ContentHash, 1, 16)]));
+    Writeln(Format('  - Relation Hash: %s', [Copy(LNewBaseline.RelationHash, 1, 16)]));
+    Writeln('Rendered decisions history to .AsWish/html/decisions.html');
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
