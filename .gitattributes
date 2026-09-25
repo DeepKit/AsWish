@@ -15,3 +15,14 @@ WO/                export-ignore
 .workbuddy/        export-ignore
 .AsWish/           export-ignore
 .ai-workbench/     export-ignore
+
+# Internal audit / handover / onboarding material that lives outside WO/. Found
+# while verifying the export list: the numbered docs under docs/ are product and
+# engineering specs meant to be public, but docs/归档/ (146 files), the session
+# handover note and the product-manager onboarding pack are not, and one audit
+# request was sitting at the repository root. All excluded by pattern below.
+docs/归档/         export-ignore
+docs/*交接*         export-ignore
+docs/*交接包*       export-ignore
+AUDIT-REQUEST-*    export-ignore
+

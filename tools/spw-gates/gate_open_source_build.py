@@ -1,19 +1,23 @@
 """Gate: open-source build & export shape.
 
-Guards the two things that made AsWish unpublishable before WO-20260925-0056:
-  1. A clean clone had to resolve the private DeepBase repository via a relative
-     search path, so `dcc64` died with F2613 on MainForm and on the EHAI binding
-     tests. The type layer it needed is now vendored; no build script may point
-     back at DeepBase.
-  2. WO/ and .workbuddy/ are internal working artefacts (work orders, audit
-     requests, another private project's paths, decisions awaiting the owner).
-     They must be excluded from every source export while staying in the repo.
+Guards what made AsWish unpublishable before WO-20260925-0056, plus the leak
+this gate itself would otherwise have missed.
 
-`git archive` honours `export-ignore` and is the path a source release is built
-from, so that is what is checked here - not a hand-maintained copy list.
+1. Build must not reach the private DeepBase repository: a clean clone used to
+   resolve it through a relative dcc64 search path and died with F2613 on the
+   MainForm and the EHAI binding tests. The type layer it needed is vendored
+   under vendor/deepbase-ehai.
+2. Internal material must not leave the repository in a source export. WO/ and
+   .workbuddy/ are the known cases, but verifying the export list turned up
+   internal audit reports and handover packs outside them - one audit request
+   even sat at the repository root - so this gate matches by content pattern,
+   not by a hardcoded prefix list it already knows about.
 """
+import re
 import subprocess
 import sys
+import zipfile
+import io
 from pathlib import Path
 
 GATE = "G.open-source-build"
@@ -21,36 +25,44 @@ ROOT = Path(__file__).resolve().parents[2]
 
 BUILD_SCRIPTS = ["_build.bat", "cli/_build_cli.bat", "tests/_build_tests.bat"]
 VENDOR_PATH = "vendor\\deepbase-ehai"
-REQUIRED_EXPORT_IGNORE = [
-    "WO/",
-    ".workbuddy/",
-    ".AsWish/",
-    ".ai-workbench/",
+
+# Matched against the *exported* path list. A missing entry here means internal
+# material shipped; that is a release blocker, not a warning.
+INTERNAL_PATTERNS = [
+    (r"(^|/)WO/", "work-order / governance directory"),
+    (r"(^|/)\.workbuddy/", "daily working logs"),
+    (r"(^|/)\.AsWish/", "protocol workspace state"),
+    (r"(^|/)\.ai-workbench/", "workbench state"),
+    (r"(^|/)\.claude/", "local agent state"),
+    (r"(^|/)AUDIT-REQUEST-", "internal audit request"),
+    (r"(^|/)AUDIT-VERDICT-", "internal audit verdict"),
+    (r"(^|/)\.env", "environment / secrets"),
+    (r"(^|/)(id_rsa|.*\.pem|.*\.p12|.*\.key)$", "key material"),
 ]
+
+REQUIRED_EXPORT_IGNORE = ["WO/", ".workbuddy/", ".AsWish/", ".ai-workbench/"]
+RELEASE_ESSENTIALS = ["README.md", "LICENSE", "NOTICE"]
 
 
 def read(p: Path) -> str:
     return p.read_bytes().decode("utf-8", errors="replace")
 
 
-def archived_files() -> set[str]:
+def exported_files() -> set[str]:
+    """Names inside `git archive HEAD`, read via zipfile.
+
+    Earlier revision parsed the tar stream by hand and stepped every 512 bytes,
+    which treated file *content* as headers and invented 7648 bogus entries -
+    the gate passed while checking almost nothing. zipfile does real parsing.
+    """
     out = subprocess.run(
-        ["git", "archive", "HEAD"],
+        ["git", "archive", "--format=zip", "HEAD"],
         cwd=ROOT,
         capture_output=True,
         check=True,
     ).stdout
-    # tar listing, one header (512B) per entry; read names straight from headers
-    # to avoid depending on tar's output format.
-    names = set()
-    for off in range(0, len(out), 512):
-        block = out[off:off + 512]
-        if block == b"\0" * 512:
-            break
-        name = block[:100].split(b"\0", 1)[0].decode("utf-8", errors="replace")
-        if name:
-            names.add(name)
-    return names
+    with zipfile.ZipFile(io.BytesIO(out)) as zf:
+        return {n.rstrip("/") for n in zf.namelist() if not n.endswith("/")}
 
 
 def main() -> None:
@@ -77,29 +89,28 @@ def main() -> None:
                 findings.append(f".gitattributes 缺少 {entry} 的 export-ignore")
 
     try:
-        exported = archived_files()
-    except subprocess.CalledProcessError as exc:
+        exported = exported_files()
+    except (subprocess.CalledProcessError, zipfile.BadZipFile) as exc:
         findings.append(f"git archive HEAD 失败: {exc}")
         exported = set()
 
     if exported:
-        for banned in ("WO/", ".workbuddy/"):
-            leaked = sorted(n for n in exported if n.startswith(banned))
-            if leaked:
+        for pattern, label in INTERNAL_PATTERNS:
+            hits = sorted(n for n in exported if re.search(pattern, n))
+            if hits:
                 findings.append(
-                    f"导出清单泄漏内部目录 {banned}（{len(leaked)} 个文件，"
-                    f"例: {leaked[0]}）"
+                    f"导出清单泄漏{label}：{len(hits)} 个（例: {hits[0]}）"
                 )
-        for needed in ("README.md", "LICENSE", "NOTICE"):
-            if needed not in exported:
-                findings.append(f"导出清单缺少开源必备件 {needed}")
+        for need in RELEASE_ESSENTIALS:
+            if need not in exported:
+                findings.append(f"导出清单缺少开源必备件 {need}")
 
     if findings:
         print(f"[{GATE}] FAIL")
         for f in findings:
             print(f"  - {f}")
         sys.exit(1)
-    print(f"[{GATE}] PASS 构建不依赖私有仓、导出清单不含内部目录（{len(exported)} 个文件）")
+    print(f"[{GATE}] PASS 构建不依赖私有仓、导出清单无内部材料（{len(exported)} 个文件）")
     sys.exit(0)
 
 
