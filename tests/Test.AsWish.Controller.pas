@@ -118,6 +118,10 @@ type
     ///  all services, rebuild them from the same project dir, and Load
     ///  persisted state (decisions).</summary>
     procedure RestartApp;
+    /// <summary>Write two view nodes straight into trees/view-tree.yaml. The
+    ///  mock fixture has no UI file, so nothing scans into a view node and the
+    ///  visual-baseline paths cannot be reached without it.</summary>
+    procedure PutViewNodesOnDisk;
 
     [Test] procedure Test_OpenAndScan_BuildsEverything;
     [Test] procedure Test_OpenAndScan_PublishesProjectOpened;
@@ -136,6 +140,16 @@ type
     ///  "files". The number must be the scanned file count.</summary>
     [Test] procedure Test_RenderFromDisk_FileCountIsScannedNotNodeTotal;
     [Test] procedure Test_RefreshFromYaml_KeepsItsStatusWording;
+    /// <summary>ConfirmVisualBaseline reads the view ids off the builder and
+    ///  re-renders from it. A one-shot CLI process has neither, so it has to
+    ///  load the trees first -- this is the #21 defect class, and it is the
+    ///  reason the CLI's own copy of this command read the tree file itself.</summary>
+    [Test] procedure Test_VisualConfirm_FromDisk_FindsViewNodesAndReturnsIds;
+    [Test] procedure Test_VisualConfirm_NoViewNodes_ReportsNoViewNodes;
+    /// <summary>The other half of the same invariant: the view nodes are on
+    ///  disk, so a caller that skips the load gets told there are none. This is
+    ///  what the CLI without its LoadPersistedTrees line actually does.</summary>
+    [Test] procedure Test_VisualConfirm_WithoutLoad_CannotSeeViewNodesOnDisk;
     [Test] procedure Test_Restart_KeepsDecisions;
     [Test] procedure Test_ChangeSet_EndToEnd_Accept;
     [Test] procedure Test_ChangeSet_Accept_IsIdempotent;
@@ -889,6 +903,87 @@ begin
     [LResult.FuncCount, LResult.ModuleCount, LResult.ViewCount,
      LResult.DataCount]), FStatus.Messages[LBefore],
     'the GUI status wording must not move because this path was refactored');
+end;
+
+procedure TTestAsWishController.PutViewNodesOnDisk;
+var
+  LView: TList<TSpecNode>;
+  LN: TSpecNode;
+begin
+  // The mock fixture has no UI file, so nothing scans into a view node. Write
+  // the tree directly instead of depending on .dfm parsing.
+  LView := TList<TSpecNode>.Create;
+  try
+    LN := TSpecNode.MakeNew('view-test-1', ttView, 'Test View', 'screen');
+    LView.Add(LN);
+    LN := TSpecNode.MakeNew('view-test-2', ttView, 'Second View', 'screen');
+    LView.Add(LN);
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LView);
+  finally
+    LView.Free;
+  end;
+end;
+
+procedure TTestAsWishController.Test_VisualConfirm_FromDisk_FindsViewNodesAndReturnsIds;
+var
+  LResult: TVisualConfirmResult;
+begin
+  PutViewNodesOnDisk;
+
+  // The CLI's shape: open the project, never scan. RestartApp leaves the
+  // builder empty, which is the whole point.
+  RestartApp;
+  FController.OpenProject(FDir);
+  FController.LoadPersistedTrees;
+  Assert.AreEqual<Integer>(2, FBuilder.ViewNodes.Count,
+    'LoadPersistedTrees must have put the two view nodes in the builder');
+
+  Assert.IsTrue(FController.ConfirmVisualBaseline('confirm via cli',
+    'Recorded via AsWish.CLI visual confirm', LResult),
+    'a disk-first visual confirm must succeed');
+  Assert.IsTrue(LResult.BaselineId <> '', 'the caller prints the baseline id');
+  Assert.IsTrue(LResult.DecisionId <> '', 'the caller prints the decision id');
+  Assert.AreEqual<Integer>(2, FBuilder.ViewNodes.Count,
+    'confirming must not disturb the view tree it just used');
+end;
+
+procedure TTestAsWishController.Test_VisualConfirm_NoViewNodes_ReportsNoViewNodes;
+var
+  LResult: TVisualConfirmResult;
+begin
+  // No view tree written at all. This is the guard the CLI has to turn into
+  // exit 1, and the reason it cannot just call the one-argument form: that
+  // form only warns through the status pane.
+  RestartApp;
+  FController.OpenProject(FDir);
+  FController.LoadPersistedTrees;
+  Assert.AreEqual<Integer>(0, FBuilder.ViewNodes.Count, 'fixture has no view nodes');
+
+  Assert.IsFalse(FController.ConfirmVisualBaseline('', '', LResult),
+    'confirming with no view nodes must fail');
+  Assert.AreEqual('no-view-nodes', LResult.Failure);
+  Assert.IsEmpty(LResult.BaselineId, 'a refusal must not invent a baseline');
+end;
+
+procedure TTestAsWishController.Test_VisualConfirm_WithoutLoad_CannotSeeViewNodesOnDisk;
+var
+  LResult: TVisualConfirmResult;
+begin
+  // View nodes exist on disk. Skip the load and the command cannot see them:
+  // ConfirmVisualBaseline reads the builder, and a one-shot process has an
+  // empty one. Verified against the CLI too -- with the load line removed,
+  // `visual confirm` reports "no View Spec nodes to confirm" and exits 1 on a
+  // fixture whose view-tree.yaml holds three nodes.
+  PutViewNodesOnDisk;
+  RestartApp;
+  FController.OpenProject(FDir);
+  Assert.AreEqual<Integer>(0, FBuilder.ViewNodes.Count,
+    'without LoadPersistedTrees the builder must still be empty');
+
+  Assert.IsFalse(FController.ConfirmVisualBaseline('', '', LResult),
+    'confirming without loading the trees must fail');
+  Assert.AreEqual('no-view-nodes', LResult.Failure,
+    'the failure must be named, so the caller can print the right error');
 end;
 
 procedure TTestAsWishController.Test_Restart_KeepsDecisions;

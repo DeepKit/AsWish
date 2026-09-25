@@ -85,6 +85,18 @@ type
     HasDataTree: Boolean;
   end;
 
+  /// <summary>What a visual-baseline confirmation produced. The decision id is
+  ///  recorded inside the one-argument form and only reaches the status pane;
+  ///  a headless caller prints it, so it has to be handed back.</summary>
+  TVisualConfirmResult = record
+    Ok: Boolean;
+    /// <summary>Why not, as a short code the caller maps to its own wording:
+    ///  'no-view-nodes'.</summary>
+    Failure: string;
+    BaselineId: string;
+    DecisionId: string;
+  end;
+
   TAsWishController = class
   private
     FProjectService: TAsWishProjectService;
@@ -251,7 +263,13 @@ type
     // Accepted Baseline & Visual Baseline (WO-20260830-0027E, WO-20260830-0028)
     function VerifyBaseline(const ABaselineId: string): Boolean;
     function ListBaselines: TArray<TAsWishBaseline>;
-    function ConfirmVisualBaseline(const ARationale: string = ''): string;
+    function ConfirmVisualBaseline(const ARationale: string = ''): string; overload;
+    /// <summary>Same confirmation, but hands back both ids instead of only the
+    ///  baseline, and lets the caller name the default rationale. The default
+    ///  says "via UI", which the decision ledger would then claim for a
+    ///  decision the command line actually made.</summary>
+    function ConfirmVisualBaseline(const ARationale, ADefaultOriginNote: string;
+      out AResult: TVisualConfirmResult): Boolean; overload;
     function ConfirmVisualBaselineFromDecision(const ADecisionId: string): string;
 
     // Structural Difference, Human Judgment & Evolution (WO-20260905-0029)
@@ -1943,27 +1961,37 @@ begin
   end;
 end;
 
-function TAsWishController.ConfirmVisualBaseline(const ARationale: string): string;
+function TAsWishController.ConfirmVisualBaseline(const ARationale,
+  ADefaultOriginNote: string; out AResult: TVisualConfirmResult): Boolean;
 var
   LDecId: string;
   LViewIds: TList<string>;
 begin
-  Result := '';
+  AResult := Default(TVisualConfirmResult);
   if not FProjectService.IsOpen then
   begin
     FStatus.Warning('AsWish', 'No project open');
-    Exit;
+    AResult.Failure := 'no-project';
+    Exit(False);
   end;
 
   if (FTreeBuilder.ViewNodes = nil) or (FTreeBuilder.ViewNodes.Count = 0) then
   begin
     FStatus.Warning('AsWish.VisualBaseline', 'No View Spec nodes to confirm');
-    Exit;
+    AResult.Failure := 'no-view-nodes';
+    Exit(False);
   end;
 
   // If ARationale is already an existing decision ID, delegate directly
   if (ARationale <> '') and (FDecisions.FindById(ARationale).Id <> '') then
-    Exit(ConfirmVisualBaselineFromDecision(ARationale));
+  begin
+    AResult.DecisionId := ARationale;
+    AResult.BaselineId := ConfirmVisualBaselineFromDecision(ARationale);
+    AResult.Ok := AResult.BaselineId <> '';
+    if not AResult.Ok then
+      AResult.Failure := 'confirm-failed';
+    Exit(AResult.Ok);
+  end;
 
   // Collect affected view IDs and create formal decision
   LViewIds := TList<string>.Create;
@@ -1973,7 +2001,7 @@ begin
 
     var LRat := ARationale;
     if LRat = '' then
-      LRat := 'Visual preview confirmed via UI / Decision.';
+      LRat := ADefaultOriginNote;
 
     LDecId := FDecisions.AddDecision(dtConfirm,
       'Accepted Visual Baseline for View Spec',
@@ -1985,7 +2013,21 @@ begin
     LViewIds.Free;
   end;
 
-  Result := ConfirmVisualBaselineFromDecision(LDecId);
+  AResult.DecisionId := LDecId;
+  AResult.BaselineId := ConfirmVisualBaselineFromDecision(LDecId);
+  AResult.Ok := AResult.BaselineId <> '';
+  if not AResult.Ok then
+    AResult.Failure := 'confirm-failed';
+  Result := AResult.Ok;
+end;
+
+function TAsWishController.ConfirmVisualBaseline(const ARationale: string): string;
+var
+  LIgnored: TVisualConfirmResult;
+begin
+  ConfirmVisualBaseline(ARationale,
+    'Visual preview confirmed via UI / Decision.', LIgnored);
+  Result := LIgnored.BaselineId;
 end;
 
 function TAsWishController.CollectEvidence(const ABaselineId: string): TArray<TSpecEvidence>;

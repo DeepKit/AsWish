@@ -1128,76 +1128,38 @@ end;
 
 procedure RunVisualConfirm(const ADir, ARationale: string);
 var
-  LStore: TAsWishStoreService;
-  LDecService: TAsWishDecisionsService;
-  LSnap: TAsWishSnapshotService;
-  LDiff: TAsWishDifferenceService;
-  LWorkflow: TAsWishVisualWorkflowService;
-  LDecId, LBaseId: string;
+  LBundle: TControllerBundle;
+  LResult: TVisualConfirmResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[visual] error: no .AsWish directory');
     Halt(1);
   end;
-  LStore := TAsWishStoreService.Create;
+  // ConfirmVisualBaseline re-renders, and a re-render reads the builder -- which
+  // in this process is empty. It also takes the view ids from the builder, so
+  // without this load the command reports "no View Spec nodes to confirm" even
+  // though view-tree.yaml has them, which is the exact defect #21 closed for
+  // evolve.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LSnap := TAsWishSnapshotService.Create(LStore);
-    try
-      LDecService := TAsWishDecisionsService.Create;
-      try
-        LDecService.Initialize(TPath.Combine(ADir, '.AsWish'));
-        LDecService.Load;
-        LDiff := TAsWishDifferenceService.Create(LStore, LSnap);
-        try
-          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnap, LDecService, LDiff);
-          try
-            // If ARationale is an existing Decision ID, use it directly
-            if (ARationale <> '') and (LDecService.FindById(ARationale).Id <> '') then
-              LDecId := ARationale
-            else
-            begin
-              var LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-              if (LView = nil) or (LView.Count = 0) then
-              begin
-                if LView <> nil then LView.Free;
-                Writeln('[visual confirm] error: no View Spec nodes to confirm');
-                Halt(1);
-              end;
-              var LViewIds := TList<string>.Create;
-              try
-                for var LN in LView do LViewIds.Add(LN.Id);
-                var LRat := ARationale;
-                if LRat = '' then LRat := 'CLI visual confirm.';
-                LDecId := LDecService.AddDecision(dtConfirm,
-                  'Accepted Visual Baseline for View Spec',
-                  'Human confirmed current View Spec representation (wireframe-v1.0) as Accepted Visual Baseline.',
-                  LRat, LViewIds.ToArray);
-                LDecService.AcceptDecision(LDecId);
-                LDecService.Save;
-              finally
-                LViewIds.Free;
-                LView.Free;
-              end;
-            end;
-            LBaseId := LWorkflow.ConfirmVisualBaseline(LDecId);
-            Writeln(Format('[visual confirm] created Accepted Visual Baseline %s (decision: %s)',
-              [LBaseId, LDecId]));
-          finally
-            LWorkflow.Free;
-          end;
-        finally
-          LDiff.Free;
-        end;
-      finally
-        LDecService.Free;
-      end;
-    finally
-      LSnap.Free;
+    LBundle.Controller.OpenProject(ADir);
+    LBundle.Controller.LoadPersistedTrees;
+
+    if not LBundle.Controller.ConfirmVisualBaseline(ARationale,
+      'Recorded via AsWish.CLI visual confirm', LResult) then
+    begin
+      if LResult.Failure = 'no-view-nodes' then
+        Writeln('[visual confirm] error: no View Spec nodes to confirm')
+      else
+        Writeln(Format('[visual confirm] error: %s', [LResult.Failure]));
+      Halt(1);
     end;
+
+    Writeln(Format('[visual confirm] created Accepted Visual Baseline %s (decision: %s)',
+      [LResult.BaselineId, LResult.DecisionId]));
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
