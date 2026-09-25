@@ -135,6 +135,22 @@ type
     Errors: TArray<string>;
   end;
 
+  /// <summary>What one generated change set produced. NodeFound is here
+  ///  because an id that matches nothing used to yield a zeroed TSpecNode and
+  ///  a change set describing a node that does not exist, reported as
+  ///  success -- the same shape as a missing file being reported as clean.
+  ///  The caller still decides what to do about it.</summary>
+  TChangeSetResult = record
+    Ok: Boolean;
+    ChangeSetId: string;
+    NodeId: string;
+    NodeFound: Boolean;
+    Tree: TTreeType;
+    ChangePath: string;
+    PromptPath: string;
+    ItemsCount: Integer;
+  end;
+
   TAsWishController = class
   private
     FProjectService: TAsWishProjectService;
@@ -233,6 +249,14 @@ type
     ///  read-only opening would still create three directories.</summary>
     function IngestCandidateNodes(const AProjectPath,
       ACandidatePath: string): TIngestResult;
+    /// <summary>Write a change set and its interpretation prompt for one node
+    ///  and return the two paths plus the id. Distinct from SubmitUserIntent:
+    ///  that one is the interactive path -- it records the intent, builds
+    ///  frame-rejection and unanchored variants, and renders the review
+    ///  surface. This one is the headless "generate" step and writes exactly
+    ///  two files, which is why it is not a call into the former.</summary>
+    function GenerateChangeSet(const AProjectPath, ANodeId, AIntentText: string;
+      ATree: TTreeType): TChangeSetResult;
     procedure OpenAndScan(const APath: string);
     procedure RunScan;
     /// <summary>True only while the last RunScan ended in an exception. Read
@@ -633,6 +657,78 @@ begin
     LViews.Free;
     LModules.Free;
     LFunctions.Free;
+  end;
+end;
+
+function TAsWishController.GenerateChangeSet(const AProjectPath, ANodeId,
+  AIntentText: string; ATree: TTreeType): TChangeSetResult;
+var
+  LIngest: TAsWishCandidateIngest;
+  LIntent: TCandidateIntent;
+  LChangeSet: TChangeSet;
+  LBundles: TList<TSemanticBundle>;
+  LNodes: TList<TSpecNode>;
+  LTargetNode: TSpecNode;
+  LTreeFile: string;
+  LAffected: TArray<TTreeType>;
+  LCSId: string;
+begin
+  Result := Default(TChangeSetResult);
+  Result.Tree := ATree;
+  Result.NodeId := ANodeId;
+
+  FSpecStore.Initialize(AProjectPath);
+  FPrompts.Initialize(TPath.Combine(AProjectPath, '.AsWish'));
+
+  LIntent := TCandidateIntent.CreateNew(ANodeId, ATree, AIntentText, 'human');
+
+  LIngest := TAsWishCandidateIngest.Create(FSpecStore);
+  try
+    LBundles := FSpecStore.ReadBundlesFile('bundles.yaml');
+    try
+      // Read the target node off disk rather than off the builder. Nothing
+      // here renders, so the builder would have to be filled first for no
+      // benefit -- and overwriting it would destroy a GUI caller's live
+      // state on a command that only writes two files.
+      case ATree of
+        ttFunction: LTreeFile := 'trees/function-tree.yaml';
+        ttModule:   LTreeFile := 'trees/module-tree.yaml';
+        ttView:     LTreeFile := 'trees/view-tree.yaml';
+        ttData:     LTreeFile := 'trees/data-tree.yaml';
+      end;
+      LNodes := FSpecStore.ReadTreeFile(LTreeFile);
+      try
+        LTargetNode := Default(TSpecNode);
+        for var LN in LNodes do
+          if LN.Id = ANodeId then
+          begin
+            LTargetNode := LN;
+            Break;
+          end;
+
+        Result.NodeFound := LTargetNode.Id = ANodeId;
+        LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
+
+        LCSId := LIngest.GenerateNextChangeSetId(AProjectPath, ANodeId);
+        LChangeSet := TChangeSet.CreateNew(LCSId, ANodeId, ATree, AIntentText, 'human');
+        LChangeSet.AffectedProjections := LAffected;
+        LChangeSet.Items := TArray<TChangeItem>.Create(
+          TChangeItem.CreateItem(ANodeId, ATree, 'summary', LTargetNode.Summary,
+            AIntentText, cstExplicit, 'Interpreted from human user intent'));
+
+        Result.ChangeSetId := LCSId;
+        Result.ItemsCount := Length(LChangeSet.Items);
+        Result.ChangePath := LIngest.SaveChangeSet(AProjectPath, LChangeSet);
+        Result.PromptPath := FPrompts.WriteChangeInterpretPrompt(LIntent, LTargetNode, LBundles);
+        Result.Ok := True;
+      finally
+        LNodes.Free;
+      end;
+    finally
+      LBundles.Free;
+    end;
+  finally
+    LIngest.Free;
   end;
 end;
 

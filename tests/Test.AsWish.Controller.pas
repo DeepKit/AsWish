@@ -177,6 +177,13 @@ type
     ///  inside the same conditional as the merge, so this is the branch that
     ///  stops a bad merge from being persisted.</summary>
     [Test] procedure Test_IngestCandidateNodes_RejectedCandidateWritesNothing;
+    /// <summary>The CLI's changeset generated a set for a node id and reported
+    ///  success. What a caller has to be handed back is the id it prints and
+    ///  the two paths it prints -- and whether the node was ever there, which
+    ///  is what made a bad id silent: the change item got a zeroed node's
+    ///  summary and the command still exited 0.</summary>
+    [Test] procedure Test_GenerateChangeSet_ReturnsPathsTheCallerPrints;
+    [Test] procedure Test_GenerateChangeSet_UnknownNodeIdIsReportedNotSilent;
   end;
 
   /// <summary>Drives the Controller the way the CLI does: with the real
@@ -1656,6 +1663,59 @@ begin
   Assert.IsFalse(TFile.ReadAllText(LFuncPath, TEncoding.UTF8)
     .Contains('func-partial-batch'),
     'the valid node in a refused batch must not reach disk either');
+end;
+
+procedure TTestAsWishController.Test_GenerateChangeSet_ReturnsPathsTheCallerPrints;
+var
+  LNodeId, LText: string;
+  LResult: TChangeSetResult;
+begin
+  // The command prints the change set path and the prompt path. Asserting
+  // the files themselves is the point: a path that looks right but was never
+  // written is the failure mode the printout cannot catch.
+  LNodeId := RootNodeId;
+  Assert.IsTrue(LNodeId <> '', 'the fixture must have a root node to target');
+
+  LResult := FController.GenerateChangeSet(FDir, LNodeId,
+    'Generated from a controller test', ttFunction);
+
+  Assert.IsTrue(LResult.Ok, 'generation must succeed');
+  Assert.IsTrue(LResult.NodeFound, 'the node exists, so it must be found');
+  Assert.IsTrue(LResult.ChangeSetId <> '', 'an id must be generated');
+  Assert.AreEqual(1, LResult.ItemsCount, 'one node, one change item');
+  Assert.AreEqual(LNodeId, LResult.NodeId, 'the echoed node id must match');
+
+  Assert.IsTrue(TFile.Exists(LResult.ChangePath),
+    'the saved change set must exist at the returned path');
+  Assert.IsTrue(TFile.Exists(LResult.PromptPath),
+    'the saved prompt must exist at the returned path');
+  Assert.IsTrue(LResult.ChangePath.Contains(LResult.ChangeSetId),
+    'the change set file must be named for the id the caller prints');
+
+  LText := TFile.ReadAllText(LResult.ChangePath, TEncoding.UTF8);
+  Assert.IsTrue(LText.Contains(LNodeId),
+    'the change set on disk must name the node it is about');
+  Assert.IsTrue(LText.Contains('Generated from a controller test'),
+    'the change set on disk must carry the intent text');
+end;
+
+procedure TTestAsWishController.Test_GenerateChangeSet_UnknownNodeIdIsReportedNotSilent;
+var
+  LResult: TChangeSetResult;
+begin
+  // Before this existed, an unknown id produced a zeroed TSpecNode, a change
+  // item with an empty summary, and a success. The id still generates (that
+  // is the command's contract) but it is now observable, so a caller can
+  // refuse instead of printing a path to a set describing nothing.
+  LResult := FController.GenerateChangeSet(FDir, 'func-does-not-exist',
+    'Intent aimed at nothing', ttFunction);
+
+  Assert.IsFalse(LResult.NodeFound,
+    'an unknown node id must be reported as not found, not as an empty node');
+  Assert.IsTrue(LResult.ChangeSetId <> '',
+    'generation itself still succeeds: the caller decides what a refusal is');
+  Assert.IsTrue(LResult.ChangeSetId.Contains('does-not-exist'),
+    'the id must still name the requested node');
 end;
 
 { THeadlessShellTests }

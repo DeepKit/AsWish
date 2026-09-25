@@ -489,19 +489,8 @@ end;
 
 procedure RunChangeSet(const ADir, ANodeId, ATreeStr, AUserIntent: string);
 var
-  LStore: TAsWishStoreService;
-  LIngest: TAsWishCandidateIngest;
-  LPrompts: TAsWishPromptService;
-  LTree: TTreeType;
-  LIntent: TCandidateIntent;
-  LChangeSet: TChangeSet;
-  LBundles: TList<TSemanticBundle>;
-  LNodes: TList<TSpecNode>;
-  LTargetNode: TSpecNode;
-  LTreeFile: string;
-  LAffected: TArray<TTreeType>;
-  LChangePath, LPromptPath: string;
-  LItem: TChangeItem;
+  LBundle: TControllerBundle;
+  LResult: TChangeSetResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
@@ -509,75 +498,36 @@ begin
     Halt(1);
   end;
 
-  LTree := TSpecEnums.TreeTypeFromStr(ATreeStr, ttFunction);
-  LIntent := TCandidateIntent.CreateNew(ANodeId, LTree, AUserIntent, 'human');
-
-  LStore := TAsWishStoreService.Create;
-  LIngest := TAsWishCandidateIngest.Create(LStore);
-  LPrompts := TAsWishPromptService.Create;
+  // Which tree the id belongs to is this command's own argument, so it stays
+  // here; everything after that is the Controller's. This is the headless
+  // generate step: it writes the change set and the prompt and nothing else.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LPrompts.Initialize(TPath.Combine(ADir, '.AsWish'));
+    LResult := LBundle.Controller.GenerateChangeSet(ADir, ANodeId, AUserIntent,
+      TSpecEnums.TreeTypeFromStr(ATreeStr, ttFunction));
 
-    LBundles := LStore.ReadBundlesFile('bundles.yaml');
-    try
-      case LTree of
-        ttFunction: LTreeFile := 'trees/function-tree.yaml';
-        ttModule:   LTreeFile := 'trees/module-tree.yaml';
-        ttView:     LTreeFile := 'trees/view-tree.yaml';
-        ttData:     LTreeFile := 'trees/data-tree.yaml';
-      end;
-      LNodes := LStore.ReadTreeFile(LTreeFile);
-      try
-        LTargetNode := Default(TSpecNode);
-        for var LN in LNodes do
-          if LN.Id = ANodeId then
-          begin
-            LTargetNode := LN;
-            Break;
-          end;
-
-        LAffected := LIngest.ComputeAffectedProjections(ANodeId, LBundles);
-
-        var LCSId := LIngest.GenerateNextChangeSetId(ADir, ANodeId);
-        LChangeSet := TChangeSet.CreateNew(LCSId, ANodeId, LTree, AUserIntent, 'human');
-        LChangeSet.AffectedProjections := LAffected;
-
-        LItem := TChangeItem.CreateItem(ANodeId, LTree, 'summary', LTargetNode.Summary, AUserIntent, cstExplicit, 'Interpreted from human user intent');
-        LChangeSet.Items := TArray<TChangeItem>.Create(LItem);
-
-        LChangePath := LIngest.SaveChangeSet(ADir, LChangeSet);
-        LPromptPath := LPrompts.WriteChangeInterpretPrompt(LIntent, LTargetNode, LBundles);
-
-        if GJsonOutput then
-        begin
-          WriteJsonHeader('changeset');
-          WriteJsonKV('status', 'ok');
-          WriteJsonKV('change_set_id', LChangeSet.Id);
-          WriteJsonKV('node_id', ANodeId);
-          WriteJsonKV('tree', TSpecEnums.TreeTypeToStr(LTree));
-          WriteJsonKV('saved_to', LChangePath);
-          WriteJsonKV('prompt_path', LPromptPath);
-          WriteJsonKVInt('items_count', Length(LChangeSet.Items));
-          WriteJsonFooter;
-        end
-        else
-        begin
-          Writeln(Format('[changeset] generated change set %s for %s (%s)',
-            [LChangeSet.Id, ANodeId, TSpecEnums.TreeTypeToStr(LTree)]));
-          Writeln('  saved change set: ' + LChangePath);
-          Writeln('  saved prompt:     ' + LPromptPath);
-        end;
-      finally
-        LNodes.Free;
-      end;
-    finally
-      LBundles.Free;
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('changeset');
+      WriteJsonKV('status', 'ok');
+      WriteJsonKV('change_set_id', LResult.ChangeSetId);
+      WriteJsonKV('node_id', LResult.NodeId);
+      WriteJsonKV('tree', TSpecEnums.TreeTypeToStr(LResult.Tree));
+      WriteJsonKV('saved_to', LResult.ChangePath);
+      WriteJsonKV('prompt_path', LResult.PromptPath);
+      WriteJsonKVInt('items_count', LResult.ItemsCount);
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('[changeset] generated change set %s for %s (%s)',
+        [LResult.ChangeSetId, LResult.NodeId,
+          TSpecEnums.TreeTypeToStr(LResult.Tree)]));
+      Writeln('  saved change set: ' + LResult.ChangePath);
+      Writeln('  saved prompt:     ' + LResult.PromptPath);
     end;
   finally
-    LPrompts.Free;
-    LIngest.Free;
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
