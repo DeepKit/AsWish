@@ -162,6 +162,14 @@ type
     [Test] procedure Test_ComputeDifference_GeneratesReportAndHtml;
     [Test] procedure Test_RunScan_RendersEvidencePageBeforeTreePages;
     [Test] procedure Test_RecordDifferenceDecision_Unacceptable_PersistsDecision;
+    /// <summary>The CLI's judge prints the item count in the same line as the
+    ///  decision id. The one-argument form returned only the id, so the CLI
+    ///  had to keep its own copy of the workflow to get the count.</summary>
+    [Test] procedure Test_RecordDifferenceDecision_ReturnsItemCountTheCallerPrints;
+    /// <summary>The one-argument form is what the GUI calls and must not have
+    ///  changed. It is a thin wrapper now, so this is the test that notices if
+    ///  the delegation breaks.</summary>
+    [Test] procedure Test_RecordDifferenceDecision_ShortFormStillWorks;
     [Test] procedure Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;
     [Test] procedure Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
     [Test] procedure Test_InitializeProject_LaysDownStructureWithoutScanning;
@@ -1395,6 +1403,49 @@ begin
   // Verify decisions.html was rendered
   LHtml := TFile.ReadAllText(TPath.Combine(FStore.BasePath, 'html\decisions.html'), TEncoding.UTF8);
   Assert.IsTrue(LHtml.Contains(LDecId), 'decisions.html must contain decision ID');
+end;
+
+procedure TTestAsWishController.Test_RecordDifferenceDecision_ReturnsItemCountTheCallerPrints;
+var
+  LFuncId, LCSId, LDecId: string;
+  LItemCount, LRecomputed: Integer;
+begin
+  // One structural change, so the count is nonzero. Asserting "the returned
+  // count equals the count in the report it was taken against" is the whole
+  // contract: a caller prints them together, so a mismatch is a false line of
+  // output nobody can catch downstream.
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Base feature spec');
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
+
+  TFile.WriteAllText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);
+  FController.RunScan;
+
+  LDecId := FController.RecordDifferenceDecision('B-0001', 'acceptable', 'Item count probe', LItemCount);
+
+  Assert.IsNotEmpty(LDecId, 'the decision id must still come back');
+  LRecomputed := Length(FController.ComputeDifference('B-0001').Items);
+  Assert.AreEqual(LRecomputed, LItemCount,
+    'the reported item count must match the report the decision was taken against');
+end;
+
+procedure TTestAsWishController.Test_RecordDifferenceDecision_ShortFormStillWorks;
+var
+  LFuncId, LCSId, LDecId: string;
+begin
+  // The three-argument form is what the desktop shell calls. It now delegates,
+  // so this is the regression test for that delegation rather than a second
+  // copy of the behaviour.
+  LFuncId := RootNodeId;
+  LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Base feature spec');
+  Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
+
+  LDecId := FController.RecordDifferenceDecision('B-0001', 'unacceptable', 'Short form still records');
+
+  Assert.IsNotEmpty(LDecId, 'the short form must still return the decision id');
+  Assert.IsTrue(TFile.ReadAllText(TPath.Combine(FStore.BasePath,
+    'decisions\requirement-decisions.yaml'), TEncoding.UTF8).Contains(LDecId),
+    'the decision must actually be persisted, not just returned');
 end;
 
 procedure TTestAsWishController.Test_EvolveBaseline_CreatesB0002_WithParentBaselineId;

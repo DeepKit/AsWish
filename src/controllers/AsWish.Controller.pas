@@ -361,7 +361,15 @@ type
     // Structural Difference, Human Judgment & Evolution (WO-20260905-0029)
     function CollectEvidence(const ABaselineId: string = ''): TArray<TSpecEvidence>;
     function ComputeDifference(const ABaselineId: string): TSpecDifferenceReport;
-    function RecordDifferenceDecision(const ABaselineId, AAction, ARationale: string): string;
+    function RecordDifferenceDecision(const ABaselineId, AAction,
+      ARationale: string): string; overload;
+    /// <summary>Same decision, but hands back how many difference items it was
+    ///  taken against. The one-argument form above returns the decision id and
+    ///  reports everything else through the status pane; a headless caller
+    ///  prints the item count in the same line, and re-deriving it would mean
+    ///  computing the difference a second time.</summary>
+    function RecordDifferenceDecision(const ABaselineId, AAction,
+      ARationale: string; out AItemCount: Integer): string; overload;
     function EvolveBaseline(const ABaselineId, ANote: string;
       out ANewBaseline: TAsWishBaseline): string; overload;
     /// <summary>Same evolution, but hands back the decision it recorded. The
@@ -2457,7 +2465,16 @@ begin
   end;
 end;
 
-function TAsWishController.RecordDifferenceDecision(const ABaselineId, AAction, ARationale: string): string;
+function TAsWishController.RecordDifferenceDecision(const ABaselineId, AAction,
+  ARationale: string): string;
+var
+  LItemCount: Integer;
+begin
+  Result := RecordDifferenceDecision(ABaselineId, AAction, ARationale, LItemCount);
+end;
+
+function TAsWishController.RecordDifferenceDecision(const ABaselineId, AAction,
+  ARationale: string; out AItemCount: Integer): string;
 var
   LWorkflow: TAsWishVisualWorkflowService;
   LDifference: TAsWishDifferenceService;
@@ -2471,6 +2488,7 @@ begin
     LWorkflow := TAsWishVisualWorkflowService.Create(FSpecStore, FSnapshot, FDecisions, LDifference);
     try
       LReport := ComputeDifference(ABaselineId);
+      AItemCount := Length(LReport.Items);
       LJudgment := TSpecEnums.DifferenceJudgmentFromStr(AAction);
       Result := LWorkflow.RecordDifferenceDecision(LReport, LJudgment, ARationale);
       FRender.RenderDecisionsPage(ListDecisions, FProjectService.ProjectName);

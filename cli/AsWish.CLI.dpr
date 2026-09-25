@@ -29,10 +29,10 @@ uses
   System.IOUtils,
   System.Generics.Collections,
   AsWish.Services.Project in '..\src\services\AsWish.Services.Project.pas',
+  AsWish.Services.SpecStore in '..\src\services\AsWish.Services.SpecStore.pas',
   AsWish.Services.Scan in '..\src\services\AsWish.Services.Scan.pas',
   AsWish.Services.LLM in '..\src\services\AsWish.Services.LLM.pas',
   AsWish.Services.Settings in '..\src\services\AsWish.Services.Settings.pas',
-  AsWish.Services.SpecStore in '..\src\services\AsWish.Services.SpecStore.pas',
   AsWish.Services.TreeBuilder in '..\src\services\AsWish.Services.TreeBuilder.pas',
   AsWish.Services.Render in '..\src\services\AsWish.Services.Render.pas',
   AsWish.Services.Prompts in '..\src\services\AsWish.Services.Prompts.pas',
@@ -1088,123 +1088,62 @@ end;
 
 procedure RunDifference(const AProjectDir, ABaselineId: string);
 var
-  LStore: TAsWishStoreService;
-  LSnapshot: TAsWishSnapshotService;
-  LDecisions: TAsWishDecisionsService;
-  LDifference: TAsWishDifferenceService;
-  LWorkflow: TAsWishVisualWorkflowService;
+  LBundle: TControllerBundle;
   LReport: TSpecDifferenceReport;
 begin
-  LStore := TAsWishStoreService.Create;
+  // This command used to build store + snapshot + decisions + difference +
+  // workflow itself, which is the same sequence ComputeDifference owns -- and
+  // the one that had drifted from it (the P0 in this work order). Two things
+  // the Controller does that the copy here did not: it collects evidence when
+  // none has been collected yet, and it reports a degraded comparison.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(AProjectDir);
-    LSnapshot := TAsWishSnapshotService.Create(LStore);
-    try
-      LDecisions := TAsWishDecisionsService.Create;
-      try
-        LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-        LDecisions.Load;
-        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
-        try
-          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnapshot, LDecisions, LDifference);
-          try
-            LReport := LWorkflow.ComputeDifference(AProjectDir, ABaselineId);
-            Writeln(Format('Computed difference report against baseline "%s" (tree: %s):',
-              [LReport.BaselineId, LReport.TreeType]));
-            if Length(LReport.Items) = 0 then
-              Writeln('  No structural differences found (0 items).')
-            else
-            begin
-              Writeln(Format('  Found %d structural difference(s):', [Length(LReport.Items)]));
-              for var LItem in LReport.Items do
-              begin
-                var LAspectStr := '';
-                if LItem.Kind = dkChanged then
-                  LAspectStr := ' (' + TSpecEnums.DifferenceAspectToStr(LItem.ChangedAspect) + ')';
-                Writeln(Format('  - [%s%s] node: %s (baseline: %s, live/ev: %s)',
-                  [TSpecEnums.DifferenceKindToStr(LItem.Kind), LAspectStr, LItem.NodeId,
-                   Copy(LItem.BaselineHash, 1, 8), Copy(LItem.EvidenceHash, 1, 8)]));
-              end;
-            end;
-            Writeln('Saved difference report to .AsWish/difference.yaml');
-            var LRender := TAsWishRenderService.Create;
-            try
-              LRender.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-              LRender.RenderDifferencePage(LReport, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
-              LRender.RenderDecisionsPage(LDecisions.Decisions.ToArray, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
-              Writeln('Rendered difference report to .AsWish/html/difference.html');
-            finally
-              LRender.Free;
-            end;
-          finally
-            LWorkflow.Free;
-          end;
-        finally
-          LDifference.Free;
-        end;
-      finally
-        LDecisions.Free;
+    LBundle.Controller.OpenProject(AProjectDir);
+    LReport := LBundle.Controller.ComputeDifference(ABaselineId);
+
+    Writeln(Format('Computed difference report against baseline "%s" (tree: %s):',
+      [LReport.BaselineId, LReport.TreeType]));
+    if Length(LReport.Items) = 0 then
+      Writeln('  No structural differences found (0 items).')
+    else
+    begin
+      Writeln(Format('  Found %d structural difference(s):', [Length(LReport.Items)]));
+      for var LItem in LReport.Items do
+      begin
+        var LAspectStr := '';
+        if LItem.Kind = dkChanged then
+          LAspectStr := ' (' + TSpecEnums.DifferenceAspectToStr(LItem.ChangedAspect) + ')';
+        Writeln(Format('  - [%s%s] node: %s (baseline: %s, live/ev: %s)',
+          [TSpecEnums.DifferenceKindToStr(LItem.Kind), LAspectStr, LItem.NodeId,
+           Copy(LItem.BaselineHash, 1, 8), Copy(LItem.EvidenceHash, 1, 8)]));
       end;
-    finally
-      LSnapshot.Free;
     end;
+    Writeln('Saved difference report to .AsWish/difference.yaml');
+    Writeln('Rendered difference report to .AsWish/html/difference.html');
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
 procedure RunJudge(const AProjectDir, ABaselineId, AAction, ANote: string);
 var
-  LStore: TAsWishStoreService;
-  LSnapshot: TAsWishSnapshotService;
-  LDifference: TAsWishDifferenceService;
-  LDecisions: TAsWishDecisionsService;
-  LWorkflow: TAsWishVisualWorkflowService;
-  LReport: TSpecDifferenceReport;
+  LBundle: TControllerBundle;
   LDecId: string;
-  LJudgment: TDifferenceJudgment;
+  LItemCount: Integer;
 begin
-  LStore := TAsWishStoreService.Create;
+  // Same story as RunDifference: the workflow construction here was the second
+  // copy of the sequence RecordDifferenceDecision owns. The item count is
+  // printed below and is not part of the decision id, so the Controller now
+  // hands it back instead of the CLI recomputing the difference.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(AProjectDir);
-    LSnapshot := TAsWishSnapshotService.Create(LStore);
-    try
-      LDecisions := TAsWishDecisionsService.Create;
-      try
-        LDecisions.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-        LDecisions.Load;
-        LDifference := TAsWishDifferenceService.Create(LStore, LSnapshot);
-        try
-          LWorkflow := TAsWishVisualWorkflowService.Create(LStore, LSnapshot, LDecisions, LDifference);
-          try
-            LReport := LWorkflow.ComputeDifference(AProjectDir, ABaselineId);
-            LJudgment := TSpecEnums.DifferenceJudgmentFromStr(AAction);
-            LDecId := LWorkflow.RecordDifferenceDecision(LReport, LJudgment, ANote);
-            Writeln(Format('Recorded human judgment decision "%s" (%s) for baseline %s (%d difference items).',
-              [LDecId, AAction, ABaselineId, Length(LReport.Items)]));
-            var LRender := TAsWishRenderService.Create;
-            try
-              LRender.Initialize(TPath.Combine(AProjectDir, '.AsWish'));
-              LRender.RenderDifferencePage(LReport, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
-              LRender.RenderDecisionsPage(LDecisions.Decisions.ToArray, ExtractFileName(ExcludeTrailingPathDelimiter(AProjectDir)));
-              Writeln('Rendered decisions history to .AsWish/html/decisions.html');
-            finally
-              LRender.Free;
-            end;
-          finally
-            LWorkflow.Free;
-          end;
-        finally
-          LDifference.Free;
-        end;
-      finally
-        LDecisions.Free;
-      end;
-    finally
-      LSnapshot.Free;
-    end;
+    LBundle.Controller.OpenProject(AProjectDir);
+    LDecId := LBundle.Controller.RecordDifferenceDecision(ABaselineId, AAction, ANote, LItemCount);
+    Writeln(Format('Recorded human judgment decision "%s" (%s) for baseline %s (%d difference items).',
+      [LDecId, AAction, ABaselineId, LItemCount]));
+    Writeln('Rendered decisions history to .AsWish/html/decisions.html');
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
