@@ -162,28 +162,24 @@ end;
 
 procedure RunDecisionsApply(const ADir: string);
 var
-  LProject: TAsWishProjectService;
-  LStore: TAsWishStoreService;
-  LDecisions: TAsWishDecisionsService;
+  LBundle: TControllerBundle;
+  LTouched: TArray<string>;
   LCount: Integer;
-  LTreeNames: TArray<string>;
-  LNodes: TList<TSpecNode>;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[decisions-apply] error: no .AsWish directory; run scan first');
     Halt(1);
   end;
-  LProject := TAsWishProjectService.Create;
-  LStore := TAsWishStoreService.Create;
-  LDecisions := TAsWishDecisionsService.Create;
+  // The CLI's copy of this called PromotePending and then re-derived the tree
+  // list itself. The Controller already owns both halves; the only reason it
+  // could not serve this command is that it reported through the status pane
+  // and returned nothing, so "promoted N" and the per-tree lines had no source.
+  // It now returns the count and the trees it rewrote.
+  LBundle := TControllerBundle.Create(True);
   try
-    LProject.OpenProject(ADir);
-    LStore.Initialize(ADir);
-    LDecisions.Initialize(LProject.AsWishPath);
-    LDecisions.Load;
-
-    LCount := LDecisions.PromotePending;
+    LBundle.Controller.OpenProject(ADir);
+    LCount := LBundle.Controller.PromotePendingDecisions(LTouched);
     if GJsonOutput then
     begin
       WriteJsonHeader('decisions-apply');
@@ -193,27 +189,9 @@ begin
       Writeln(Format('[decisions-apply] promoted %d pending decisions', [LCount]));
 
     if LCount > 0 then
-    begin
-      LTreeNames := TArray<string>.Create(
-        'trees/function-tree.yaml', 'trees/module-tree.yaml',
-        'trees/view-tree.yaml', 'trees/data-tree.yaml');
-      for var LTree in LTreeNames do
-      begin
-        if not TFile.Exists(TPath.Combine(LStore.BasePath, LTree)) then Continue;
-        LNodes := LStore.ReadTreeFile(LTree);
-        try
-          if (LNodes <> nil) and (LNodes.Count > 0) then
-          begin
-            LDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
-            LStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
-            if not GJsonOutput then
-              Writeln(Format('[decisions-apply] transitions applied to %s', [LTree]));
-          end;
-        finally
-          LNodes.Free;
-        end;
-      end;
-    end;
+      for var LTree in LTouched do
+        if not GJsonOutput then
+          Writeln(Format('[decisions-apply] transitions applied to %s', [LTree]));
 
     if GJsonOutput then
     begin
@@ -223,9 +201,7 @@ begin
     else
       Writeln('[decisions-apply] done');
   finally
-    LDecisions.Free;
-    LStore.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 

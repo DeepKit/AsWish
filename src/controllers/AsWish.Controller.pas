@@ -73,9 +73,11 @@ type
     procedure ScanDocsFirst;
     procedure WriteDocsSummary;
     /// <summary>Apply accepted/rejected formal decisions to every tree on
-    ///  disk: read tree → ApplyNodeStatusTransitions → write back.
-    ///  Shared by PromotePendingDecisions and ApplyBundleDecisions.</summary>
-    procedure ApplyAllTreeTransitions;
+    ///  disk: read tree → ApplyNodeStatusTransitions → write back. Returns the
+    ///  trees it actually rewrote, so a caller that reports per-tree output does
+    ///  not have to re-derive the list. Shared by PromotePendingDecisions and
+    ///  ApplyBundleDecisions.</summary>
+    function ApplyAllTreeTransitions: TArray<string>;
     /// <summary>Reload the in-memory builder trees from disk after a
     ///  disk-first transition pass (ApplyAllTreeTransitions), so
     ///  RenderAll and FindNodeById see the new state.</summary>
@@ -141,7 +143,11 @@ type
     ///  re-render. AAction is 'bundle-accept' or 'bundle-reject'.
     ///  No-op if no project open.</summary>
     procedure ApplyBundleDecisions(const AAction, ABundleId: string);
-    procedure PromotePendingDecisions;
+    procedure PromotePendingDecisions; overload;
+    /// <summary>Same promotion, but reports what it did. A headless caller has
+    ///  no status pane, so "promoted N" and the per-tree lines it prints were
+    ///  the only reason it kept its own copy of this orchestration.</summary>
+    function PromotePendingDecisions(out ATreesTouched: TArray<string>): Integer; overload;
 
     // Natural Language -> Change Set -> Decision Commands (WO-20260830-0027D)
     function SubmitUserIntent(const AIntent: TCandidateIntent): string; overload;
@@ -653,8 +659,18 @@ end;
 
 procedure TAsWishController.PromotePendingDecisions;
 var
+  LIgnored: TArray<string>;
+begin
+  PromotePendingDecisions(LIgnored);
+end;
+
+function TAsWishController.PromotePendingDecisions(
+  out ATreesTouched: TArray<string>): Integer;
+var
   LCount: Integer;
 begin
+  ATreesTouched := TArray<string>.Create();
+  Result := 0;
   if not FProjectService.IsOpen then
   begin
     FStatus.Warning('AsWish', 'No project open');
@@ -672,8 +688,14 @@ begin
     FStatus.Info('AsWish.Decisions',
       Format('Promoted %d pending decision(s) to formal decisions.', [LCount]));
 
+    // Reported before the transition pass, not after: the except below swallows
+    // the failure so the desktop shell carries on, and a caller that only
+    // learned the count afterwards would report 0 for decisions that really
+    // were promoted.
+    Result := LCount;
+
     // Apply state machine transitions to all trees
-    ApplyAllTreeTransitions;
+    ATreesTouched := ApplyAllTreeTransitions;
     ReloadInMemoryTrees;
   except
     on E: Exception do
@@ -707,33 +729,40 @@ begin
   end;
 end;
 
-procedure TAsWishController.ApplyAllTreeTransitions;
+function TAsWishController.ApplyAllTreeTransitions: TArray<string>;
 var
   LTreeNames: TArray<string>;
+  LTouched: TList<string>;
 begin
   LTreeNames := TArray<string>.Create(
     'trees/function-tree.yaml', 'trees/module-tree.yaml',
     'trees/view-tree.yaml', 'trees/data-tree.yaml');
+  LTouched := TList<string>.Create;
+  try
+    for var LTree in LTreeNames do
+    begin
+      if not TFile.Exists(TPath.Combine(FProjectService.AsWishPath, LTree)) then Continue;
 
-  for var LTree in LTreeNames do
-  begin
-    if not TFile.Exists(TPath.Combine(FProjectService.AsWishPath, LTree)) then Continue;
-
-    // Read and write back transitions inline
-    var LNodes := FSpecStore.ReadTreeFile(LTree);
-    try
-      if LNodes <> nil then
-      begin
-        if LNodes.Count = 0 then
-          // Empty tree (e.g. no view nodes in a backend-only project):
-          // nothing to transition, nothing to write back.
-          Continue;
-        FDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
-        FSpecStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
+      // Read and write back transitions inline
+      var LNodes := FSpecStore.ReadTreeFile(LTree);
+      try
+        if LNodes <> nil then
+        begin
+          if LNodes.Count = 0 then
+            // Empty tree (e.g. no view nodes in a backend-only project):
+            // nothing to transition, nothing to write back.
+            Continue;
+          FDecisions.ApplyNodeStatusTransitions(LTree, LNodes);
+          FSpecStore.WriteTreeFile(LTree, LNodes[0].Tree, LNodes);
+          LTouched.Add(LTree);
+        end;
+      finally
+        LNodes.Free;
       end;
-    finally
-      LNodes.Free;
     end;
+    Result := LTouched.ToArray;
+  finally
+    LTouched.Free;
   end;
 end;
 
