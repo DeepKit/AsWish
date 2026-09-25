@@ -932,50 +932,113 @@ begin
   end;
 end;
 
-procedure RunScan(const ADir: string);
+type
+  // One owner for the twelve objects a command needs before it has a
+  // Controller. TAsWishController.Destroy frees only FCommons and FSnapshot --
+  // the two it creates itself -- so the injected services stay owned by
+  // whoever built them. Handing them to a Controller and freeing the
+  // Controller is therefore not enough, and copying this construction block
+  // into seven more commands would give eight copies that drift.
+  TControllerBundle = class
+  private
+    FProject: TAsWishProjectService;
+    FScan: TAsWishScanService;
+    FStore: TAsWishStoreService;
+    FBuilder: TAsWishTreeBuilder;
+    FRender: TAsWishRenderService;
+    FPrompts: TAsWishPromptService;
+    FDecisions: TAsWishDecisionsService;
+    FSettings: TAsWishSettingsService;
+    FLLM: TAsWishLLMService;
+    FController: TAsWishController;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    property Controller: TAsWishController read FController;
+    property Project: TAsWishProjectService read FProject;
+  end;
+
+constructor TControllerBundle.Create;
 var
-  LProject: TAsWishProjectService;
-  LScan: TAsWishScanService;
-  LStore: TAsWishStoreService;
-  LBuilder: TAsWishTreeBuilder;
-  LRender: TAsWishRenderService;
-  LPrompts: TAsWishPromptService;
-  LDecisions: TAsWishDecisionsService;
-  LLLM: TAsWishLLMService;
-  LSettings: TAsWishSettingsService;
   LStatus: IShellStatusManager;
   LContext: IShellContextManager;
   LBus: IShellEventBus;
-  LController: TAsWishController;
+begin
+  FProject := TAsWishProjectService.Create;
+  FScan := TAsWishScanService.Create;
+  FStore := TAsWishStoreService.Create;
+  FBuilder := TAsWishTreeBuilder.Create;
+  FRender := TAsWishRenderService.Create;
+  FPrompts := TAsWishPromptService.Create;
+  FDecisions := TAsWishDecisionsService.Create;
+  FSettings := TAsWishSettingsService.Create;
+  FLLM := TAsWishLLMService.Create('Default');
+  LStatus := TConsoleStatusManager.Create;
+  LContext := THeadlessContextManager.Create;
+  LBus := THeadlessEventBus.Create;
+  try
+    FController := TAsWishController.Create(
+      FProject, FScan, FStore, FRender, FBuilder, FPrompts, FDecisions,
+      FLLM, FSettings, LStatus, LContext, LBus);
+  except
+    // A half-built bundle must not leak; the fields are cleared as we go so a
+    // later Destroy cannot double-free what this block already released.
+    FController := nil;
+    FLLM.Free;
+    FSettings.Free;
+    FDecisions.Free;
+    FPrompts.Free;
+    FRender.Free;
+    FBuilder.Free;
+    FStore.Free;
+    FScan.Free;
+    FProject.Free;
+    FLLM := nil;
+    FSettings := nil;
+    FDecisions := nil;
+    FPrompts := nil;
+    FRender := nil;
+    FBuilder := nil;
+    FStore := nil;
+    FScan := nil;
+    FProject := nil;
+    raise;
+  end;
+end;
+
+destructor TControllerBundle.Destroy;
+begin
+  // The three shell objects need no field: the Controller keeps them as
+  // interface fields, so they are released when it is freed.
+  FController.Free;
+  FLLM.Free;
+  FSettings.Free;
+  FDecisions.Free;
+  FPrompts.Free;
+  FRender.Free;
+  FBuilder.Free;
+  FStore.Free;
+  FScan.Free;
+  FProject.Free;
+  inherited;
+end;
+
+procedure RunScan(const ADir: string);
+var
+  LBundle: TControllerBundle;
 begin
   // The scan is orchestrated by the Controller, exactly as the desktop app
   // orchestrates it. This used to be a second, shorter copy of the same
   // sequence held here in the program body -- which is how the evidence
   // catalog came to exist in the CLI's pages and in nobody else's. The
-  // services are still built here, but only to hand them to the Controller:
-  // nothing below this line decides what a scan does.
-  LProject := TAsWishProjectService.Create;
-  LScan := TAsWishScanService.Create;
-  LStore := TAsWishStoreService.Create;
-  LBuilder := TAsWishTreeBuilder.Create;
-  LRender := TAsWishRenderService.Create;
-  LPrompts := TAsWishPromptService.Create;
-  LDecisions := TAsWishDecisionsService.Create;
-  LSettings := TAsWishSettingsService.Create;
-  LLLM := TAsWishLLMService.Create('Default');
-  LStatus := TConsoleStatusManager.Create;
-  LContext := THeadlessContextManager.Create;
-  LBus := THeadlessEventBus.Create;
-  LController := nil;
+  // bundle only builds the objects and hands them over: nothing below this
+  // line decides what a scan does.
+  LBundle := TControllerBundle.Create;
   try
-    LController := TAsWishController.Create(
-      LProject, LScan, LStore, LRender, LBuilder, LPrompts, LDecisions,
-      LLLM, LSettings, LStatus, LContext, LBus);
-
     Writeln('[scan] scanning ' + ADir);
-    LController.OpenAndScan(ADir);
+    LBundle.Controller.OpenAndScan(ADir);
 
-    if LController.ScanFailed then
+    if LBundle.Controller.ScanFailed then
     begin
       // The Controller reports through the status channel and does not raise;
       // a console run must not print success it did not get.
@@ -983,23 +1046,14 @@ begin
       Halt(1);
     end;
 
-    Writeln('[scan] done -> ' + LProject.AsWishPath + '\html\');
+    Writeln('[scan] done -> ' + LBundle.Project.AsWishPath + '\html\');
     // The scan writes the spec state into the user's repository, which leaves
     // their "git status" dirty. Say so instead of letting them discover it.
     Writeln('[scan] note: derived output is gitignored; spec state ' +
       '(trees/ evidence/ issues/ decisions/ relations/) is not. ' +
       'Add ".AsWish/" to your .gitignore if you do not want it tracked.');
   finally
-    LController.Free;
-    LLLM.Free;
-    LSettings.Free;
-    LDecisions.Free;
-    LPrompts.Free;
-    LRender.Free;
-    LBuilder.Free;
-    LStore.Free;
-    LScan.Free;
-    LProject.Free;
+    LBundle.Free;
   end;
 end;
 
