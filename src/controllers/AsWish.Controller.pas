@@ -87,6 +87,7 @@ type
       const AContext: IShellContextManager;
       const ABus: IShellEventBus);
 
+    procedure OpenProject(const APath: string);
     procedure OpenAndScan(const APath: string);
     procedure RunScan;
     /// <summary>True only while the last RunScan ended in an exception. Read
@@ -219,10 +220,14 @@ begin
   Result := FProjectService.IsOpen;
 end;
 
-procedure TAsWishController.OpenAndScan(const APath: string);
+// Opening is the half of OpenAndScan that twenty commands need without a
+// scan. It lives here, once, so those commands can share it instead of each
+// rebuilding the services and re-deriving the order they must be initialised
+// in -- which is how the CLI and the desktop app drifted apart.
+// The "Opening project" announcement stays in OpenAndScan: a read-only command
+// that only needs the project open should not narrate it.
+procedure TAsWishController.OpenProject(const APath: string);
 begin
-  FStatus.Info('AsWish', 'Opening project: ' + APath);
-
   // Open project
   FProjectService.OpenProject(APath);
   FContext.SetProject(FProjectService.ProjectName, APath);
@@ -236,6 +241,12 @@ begin
   FPrompts.Initialize(FProjectService.AsWishPath);
   FDecisions.Initialize(FProjectService.AsWishPath);
   FDecisions.Load;
+end;
+
+procedure TAsWishController.OpenAndScan(const APath: string);
+begin
+  FStatus.Info('AsWish', 'Opening project: ' + APath);
+  OpenProject(APath);
 
   // Run scan (includes docs-first reading)
   RunScan;

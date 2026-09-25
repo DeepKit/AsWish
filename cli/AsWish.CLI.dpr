@@ -64,6 +64,32 @@ var
   GJsonOutput: Boolean = False;
   GJsonLines: TList<string>;
 
+type
+  // One owner for the twelve objects a command needs before it has a
+  // Controller. TAsWishController.Destroy frees only FCommons and FSnapshot --
+  // the two it creates itself -- so the injected services stay owned by
+  // whoever built them. Handing them to a Controller and freeing the
+  // Controller is therefore not enough, and copying this construction block
+  // into seven more commands would give eight copies that drift.
+  TControllerBundle = class
+  private
+    FProject: TAsWishProjectService;
+    FScan: TAsWishScanService;
+    FStore: TAsWishStoreService;
+    FBuilder: TAsWishTreeBuilder;
+    FRender: TAsWishRenderService;
+    FPrompts: TAsWishPromptService;
+    FDecisions: TAsWishDecisionsService;
+    FSettings: TAsWishSettingsService;
+    FLLM: TAsWishLLMService;
+    FController: TAsWishController;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    property Controller: TAsWishController read FController;
+    property Project: TAsWishProjectService read FProject;
+  end;
+
 function JsonEscape(const AValue: string): string;
 begin
   Result := AValue.Replace('\', '\\').Replace('"', '\"');
@@ -562,10 +588,9 @@ end;
 
 procedure RunIntentList(const ADir: string);
 var
-  LStore: TAsWishStoreService;
-  LIngest: TAsWishCandidateIngest;
   LIntents: TArray<TCandidateIntent>;
   I: Integer;
+  LBundle: TControllerBundle;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
@@ -573,10 +598,10 @@ begin
     Halt(1);
   end;
 
-  LStore := TAsWishStoreService.Create;
-  LIngest := TAsWishCandidateIngest.Create(LStore);
+  LBundle := TControllerBundle.Create;
   try
-    LIntents := LIngest.ListCandidateIntents(ADir);
+    LBundle.Controller.OpenProject(ADir);
+    LIntents := LBundle.Controller.ListCandidateIntents;
     if GJsonOutput then
     begin
       WriteJsonHeader('intent_list');
@@ -594,8 +619,7 @@ begin
       end;
     end;
   finally
-    LIngest.Free;
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
@@ -932,32 +956,6 @@ begin
   end;
 end;
 
-type
-  // One owner for the twelve objects a command needs before it has a
-  // Controller. TAsWishController.Destroy frees only FCommons and FSnapshot --
-  // the two it creates itself -- so the injected services stay owned by
-  // whoever built them. Handing them to a Controller and freeing the
-  // Controller is therefore not enough, and copying this construction block
-  // into seven more commands would give eight copies that drift.
-  TControllerBundle = class
-  private
-    FProject: TAsWishProjectService;
-    FScan: TAsWishScanService;
-    FStore: TAsWishStoreService;
-    FBuilder: TAsWishTreeBuilder;
-    FRender: TAsWishRenderService;
-    FPrompts: TAsWishPromptService;
-    FDecisions: TAsWishDecisionsService;
-    FSettings: TAsWishSettingsService;
-    FLLM: TAsWishLLMService;
-    FController: TAsWishController;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    property Controller: TAsWishController read FController;
-    property Project: TAsWishProjectService read FProject;
-  end;
-
 constructor TControllerBundle.Create;
 var
   LStatus: IShellStatusManager;
@@ -1239,81 +1237,69 @@ end;
 
 procedure RunBaselineList(const ADir: string);
 var
-  LStore: TAsWishStoreService;
-  LSnap: TAsWishSnapshotService;
   LBaselines: TArray<TAsWishBaseline>;
   I: Integer;
+  LBundle: TControllerBundle;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[baseline] error: no .AsWish directory');
     Halt(1);
   end;
-  LStore := TAsWishStoreService.Create;
+  LBundle := TControllerBundle.Create;
   try
-    LStore.Initialize(ADir);
-    LSnap := TAsWishSnapshotService.Create(LStore);
-    try
-      LBaselines := LSnap.ListBaselines;
-      if Length(LBaselines) = 0 then
-      begin
-        Writeln('[baseline] no Accepted Baselines found');
-        Exit;
-      end;
-      Writeln(Format('[baseline] found %d Accepted Baseline(s):', [Length(LBaselines)]));
-      for I := 0 to Length(LBaselines) - 1 do
-      begin
-        Writeln(Format('  - ID: %s | Decision: %s | Snapshot: %s | Tree: %s',
-          [LBaselines[I].BaselineId, LBaselines[I].DecisionId, LBaselines[I].SnapshotName, LBaselines[I].TreeType]));
-        Writeln(Format('    ContentHash: %s | RelationHash: %s',
-          [LBaselines[I].ContentHash, LBaselines[I].RelationHash]));
-        if LBaselines[I].RendererVersion <> '' then
-          Writeln(Format('    Renderer: %s | VisualBinding: %s',
-            [LBaselines[I].RendererVersion, LBaselines[I].VisualBinding]));
-        if LBaselines[I].Lineage.ParentBaselineId <> '' then
-          Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s, ParentBaseline=%s',
-            [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId, LBaselines[I].Lineage.ParentBaselineId]))
-        else
-          Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s',
-            [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId]));
-      end;
-    finally
-      LSnap.Free;
+    LBundle.Controller.OpenProject(ADir);
+    LBaselines := LBundle.Controller.ListBaselines;
+    if Length(LBaselines) = 0 then
+    begin
+      Writeln('[baseline] no Accepted Baselines found');
+      Exit;
+    end;
+    Writeln(Format('[baseline] found %d Accepted Baseline(s):', [Length(LBaselines)]));
+    for I := 0 to Length(LBaselines) - 1 do
+    begin
+      Writeln(Format('  - ID: %s | Decision: %s | Snapshot: %s | Tree: %s',
+        [LBaselines[I].BaselineId, LBaselines[I].DecisionId, LBaselines[I].SnapshotName, LBaselines[I].TreeType]));
+      Writeln(Format('    ContentHash: %s | RelationHash: %s',
+        [LBaselines[I].ContentHash, LBaselines[I].RelationHash]));
+      if LBaselines[I].RendererVersion <> '' then
+        Writeln(Format('    Renderer: %s | VisualBinding: %s',
+          [LBaselines[I].RendererVersion, LBaselines[I].VisualBinding]));
+      if LBaselines[I].Lineage.ParentBaselineId <> '' then
+        Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s, ParentBaseline=%s',
+          [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId, LBaselines[I].Lineage.ParentBaselineId]))
+      else
+        Writeln(Format('    Lineage: ChangeSet=%s, Intent=%s',
+          [LBaselines[I].Lineage.ChangeSetId, LBaselines[I].Lineage.IntentId]));
     end;
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
 procedure RunBaselineVerify(const ADir, ABaselineId: string);
 var
-  LStore: TAsWishStoreService;
-  LSnap: TAsWishSnapshotService;
   LValid: Boolean;
+  LBundle: TControllerBundle;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[baseline] error: no .AsWish directory');
     Halt(1);
   end;
-  LStore := TAsWishStoreService.Create;
+  LBundle := TControllerBundle.Create;
   try
-    LStore.Initialize(ADir);
-    LSnap := TAsWishSnapshotService.Create(LStore);
-    try
-      LValid := LSnap.VerifyBaseline(ABaselineId);
-      if LValid then
-        Writeln(Format('[baseline verify] PASS: %s integrity verified (content & relation hashes match)', [ABaselineId]))
-      else
-      begin
-        Writeln(Format('[baseline verify] FAIL: %s verification failed or baseline not found', [ABaselineId]));
-        Halt(1);
-      end;
-    finally
-      LSnap.Free;
+    LBundle.Controller.OpenProject(ADir);
+    LValid := LBundle.Controller.VerifyBaseline(ABaselineId);
+    if LValid then
+      Writeln(Format('[baseline verify] PASS: %s integrity verified (content & relation hashes match)', [ABaselineId]))
+    else
+    begin
+      Writeln(Format('[baseline verify] FAIL: %s verification failed or baseline not found', [ABaselineId]));
+      Halt(1);
     end;
   finally
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 
