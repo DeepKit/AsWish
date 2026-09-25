@@ -761,101 +761,51 @@ end;
 
 procedure RunChangeSetAccept(const ADir, AChangeSetId, ARationale: string);
 var
-  LStore: TAsWishStoreService;
-  LIngest: TAsWishCandidateIngest;
-  LDecisions: TAsWishDecisionsService;
-  LValidator: TYamlValidator;
-  LCS: TChangeSet;
-  LDecId: string;
-  LDec: TSpecDecision;
-  LFunc, LMod, LView, LData: TList<TSpecNode>;
-  LStats: TMergeStats;
+  LBundle: TControllerBundle;
+  LResult: TChangeSetDecisionResult;
 begin
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
     Halt(1);
   end;
-  LStore := TAsWishStoreService.Create;
-  LIngest := TAsWishCandidateIngest.Create(LStore);
-  LDecisions := TAsWishDecisionsService.Create;
-  LValidator := TYamlValidator.Create;
+  // The Controller owns this orchestration, exactly as the desktop app runs
+  // it. This used to build its own four services, re-read the trees, apply the
+  // change set and freeze a baseline here -- a second copy that had no
+  // idempotency guard, so a repeated accept recorded a second decision and
+  // froze a second baseline for the same change set. ALoadTreesFromDisk is
+  // passed because this process has no live session to apply to.
+  // Status echo off: the lines below are this command's whole contract.
+  LBundle := TControllerBundle.Create(True);
   try
-    LStore.Initialize(ADir);
-    LDecisions.Initialize(TPath.Combine(ADir, '.AsWish'));
-    LDecisions.Load;
-
-    LCS := LIngest.LoadChangeSet(ADir, AChangeSetId);
-    if LCS.Id = '' then
+    LBundle.Controller.OpenProject(ADir);
+    if not LBundle.Controller.AcceptChangeSet(AChangeSetId, ARationale, True, LResult) then
     begin
       Writeln('[changeset] error: change set not found: ' + AChangeSetId);
       Halt(1);
     end;
 
-    // Record formal decision
-    LDecId := LDecisions.RecordChangeSetDecision(LCS, rsAccepted, ARationale);
-    LDec := LDecisions.FindById(LDecId);
-
-    // Load canonical spec trees
-    LFunc := LStore.ReadTreeFile('trees/function-tree.yaml');
-    LMod := LStore.ReadTreeFile('trees/module-tree.yaml');
-    LView := LStore.ReadTreeFile('trees/view-tree.yaml');
-    LData := LStore.ReadTreeFile('trees/data-tree.yaml');
-    try
-      // Apply change set to trees
-      LStats := LIngest.ApplyChangeSet(LCS, LDec, LFunc, LMod, LView, LData);
-
-      // Write updated trees back to disk (Canonical Spec)
-      LStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, LFunc);
-      LStore.WriteTreeFile('trees/module-tree.yaml', ttModule, LMod);
-      LStore.WriteTreeFile('trees/view-tree.yaml', ttView, LView);
-      LStore.WriteTreeFile('trees/data-tree.yaml', ttData, LData);
-
-      // Run consistency validation on updated trees
-      var LFuncPath := TPath.Combine(ADir, '.AsWish\trees\function-tree.yaml');
-      if TFile.Exists(LFuncPath) then
-      begin
-        var LReport := LValidator.ValidateTreeFile(TFile.ReadAllText(LFuncPath, TEncoding.UTF8), vmLenient);
-        LReport.Free;
-      end;
-
-      // WO-20260830-0027E: Automatically freeze Accepted Baseline on Accept
-      var LSnap := TAsWishSnapshotService.Create(LStore);
-      var LBaseline: TAsWishBaseline;
-      var LBaseId: string;
-      try
-        LBaseId := LSnap.CreateBaseline(LDec, LCS, LFunc, LMod, LView, LData, LBaseline);
-      finally
-        LSnap.Free;
-      end;
-
-      if GJsonOutput then
-      begin
-        WriteJsonHeader('changeset_accept');
-        WriteJsonKV('status', 'ok');
-        WriteJsonKV('decision_id', LDecId);
-        WriteJsonKV('change_set_id', LCS.Id);
-        WriteJsonKV('baseline_id', LBaseId);
-        WriteJsonKVInt('updated_nodes', LStats.Merged);
-        WriteJsonFooter;
-      end
-      else
-      begin
-        Writeln(Format('[changeset] ACCEPTED %s -> recorded Decision %s', [LCS.Id, LDecId]));
-        Writeln(Format('  applied %d changes to Canonical Spec and validated', [LStats.Merged]));
-        Writeln(Format('  frozen Accepted Baseline %s (snapshot: %s)', [LBaseId, LBaseline.SnapshotName]));
-      end;
-    finally
-      LData.Free;
-      LView.Free;
-      LMod.Free;
-      LFunc.Free;
+    if GJsonOutput then
+    begin
+      WriteJsonHeader('changeset_accept');
+      WriteJsonKV('status', 'ok');
+      WriteJsonKV('decision_id', LResult.DecisionId);
+      WriteJsonKV('change_set_id', LResult.ChangeSetId);
+      WriteJsonKV('baseline_id', LResult.BaselineId);
+      WriteJsonKVInt('updated_nodes', LResult.UpdatedNodes);
+      WriteJsonFooter;
+    end
+    else
+    begin
+      Writeln(Format('[changeset] ACCEPTED %s -> recorded Decision %s',
+        [LResult.ChangeSetId, LResult.DecisionId]));
+      Writeln(Format('  applied %d changes to Canonical Spec and validated',
+        [LResult.UpdatedNodes]));
+      Writeln(Format('  frozen Accepted Baseline %s (snapshot: %s)',
+        [LResult.BaselineId, LResult.BaselineSnapshot]));
     end;
   finally
-    LValidator.Free;
-    LDecisions.Free;
-    LIngest.Free;
-    LStore.Free;
+    LBundle.Free;
   end;
 end;
 

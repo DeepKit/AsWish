@@ -41,6 +41,11 @@ type
     Ok: Boolean;
     ChangeSetId: string;
     DecisionId: string;
+    /// <summary>Only Accept fills these. Reject and Clarify leave them empty,
+    ///  because they freeze nothing.</summary>
+    BaselineId: string;
+    BaselineSnapshot: string;
+    UpdatedNodes: Integer;
   end;
 
   TAsWishController = class
@@ -82,6 +87,16 @@ type
     /// <summary>Read issues/doc-issues.yaml for rendering. Returns a caller-owned
     ///  list (empty if no file / no project open). Never nil.</summary>
     function LoadIssuesForRender: TList<TSpecIssue>;
+    /// <summary>The one body behind AcceptChangeSet. ALoadTreesFromDisk is the
+    ///  only difference between the two entry shapes: the desktop app has a
+    ///  live builder to apply to, a one-shot CLI process does not.</summary>
+    function AcceptChangeSetCore(const AChangeSetId, ARationale: string;
+      ALoadTreesFromDisk: Boolean;
+      out AResult: TChangeSetDecisionResult): Boolean;
+    /// <summary>Replace the builder's four trees with what is persisted. Used
+    ///  by the disk-first accept path so a fresh process applies the change set
+    ///  to the Canonical Spec as it stands, not to an empty tree.</summary>
+    procedure LoadPersistedTreesIntoBuilder;
   public
     constructor Create(
       AProjectService: TAsWishProjectService;
@@ -138,7 +153,15 @@ type
       const ATargetNodeId: string = ''): string;
     function ReviewChangeSet(const AChangeSetId: string = ''): string;
     function AcceptChangeSet(const AChangeSetId: string;
-      const ARationale: string = ''): Boolean;
+      const ARationale: string = ''): Boolean; overload;
+    /// <summary>Accept a change set from a process with no live session. Pass
+    ///  ALoadTreesFromDisk=True and the persisted trees are read back into the
+    ///  builder before the change set is applied -- otherwise the builder is
+    ///  empty, ApplyChangeSet finds nothing to update, and the write-back that
+    ///  follows would replace the Canonical Spec with empty trees.</summary>
+    function AcceptChangeSet(const AChangeSetId: string;
+      const ARationale: string; ALoadTreesFromDisk: Boolean;
+      out AResult: TChangeSetDecisionResult): Boolean; overload;
     function RejectChangeSet(const AChangeSetId: string;
       const ARationale: string = ''): Boolean; overload;
     function RejectChangeSet(const AChangeSetId: string;
@@ -1428,12 +1451,66 @@ end;
 
 function TAsWishController.AcceptChangeSet(const AChangeSetId, ARationale: string): Boolean;
 var
+  LResult: TChangeSetDecisionResult;
+begin
+  Result := AcceptChangeSetCore(AChangeSetId, ARationale, False, LResult);
+end;
+
+function TAsWishController.AcceptChangeSet(const AChangeSetId, ARationale: string;
+  ALoadTreesFromDisk: Boolean;
+  out AResult: TChangeSetDecisionResult): Boolean;
+begin
+  Result := AcceptChangeSetCore(AChangeSetId, ARationale, ALoadTreesFromDisk, AResult);
+end;
+
+procedure TAsWishController.LoadPersistedTreesIntoBuilder;
+var
+  LFunc, LMod, LView, LData: TList<TSpecNode>;
+
+  procedure Replace(ADst: TList<TSpecNode>; ASrc: TList<TSpecNode>);
+  begin
+    ADst.Clear;
+    if ASrc = nil then Exit;
+    for var LN in ASrc do
+      ADst.Add(LN);
+    // The nodes now live in the builder's list, which frees them; releasing
+    // the container here would double-free the nodes it still points at.
+    ASrc.Free;
+  end;
+
+begin
+  LFunc := FSpecStore.ReadTreeFile('trees/function-tree.yaml');
+  LMod := FSpecStore.ReadTreeFile('trees/module-tree.yaml');
+  LView := FSpecStore.ReadTreeFile('trees/view-tree.yaml');
+  LData := FSpecStore.ReadTreeFile('trees/data-tree.yaml');
+  try
+    Replace(FTreeBuilder.FunctionNodes, LFunc);
+    Replace(FTreeBuilder.ModuleNodes, LMod);
+    Replace(FTreeBuilder.ViewNodes, LView);
+    Replace(FTreeBuilder.DataNodes, LData);
+  except
+    // A partially moved set would leave the builder owning nodes the freed
+    // containers still reference. Nothing is recoverable here, so let the
+    // caller see the failure rather than continue on half-loaded trees.
+    if LFunc <> nil then LFunc.Free;
+    if LMod <> nil then LMod.Free;
+    if LView <> nil then LView.Free;
+    if LData <> nil then LData.Free;
+    raise;
+  end;
+end;
+
+function TAsWishController.AcceptChangeSetCore(const AChangeSetId, ARationale: string;
+  ALoadTreesFromDisk: Boolean;
+  out AResult: TChangeSetDecisionResult): Boolean;
+var
   LIngest: TAsWishCandidateIngest;
   LCS: TChangeSet;
   LDecId: string;
   LDec: TSpecDecision;
   LStats: TMergeStats;
 begin
+  AResult := Default(TChangeSetDecisionResult);
   Result := False;
   if not FProjectService.IsOpen then
   begin
@@ -1449,26 +1526,47 @@ begin
       FStatus.LogError('AsWish.ChangeSet', 'ChangeSet not found: ' + AChangeSetId, '');
       Exit;
     end;
+    AResult.ChangeSetId := LCS.Id;
 
     // Idempotency guard: an already-accepted ChangeSet must not be re-applied
     // (duplicate tree mutations, duplicate decision refs, duplicate Baselines).
+    // The prior decision and its baseline are reported back, because a caller
+    // with no status pane has to be able to say what already happened.
     var LPriorAccepted := FDecisions.FindAcceptedByChangeSet(AChangeSetId);
     if Length(LPriorAccepted) > 0 then
     begin
+      AResult.Ok := True;
+      AResult.DecisionId := LPriorAccepted[0].Id;
+      AResult.UpdatedNodes := 0;
+      for var LExisting in FSnapshot.ListBaselines do
+        if LExisting.DecisionId = LPriorAccepted[0].Id then
+        begin
+          AResult.BaselineId := LExisting.BaselineId;
+          AResult.BaselineSnapshot := LExisting.SnapshotName;
+          Break;
+        end;
       FStatus.Info('AsWish.ChangeSet', Format('ChangeSet %s already accepted (Decision %s); skipping duplicate application',
         [AChangeSetId, LPriorAccepted[0].Id]));
       Result := True;
       Exit;
     end;
 
+    // A one-shot process has no live builder, so the trees it must apply to
+    // are the ones on disk. Without this the builder is empty and the
+    // write-back below would overwrite the Canonical Spec with empty trees.
+    if ALoadTreesFromDisk then
+      LoadPersistedTreesIntoBuilder;
+
     // Record formal decision
     LDecId := FDecisions.RecordChangeSetDecision(LCS, rsAccepted, ARationale);
     LDec := FDecisions.FindById(LDecId);
+    AResult.DecisionId := LDecId;
 
     // Apply to live memory trees
     LStats := LIngest.ApplyChangeSet(LCS, LDec,
       FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
       FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes);
+    AResult.UpdatedNodes := LStats.Merged;
 
     // Write updated trees back to disk (Canonical Spec)
     FSpecStore.WriteTreeFile('trees/function-tree.yaml', ttFunction, FTreeBuilder.FunctionNodes);
@@ -1487,10 +1585,13 @@ begin
       FTreeBuilder.FunctionNodes, FTreeBuilder.ModuleNodes,
       FTreeBuilder.ViewNodes, FTreeBuilder.DataNodes, LBaseline,
       '', '', LParentBaseId);
+    AResult.BaselineId := LBaseId;
+    AResult.BaselineSnapshot := LBaseline.SnapshotName;
 
     // Re-render
     RenderAll;
 
+    AResult.Ok := True;
     FStatus.Info('AsWish.ChangeSet', Format('Accepted %s -> Decision %s recorded; Baseline %s frozen; %d nodes updated in Canonical Spec',
       [LCS.Id, LDecId, LBaseId, LStats.Merged]));
     Result := True;
