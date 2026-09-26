@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.Scan
 
   Covers the one thing the scan service decides on its own: what stack the
@@ -36,7 +36,9 @@ type
     [Test]
     procedure LanguagePriority_DoesNotDependOnFileOrder;
     [Test]
-    procedure TsxOnlyProject_IsNotRecognisedAsCode;
+    procedure TsxOnlyProject_IsRecognisedAsWebReact;
+    [Test]
+    procedure MixedTsAndTsxProject_IsRecognisedAsWebReact;
   end;
 
 implementation
@@ -158,11 +160,12 @@ begin
   end;
 end;
 
-// A React app written entirely in .tsx files. ".tsx" is classified fcUI, not
-// fcCode, and DetectProjectType only looks at fcCode -- so the ".tsx" half of
-// the React check can never fire and this project is not a code project at all.
-// Recorded as the current (wrong) answer so the fix cannot land silently.
-procedure TScanProjectTypeTests.TsxOnlyProject_IsNotRecognisedAsCode;
+// A React app written entirely in .tsx files. Historically, ".tsx" was classified
+// under fcUI while DetectProjectType only checked fcCode, causing pure .tsx
+// React projects to be categorized as "unknown".
+// This test pins the corrected behavior: projects with only .tsx files are
+// recognized as web_react (WO-0057 1.1).
+procedure TScanProjectTypeTests.TsxOnlyProject_IsRecognisedAsWebReact;
 var
   LScan: TAsWishScanService;
 begin
@@ -170,6 +173,22 @@ begin
   try
     Assert.AreEqual('web_react', LScan.DetectProjectType,
       'tsx-only project should be recognised as web_react; see WO-0057 1.1');
+  finally
+    LScan.Free;
+  end;
+end;
+
+// A React project mixing .ts files (fcCode) and .tsx files (fcUI).
+// Pinned by WO-0058 R-2 to ensure the .ts half of HasAnyReactFile/HasAnyExt
+// and the fcUI .tsx half cooperate to classify the project as web_react.
+procedure TScanProjectTypeTests.MixedTsAndTsxProject_IsRecognisedAsWebReact;
+var
+  LScan: TAsWishScanService;
+begin
+  LScan := ScanProjectWith(TArray<string>.Create('App.tsx', 'api.ts'));
+  try
+    Assert.AreEqual('web_react', LScan.DetectProjectType,
+      'Mixed .ts and .tsx project should be recognised as web_react');
   finally
     LScan.Free;
   end;

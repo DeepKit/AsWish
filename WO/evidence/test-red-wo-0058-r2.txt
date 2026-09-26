@@ -1,0 +1,19 @@
+# WO-20260926-0058 R-2 RED Evidence
+# Test: Test.AsWish.Scan.TScanProjectTypeTests.MixedTsAndTsxProject_IsRecognisedAsWebReact
+# Captured at: 2026-09-26 12:12:45 (GMT+8)
+
+Executing Test : MixedTsAndTsxProject_IsRecognisedAsWebReact
+  Test Failed : MixedTsAndTsxProject_IsRecognisedAsWebReact : Expected [unknown] but got [web_react] Mixed .ts and .tsx project should be recognised as web_react
+
+Done testing.
+Tests Found   : 326
+Tests Ignored : 0
+Tests Passed  : 325
+Tests Leaked  : 0
+Tests Failed  : 1
+Tests Errored : 0
+
+Failing Tests
+
+  Test.AsWish.Scan.TScanProjectTypeTests.MixedTsAndTsxProject_IsRecognisedAsWebReact
+  Message: Expected [unknown] but got [web_react] Mixed .ts and .tsx project should be recognised as web_react
