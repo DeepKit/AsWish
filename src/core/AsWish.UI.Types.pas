@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.UI.Types
   ---------------------------------------------------------------------------
   Decoupled UI and desktop shell data types for AsWish.
@@ -12,9 +12,25 @@ interface
 uses
   System.SysUtils,
   System.Classes,
+  Winapi.Windows,
   Vcl.Controls,
   Vcl.Forms,
+  Vcl.Graphics,
   Vcl.Menus;
+
+type
+  // ---------------------------------------------------------------------------
+  // GUI Visual Evidence & Screen Capture Modes (WO-0050 / WO-0057 1.3)
+  // ---------------------------------------------------------------------------
+
+  TCaptureMode = (
+    cmWindowScreenshot,  // TCustomForm.GetFormImage (PaintTo). Fast; CANNOT reflect live TCheckBox check state.
+    cmDirectControlDc    // Direct GetWindowDC + BitBlt on on-screen control. Reflects live TCheckBox check state.
+  );
+
+function CaptureModeReflectsLiveState(AMode: TCaptureMode): Boolean;
+function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
+function CaptureControlBitmapDirect(AControl: TWinControl; ABmp: Vcl.Graphics.TBitmap; var ADiag: string): Boolean;
 
 type
   // ---------------------------------------------------------------------------
@@ -376,6 +392,75 @@ begin
   Result.ViewKind := AKind;
   Result.Title := ATitle;
   Result.Content := AContent;
+end;
+
+function CaptureModeReflectsLiveState(AMode: TCaptureMode): Boolean;
+begin
+  case AMode of
+    cmDirectControlDc: Result := True;
+  else
+    Result := False;
+  end;
+end;
+
+function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
+var
+  X, Y: Integer;
+  LSeen: TStringList;
+  LC: TColor;
+begin
+  LSeen := TStringList.Create;
+  try
+    LSeen.Sorted := True;
+    LSeen.Duplicates := TDuplicates.dupIgnore;
+    for Y := 0 to ABmp.Height - 1 do
+      for X := 0 to ABmp.Width - 1 do
+      begin
+        LC := ABmp.Canvas.Pixels[X, Y];
+        LSeen.Add(Format('%.6x', [ColorToRGB(LC)]));
+      end;
+    Result := LSeen.Count;
+  finally
+    LSeen.Free;
+  end;
+end;
+
+function CaptureControlBitmapDirect(AControl: TWinControl; ABmp: Vcl.Graphics.TBitmap; var ADiag: string): Boolean;
+var
+  Ldc: HDC;
+begin
+  Result := False;
+  ADiag := '';
+  if (AControl = nil) or (not AControl.HandleAllocated) or (not AControl.Visible) then
+    Exit;
+  ABmp.PixelFormat := pf32bit;
+  ABmp.SetSize(AControl.Width, AControl.Height);
+  ABmp.Canvas.Brush.Color := clBtnFace;
+  ABmp.Canvas.FillRect(Rect(0, 0, ABmp.Width, ABmp.Height));
+
+  Ldc := GetWindowDC(AControl.Handle);
+  if Ldc = 0 then
+  begin
+    ADiag := Format('GetWindowDC(%s) failed, err=%d', [AControl.ClassName, GetLastError]);
+    Exit;
+  end;
+  try
+    if not BitBlt(ABmp.Canvas.Handle, 0, 0, AControl.Width, AControl.Height,
+      Ldc, 0, 0, SRCCOPY) then
+    begin
+      ADiag := Format('BitBlt(%s) failed, err=%d', [AControl.ClassName, GetLastError]);
+      Exit;
+    end;
+  finally
+    ReleaseDC(AControl.Handle, Ldc);
+  end;
+
+  ADiag := Format('%s at (%d,%d,%d,%d) distinctColors=%d',
+    [AControl.ClassName, AControl.Left, AControl.Top, AControl.Width,
+     AControl.Height, BitmapDistinctColors(ABmp)]);
+  if BitmapDistinctColors(ABmp) <= 1 then
+    Exit;
+  Result := True;
 end;
 
 end.

@@ -7,6 +7,12 @@ uses
   System.SysUtils,
   System.Classes,
   System.IOUtils,
+  Winapi.Windows,
+  Vcl.Forms,
+  Vcl.Controls,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
+  Vcl.Graphics,
   AsWish.Models,
   AsWish.UI.Intf,
   AsWish.UI.Types,
@@ -84,6 +90,7 @@ type
     [Test] procedure Test_DualSurface_D1_TreeFromNodePrefix_Inference;
     [Test] procedure Test_DualSurface_D1_SubmitUserIntent_WithTreeInference;
     [Test] procedure Test_DualSurface_D2_Ghosts_MatchingAndNarrativeBadge;
+    [Test] procedure Test_CaptureConstraint_CheckBoxState_WindowScreenshotInert_ControlCaptureDiverges;
   end;
 
 implementation
@@ -276,6 +283,107 @@ begin
     LBadgeText := '这类分叉曾错在 ' + LMatches[0].Title + '（' + LMatches[0].Id + '）';
 
   Assert.IsTrue(LBadgeText.Contains('[经验总结，非可复核记录]'), 'Narrative lesson badge must contain disclaimer');
+end;
+
+procedure TTestAsWishGUIDecisions.Test_CaptureConstraint_CheckBoxState_WindowScreenshotInert_ControlCaptureDiverges;
+var
+  LForm: TForm;
+  LChk: TCheckBox;
+  LWinUnchecked, LWinChecked, LCtrlUnchecked, LCtrlChecked: Vcl.Graphics.TBitmap;
+  LDiag: string;
+  LWinUncheckedStream, LWinCheckedStream, LCtrlUncheckedStream, LCtrlCheckedStream: TMemoryStream;
+  LBottomPanel, LDeckPanel: TPanel;
+begin
+  // 1. Invariant: TCaptureMode semantic contract
+  Assert.IsFalse(CaptureModeReflectsLiveState(cmWindowScreenshot),
+    'cmWindowScreenshot must declare that it cannot reflect live control state');
+  Assert.IsTrue(CaptureModeReflectsLiveState(cmDirectControlDc),
+    'cmDirectControlDc must declare that it reflects live control state');
+
+  // 2. Physical measurement: CheckBox state reflection on real VCL controls
+  LForm := TForm.Create(nil);
+  try
+    LForm.SetBounds(100, 100, 300, 200);
+    LForm.Visible := True;
+    ShowWindow(LForm.Handle, SW_SHOW);
+    LForm.Update;
+    Application.ProcessMessages;
+
+    LBottomPanel := TPanel.Create(LForm);
+    LBottomPanel.Parent := LForm;
+    LBottomPanel.SetBounds(10, 20, 200, 40);
+
+    LDeckPanel := TPanel.Create(LBottomPanel);
+    LDeckPanel.Parent := LBottomPanel;
+    LDeckPanel.SetBounds(0, 0, 200, 30);
+
+    LChk := TCheckBox.Create(LDeckPanel);
+    LChk.Parent := LDeckPanel;
+    LChk.SetBounds(0, 0, 132, 28);
+    LChk.Caption := 'Evidence Opt-In';
+    LChk.Checked := False;
+    LChk.Visible := True;
+    LForm.Update;
+    Application.ProcessMessages;
+
+    // Capture Unchecked: PaintTo (window screenshot baseline) vs Direct DC
+    LWinUnchecked := Vcl.Graphics.TBitmap.Create;
+    LWinUnchecked.SetSize(LChk.Width, LChk.Height);
+    LChk.PaintTo(LWinUnchecked.Canvas.Handle, 0, 0);
+
+    LCtrlUnchecked := Vcl.Graphics.TBitmap.Create;
+    try
+      Assert.IsTrue(CaptureControlBitmapDirect(LChk, LCtrlUnchecked, LDiag), 'Control capture unchecked failed: ' + LDiag);
+
+      // Mutate state to Checked
+      LChk.Checked := True;
+      InvalidateRect(LChk.Handle, nil, True);
+      UpdateWindow(LChk.Handle);
+      Application.ProcessMessages;
+
+      // Capture Checked: PaintTo (window screenshot baseline) vs Direct DC
+      LWinChecked := Vcl.Graphics.TBitmap.Create;
+      LWinChecked.SetSize(LChk.Width, LChk.Height);
+      LChk.PaintTo(LWinChecked.Canvas.Handle, 0, 0);
+
+      LCtrlChecked := Vcl.Graphics.TBitmap.Create;
+      try
+        Assert.IsTrue(CaptureControlBitmapDirect(LChk, LCtrlChecked, LDiag), 'Control capture checked failed: ' + LDiag);
+
+        // Serialize to stream for strict byte-for-byte comparison
+        LWinUncheckedStream := TMemoryStream.Create;
+        LWinCheckedStream := TMemoryStream.Create;
+        LCtrlUncheckedStream := TMemoryStream.Create;
+        LCtrlCheckedStream := TMemoryStream.Create;
+        try
+          LWinUnchecked.SaveToStream(LWinUncheckedStream);
+          LWinChecked.SaveToStream(LWinCheckedStream);
+          LCtrlUnchecked.SaveToStream(LCtrlUncheckedStream);
+          LCtrlChecked.SaveToStream(LCtrlCheckedStream);
+
+          // Fact A: Window screenshot (PaintTo) produces IDENTICAL bytes (cannot capture CheckBox checked state)
+          Assert.IsTrue(CompareMem(LWinUncheckedStream.Memory, LWinCheckedStream.Memory, LWinUncheckedStream.Size),
+            'Window screenshot (PaintTo) fails to capture CheckBox checked state (bytes identical)');
+          // Fact B: Direct control DC capture produces DIFFERENT bytes (captures real screen pixels)
+          Assert.IsFalse(CompareMem(LCtrlUncheckedStream.Memory, LCtrlCheckedStream.Memory, LCtrlUncheckedStream.Size),
+            'Direct control DC capture MUST capture CheckBox state divergence (bytes differ)');
+        finally
+          LWinUncheckedStream.Free;
+          LWinCheckedStream.Free;
+          LCtrlUncheckedStream.Free;
+          LCtrlCheckedStream.Free;
+        end;
+      finally
+        LCtrlChecked.Free;
+        LWinChecked.Free;
+      end;
+    finally
+      LCtrlUnchecked.Free;
+      LWinUnchecked.Free;
+    end;
+  finally
+    LForm.Free;
+  end;
 end;
 
 initialization

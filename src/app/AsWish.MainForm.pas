@@ -1790,83 +1790,25 @@ begin
   Result := FCaptureDone and (FCaptureResult = S_OK) and (AStream.Size > 0);
 end;
 
-function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
-var
-  X, Y: Integer;
-  LSeen: TStringList;
-  LC: TColor;
-begin
-  LSeen := TStringList.Create;
-  try
-    LSeen.Sorted := True;
-    LSeen.Duplicates := TDuplicates.dupIgnore;
-    for Y := 0 to ABmp.Height - 1 do
-      for X := 0 to ABmp.Width - 1 do
-      begin
-        LC := ABmp.Canvas.Pixels[X, Y];
-        LSeen.Add(Format('%.6x', [ColorToRGB(LC)]));
-      end;
-    Result := LSeen.Count;
-  finally
-    LSeen.Free;
-  end;
-end;
-
 function TAsWishMainForm.CaptureControlBitmap(AControl: TWinControl;
   ABmp: Vcl.Graphics.TBitmap): Boolean;
 var
-  Ldc: HDC;
   LDiag: string;
 begin
   Result := False;
   if (AControl = nil) or (not AControl.HandleAllocated) then
     Exit;
-  ABmp.PixelFormat := pf32bit;
-  ABmp.SetSize(AControl.Width, AControl.Height);
-  ABmp.Canvas.Brush.Color := clBtnFace;
-  ABmp.Canvas.FillRect(Rect(0, 0, ABmp.Width, ABmp.Height));
   if FCaptureWarnings = nil then
     FCaptureWarnings := TStringList.Create;
-  // PrintWindow(hWnd, dc, 0) returns TRUE yet paints a uniformly clBtnFace
-  // bitmap for a VCL TCheckBox, so read what is actually on the screen. This
-  // requires the control to be on screen and unoccluded.
-  if not AControl.Visible then
-    Exit;
-  Ldc := GetWindowDC(AControl.Handle);
-  if Ldc = 0 then
+
+  Result := CaptureControlBitmapDirect(AControl, ABmp, LDiag);
+  if not Result then
   begin
-    FCaptureWarnings.Add(Format('[CAPTURE-WARN] GetWindowDC(%s) failed, err=%d',
-      [AControl.ClassName, GetLastError]));
-    Exit;
-  end;
-  try
-    if not BitBlt(ABmp.Canvas.Handle, 0, 0, AControl.Width, AControl.Height,
-      Ldc, 0, 0, SRCCOPY) then
-    begin
-      FCaptureWarnings.Add(Format('[CAPTURE-WARN] BitBlt(%s) failed, err=%d',
-        [AControl.ClassName, GetLastError]));
-      Exit;
-    end;
-  finally
-    ReleaseDC(AControl.Handle, Ldc);
-  end;
-  // A capture that is a single uniform colour carries no information about the
-  // control's state, so it must never pass as visual evidence.
-  LDiag := Format('%s at (%d,%d,%d,%d) formVisible=%s windowState=%d ' +
-    'isWindowVisible=%s isIconic=%s distinctColors=%d',
-    [AControl.ClassName, AControl.Left, AControl.Top, AControl.Width,
-     AControl.Height, BoolToStr(Visible, True), Ord(WindowState),
-     BoolToStr(IsWindowVisible(Handle), True),
-     BoolToStr(IsIconic(Handle), True),
-     BitmapDistinctColors(ABmp)]);
-  if BitmapDistinctColors(ABmp) <= 1 then
-  begin
-    FCaptureWarnings.Add('[CAPTURE-WARN] ' + LDiag +
-      '; no visual evidence emitted');
+    if LDiag <> '' then
+      FCaptureWarnings.Add('[CAPTURE-WARN] ' + LDiag + '; no visual evidence emitted');
     Exit;
   end;
   FCaptureWarnings.Add('[CAPTURE-DIAG] ' + LDiag);
-  Result := True;
 end;
 
 procedure TAsWishMainForm.SaveControlImage(AControl: TWinControl; const AFilePath: string);
