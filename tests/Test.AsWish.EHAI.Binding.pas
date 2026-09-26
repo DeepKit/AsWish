@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.EHAI.Binding
   
   Tier C Verification Suite for EHAI Reference Product Binding 001:
@@ -111,6 +111,7 @@ type
     [Test] procedure ASWISH_V_012_GateB_N1_To_N6_Invariants;
     [Test] procedure ASWISH_V_013_GUI_Surface_KeyDispatcher_And_Deck_Integration;
     [Test] procedure ASWISH_V_014_Deck_Idle_After_Commitment_And_Rejection;
+    [Test] procedure ASWISH_V_015_DualSurface_UnifiedEntry_DeckAndInspector_UpdateLastChangeSetId;
   end;
 
 implementation
@@ -781,6 +782,28 @@ begin
 
   Assert.IsTrue(FBinding.ExecuteCommitmentGate(LCsId, 'idle check commit'), 'commit must succeed');
   Assert.AreEqual('', FBinding.LastChangeSetId, 'commitment must leave deck Idle');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_015_DualSurface_UnifiedEntry_DeckAndInspector_UpdateLastChangeSetId;
+var
+  LDeckAct: THbChoiceAction;
+  LCsIdDeck, LCsIdInspector: string;
+begin
+  // Entrance 1: Keyboard Deck (Key 9 override)
+  LDeckAct := THbChoiceAction.Create(cakFreeInput, 9, 'Deck intent for payment retry', 0,
+    cisKeyboard, eokAlternativeExpression, esHuman, eipProvide, 'func-payment-retry');
+  FBinding.ProcessHbAction(LDeckAct);
+  LCsIdDeck := FBinding.LastChangeSetId;
+  Assert.IsNotEmpty(LCsIdDeck, 'Deck submission must update LastChangeSetId');
+
+  // Entrance 2: Inspector Sidebar (routed through FBinding.SubmitInspectorIntent)
+  LCsIdInspector := FBinding.SubmitInspectorIntent('mod-billing-service', 'Inspector intent for billing module');
+  Assert.IsNotEmpty(LCsIdInspector, 'Inspector intent must produce a ChangeSet ID');
+
+  // Both entrances must update FBinding.LastChangeSetId to their respective IDs (WO-0057 1.2)
+  Assert.AreEqual(LCsIdInspector, FBinding.LastChangeSetId,
+    'Inspector submission must update LastChangeSetId as SSOT; see WO-0057 1.2');
+  Assert.AreNotEqual(LCsIdDeck, LCsIdInspector, 'Each submission produces a distinct ChangeSet');
 end;
 
 initialization

@@ -1156,8 +1156,22 @@ begin
   if FController = nil then Exit;
   if (ANodeId = '') or (AText = '') then Exit;
 
-  LTree := TSpecEnums.TreeFromNodePrefix(ANodeId);
-  Result := FController.SubmitUserIntent(ANodeId, LTree, AText);
+  // WO-0057 1.2: Unify Inspector submission with HB Deck entry point.
+  // We route Inspector submission through FHBBinding.SubmitInspectorIntent (which calls
+  // ProcessHbAction with cisGUI and ANodeId as ContextId) because:
+  // 1. ProcessHbAction is the single source of truth (SSOT) for all human intent submissions across
+  //    both keyboard deck (cisKeyboard) and sidebar GUI (cisGUI), keeping EHAI audit traces and
+  //    LastChangeSetId state synchronized.
+  // 2. It ensures Inspector-submitted ChangeSets immediately populate FHBBinding.LastChangeSetId,
+  //    making them targetable by subsequent deck actions (e.g. Enter to commit, Esc to reject).
+  // 3. THbChoiceAction natively models cisGUI as input source and ContextId as target node ref.
+  if FHBBinding <> nil then
+    Result := FHBBinding.SubmitInspectorIntent(ANodeId, AText)
+  else
+  begin
+    LTree := TSpecEnums.TreeFromNodePrefix(ANodeId);
+    Result := FController.SubmitUserIntent(ANodeId, LTree, AText);
+  end;
 
   UpdateHbDeckStatus(Format('[Inspector] ChangeSet %s submitted for %s', [Result, ANodeId]));
   UpdateGhosts(AText, [ANodeId]);
@@ -2175,6 +2189,10 @@ begin
       var LSubmittedCs := SubmitInspectorIntent;
       if LSubmittedCs = '' then
         raise Exception.Create('D-1 assertion failed: SubmitInspectorIntent returned empty ChangeSet ID');
+      // WO-0057 1.2: Assert Inspector submission updated FHBBinding.LastChangeSetId as SSOT
+      if (FHBBinding <> nil) and (FHBBinding.LastChangeSetId <> LSubmittedCs) then
+        raise Exception.Create(Format('WO-0057 1.2 assertion failed: Inspector submit (%s) did not update LastChangeSetId (%s)',
+          [LSubmittedCs, FHBBinding.LastChangeSetId]));
       Update;
       Application.ProcessMessages;
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-07-inspector-dialog.png'));

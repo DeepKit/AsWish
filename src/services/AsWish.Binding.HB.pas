@@ -99,6 +99,13 @@ type
     function ExecuteReject(const AChangeSetId: string;
       const ARationale: string = ''): Boolean;
 
+    /// <summary>
+    /// WO-0057 1.2: Unified intent submission entry point for Inspector sidebar.
+    /// Routes via ProcessHbAction using cisGUI and ANodeId as ContextId, ensuring
+    /// both Inspector and HB Deck write to the same LastChangeSetId and audit trace log.
+    /// </summary>
+    function SubmitInspectorIntent(const ANodeId, AText: string): string;
+
     /// <summary>Get all recorded audit trace records in order.</summary>
     function GetTraces: TArray<TEhaiTraceRecord>;
 
@@ -337,6 +344,22 @@ begin
   FTraces.Clear;
   FLastEffect := eseInformOnly;
   FIsLastActionCommitted := False;
+end;
+
+function TAsWishHBBinding.SubmitInspectorIntent(const ANodeId, AText: string): string;
+var
+  LAct: THbChoiceAction;
+begin
+  Result := '';
+  if (FController = nil) or (ANodeId = '') or (AText = '') then Exit;
+
+  // WO-0057 1.2: Inspector sidebar submits via standard HB Choice Action (cisMouse),
+  // ensuring the resulting ChangeSet updates FLastChangeSetId as SSOT for subsequent
+  // keyboard review/commit/reject actions.
+  LAct := THbChoiceAction.Create(cakFreeInput, 9, AText, 0, cisMouse,
+    eokAlternativeExpression, esHuman, eipProvide, ANodeId);
+  ProcessHbAction(LAct);
+  Result := FLastChangeSetId;
 end;
 
 end.

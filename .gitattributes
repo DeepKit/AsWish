@@ -26,3 +26,4 @@ docs/*交接*         export-ignore
 docs/*交接包*       export-ignore
 AUDIT-REQUEST-*    export-ignore
 
+src/services/AsWish.Binding.HB.pas -text diff
