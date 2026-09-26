@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.VisualWorkflow.Evolution.pas
   WO-0032: Automated Tests for Visual Workflow Application Service (ADR-2).
   Covers AC5 (Decisions Authority), AC6 (Evolution Guard), AC7 (Hash Equivalence).
@@ -33,6 +33,7 @@ type
     [Test] procedure Test07_DecisionsAuthority_NoPrivateRationaleRules;
     [Test] procedure Test08_EvolveBaseline_InheritsParentTreeType;
     [Test] procedure Test09_EvolveBaseline_UnknownParent_IsRejected;
+    [Test] procedure Test10_EvolveBaseline_ParentTreeTypeAll_FallsBackToViewTree;
   end;
 
 implementation
@@ -272,6 +273,54 @@ begin
 
   Assert.WillRaise(procedure begin FWorkflow.EvolveBaseline('B-9999', LDecId, LNewBaseline); end,
     Exception, 'Evolving an unknown baseline must be rejected');
+end;
+
+procedure TTestAsWishVisualWorkflowEvolution.Test10_EvolveBaseline_ParentTreeTypeAll_FallsBackToViewTree;
+var
+  LNodes: TList<TSpecNode>;
+  LDec: TSpecDecision;
+  LCS: TChangeSet;
+  LParent, LEvolved: TAsWishBaseline;
+  LParentId, LMetaFile, LYaml, LDecId, LEvolvedId: string;
+  LReport: TSpecDifferenceReport;
+begin
+  LNodes := CreateSampleViewTree;
+  try
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LNodes);
+
+    LDec := Default(TSpecDecision);
+    LDec.Id := 'dec-all';
+    LDec.DecisionType := dtConfirm;
+    LDec.Status := dsAccepted;
+
+    LCS := Default(TChangeSet);
+    LCS.Id := 'cs-all';
+    LCS.IntentTree := ttView;
+    LCS.IntentNodeId := 'view-main';
+    LParentId := FSnapshot.CreateBaseline(LDec, LCS, nil, nil, LNodes, nil, LParent);
+
+    // Overwrite metadata to simulate an all-scope parent baseline
+    LMetaFile := TPath.Combine(FStore.BasePath, 'snapshots\' + LParent.SnapshotName + '\snapshot.yaml');
+    LYaml := TFile.ReadAllText(LMetaFile, TEncoding.UTF8);
+    LYaml := LYaml.Replace('tree_type: "view"', 'tree_type: "all"');
+    TFile.WriteAllText(LMetaFile, LYaml, TEncoding.UTF8);
+
+    Assert.IsTrue(FSnapshot.LoadBaseline(LParentId, LParent));
+    Assert.AreEqual<string>('all', LParent.TreeType, 'Precondition: parent baseline tree_type must be all');
+
+    LReport := Default(TSpecDifferenceReport);
+    LReport.BaselineId := LParentId;
+    LReport.TreeType := 'view';
+    LDecId := FWorkflow.RecordDifferenceDecision(LReport, djAcceptable, 'evolve-all');
+    LEvolvedId := FWorkflow.EvolveBaseline(LParentId, LDecId, LEvolved);
+
+    Assert.AreEqual<string>('view', LEvolved.TreeType,
+      'Visual workflow evolution from all-scope baseline must fall back to view tree (known narrowing)');
+    Assert.AreEqual<string>(LParentId, LEvolved.Lineage.ParentBaselineId,
+      'Lineage must preserve parent baseline ID');
+  finally
+    LNodes.Free;
+  end;
 end;
 
 initialization

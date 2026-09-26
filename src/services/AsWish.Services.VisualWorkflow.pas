@@ -281,8 +281,12 @@ begin
   if not FSnapshot.LoadBaseline(ABaselineId, LParent) then
     raise Exception.CreateFmt('Baseline "%s" not found for evolution', [ABaselineId]);
   // A parent with tree_type "all" hashes the first non-empty tree (function
-  // wins) and so has no TTreeType spelling; keep such lineages on the view
-  // tree the visual diff was built on rather than guessing a narrower scope.
+  // wins in SnapshotService) but has no single-tree TTreeType representation.
+  // In the Visual Workflow Service, visual difference decisions operate on
+  // the visual surface (view tree). Falling back to ttView is therefore a
+  // known, intentional narrowing: evolving an all-scope baseline via visual
+  // workflow narrows the lineage to the view tree where the visual decision
+  // was made (pinned by Test10).
   if not TSpecEnums.TryTreeTypeFromStr(LParent.TreeType, LCS.IntentTree) then
     LCS.IntentTree := ttView;
 

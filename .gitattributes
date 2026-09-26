@@ -27,3 +27,5 @@ docs/*交接包*       export-ignore
 AUDIT-REQUEST-*    export-ignore
 
 src/services/AsWish.Binding.HB.pas -text diff
+src/services/AsWish.Services.VisualWorkflow.pas -text diff
+tests/Test.AsWish.VisualWorkflow.Evolution.pas -text diff
