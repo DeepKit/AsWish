@@ -63,6 +63,15 @@ type
     FTraceSeq: Integer;
     function TreeFromNodePrefix(const ANodeId: string): TTreeType;
     function NextTraceId: string;
+    function BuildContextFromChangeSet(const ACsId: string;
+      const AFallbackNodeId: string = '';
+      const AStepInfo: string = '';
+      const AOverrideTitle: string = ''): TEhaiContextBinding; overload;
+    function BuildContextFromChangeSet(const ACsId: string;
+      const AFallbackNodeId: string;
+      const AStepInfo: string;
+      const AOverrideTitle: string;
+      const AExistingContext: TEhaiContextBinding): TEhaiContextBinding; overload;
     function RecordTrace(const AAction: TEhaiInteractionAction;
       AEffect: TEhaiSemanticEffectKind; ACommitted: Boolean;
       const AActor: string = 'human'): TEhaiTraceRecord;
@@ -125,6 +134,9 @@ type
 
 implementation
 
+uses
+  AsWish.Services.CandidateIngest;
+
 { TAsWishHBBinding }
 
 constructor TAsWishHBBinding.Create(AController: TAsWishController);
@@ -173,14 +185,226 @@ begin
   FIsLastActionCommitted := ACommitted;
 end;
 
+function TAsWishHBBinding.BuildContextFromChangeSet(const ACsId: string;
+  const AFallbackNodeId: string;
+  const AStepInfo: string;
+  const AOverrideTitle: string): TEhaiContextBinding;
+begin
+  Result := BuildContextFromChangeSet(ACsId, AFallbackNodeId, AStepInfo,
+    AOverrideTitle, Default(TEhaiContextBinding));
+end;
+
+function TAsWishHBBinding.BuildContextFromChangeSet(const ACsId: string;
+  const AFallbackNodeId: string;
+  const AStepInfo: string;
+  const AOverrideTitle: string;
+  const AExistingContext: TEhaiContextBinding): TEhaiContextBinding;
+var
+  LTargetCsId: string;
+  LTargetNodeId: string;
+  LIngest: TAsWishCandidateIngest;
+  LCS: TChangeSet;
+  LHasCs: Boolean;
+  LNode: TSpecNode;
+  LHasNode: Boolean;
+  LContextId: string;
+  LContextTitle: string;
+  LStep: string;
+  LObservableRef: string;
+  LScope: string;
+  LAuth: string;
+begin
+  LTargetCsId := ACsId.Trim;
+  if (LTargetCsId = '') and (FLastChangeSetId <> '') then
+    LTargetCsId := FLastChangeSetId;
+
+  LHasCs := False;
+  LCS := Default(TChangeSet);
+  if (FController <> nil) and (FController.ProjectService <> nil) and (LTargetCsId <> '') then
+  begin
+    LIngest := TAsWishCandidateIngest.Create(nil);
+    try
+      LCS := LIngest.LoadChangeSet(FController.ProjectService.ProjectPath, LTargetCsId);
+      LHasCs := (LCS.Id <> '');
+    finally
+      LIngest.Free;
+    end;
+  end;
+
+  LTargetNodeId := '';
+  if LHasCs then
+  begin
+    if LCS.IntentNodeId <> '' then
+      LTargetNodeId := LCS.IntentNodeId
+    else if LCS.RejectedNodeId <> '' then
+      LTargetNodeId := LCS.RejectedNodeId;
+  end;
+  if (LTargetNodeId = '') and (AFallbackNodeId <> '') then
+    LTargetNodeId := AFallbackNodeId;
+
+  LHasNode := False;
+  LNode := Default(TSpecNode);
+  if (FController <> nil) and (FController.TreeBuilder <> nil) and (LTargetNodeId <> '') then
+  begin
+    try
+      LNode := FController.TreeBuilder.FindNodeById(LTargetNodeId);
+      LHasNode := (LNode.Id <> '');
+    except
+      LHasNode := False;
+    end;
+  end;
+
+  // 1. ContextId
+  if AExistingContext.ContextId <> '' then
+    LContextId := AExistingContext.ContextId
+  else if LTargetCsId <> '' then
+    LContextId := LTargetCsId
+  else if LTargetNodeId <> '' then
+    LContextId := LTargetNodeId
+  else
+    LContextId := '';
+
+  // 2. ObservableObjectRef
+  if AExistingContext.ObservableObjectRef <> '' then
+    LObservableRef := AExistingContext.ObservableObjectRef
+  else if LHasNode then
+    LObservableRef := LNode.Id
+  else if LTargetNodeId <> '' then
+    LObservableRef := LTargetNodeId
+  else if LHasCs then
+    LObservableRef := LCS.Id
+  else
+    LObservableRef := '';
+
+  // 3. ContextTitle
+  if AExistingContext.ContextTitle <> '' then
+    LContextTitle := AExistingContext.ContextTitle
+  else if AOverrideTitle <> '' then
+    LContextTitle := AOverrideTitle
+  else if LHasNode and (LNode.Title <> '') then
+  begin
+    if LHasCs and LCS.IsFrameRejection then
+      LContextTitle := 'Frame Rejection: ' + LNode.Title
+    else
+      LContextTitle := LNode.Title;
+  end
+  else if LHasCs and (LCS.RawUserIntent <> '') then
+  begin
+    if LCS.IsFrameRejection then
+      LContextTitle := 'Frame Rejection: ' + LCS.RawUserIntent
+    else
+      LContextTitle := LCS.RawUserIntent;
+  end
+  else if LHasNode then
+    LContextTitle := LNode.Id
+  else if LHasCs then
+    LContextTitle := 'ChangeSet ' + LCS.Id
+  else if LTargetNodeId <> '' then
+    LContextTitle := 'Node ' + LTargetNodeId
+  else
+    LContextTitle := '';
+
+  // 4. StepInfo
+  if AExistingContext.StepInfo <> '' then
+    LStep := AExistingContext.StepInfo
+  else if AStepInfo <> '' then
+    LStep := AStepInfo
+  else if LHasCs and LCS.IsFrameRejection then
+    LStep := 'Frame Rejection'
+  else
+    LStep := 'Candidate Review';
+
+  // 5. ScopeBoundary
+  if AExistingContext.ScopeBoundary <> '' then
+    LScope := AExistingContext.ScopeBoundary
+  else if LHasNode and (LNode.Scope <> '') then
+    LScope := LNode.Scope
+  else
+    LScope := 'AsWish';
+
+  // 6. AuthorityHolder
+  if AExistingContext.AuthorityHolder <> '' then
+    LAuth := AExistingContext.AuthorityHolder
+  else
+    LAuth := 'human';
+
+  Result := TEhaiContextBinding.Create(LContextId, LContextTitle, LStep,
+    LObservableRef, LScope, LAuth);
+end;
+
 function TAsWishHBBinding.ProcessHbAction(const AAction: THbChoiceAction;
   const AChangeSetId: string): TEhaiTraceRecord;
 var
   LEhaiAction: TEhaiInteractionAction;
   LContext: TEhaiContextBinding;
+  LTargetCsId: string;
+  LFallbackNodeId: string;
+  LStepInfo: string;
+  LOverrideTitle: string;
 begin
-  LContext := TEhaiContextBinding.Create(AAction.ContextId, 'HB Choice Context',
-    'User interaction via HB Choice Deck', AAction.ContextId, 'AsWish', 'human');
+  LTargetCsId := AChangeSetId;
+  LFallbackNodeId := '';
+  if AAction.ContextId <> '' then
+  begin
+    if AAction.ContextId.StartsWith('cs-') then
+    begin
+      if LTargetCsId = '' then
+        LTargetCsId := AAction.ContextId;
+    end
+    else
+      LFallbackNodeId := AAction.ContextId;
+  end;
+  if (LTargetCsId = '') and (FLastChangeSetId <> '') then
+    LTargetCsId := FLastChangeSetId;
+
+  case AAction.Kind of
+    cakCandidate:
+    begin
+      if LTargetCsId <> '' then
+        LStepInfo := 'Candidate Review: ' + LTargetCsId
+      else
+        LStepInfo := 'Candidate Review';
+      LOverrideTitle := '';
+    end;
+    cakRegenerate:
+    begin
+      LStepInfo := 'Regenerate';
+      LOverrideTitle := '';
+    end;
+    cakFreeInput:
+    begin
+      if AAction.OverrideKind = eokFrameRejection then
+      begin
+        LStepInfo := 'Frame Rejection';
+        if AAction.Text <> '' then
+          LOverrideTitle := 'Frame Rejection: ' + AAction.Text;
+      end
+      else if AAction.OverrideKind = eokCandidateReject then
+      begin
+        LStepInfo := 'Candidate Reject';
+        LOverrideTitle := AAction.Text;
+      end
+      else
+      begin
+        LStepInfo := 'Human Intent Override';
+        LOverrideTitle := AAction.Text;
+      end;
+    end;
+    cakBack:
+    begin
+      LStepInfo := 'Back Navigation';
+      LOverrideTitle := '';
+    end;
+  else
+    LStepInfo := 'Candidate Review';
+    LOverrideTitle := '';
+  end;
+
+  LContext := BuildContextFromChangeSet(LTargetCsId, LFallbackNodeId, LStepInfo, LOverrideTitle);
+  if (LContext.ContextId = '') and (AAction.ContextId <> '') then
+    LContext.ContextId := AAction.ContextId;
+  if (LContext.ObservableObjectRef = '') and (LFallbackNodeId <> '') then
+    LContext.ObservableObjectRef := LFallbackNodeId;
 
   case AAction.Kind of
     cakCandidate:
@@ -198,7 +422,7 @@ begin
       eipJudge, LContext, AAction.Payload, AAction.Source);
   end;
 
-  Result := ProcessEhaiAction(LEhaiAction, AChangeSetId);
+  Result := ProcessEhaiAction(LEhaiAction, LTargetCsId);
 end;
 
 function TAsWishHBBinding.ProcessEhaiAction(const AAction: TEhaiInteractionAction;
@@ -207,10 +431,16 @@ var
   LTargetCsId: string;
   LReviewText: string;
   LSubmittedCsId: string;
+  LEffectiveAction: TEhaiInteractionAction;
+  LContext: TEhaiContextBinding;
 begin
   LTargetCsId := AChangeSetId;
+  if (LTargetCsId = '') and (AAction.Context.ContextId <> '') and (AAction.Context.ContextId.StartsWith('cs-')) then
+    LTargetCsId := AAction.Context.ContextId;
   if (LTargetCsId = '') and (FLastChangeSetId <> '') then
     LTargetCsId := FLastChangeSetId;
+
+  LEffectiveAction := AAction;
 
   case AAction.MetaAction of
     emaChoose:
@@ -224,7 +454,11 @@ begin
         if LTargetCsId <> '' then
           FLastChangeSetId := LTargetCsId;
       end;
-      Result := RecordTrace(AAction, eseJudgmentMade, False);
+      LContext := BuildContextFromChangeSet(LTargetCsId, AAction.Context.ObservableObjectRef,
+        'Candidate Review', '', AAction.Context);
+      LEffectiveAction := TEhaiInteractionAction.CreateCandidate(
+        AAction.Key, AAction.Text, AAction.Profile, LContext, AAction.Payload, AAction.Source);
+      Result := RecordTrace(LEffectiveAction, eseJudgmentMade, False);
     end;
 
     emaRegenerate:
@@ -232,7 +466,11 @@ begin
       // 8: Regenerate within current frame (8 != Judgment, pure exploration)
       if FController <> nil then
         FController.ExportPrompt;
-      Result := RecordTrace(AAction, eseInformOnly, False);
+      LContext := BuildContextFromChangeSet(LTargetCsId, AAction.Context.ObservableObjectRef,
+        'Regenerate', '', AAction.Context);
+      LEffectiveAction := TEhaiInteractionAction.CreateRegenerate(
+        AAction.Profile, LContext, AAction.Payload, AAction.Source);
+      Result := RecordTrace(LEffectiveAction, eseInformOnly, False);
     end;
 
     emaReframe:
@@ -252,7 +490,11 @@ begin
           );
           FLastChangeSetId := LSubmittedCsId;
         end;
-        Result := RecordTrace(AAction, eseDataProvided, False);
+        LContext := BuildContextFromChangeSet(LSubmittedCsId, AAction.Context.ObservableObjectRef,
+          'Frame Rejection', 'Frame Rejection: ' + AAction.Text, AAction.Context);
+        LEffectiveAction := TEhaiInteractionAction.CreateOverride(
+          AAction.OverrideKind, AAction.Text, AAction.Profile, LContext, AAction.Payload, AAction.Source);
+        Result := RecordTrace(LEffectiveAction, eseDataProvided, False);
       end
       else
       begin
@@ -269,7 +511,11 @@ begin
             LSubmittedCsId := FController.SubmitUserIntent(AAction.Text, ttFunction);
           FLastChangeSetId := LSubmittedCsId;
         end;
-        Result := RecordTrace(AAction, eseDataProvided, False);
+        LContext := BuildContextFromChangeSet(LSubmittedCsId, AAction.Context.ObservableObjectRef,
+          'Human Intent Override', AAction.Text, AAction.Context);
+        LEffectiveAction := TEhaiInteractionAction.CreateOverride(
+          AAction.OverrideKind, AAction.Text, AAction.Profile, LContext, AAction.Payload, AAction.Source);
+        Result := RecordTrace(LEffectiveAction, eseDataProvided, False);
       end;
     end;
 
@@ -277,7 +523,11 @@ begin
     begin
       // 0: BackNavigation (Exit without commitment != Reject != Consent != Judgment)
       // Strictly does NOT revoke prior decisions or alter Canonical Spec
-      Result := RecordTrace(AAction, eseInformOnly, False);
+      LContext := BuildContextFromChangeSet(LTargetCsId, AAction.Context.ObservableObjectRef,
+        'Back Navigation', '', AAction.Context);
+      LEffectiveAction := TEhaiInteractionAction.CreateExit(
+        AAction.Profile, LContext, AAction.Payload, AAction.Source);
+      Result := RecordTrace(LEffectiveAction, eseInformOnly, False);
     end;
   else
     Result := RecordTrace(AAction, eseInformOnly, False);
@@ -299,8 +549,16 @@ begin
   if Result then
   begin
     FLastChangeSetId := AChangeSetId;
-    LContext := TEhaiContextBinding.Create(AChangeSetId, 'Commitment Gate Context',
-      'Commitment Gate crossing', AChangeSetId, 'AsWish', 'human');
+    LContext := BuildContextFromChangeSet(AChangeSetId, '', 'Commitment Gate Crossing');
+    if LContext.ContextId = '' then
+      LContext.ContextId := AChangeSetId;
+    if LContext.ContextTitle = '' then
+      LContext.ContextTitle := 'Commitment Gate Context';
+    if LContext.ScopeBoundary = '' then
+      LContext.ScopeBoundary := 'AsWish';
+    if LContext.AuthorityHolder = '' then
+      LContext.AuthorityHolder := 'human';
+
     LAction := TEhaiInteractionAction.CreateCandidate(1, 'Accept ChangeSet: ' + AChangeSetId,
       eipAuthorize, LContext, 0, esHuman);
     RecordTrace(LAction, eseAuthorized, True);
@@ -324,8 +582,16 @@ begin
   if Result then
   begin
     FLastChangeSetId := AChangeSetId;
-    LContext := TEhaiContextBinding.Create(AChangeSetId, 'Rejection Context',
-      'ChangeSet Rejection', AChangeSetId, 'AsWish', 'human');
+    LContext := BuildContextFromChangeSet(AChangeSetId, '', 'ChangeSet Rejection');
+    if LContext.ContextId = '' then
+      LContext.ContextId := AChangeSetId;
+    if LContext.ContextTitle = '' then
+      LContext.ContextTitle := 'Rejection Context';
+    if LContext.ScopeBoundary = '' then
+      LContext.ScopeBoundary := 'AsWish';
+    if LContext.AuthorityHolder = '' then
+      LContext.AuthorityHolder := 'human';
+
     LAction := TEhaiInteractionAction.CreateCandidate(0, 'Reject ChangeSet: ' + AChangeSetId,
       eipJudge, LContext, 0, esHuman);
     RecordTrace(LAction, eseJudgmentMade, False);

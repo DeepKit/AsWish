@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.EHAI.Binding
   
   Tier C Verification Suite for EHAI Reference Product Binding 001:
@@ -112,6 +112,12 @@ type
     [Test] procedure ASWISH_V_013_GUI_Surface_KeyDispatcher_And_Deck_Integration;
     [Test] procedure ASWISH_V_014_Deck_Idle_After_Commitment_And_Rejection;
     [Test] procedure ASWISH_V_015_DualSurface_UnifiedEntry_DeckAndInspector_UpdateLastChangeSetId;
+    // WO-HACI-MVP-ASWISH-001 Shared Object Binding & Canonical Isolation (Tests A..E)
+    [Test] procedure ASWISH_V_016_SharedObjectBinding_Candidate_Context_NotDefault;
+    [Test] procedure ASWISH_V_017_SharedObjectBinding_FrameRejection_RetainsContext;
+    [Test] procedure ASWISH_V_018_SharedObjectBinding_Regenerate_InCurrentContext;
+    [Test] procedure ASWISH_V_019_SharedObjectBinding_BackNavigation_ZeroDecisionMutation;
+    [Test] procedure ASWISH_V_020_CanonicalIsolation_ZeroEhaiDependency;
   end;
 
 implementation
@@ -804,6 +810,178 @@ begin
   Assert.AreEqual(LCsIdInspector, FBinding.LastChangeSetId,
     'Inspector submission must update LastChangeSetId as SSOT; see WO-0057 1.2');
   Assert.AreNotEqual(LCsIdDeck, LCsIdInspector, 'Each submission produces a distinct ChangeSet');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_016_SharedObjectBinding_Candidate_Context_NotDefault;
+var
+  LRootNode: TSpecNode;
+  LRootId, LCSId: string;
+  LAction: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+begin
+  LRootNode := FBuilder.FunctionNodes[0];
+  LRootId := LRootNode.Id;
+  LCSId := FController.SubmitUserIntent(LRootId, ttFunction, 'Context binding verification intent');
+  Assert.IsNotEmpty(LCSId, 'ChangeSet must be generated');
+
+  // Human selects candidate option 1
+  LAction := THbChoiceAction.Create(cakCandidate, 1, 'Review candidate option 1', 0, cisKeyboard, eokNone, esHuman, eipJudge, LCSId);
+  LTrace := FBinding.ProcessHbAction(LAction, LCSId);
+
+  // Assertions for Gate A (Test A): ContextBinding is not default, has real traceable context
+  Assert.AreEqual(LCSId, LTrace.Action.Context.ContextId, 'ContextId must match ChangeSetId');
+  Assert.AreEqual(LRootId, LTrace.Action.Context.ObservableObjectRef, 'ObservableObjectRef must resolve to target NodeId');
+  Assert.IsTrue(LTrace.Action.Context.ContextTitle.Contains(LRootNode.Title) or
+    LTrace.Action.Context.ContextTitle.Contains('Context binding verification'),
+    'ContextTitle must reflect real node title or user intent');
+  Assert.IsTrue(LTrace.Action.Context.StepInfo.Contains('Candidate Review'), 'StepInfo must reflect Candidate Review');
+  Assert.AreEqual('human', LTrace.Action.Context.AuthorityHolder, 'AuthorityHolder must be human');
+  Assert.AreEqual('AsWish', LTrace.Action.Context.ScopeBoundary, 'ScopeBoundary must be AsWish');
+  Assert.IsTrue(LTrace.Action.Context.IsValid, 'ContextBinding must be valid');
+  Assert.AreNotEqual(Default(TEhaiContextBinding).ContextId, LTrace.Action.Context.ContextId,
+    'ContextBinding must not be Default record');
+  Assert.AreNotEqual(Default(TEhaiContextBinding).ObservableObjectRef, LTrace.Action.Context.ObservableObjectRef,
+    'ObservableObjectRef must not be empty/default');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_017_SharedObjectBinding_FrameRejection_RetainsContext;
+var
+  LAction: THbChoiceAction;
+  LTrace: TEhaiTraceRecord;
+begin
+  // Human invokes Frame Rejection (Key 9) targeting mod-orders
+  LAction := THbChoiceAction.Create(
+    cakFreeInput,
+    9,
+    '架构预设错误，重构采购订单上下文',
+    0,
+    cisKeyboard,
+    eokFrameRejection,
+    esHuman,
+    eipProvide,
+    'mod-orders'
+  );
+  LTrace := FBinding.ProcessHbAction(LAction);
+
+  // Assertions for Test B: Frame Rejection preserves real Context
+  Assert.AreEqual('mod-orders', LTrace.Action.Context.ObservableObjectRef,
+    'Frame Rejection must retain real target node as ObservableObjectRef');
+  Assert.IsTrue(LTrace.Action.Context.ContextTitle.Contains('Frame Rejection'),
+    'ContextTitle must indicate Frame Rejection');
+  Assert.AreEqual('Frame Rejection', LTrace.Action.Context.StepInfo,
+    'StepInfo must be Frame Rejection');
+  Assert.AreEqual('human', LTrace.Action.Context.AuthorityHolder,
+    'AuthorityHolder must remain human');
+  Assert.IsNotEmpty(FBinding.LastChangeSetId, 'Frame Rejection must generate ChangeSet ID');
+  Assert.IsFalse(LTrace.IsCommitted, 'Frame Rejection must not commit Canonical Spec');
+  Assert.AreEqual(Ord(eseDataProvided), Ord(LTrace.SemanticEffect));
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_018_SharedObjectBinding_Regenerate_InCurrentContext;
+var
+  LRootNode: TSpecNode;
+  LRootId, LCSId: string;
+  LActChoose, LActRegen: THbChoiceAction;
+  LTraceRegen: TEhaiTraceRecord;
+begin
+  LRootNode := FBuilder.FunctionNodes[0];
+  LRootId := LRootNode.Id;
+  LCSId := FController.SubmitUserIntent(LRootId, ttFunction, 'Scenario for regeneration context retention');
+
+  // Establish active ChangeSet context
+  LActChoose := THbChoiceAction.Create(cakCandidate, 1, 'Preview', 0, cisKeyboard, eokNone, esHuman, eipJudge, LCSId);
+  FBinding.ProcessHbAction(LActChoose, LCSId);
+
+  // Human presses 8 (Regenerate) without re-specifying ChangeSetId
+  LActRegen := THbChoiceAction.Create(cakRegenerate, 8, 'Regenerate', 0, cisKeyboard, eokNone, esHuman, eipProvide);
+  LTraceRegen := FBinding.ProcessHbAction(LActRegen);
+
+  // Assertions for Test C: Regenerate stays in current object context
+  Assert.AreEqual(LCSId, LTraceRegen.Action.Context.ContextId,
+    'Regenerate must retain current ChangeSet context ID');
+  Assert.AreEqual(LRootId, LTraceRegen.Action.Context.ObservableObjectRef,
+    'Regenerate must retain current ObservableObjectRef');
+  Assert.AreEqual('Regenerate', LTraceRegen.Action.Context.StepInfo,
+    'StepInfo must be Regenerate');
+  Assert.AreEqual('human', LTraceRegen.Action.Context.AuthorityHolder,
+    'AuthorityHolder must be human');
+  Assert.AreEqual(Ord(eseInformOnly), Ord(LTraceRegen.SemanticEffect),
+    'Regenerate is pure exploration (eseInformOnly)');
+  Assert.IsFalse(LTraceRegen.IsCommitted, 'Regenerate must never commit');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_019_SharedObjectBinding_BackNavigation_ZeroDecisionMutation;
+var
+  LRootNode: TSpecNode;
+  LRootId, LCSId: string;
+  LBaselinesBefore, LDecisionsBefore: Integer;
+  LActBack: THbChoiceAction;
+  LTraceBack: TEhaiTraceRecord;
+begin
+  LRootNode := FBuilder.FunctionNodes[0];
+  LRootId := LRootNode.Id;
+  LCSId := FController.SubmitUserIntent(LRootId, ttFunction, 'Exploration intent before back exit');
+
+  LBaselinesBefore := Length(FController.ListBaselines);
+  LDecisionsBefore := Length(FController.ListDecisions);
+
+  // Human presses 0 (Back / Exit without commitment)
+  LActBack := THbChoiceAction.Create(cakBack, 0, 'Exit review', 0, cisKeyboard, eokNone, esHuman, eipInform);
+  LTraceBack := FBinding.ProcessHbAction(LActBack, LCSId);
+
+  // Assertions for Test D: Back retains context but strictly zeroes decision/baseline mutations
+  Assert.AreEqual(LCSId, LTraceBack.Action.Context.ContextId);
+  Assert.AreEqual(LRootId, LTraceBack.Action.Context.ObservableObjectRef);
+  Assert.AreEqual('Back Navigation', LTraceBack.Action.Context.StepInfo);
+  Assert.AreEqual(Ord(eseInformOnly), Ord(LTraceBack.SemanticEffect));
+  Assert.IsFalse(LTraceBack.IsCommitted);
+  Assert.AreEqual(LBaselinesBefore, Integer(Length(FController.ListBaselines)),
+    'Back navigation must create 0 baselines');
+  Assert.AreEqual(LDecisionsBefore, Integer(Length(FController.ListDecisions)),
+    'Back navigation must create 0 formal decisions');
+end;
+
+procedure TTestAsWishEHAIBinding.ASWISH_V_020_CanonicalIsolation_ZeroEhaiDependency;
+var
+  LDir, LModelsPath, LContent: string;
+begin
+  LDir := ExtractFilePath(ParamStr(0));
+  LModelsPath := '';
+  while LDir <> '' do
+  begin
+    var LTry := TPath.Combine(LDir, 'src\models\AsWish.Models.pas');
+    if TFile.Exists(LTry) then
+    begin
+      LModelsPath := LTry;
+      Break;
+    end;
+    var LParent := TDirectory.GetParent(LDir);
+    if (LParent = LDir) or (LParent = '') then Break;
+    LDir := LParent;
+  end;
+
+  Assert.IsNotEmpty(LModelsPath, 'AsWish.Models.pas must be found on disk');
+  Assert.IsTrue(TFile.Exists(LModelsPath), 'AsWish.Models.pas must exist');
+
+  LContent := TFile.ReadAllText(LModelsPath, TEncoding.UTF8);
+
+  // R1: AsWish Canonical must remain language-neutral; zero DeepBase/EHAI dependency
+  Assert.IsFalse(LContent.Contains('DeepBase.EHAI'),
+    'R1 violation: AsWish.Models.pas must not depend on DeepBase.EHAI');
+  Assert.IsFalse(LContent.Contains('TEhaiContextBinding'),
+    'R1 violation: AsWish.Models.pas must not reference TEhaiContextBinding');
+
+  // R2: TSpecDecision must not have DecisionDistribution
+  Assert.IsFalse(LContent.Contains('DecisionDistribution'),
+    'R2 violation: AsWish.Models.pas must not introduce DecisionDistribution to TSpecDecision');
+
+  // R3: TSpecDecision must not have AuthorityStatus
+  Assert.IsFalse(LContent.Contains('AuthorityStatus'),
+    'R3 violation: AsWish.Models.pas must not introduce AuthorityStatus to TSpecDecision');
+
+  // R4: TSpecDifferenceItem must not have ImpactSummary Canonical field
+  Assert.IsFalse(LContent.Contains('ImpactSummary'),
+    'R4 violation: TSpecDifferenceItem must not contain ImpactSummary as a canonical field');
 end;
 
 initialization
