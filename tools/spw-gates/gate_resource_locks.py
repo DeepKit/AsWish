@@ -7,6 +7,27 @@ import sys
 from pathlib import Path
 from gate_lib import MANIFEST, ROOT, read, source_files, fail, ok
 
+_COMMENT_BLOCK = re.compile(r"\{[^}]*\}|\(\*.*?\*\)", re.DOTALL)
+_COMMENT_LINE = re.compile(r"//[^\n]*")
+_STRING_LITERAL = re.compile(r"'(?:[^']|'')*'")
+
+
+def strip_literals_and_comments(text: str) -> str:
+    """Unit names must come from code, not from prose.
+
+    A negative assertion such as Assert.IsFalse(Content.Contains('DeepBase.EHAI'))
+    is a test that the dependency is ABSENT; treating its string literal as a
+    unit reference makes this gate report a violation that does not exist.
+
+    Must be applied per file: a single apostrophe left unbalanced by comment
+    stripping (e.g. 'http://x' inside a literal) shifts quote pairing across a
+    concatenated blob and re-exposes the very literals we just removed.
+    """
+    text = _COMMENT_BLOCK.sub(" ", text)
+    text = _COMMENT_LINE.sub(" ", text)
+    return _STRING_LITERAL.sub(" ", text)
+
+
 findings = []
 for lock in MANIFEST.get("resource_locks", []):
     cp = Path(lock["canonical_path"])
@@ -15,9 +36,11 @@ for lock in MANIFEST.get("resource_locks", []):
 
 core = Path(MANIFEST["resource_locks"][0]["canonical_path"]) if MANIFEST.get("resource_locks") else None
 if core:
-    blob = "\n".join(read(f) for f in source_files())
-    # strip unit names; tolerate trailing .pas/.dcr captured by the greedy regex
-    units = {u.split(".pas")[0] for u in re.findall(r"\b(DeepBase\.[A-Za-z0-9_.]+)", blob)}
+    units: set[str] = set()
+    for f in source_files():
+        units |= {u.split(".pas")[0]
+                  for u in re.findall(r"\b(DeepBase\.[A-Za-z0-9_.]+)",
+                                      strip_literals_and_comments(read(f)))}
     for u in sorted(units):
         hits = [p for p in core.rglob(u + ".pas")
                 if not any(part.startswith(".") for part in p.relative_to(core).parts)]
