@@ -84,3 +84,21 @@ if TFile.Exists(LTempPng) then   // 图没生成也不报，静默跳过
 2. 离屏截图路径在**未装 Python** 的环境产出非空 PNG（本机可架空 PATH 验证）。
 3. `protocol/tools/init_workspace.py` 从发布包移除；README 冷启动章节改写后照其步骤可 0 依赖初始化。
 4. 干净房间三构建 exit 0 + 331/331 不回退 + `git archive HEAD` 186 文件中 `.py` 清单与本单 §3 裁定一致。
+
+### 验收执行回填（2026-09-30 实测）
+
+1. **第 6.1 条（Pascal 可执行代码零 Python 命中）**：**PASS**
+   - 执行 `git grep -n -i "python" src/ cli/`。
+   - 仅命中 `src/services/AsWish.Services.Scan.pas:283`（项目分类检测注释）与 `290`（`Exit('python_backend')` 静态语言分类返回），在可执行命令行路径 0 命中。
+2. **第 6.2 条（离屏截图原生无 Python 化）**：**PASS**
+   - `SaveWindowScreenshot` 兜底路径已改由 Pascal 原生函数 `RenderHtmlToPngNative` 承接，通过 Win32 `CreateProcess` 直接拉起 `msedge.exe`/`chrome.exe` headless `--screenshot`，不依赖系统安装 Python，且增加了非静默告警与目录自动创建。
+3. **第 6.3 条（单一真相源冷启动）**：**PASS**
+   - 已删除 `protocol/tools/init_workspace.py`。
+   - `README.md`、`protocol/README.md`、`docs/01.产品-AsWish产品身份与愿景蓝图.md` 全面更新为引导用户使用原生 64 位无依赖的 `AsWish.CLI.exe init <dir>`。
+   - 实测在干净临时目录执行 `AsWish.CLI.exe init`，成功生成标准 `.AsWish/` 工作区，零外部运行时依赖。
+4. **第 6.4 条（三构建 + 331/331 + 发布包归属治理门禁）**：**PASS**
+   - `_build.bat` 构建 GUI `bin/AsWish.exe`：Exit 0。
+   - `cli/_build_cli.bat` 构建 CLI `cli/bin/AsWish.CLI.exe`：Exit 0。
+   - `tests/_build_tests.bat` 构建并运行 `tests/AsWish.Tests.exe`：Exit 0，331/331 全部 PASS。
+   - 删除废弃/漂移脚本（`init_workspace.py`、`render_view.py`、`verify_gui_decisions.py`），新增 `tools/spw-gates/README.md` 与 `scripts/README.md` 说明归属。
+   - 门禁 `gate_open_source_build.py` 补充 Pascal 禁止 Python 命令行与导出 Python 归属检查；实测 185 文件归属明确，门禁全绿（PASS）。
