@@ -89,12 +89,12 @@ examples/seed-python-fastapi/
 examples/seed-docs-only/
 ```
 
-## Standalone Tools & Workspace Initialization
+## Workspace Initialization
 
-A zero-dependency standalone workspace initializer is provided in `tools/`:
+Use the standalone native AsWish CLI to initialize a standard `.AsWish/` workspace:
 
 ```bash
-python protocol/tools/init_workspace.py /path/to/target --project-name "MyProject"
+AsWish.CLI init /path/to/target
 ```
 
 ## Conformance

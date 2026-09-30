@@ -334,13 +334,13 @@ AsWish.CLI evolve <dir> <baseline-id> [note]           :: Freeze new baseline fr
 
 ### Standalone Cold-Start (Zero Delphi Dependencies)
 
-In environments without Delphi compiler tools, initialize a standard `.AsWish/` workspace directly using Python (standard library only):
+Download or build the standalone native 64-bit CLI executable (`AsWish.CLI.exe`), which requires zero external runtime dependencies (no Python, no Node, no external DLLs), and initialize a standard `.AsWish/` workspace directly:
 
-```bash
-python protocol/tools/init_workspace.py /path/to/project --project-name "MyProject"
+```bat
+AsWish.CLI init /path/to/project
 ```
 
-Python readers are available in `protocol/readers/python/` for programmatic tree access.
+Python and TypeScript readers are available in `protocol/readers/` for cross-language programmatic tree access.
 
 ---
 
