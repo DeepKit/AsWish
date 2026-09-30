@@ -1,6 +1,8 @@
 """H3.encoding-guard
 counterfactual_1: undecodable / NUL source files must fail
-counterfactual_2: mixed line endings must fail"""
+counterfactual_2: mixed line endings must fail
+counterfactual_3: Pascal source containing Chinese without UTF-8 BOM must fail (WO-20260930-0063)"""
+import re
 import sys
 from pathlib import Path
 from gate_lib import source_files, fail, ok
@@ -8,8 +10,9 @@ from gate_lib import source_files, fail, ok
 findings = []
 for f in source_files():
     raw = f.read_bytes()
+    rel = f.relative_to(Path(__file__).resolve().parents[2]).as_posix()
     if b"\x00" in raw:
-        findings.append(f"NUL byte in {f.relative_to(Path(__file__).resolve().parents[2]).as_posix()}")
+        findings.append(f"NUL byte in {rel}")
         continue
     try:
         raw.decode("utf-8")
@@ -22,6 +25,42 @@ for f in source_files():
         # tolerate a single trailing-LF artifact; real mixing (both counts > 1) fails
         if lf > 1:
             findings.append(f"mixed line endings CRLF={crlf} LF-only={lf}: {f.name}")
+
+    # Check Pascal source with Chinese requires UTF-8 BOM (WO-20260930-0063)
+    if not raw.startswith(b"\xef\xbb\xbf"):
+        text = raw.decode("utf-8", errors="replace")
+        lines = text.splitlines()
+        in_block_brace = False
+        in_block_paren = False
+        for idx, line in enumerate(lines, start=1):
+            code_part = ""
+            i = 0
+            while i < len(line):
+                if in_block_brace:
+                    if line[i] == "}":
+                        in_block_brace = False
+                    i += 1
+                elif in_block_paren:
+                    if line[i:i+2] == "*)":
+                        in_block_paren = False
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    if line[i:i+2] == "//":
+                        break
+                    elif line[i] == "{":
+                        in_block_brace = True
+                        i += 1
+                    elif line[i:i+2] == "(*":
+                        in_block_paren = True
+                        i += 2
+                    else:
+                        code_part += line[i]
+                        i += 1
+            if re.search(r"[\u4e00-\u9fff]", code_part):
+                findings.append(f"Pascal 源码含中文但缺失 UTF-8 BOM: {rel} 第 {idx} 行")
+                break
 
 if findings:
     fail("H3.encoding-guard", findings)

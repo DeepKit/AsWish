@@ -41,6 +41,7 @@ uses
   Test.AsWish.VisualWorkflow.Provenance.Compliant in 'Test.AsWish.VisualWorkflow.Provenance.Compliant.pas',
   Test.AsWish.EHAI.Binding in 'Test.AsWish.EHAI.Binding.pas',
   Test.AsWish.Commons in 'Test.AsWish.Commons.pas',
+  Test.AsWish.Encoding in 'Test.AsWish.Encoding.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Config in '..\src\core\AsWish.Config.pas',
