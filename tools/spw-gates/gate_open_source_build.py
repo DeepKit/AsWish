@@ -135,8 +135,49 @@ def references_to_internal(exported: set[str]) -> tuple[list[str], int]:
     return findings, prose_hits
 
 
+def check_no_python_command_in_pascal() -> list[str]:
+    """Ensure Pascal code in src/ and cli/ does not invoke python commands (WO-20260930-0062)."""
+    findings = []
+    cmd_pattern = re.compile(r"""['"]\s*python(\.exe)?\s+[^'"]*['"]""", re.IGNORECASE)
+    for ext in ("*.pas", "*.dpr", "*.inc"):
+        for base in ("src", "cli"):
+            for p in sorted((ROOT / base).rglob(ext)):
+                rel = p.relative_to(ROOT).as_posix()
+                for idx, line in enumerate(read(p).splitlines(), start=1):
+                    stripped = line.strip()
+                    if stripped.startswith("//") or stripped.startswith("{*") or stripped.startswith("(*"):
+                        continue
+                    if cmd_pattern.search(line):
+                        findings.append(f"{rel}:{idx} 存在运行时 Python 命令调用: {stripped}")
+    return findings
+
+
+def check_exported_python_files(exported: set[str]) -> list[str]:
+    """Ensure all exported .py files belong to authorized and documented categories (WO-20260930-0062)."""
+    findings = []
+    AUTHORIZED_PY_DIRS = {
+        "protocol/": "protocol/README.md",
+        "tools/spw-gates/": "tools/spw-gates/README.md",
+    }
+    for rel in sorted(exported):
+        if rel.endswith(".py"):
+            matched_doc = None
+            for prefix, doc in AUTHORIZED_PY_DIRS.items():
+                if rel.startswith(prefix):
+                    matched_doc = doc
+                    break
+            if not matched_doc:
+                findings.append(
+                    f"未授权或未归属的导出 Python 文件: {rel}（仅允许 protocol/ 与 tools/spw-gates/ 并在对应 README 中说明）"
+                )
+            elif matched_doc not in exported:
+                findings.append(f"导出 Python 脚本 {rel} 缺少对应说明文档 {matched_doc}")
+    return findings
+
+
 def main() -> None:
     findings = []
+    findings.extend(check_no_python_command_in_pascal())
 
     for rel in BUILD_SCRIPTS:
         p = ROOT / rel
@@ -197,6 +238,7 @@ def main() -> None:
                 findings.append(f"导出清单缺少开源必备件 {need}")
         ref_findings, prose_hits = references_to_internal(exported)
         findings.extend(ref_findings)
+        findings.extend(check_exported_python_files(exported))
         if prose_hits:
             print(f"[{GATE}] 注意: 公开文档有 {prose_hits} 处指向未导出出处"
                   f"（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）")
@@ -206,7 +248,7 @@ def main() -> None:
         for f in findings:
             print(f"  - {f}")
         sys.exit(1)
-    print(f"[{GATE}] PASS 构建不依赖私有仓、导出清单无内部材料（{len(exported)} 个文件）")
+    print(f"[{GATE}] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（{len(exported)} 个文件）")
     sys.exit(0)
 
 
