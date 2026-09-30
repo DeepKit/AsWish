@@ -149,8 +149,6 @@ type
     function GetHBShareConsent: Boolean;
     function DomExcerptForLog(const ARaw: string): string;
 
-    procedure ExecuteCommandSync(const ACommandLine: string);
-    function StripHtmlToInnerText(const AHtml: string): string;
     procedure DrainCaptureWarnings(const ALog: TStringList);
 
     procedure HandleScanEvent(const AEvent: TDeepShellEvent);
@@ -778,71 +776,60 @@ begin
   FCaptureResult := AResult;
 end;
 
-procedure TAsWishMainForm.ExecuteCommandSync(const ACommandLine: string);
+function FindHeadlessBrowserExecutable: string;
+const
+  Candidates: array[0..3] of string = (
+    'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+    'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+    'C:\Program Files\Google\Chrome\Application\chrome.exe',
+    'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+  );
 var
-  LStartupInfo: TStartupInfo;
-  LProcessInfo: TProcessInformation;
-  LCmd: string;
+  I: Integer;
 begin
-  FillChar(LStartupInfo, SizeOf(LStartupInfo), 0);
-  LStartupInfo.cb := SizeOf(LStartupInfo);
-  LStartupInfo.dwFlags := STARTF_USESHOWWINDOW;
-  LStartupInfo.wShowWindow := SW_HIDE;
-  LCmd := 'cmd.exe /c ' + ACommandLine;
-  UniqueString(LCmd);
-  if CreateProcess(nil, PChar(LCmd), nil, nil, False, CREATE_NO_WINDOW, nil, nil, LStartupInfo, LProcessInfo) then
-  begin
-    WaitForSingleObject(LProcessInfo.hProcess, 15000);
-    CloseHandle(LProcessInfo.hProcess);
-    CloseHandle(LProcessInfo.hThread);
-  end;
+  Result := '';
+  for I := Low(Candidates) to High(Candidates) do
+    if TFile.Exists(Candidates[I]) then
+      Exit(Candidates[I]);
 end;
 
-function TAsWishMainForm.StripHtmlToInnerText(const AHtml: string): string;
+function RenderHtmlToPngNative(const AHtmlPath, AOutputPng: string; AWidth, AHeight: Integer): Boolean;
 var
-  LInTag, LInStyle, LInScript: Boolean;
-  I: Integer;
-  LSb: TStringBuilder;
-  LLower: string;
+  LBrowser, LFileUrl, LCmdLine, LAbsPng: string;
+  LSi: TStartupInfo;
+  LPi: TProcessInformation;
 begin
-  LSb := TStringBuilder.Create;
+  Result := False;
+  if not TFile.Exists(AHtmlPath) then Exit;
+
+  LBrowser := FindHeadlessBrowserExecutable;
+  if LBrowser = '' then Exit;
+
+  LAbsPng := TPath.GetFullPath(AOutputPng);
   try
-    LInTag := False;
-    LInStyle := False;
-    LInScript := False;
-    I := 1;
-    while I <= Length(AHtml) do
-    begin
-      if not LInTag and (AHtml[I] = '<') then
-      begin
-        LInTag := True;
-        LLower := LowerCase(Copy(AHtml, I, 8));
-        if LLower.StartsWith('<style') then LInStyle := True
-        else if LLower.StartsWith('<script') then LInScript := True
-        else if LLower.StartsWith('</style') then LInStyle := False
-        else if LLower.StartsWith('</script') then LInScript := False;
-      end
-      else if LInTag and (AHtml[I] = '>') then
-      begin
-        LInTag := False;
-        if not LInStyle and not LInScript then
-          LSb.Append(' ');
-      end
-      else if not LInTag and not LInStyle and not LInScript then
-      begin
-        if (AHtml[I] = #13) or (AHtml[I] = #10) or (AHtml[I] = #9) then
-          LSb.Append(' ')
-        else
-          LSb.Append(AHtml[I]);
-      end;
-      Inc(I);
+    TDirectory.CreateDirectory(TPath.GetDirectoryName(LAbsPng));
+  except
+  end;
+
+  LFileUrl := 'file:///' + TPath.GetFullPath(AHtmlPath).Replace('\', '/');
+  LCmdLine := Format('"%s" --headless=new --disable-gpu --no-sandbox "--screenshot=%s" --window-size=%d,%d "%s"',
+    [LBrowser, LAbsPng, AWidth, AHeight, LFileUrl]);
+
+  FillChar(LSi, SizeOf(LSi), 0);
+  LSi.cb := SizeOf(LSi);
+  LSi.dwFlags := STARTF_USESHOWWINDOW;
+  LSi.wShowWindow := SW_HIDE;
+
+  UniqueString(LCmdLine);
+  if CreateProcess(nil, PChar(LCmdLine), nil, nil, False, CREATE_NO_WINDOW, nil, nil, LSi, LPi) then
+  begin
+    try
+      WaitForSingleObject(LPi.hProcess, 15000);
+      CloseHandle(LPi.hThread);
+      CloseHandle(LPi.hProcess);
+    except
     end;
-    Result := LSb.ToString;
-    while Result.Contains('  ') do
-      Result := Result.Replace('  ', ' ');
-    Result := Result.Trim;
-  finally
-    LSb.Free;
+    Result := TFile.Exists(LAbsPng) and (TFile.GetSize(LAbsPng) > 0);
   end;
 end;
 
@@ -1833,7 +1820,7 @@ var
   LBmp: Vcl.Graphics.TBitmap;
   LPng, LBrowserPng: TPngImage;
   LBrowser: TEdgeBrowser;
-  LTempPng, LScript, LCmd, LRepoRoot: string;
+  LTempPng: string;
   LStream: TMemoryStream;
   LRect: TRect;
   LComposited: Boolean;
@@ -1910,14 +1897,9 @@ begin
     // Offscreen / Virtual session fallback: Render HTML view directly into CenterPanel
     if not LComposited and (FLastHtmlPath <> '') and TFile.Exists(FLastHtmlPath) then
     begin
-      LRepoRoot := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)), '..'));
       LTempPng := TPath.Combine(TPath.GetTempPath,
         Format('aswish-render-%d-%d.png', [GetCurrentProcessId, GetTickCount64]));
-      LScript := TPath.Combine(LRepoRoot, 'scripts\render_view.py');
-      LCmd := Format('python "%s" "%s" "%s" %d %d',
-        [LScript, FLastHtmlPath, LTempPng, CenterPanel.Width, CenterPanel.Height]);
-      ExecuteCommandSync(LCmd);
-      if TFile.Exists(LTempPng) then
+      if RenderHtmlToPngNative(FLastHtmlPath, LTempPng, CenterPanel.Width, CenterPanel.Height) then
       begin
         try
           LBrowserPng := TPngImage.Create;
@@ -1930,6 +1912,11 @@ begin
         finally
           try TFile.Delete(LTempPng); except end;
         end;
+      end
+      else
+      begin
+        if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
+        FCaptureWarnings.Add(Format('[CAPTURE-WARN] native HTML screenshot render failed for %s', [FLastHtmlPath]));
       end;
     end;
 
