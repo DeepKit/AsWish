@@ -1,4 +1,4 @@
-unit AsWish.Services.RenderDiff;
+﻿unit AsWish.Services.RenderDiff;
 {$WARN IMPLICIT_STRING_CAST OFF}
 
 interface

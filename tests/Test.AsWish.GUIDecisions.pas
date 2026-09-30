@@ -1,4 +1,4 @@
-unit Test.AsWish.GUIDecisions;
+﻿unit Test.AsWish.GUIDecisions;
 
 interface
 
