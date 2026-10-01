@@ -33,6 +33,6 @@ if not "%CLI_ERR%"=="0" (
 
 echo.
 echo ============================================================================
-echo   bin/AsWish.exe          = GUI（桌面端，不要传 CLI 参数）
-echo   cli/bin/AsWish.CLI.exe  = CLI（headless 命令行）
+echo   bin/AsWish.exe          = GUI  (desktop; do NOT pass CLI arguments)
+echo   cli/bin/AsWish.CLI.exe  = CLI  (headless command line)
 echo ============================================================================
