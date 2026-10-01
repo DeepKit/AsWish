@@ -1953,17 +1953,8 @@ begin
 end;
 
 procedure ConsoleError(const AText: string);
-var
-  H: THandle;
-  LBytes: TBytes;
-  LWritten: DWORD;
 begin
-  H := GetStdHandle(STD_ERROR_HANDLE);
-  if (H <> 0) and (H <> INVALID_HANDLE_VALUE) then
-  begin
-    LBytes := TEncoding.UTF8.GetBytes(AText + sLineBreak);
-    WriteFile(H, LBytes[0], Length(LBytes), LWritten, nil);
-  end;
+  TAsWishCommandLine.OutputConsoleError(AText);
 end;
 
 procedure TAsWishMainForm.RunGuiVerification(const AProjectPath: string);

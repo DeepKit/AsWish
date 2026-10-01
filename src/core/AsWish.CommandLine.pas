@@ -19,20 +19,42 @@ type
     ErrorMessage: string;
   end;
 
+  TGetStdHandleFunc = function(nStdHandle: DWORD): THandle; stdcall;
+  TAttachConsoleFunc = function(dwProcessId: DWORD): BOOL; stdcall;
+  TWriteFileFunc = function(hFile: THandle; const Buffer; nNumberOfBytesToWrite: DWORD;
+    var lpNumberOfBytesWritten: DWORD; lpOverlapped: Pointer): BOOL; stdcall;
+
   TAsWishCommandLine = class
   public
     class function ParseGui(const AArgs: array of string): TAsWishParsedArgs; static;
     class function CheckCliDir(const ADir: string; out AErrorMsg: string): Boolean; static;
     class procedure OutputConsoleError(const AMessage: string); static;
+    class function OutputConsoleErrorEx(
+      const AMessage: string;
+      AGetStdHandle: TGetStdHandleFunc = nil;
+      AAttachConsole: TAttachConsoleFunc = nil;
+      AWriteFile: TWriteFileFunc = nil
+    ): Boolean; static;
   end;
 
 implementation
 
 {$IFDEF MSWINDOWS}
 function AttachConsole(dwProcessId: DWORD): BOOL; stdcall; external 'kernel32.dll';
+
+function DefaultWriteFile(hFile: THandle; const Buffer; nNumberOfBytesToWrite: DWORD;
+  var lpNumberOfBytesWritten: DWORD; lpOverlapped: Pointer): BOOL; stdcall;
+begin
+  Result := Winapi.Windows.WriteFile(hFile, Buffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, POverlapped(lpOverlapped));
+end;
 {$ENDIF}
 
-class procedure TAsWishCommandLine.OutputConsoleError(const AMessage: string);
+class function TAsWishCommandLine.OutputConsoleErrorEx(
+  const AMessage: string;
+  AGetStdHandle: TGetStdHandleFunc;
+  AAttachConsole: TAttachConsoleFunc;
+  AWriteFile: TWriteFileFunc
+): Boolean;
 const
   ATTACH_PARENT_PROCESS: DWORD = DWORD(-1);
 var
@@ -40,26 +62,46 @@ var
   LUtf8: UTF8String;
   LWritten: DWORD;
 begin
+  Result := False;
   {$IFDEF MSWINDOWS}
+  if not Assigned(AGetStdHandle) then
+    AGetStdHandle := Winapi.Windows.GetStdHandle;
+  if not Assigned(AAttachConsole) then
+    AAttachConsole := AttachConsole;
+  if not Assigned(AWriteFile) then
+    AWriteFile := DefaultWriteFile;
+
   LUtf8 := UTF8Encode(AMessage + #13#10);
-  LStdErr := GetStdHandle(STD_ERROR_HANDLE);
-  LStdOut := GetStdHandle(STD_OUTPUT_HANDLE);
+  LStdErr := AGetStdHandle(STD_ERROR_HANDLE);
+  LStdOut := AGetStdHandle(STD_OUTPUT_HANDLE);
 
   if ((LStdErr = 0) or (LStdErr = INVALID_HANDLE_VALUE)) and
      ((LStdOut = 0) or (LStdOut = INVALID_HANDLE_VALUE)) then
   begin
-    AttachConsole(ATTACH_PARENT_PROCESS);
-    LStdErr := GetStdHandle(STD_ERROR_HANDLE);
-    LStdOut := GetStdHandle(STD_OUTPUT_HANDLE);
+    AAttachConsole(ATTACH_PARENT_PROCESS);
+    LStdErr := AGetStdHandle(STD_ERROR_HANDLE);
+    LStdOut := AGetStdHandle(STD_OUTPUT_HANDLE);
   end;
 
   if (LStdErr <> 0) and (LStdErr <> INVALID_HANDLE_VALUE) then
-    WriteFile(LStdErr, PAnsiChar(LUtf8)^, Length(LUtf8), LWritten, nil)
+  begin
+    AWriteFile(LStdErr, PAnsiChar(LUtf8)^, Length(LUtf8), LWritten, nil);
+    Result := True;
+  end
   else if (LStdOut <> 0) and (LStdOut <> INVALID_HANDLE_VALUE) then
-    WriteFile(LStdOut, PAnsiChar(LUtf8)^, Length(LUtf8), LWritten, nil);
+  begin
+    AWriteFile(LStdOut, PAnsiChar(LUtf8)^, Length(LUtf8), LWritten, nil);
+    Result := True;
+  end;
   {$ELSE}
   Writeln(ErrOutput, AMessage);
+  Result := True;
   {$ENDIF}
+end;
+
+class procedure TAsWishCommandLine.OutputConsoleError(const AMessage: string);
+begin
+  OutputConsoleErrorEx(AMessage);
 end;
 
 class function TAsWishCommandLine.ParseGui(const AArgs: array of string): TAsWishParsedArgs;

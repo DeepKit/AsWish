@@ -8,7 +8,7 @@ interface
 
 uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
-  AsWish.CommandLine;
+  Winapi.Windows, AsWish.CommandLine;
 
 type
   [TestFixture]
@@ -39,9 +39,48 @@ type
     procedure Test08_CliDir_SlashFlag_FailsClosed;
     [Test]
     procedure Test09_CliDir_ValidDirectory_Passes;
+    [Test]
+    procedure Test10_OutputConsoleError_InvalidHandles_AttachesConsoleAndWrites;
+    [Test]
+    procedure Test11_OutputConsoleError_ValidHandle_DoesNotAttachConsole;
   end;
 
 implementation
+
+var
+  GStubAttachConsoleCalled: Boolean = False;
+  GStubWriteFileCalled: Boolean = False;
+  GStubWrittenHandle: THandle = 0;
+  GStubWrittenText: string = '';
+
+function StubGetStdHandle_Invalid(nStdHandle: DWORD): THandle; stdcall;
+begin
+  if not GStubAttachConsoleCalled then
+    Result := 0
+  else
+    Result := 42;
+end;
+
+function StubGetStdHandle_Valid(nStdHandle: DWORD): THandle; stdcall;
+begin
+  Result := 99;
+end;
+
+function StubAttachConsole(dwProcessId: DWORD): BOOL; stdcall;
+begin
+  GStubAttachConsoleCalled := True;
+  Result := True;
+end;
+
+function StubWriteFile(hFile: THandle; const Buffer; nNumberOfBytesToWrite: DWORD;
+  var lpNumberOfBytesWritten: DWORD; lpOverlapped: Pointer): BOOL; stdcall;
+begin
+  GStubWriteFileCalled := True;
+  GStubWrittenHandle := hFile;
+  SetString(GStubWrittenText, PAnsiChar(@Buffer), nNumberOfBytesToWrite);
+  lpNumberOfBytesWritten := nNumberOfBytesToWrite;
+  Result := True;
+end;
 
 procedure TTestAsWishCommandLine.SetUp;
 begin
@@ -146,6 +185,44 @@ begin
   LOk := TAsWishCommandLine.CheckCliDir(FTempDir, LMsg);
   Assert.IsTrue(LOk, 'Valid directory should pass CLI dir check');
   Assert.AreEqual('', LMsg);
+end;
+
+procedure TTestAsWishCommandLine.Test10_OutputConsoleError_InvalidHandles_AttachesConsoleAndWrites;
+var
+  LRes: Boolean;
+begin
+  GStubAttachConsoleCalled := False;
+  GStubWriteFileCalled := False;
+  GStubWrittenHandle := 0;
+  GStubWrittenText := '';
+
+  LRes := TAsWishCommandLine.OutputConsoleErrorEx('test error payload',
+    StubGetStdHandle_Invalid, StubAttachConsole, StubWriteFile);
+
+  Assert.IsTrue(LRes, 'OutputConsoleErrorEx must return True on successful write');
+  Assert.IsTrue(GStubAttachConsoleCalled, 'AttachConsole must be called when handles are initially 0');
+  Assert.IsTrue(GStubWriteFileCalled, 'WriteFile must be called');
+  Assert.AreEqual(THandle(42), GStubWrittenHandle, 'Handle after AttachConsole must be used');
+  Assert.IsTrue(GStubWrittenText.Contains('test error payload'), 'Written text must contain message');
+end;
+
+procedure TTestAsWishCommandLine.Test11_OutputConsoleError_ValidHandle_DoesNotAttachConsole;
+var
+  LRes: Boolean;
+begin
+  GStubAttachConsoleCalled := False;
+  GStubWriteFileCalled := False;
+  GStubWrittenHandle := 0;
+  GStubWrittenText := '';
+
+  LRes := TAsWishCommandLine.OutputConsoleErrorEx('valid handle payload',
+    StubGetStdHandle_Valid, StubAttachConsole, StubWriteFile);
+
+  Assert.IsTrue(LRes, 'OutputConsoleErrorEx must return True');
+  Assert.IsFalse(GStubAttachConsoleCalled, 'AttachConsole must not be called when handles are valid');
+  Assert.IsTrue(GStubWriteFileCalled, 'WriteFile must be called');
+  Assert.AreEqual(THandle(99), GStubWrittenHandle);
+  Assert.IsTrue(GStubWrittenText.Contains('valid handle payload'));
 end;
 
 initialization
