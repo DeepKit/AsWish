@@ -1938,23 +1938,18 @@ const
 
 function AttachConsole(dwProcessId: DWORD): BOOL; stdcall; external 'kernel32.dll';
 
-procedure ConsolePrint(const AText: string);
 var
-  H: THandle;
-  LBytes: TBytes;
-  LWritten: DWORD;
+  GStdOutOrig: THandle = 0;
+  GStdErrOrig: THandle = 0;
+
+procedure ConsolePrint(const AText: string);
 begin
-  H := GetStdHandle(STD_OUTPUT_HANDLE);
-  if (H <> 0) and (H <> INVALID_HANDLE_VALUE) then
-  begin
-    LBytes := TEncoding.UTF8.GetBytes(AText + sLineBreak);
-    WriteFile(H, LBytes[0], Length(LBytes), LWritten, nil);
-  end;
+  TAsWishCommandLine.OutputConsole(AText, GStdOutOrig);
 end;
 
 procedure ConsoleError(const AText: string);
 begin
-  TAsWishCommandLine.OutputConsoleError(AText);
+  TAsWishCommandLine.OutputConsoleError(AText, GStdErrOrig);
 end;
 
 procedure TAsWishMainForm.RunGuiVerification(const AProjectPath: string);
@@ -1977,6 +1972,8 @@ var
   LGhostTrigger, LTargetPattern, LNarrativePattern, LNarrativeTrigger: string;
   LSubmittedCs: string;
 begin
+  GStdOutOrig := GetStdHandle(STD_OUTPUT_HANDLE);
+  GStdErrOrig := GetStdHandle(STD_ERROR_HANDLE);
   LHasConsole := AttachConsole(ATTACH_PARENT_PROCESS);
   if not LHasConsole then
     LHasConsole := AllocConsole;
