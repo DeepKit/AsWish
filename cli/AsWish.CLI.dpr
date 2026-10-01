@@ -54,6 +54,7 @@ uses
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Shell.Headless in '..\src\core\AsWish.Shell.Headless.pas',
   AsWish.Controller in '..\src\controllers\AsWish.Controller.pas',
+  AsWish.CommandLine in '..\src\core\AsWish.CommandLine.pas',
   System.JSON;
 
 // The project type is named by the scan service itself. The CLI used to carry
@@ -160,12 +161,24 @@ begin
   GJsonLines.Add(Format('  "%s": %s', [AKey, LowerCase(BoolToStr(AValue, True))]));
 end;
 
+procedure CheckPositionalDir(const ADir: string);
+var
+  LErr: string;
+begin
+  if not TAsWishCommandLine.CheckCliDir(ADir, LErr) then
+  begin
+    Writeln('AsWish.CLI: error: ' + LErr);
+    Halt(2);
+  end;
+end;
+
 procedure RunDecisionsApply(const ADir: string);
 var
   LBundle: TControllerBundle;
   LTouched: TArray<string>;
   LCount: Integer;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[decisions-apply] error: no .AsWish directory; run scan first');
@@ -210,6 +223,7 @@ var
   LBundle: TControllerBundle;
   LMetrics: THealthMetrics;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[health] error: no .AsWish directory; run scan first');
@@ -260,6 +274,7 @@ var
   LControllerAction: string;
   LResult: TBundleApplyResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[bundle-apply] error: no .AsWish directory; run scan first');
@@ -341,6 +356,7 @@ var
   LBundle: TControllerBundle;
   LResult: TIngestResult;
 begin
+  CheckPositionalDir(ADir);
   if not TFile.Exists(ACandidatePath) then
   begin
     Writeln('[ingest] error: candidate file not found: ' + ACandidatePath);
@@ -413,6 +429,7 @@ var
   LIssue: TSpecIssue;
   LPath: string;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[intent] error: no .AsWish directory; run scan first');
@@ -456,6 +473,7 @@ var
   I: Integer;
   LBundle: TControllerBundle;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[intent list] error: no .AsWish directory; run scan first');
@@ -492,6 +510,7 @@ var
   LBundle: TControllerBundle;
   LResult: TChangeSetResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
@@ -539,6 +558,7 @@ var
   LFuncNodes: TList<TSpecNode>;
   LSummary: string;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
@@ -572,6 +592,7 @@ var
   LBundle: TControllerBundle;
   LResult: TChangeSetDecisionResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
@@ -622,6 +643,7 @@ var
   LBundle: TControllerBundle;
   LResult: TChangeSetDecisionResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
@@ -665,6 +687,7 @@ var
   LBundle: TControllerBundle;
   LResult: TChangeSetDecisionResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[changeset] error: no .AsWish directory; run scan first');
@@ -770,6 +793,12 @@ procedure RunScan(const ADir: string);
 var
   LBundle: TControllerBundle;
 begin
+  CheckPositionalDir(ADir);
+  if not TDirectory.Exists(ADir) then
+  begin
+    Writeln('[scan] error: directory does not exist: ' + ADir);
+    Halt(1);
+  end;
   // The scan is orchestrated by the Controller, exactly as the desktop app
   // orchestrates it. This used to be a second, shorter copy of the same
   // sequence held here in the program body -- which is how the evidence
@@ -804,6 +833,7 @@ procedure RunInit(const ADir: string);
 var
   LBundle: TControllerBundle;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(ADir) then
   begin
     Writeln('[init] error: directory does not exist: ' + ADir);
@@ -825,6 +855,12 @@ procedure RunGenerate(const ADir: string);
 var
   LBundle: TControllerBundle;
 begin
+  CheckPositionalDir(ADir);
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[generate] error: no .AsWish directory under ' + ADir);
+    Halt(1);
+  end;
   // Same orchestration the desktop app's Export Prompt button follows. This
   // used to build its own scan and prompt services and detect the project type
   // here -- a second copy of a sequence the Controller already owns.
@@ -848,7 +884,16 @@ var
   LResult: TSpecValidationResult;
   LOne: TSpecFileValidation;
   LErr: TValidationError;
+  LCheckedCount: Integer;
+  LSkippedCount: Integer;
 begin
+  CheckPositionalDir(ADir);
+  if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
+  begin
+    Writeln('[validate] error: no .AsWish directory under ' + ADir);
+    Halt(1);
+  end;
+
   // The Controller decides which files are checked and in what order; this
   // procedure decides how the findings read. Note there is no OpenProject
   // here: opening initialises the renderer, which creates the html directory,
@@ -856,13 +901,17 @@ begin
   LBundle := TControllerBundle.Create(True);
   try
     LResult := LBundle.Controller.ValidateSpecFiles(ADir);
+    LCheckedCount := 0;
+    LSkippedCount := 0;
     for LOne in LResult.Files do
     begin
       if not LOne.Present then
       begin
+        Inc(LSkippedCount);
         Writeln('[validate] skip (missing): ' + LOne.RelPath);
         Continue;
       end;
+      Inc(LCheckedCount);
       Writeln(Format('[validate] %s: %d error(s), %d warning(s)',
         [LOne.RelPath, LOne.ErrorCount, LOne.WarningCount]));
       for LErr in LOne.Errors do
@@ -875,7 +924,17 @@ begin
       Writeln(Format('[validate] FAILED: %d error(s)', [LResult.TotalErrors]));
       Halt(1);
     end;
-    Writeln('[validate] OK');
+
+    if LCheckedCount = 0 then
+    begin
+      Writeln('[validate] no spec files found under ' + ADir);
+      Halt(1);
+    end;
+
+    if LSkippedCount > 0 then
+      Writeln(Format('[validate] OK (checked %d, skipped %d)', [LCheckedCount, LSkippedCount]))
+    else
+      Writeln('[validate] OK');
   finally
     LBundle.Free;
   end;
@@ -886,6 +945,7 @@ var
   LBundle: TControllerBundle;
   LResult: TRenderResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[render] error: no .AsWish directory; run scan first');
@@ -910,6 +970,7 @@ var
   I: Integer;
   LBundle: TControllerBundle;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[baseline] error: no .AsWish directory');
@@ -951,6 +1012,7 @@ var
   LValid: Boolean;
   LBundle: TControllerBundle;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[baseline] error: no .AsWish directory');
@@ -977,6 +1039,7 @@ var
   LBundle: TControllerBundle;
   LPath: string;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[visual] error: no .AsWish directory');
@@ -1001,6 +1064,7 @@ var
   LBundle: TControllerBundle;
   LResult: TVisualConfirmResult;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[visual] error: no .AsWish directory');
@@ -1038,6 +1102,7 @@ var
   LBundle: TControllerBundle;
   LBaseId, LFile: string;
 begin
+  CheckPositionalDir(ADir);
   if not TDirectory.Exists(TPath.Combine(ADir, '.AsWish')) then
   begin
     Writeln('[handoff] error: no .AsWish directory');
@@ -1065,6 +1130,12 @@ var
   LBundle: TControllerBundle;
   LEvidences: TArray<TSpecEvidence>;
 begin
+  CheckPositionalDir(AProjectDir);
+  if not TDirectory.Exists(TPath.Combine(AProjectDir, '.AsWish')) then
+  begin
+    Writeln('[evidence] error: no .AsWish directory');
+    Halt(1);
+  end;
   // The desktop app reaches the collector through the Controller, which counts
   // the refs it could not resolve and reports them; this copy passed no counter
   // and dropped them. The collection and the file it writes are the same either
@@ -1091,6 +1162,12 @@ var
   LBundle: TControllerBundle;
   LReport: TSpecDifferenceReport;
 begin
+  CheckPositionalDir(AProjectDir);
+  if not TDirectory.Exists(TPath.Combine(AProjectDir, '.AsWish')) then
+  begin
+    Writeln('[difference] error: no .AsWish directory');
+    Halt(1);
+  end;
   // This command used to build store + snapshot + decisions + difference +
   // workflow itself, which is the same sequence ComputeDifference owns -- and
   // the one that had drifted from it (the P0 in this work order). Two things
@@ -1131,6 +1208,12 @@ var
   LDecId: string;
   LItemCount: Integer;
 begin
+  CheckPositionalDir(AProjectDir);
+  if not TDirectory.Exists(TPath.Combine(AProjectDir, '.AsWish')) then
+  begin
+    Writeln('[judge] error: no .AsWish directory');
+    Halt(1);
+  end;
   // Same story as RunDifference: the workflow construction here was the second
   // copy of the sequence RecordDifferenceDecision owns. The item count is
   // printed below and is not part of the decision id, so the Controller now
@@ -1153,6 +1236,12 @@ var
   LNewBaseline: TAsWishBaseline;
   LDecId, LNewBaseId: string;
 begin
+  CheckPositionalDir(AProjectDir);
+  if not TDirectory.Exists(TPath.Combine(AProjectDir, '.AsWish')) then
+  begin
+    Writeln('[evolve] error: no .AsWish directory');
+    Halt(1);
+  end;
   // Two divergences this removes. First, the Controller's ComputeDifference
   // collects implementation evidence when none is on disk; calling the
   // workflow directly left the CLI computing a difference against missing
