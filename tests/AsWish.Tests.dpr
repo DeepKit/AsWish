@@ -42,6 +42,8 @@ uses
   Test.AsWish.EHAI.Binding in 'Test.AsWish.EHAI.Binding.pas',
   Test.AsWish.Commons in 'Test.AsWish.Commons.pas',
   Test.AsWish.Encoding in 'Test.AsWish.Encoding.pas',
+  Test.AsWish.CommandLine in 'Test.AsWish.CommandLine.pas',
+  AsWish.CommandLine in '..\src\core\AsWish.CommandLine.pas',
   AsWish.UI.Types in '..\src\core\AsWish.UI.Types.pas',
   AsWish.UI.Intf in '..\src\core\AsWish.UI.Intf.pas',
   AsWish.Config in '..\src\core\AsWish.Config.pas',
