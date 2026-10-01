@@ -65,7 +65,7 @@ for f in source_files():
 # Check batch scripts in repo root and scripts/ (WO-20260930-0066 F-2)
 ROOT = Path(__file__).resolve().parents[2]
 script_files = set()
-for pat in ("*.bat", "*.cmd"):
+for pat in ("*.bat", "*.cmd", "*.ps1"):
     script_files.update(ROOT.glob(pat))
     if (ROOT / "scripts").is_dir():
         script_files.update((ROOT / "scripts").rglob(pat))
