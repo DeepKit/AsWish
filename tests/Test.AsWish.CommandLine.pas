@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.CommandLine
   Unit tests for command line parsing and validation on GUI and CLI (WO-20260930-0064).
   ============================================================================ }
@@ -43,6 +43,12 @@ type
     procedure Test10_OutputConsoleError_InvalidHandles_AttachesConsoleAndWrites;
     [Test]
     procedure Test11_OutputConsoleError_ValidHandle_DoesNotAttachConsole;
+    [Test]
+    procedure Test12_SelectTargetHandle_OriginalValidDisk_SelectsOriginal;
+    [Test]
+    procedure Test13_SelectTargetHandle_OriginalInvalid_FallbackToCurrent;
+    [Test]
+    procedure Test14_OutputConsoleError_OriginalDiskHandle_WritesToOriginalHandle;
   end;
 
 implementation
@@ -80,6 +86,22 @@ begin
   SetString(GStubWrittenText, PAnsiChar(@Buffer), nNumberOfBytesToWrite);
   lpNumberOfBytesWritten := nNumberOfBytesToWrite;
   Result := True;
+end;
+
+function StubGetFileType_Disk(hFile: THandle): DWORD; stdcall;
+begin
+  if hFile = 100 then
+    Result := 1 // FILE_TYPE_DISK
+  else
+    Result := 2; // FILE_TYPE_CHAR
+end;
+
+function StubGetFileType_Pipe(hFile: THandle): DWORD; stdcall;
+begin
+  if hFile = 100 then
+    Result := 3 // FILE_TYPE_PIPE
+  else
+    Result := 2; // FILE_TYPE_CHAR
 end;
 
 procedure TTestAsWishCommandLine.SetUp;
@@ -223,6 +245,53 @@ begin
   Assert.IsTrue(GStubWriteFileCalled, 'WriteFile must be called');
   Assert.AreEqual(THandle(99), GStubWrittenHandle);
   Assert.IsTrue(GStubWrittenText.Contains('valid handle payload'));
+end;
+
+procedure TTestAsWishCommandLine.Test12_SelectTargetHandle_OriginalValidDisk_SelectsOriginal;
+var
+  LRes: THandle;
+begin
+  LRes := TAsWishCommandLine.SelectTargetHandle(100, 200, StubGetFileType_Disk);
+  Assert.AreEqual(THandle(100), LRes, 'Valid original handle with DISK type must be selected over current handle');
+
+  LRes := TAsWishCommandLine.SelectTargetHandle(100, 200, StubGetFileType_Pipe);
+  Assert.AreEqual(THandle(100), LRes, 'Valid original handle with PIPE type must be selected over current handle');
+end;
+
+procedure TTestAsWishCommandLine.Test13_SelectTargetHandle_OriginalInvalid_FallbackToCurrent;
+var
+  LRes: THandle;
+begin
+  LRes := TAsWishCommandLine.SelectTargetHandle(0, 200, StubGetFileType_Disk);
+  Assert.AreEqual(THandle(200), LRes, 'Invalid original handle (0) must fall back to current handle');
+
+  LRes := TAsWishCommandLine.SelectTargetHandle(INVALID_HANDLE_VALUE, 200, StubGetFileType_Disk);
+  Assert.AreEqual(THandle(200), LRes, 'Invalid original handle (-1) must fall back to current handle');
+end;
+
+procedure TTestAsWishCommandLine.Test14_OutputConsoleError_OriginalDiskHandle_WritesToOriginalHandle;
+var
+  LRes: Boolean;
+begin
+  GStubAttachConsoleCalled := False;
+  GStubWriteFileCalled := False;
+  GStubWrittenHandle := 0;
+  GStubWrittenText := '';
+
+  LRes := TAsWishCommandLine.OutputConsoleErrorEx(
+    'redirected error payload',
+    100,
+    StubGetStdHandle_Valid,
+    StubAttachConsole,
+    StubWriteFile,
+    StubGetFileType_Disk
+  );
+
+  Assert.IsTrue(LRes, 'OutputConsoleErrorEx must return True');
+  Assert.IsFalse(GStubAttachConsoleCalled, 'AttachConsole must not be called when original handle is valid disk');
+  Assert.IsTrue(GStubWriteFileCalled, 'WriteFile must be called');
+  Assert.AreEqual(THandle(100), GStubWrittenHandle, 'WriteFile must write to original handle 100');
+  Assert.IsTrue(GStubWrittenText.Contains('redirected error payload'));
 end;
 
 initialization
