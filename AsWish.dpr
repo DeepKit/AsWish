@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish
   ---------------------------------------------------------------------------
   AI-native requirement specification tool.
@@ -48,22 +48,34 @@ uses
   AsWish.Providers.Structure in 'src\providers\AsWish.Providers.Structure.pas',
   AsWish.Providers.MainView in 'src\providers\AsWish.Providers.MainView.pas',
   AsWish.Providers.Inspector in 'src\providers\AsWish.Providers.Inspector.pas',
+  AsWish.CommandLine in 'src\core\AsWish.CommandLine.pas',
   AsWish.Version in 'src\core\AsWish.Version.pas';
 
 {$R *.res}
 
 var
-  LIsGuiVerify: Boolean;
+  LArgs: TArray<string>;
+  LParsed: TAsWishParsedArgs;
   I: Integer;
 begin
-  LIsGuiVerify := False;
+  SetLength(LArgs, ParamCount);
   for I := 1 to ParamCount do
-    if (ParamStr(I) = '--gui-verify') or (ParamStr(I) = '-gui-verify') then
-    begin
-      LIsGuiVerify := True;
-      Break;
-    end;
-  ReportMemoryLeaksOnShutdown := not LIsGuiVerify;
+    LArgs[I - 1] := ParamStr(I);
+
+  LParsed := TAsWishCommandLine.ParseGui(LArgs);
+  if not LParsed.IsValid then
+  begin
+    TAsWishCommandLine.OutputConsoleError(Format(
+      '[AsWish.exe ERROR] %s'#13#10 +
+      'Usage:'#13#10 +
+      '  AsWish.exe [project-directory]'#13#10 +
+      '  AsWish.exe --gui-verify <project-directory>'#13#10 +
+      'Note: For headless CLI operations (such as validate, scan, difference), use cli\bin\AsWish.CLI.exe.',
+      [LParsed.ErrorMessage]));
+    Halt(1);
+  end;
+
+  ReportMemoryLeaksOnShutdown := not LParsed.IsGuiVerify;
   InstallAIErrorHandler;
   TAsWishAutoFix.Install;
   TAutoFixVclHook.Install;

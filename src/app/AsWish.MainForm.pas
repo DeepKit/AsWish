@@ -39,6 +39,7 @@ uses
   AsWish.Services.Settings,
   AsWish.Version,
   AsWish.Models,
+  AsWish.CommandLine,
   DeepBase.EHAI.Types,
   DeepBase.HB.Choice.Types,
   AsWish.Binding.HB;
@@ -408,6 +409,8 @@ procedure TAsWishMainForm.AfterShellShown;
 var
   LOpenDir: string;
   LIsGuiVerify: Boolean;
+  LArgs: TArray<string>;
+  LParsed: TAsWishParsedArgs;
   I: Integer;
 begin
   inherited AfterShellShown;
@@ -425,15 +428,13 @@ begin
   SetStatusMessage(ShellText('aswish.status.ready',
     'AsWish ready. Open a project folder to begin.'));
 
-  LOpenDir := '';
-  LIsGuiVerify := False;
+  SetLength(LArgs, ParamCount);
   for I := 1 to ParamCount do
-  begin
-    if (ParamStr(I) = '--gui-verify') or (ParamStr(I) = '-gui-verify') then
-      LIsGuiVerify := True
-    else if TDirectory.Exists(ParamStr(I)) then
-      LOpenDir := ParamStr(I);
-  end;
+    LArgs[I - 1] := ParamStr(I);
+  LParsed := TAsWishCommandLine.ParseGui(LArgs);
+
+  LOpenDir := LParsed.ProjectDir;
+  LIsGuiVerify := LParsed.IsGuiVerify;
 
   if LIsGuiVerify and (LOpenDir <> '') then
   begin
