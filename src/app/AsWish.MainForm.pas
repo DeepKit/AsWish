@@ -164,6 +164,7 @@ type
     procedure DoMruSelect(Sender: TObject);
     procedure BrowserCapturePreviewCompleted(Sender: TCustomEdgeBrowser; AResult: HResult);
     function WaitForBrowserReady(const AExpectedSnippet: string; ATimeoutMs: Integer; out ADomText: string): Boolean;
+    function WaitForWebViewReady(ATimeoutMs: Integer = 3000): Boolean;
     procedure OpenView(const ARef: TShellObjectRef);
     procedure SaveWindowScreenshot(const AFilePath: string);
     procedure SaveControlImage(AControl: TWinControl; const AFilePath: string);
@@ -881,6 +882,32 @@ begin
         Sleep(50);
       end;
     end;
+  end;
+end;
+
+function TAsWishMainForm.WaitForWebViewReady(ATimeoutMs: Integer): Boolean;
+var
+  LStart: UInt64;
+begin
+  Result := False;
+  if ATimeoutMs > 5000 then
+    ATimeoutMs := 5000;
+
+  if (CurrentMainControl <> nil) and (CurrentMainControl is TCustomEdgeBrowser) then
+  begin
+    if TCustomEdgeBrowser(CurrentMainControl).WebViewCreated then
+      Exit(True);
+
+    LStart := GetTickCount64;
+    while (GetTickCount64 - LStart < UInt64(ATimeoutMs)) do
+    begin
+      Application.ProcessMessages;
+      if TCustomEdgeBrowser(CurrentMainControl).WebViewCreated then
+        Exit(True);
+      Sleep(50);
+    end;
+    Application.ProcessMessages;
+    Result := TCustomEdgeBrowser(CurrentMainControl).WebViewCreated;
   end;
 end;
 
@@ -2017,6 +2044,7 @@ begin
           LLog.Add('Label Text: ' + TLabel(CurrentMainControl).Caption)
         else if CurrentMainControl is TCustomEdgeBrowser then
         begin
+          WaitForWebViewReady(3000);
           LLog.Add('Browser State: ' + IntToStr(Ord(TCustomEdgeBrowser(CurrentMainControl).BrowserControlState)));
           LLog.Add('WebView Created: ' + BoolToStr(TCustomEdgeBrowser(CurrentMainControl).WebViewCreated, True));
           LLog.Add(Format('Last Error Code: $%.8x', [TCustomEdgeBrowser(CurrentMainControl).LastErrorCode]));
@@ -2027,8 +2055,8 @@ begin
       if (CurrentMainControl is TCustomEdgeBrowser) and
          (not TCustomEdgeBrowser(CurrentMainControl).WebViewCreated) then
       begin
-        raise Exception.Create(Format('GUI-VERIFY-NO-WEBVIEW: WebView2 Runtime is not created (LastErrorCode: $%.8x). Functional WebView2 environment is required for GUI verification.',
-          [TCustomEdgeBrowser(CurrentMainControl).LastErrorCode]));
+        raise Exception.Create(TAsWishCommandLine.FormatNoWebViewMessage(
+          TCustomEdgeBrowser(CurrentMainControl).LastErrorCode));
       end;
 
       // Step 1: Open and scan project in GUI

@@ -49,6 +49,8 @@ type
     procedure Test13_SelectTargetHandle_OriginalInvalid_FallbackToCurrent;
     [Test]
     procedure Test14_OutputConsoleError_OriginalDiskHandle_WritesToOriginalHandle;
+    [Test]
+    procedure Test15_FormatNoWebViewMessage_DifferentiatesZeroAndErrorCode;
   end;
 
 implementation
@@ -292,6 +294,22 @@ begin
   Assert.IsTrue(GStubWriteFileCalled, 'WriteFile must be called');
   Assert.AreEqual(THandle(100), GStubWrittenHandle, 'WriteFile must write to original handle 100');
   Assert.IsTrue(GStubWrittenText.Contains('redirected error payload'));
+end;
+
+procedure TTestAsWishCommandLine.Test15_FormatNoWebViewMessage_DifferentiatesZeroAndErrorCode;
+var
+  LMsg0, LMsgErr: string;
+begin
+  LMsg0 := TAsWishCommandLine.FormatNoWebViewMessage(0);
+  LMsgErr := TAsWishCommandLine.FormatNoWebViewMessage($80070002);
+
+  Assert.IsTrue(LMsg0.Contains('GUI-VERIFY-NO-WEBVIEW'), 'Msg0 must contain GUI-VERIFY-NO-WEBVIEW');
+  Assert.IsTrue(LMsg0.Contains('LastErrorCode: $00000000'), 'Msg0 must mention code 0');
+  Assert.IsTrue(LMsg0.Contains('did not complete within timeout'), 'Msg0 must explain timeout/not reported');
+
+  Assert.IsTrue(LMsgErr.Contains('GUI-VERIFY-NO-WEBVIEW'), 'MsgErr must contain GUI-VERIFY-NO-WEBVIEW');
+  Assert.IsTrue(LMsgErr.Contains('LastErrorCode: $80070002'), 'MsgErr must contain real code');
+  Assert.IsFalse(LMsgErr.Contains('did not complete within timeout'), 'MsgErr must not claim timeout when code is non-zero');
 end;
 
 initialization

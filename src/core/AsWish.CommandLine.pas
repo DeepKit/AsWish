@@ -66,6 +66,7 @@ type
       AWriteFile: TWriteFileFunc = nil;
       AGetFileType: TGetFileTypeFunc = nil
     ): Boolean; overload; static;
+    class function FormatNoWebViewMessage(ALastErrorCode: DWORD): string; static;
   end;
 
 implementation
@@ -235,6 +236,15 @@ end;
 class procedure TAsWishCommandLine.OutputConsoleError(const AMessage: string; AOriginalHandle: THandle);
 begin
   OutputConsoleErrorEx(AMessage, AOriginalHandle);
+end;
+
+class function TAsWishCommandLine.FormatNoWebViewMessage(ALastErrorCode: DWORD): string;
+begin
+  if ALastErrorCode = 0 then
+    Result := 'GUI-VERIFY-NO-WEBVIEW: WebView2 Runtime initialization did not complete within timeout / no error code reported (LastErrorCode: $00000000). Functional WebView2 environment is required for GUI verification.'
+  else
+    Result := Format('GUI-VERIFY-NO-WEBVIEW: WebView2 Runtime is not created (LastErrorCode: $%.8x). Functional WebView2 environment is required for GUI verification.',
+      [ALastErrorCode]);
 end;
 
 class function TAsWishCommandLine.ParseGui(const AArgs: array of string): TAsWishParsedArgs;
