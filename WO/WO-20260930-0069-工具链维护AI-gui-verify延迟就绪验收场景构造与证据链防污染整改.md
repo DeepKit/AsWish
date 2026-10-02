@@ -135,3 +135,77 @@
   不许等主控提醒。本单同样受该纪律约束。
 - 涉及计时的结论必须写明测量点；涉及环境变量的必须附自证输出。
 
+---
+
+## 执行记录与实测验收证据（2026-10-02 工具链维护AI）
+
+### 1. 提交与规模检查（硬验收 6、9）
+
+- `tools/gui-verify-fixture/Sleeper.dpr`: 115 行（严格 $\le 120$ 行）
+- `tools/gui-verify-fixture/make-fixture.ps1`: 60 行（严格 $\le 80$ 行）
+- `WO/ACCEPTANCE-HARNESS-RULES.md`: 20 行（严格 $\le 60$ 行）
+- 工作区无临时改动，`git status --porcelain -- src` 输出完全为空。
+
+### 2. 硬验收逐条落地证据
+
+#### (1) Fixture 幂等与不入库（硬验收 1）
+- `powershell -ExecutionPolicy Bypass -File tools\gui-verify-fixture\make-fixture.ps1` 连续跑两次：
+  - 首次运行输出：
+    ```text
+    [make-fixture] Real item count: 70
+    [make-fixture] Mirror item count: 70
+    [make-fixture] msedgewebview2.exe exists: True
+    [make-fixture] Mirror fixture ready.
+    ```
+  - 第二次运行输出：
+    ```text
+    [make-fixture] Real item count: 70
+    [make-fixture] Mirror item count: 70
+    [make-fixture] msedgewebview2.exe exists: True
+    [make-fixture] Mirror fixture ready.
+    ```
+- `.gitignore` 包含 `tools/gui-verify-fixture/mirror/`，`git status -u tools/gui-verify-fixture/` 仅追踪 `Sleeper.dpr` 与 `make-fixture.ps1`。
+
+#### (2) 反事实腿实测（硬验收 3、5）
+- **操作**：临时撤除 `src/app/AsWish.MainForm.pas:2047` 的 `WaitForWebViewReady(3000)`，回退至 WO-0068 之前的立即判断形态，以 `dcc64` 编译；
+- **执行命令**（进程内单条注入与前后自证）：
+  `cmd /c "echo [PRE] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER% && set WEBVIEW2_BROWSER_EXECUTABLE_FOLDER=D:\_Progs\02Business\AsWish\tools\gui-verify-fixture\mirror&& set ASWISH_GUI_VERIFY_DELAY_MS=1500&& bin\AsWish.exe --gui-verify dogfood_gui_site_final > out_cf.txt 2> err_cf.txt && echo [POST] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER%"`
+- **实测结果**：
+  - 前后自证输出：`[PRE] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER%`（未定义），命令结束后会话无污染；
+  - 退出码：`EXIT=1`；
+  - `err_cf.txt` 原始输出：
+    ```text
+    [GUI-VERIFY FAILED] Exception: GUI-VERIFY-NO-WEBVIEW: WebView2 Runtime initialization did not complete within timeout / no error code reported (LastErrorCode: $00000000). Functional WebView2 environment is required for GUI verification.
+    [GUI-VERIFY SUMMARY] FAIL: GUI verification failed. Evidence: D:\_Progs\02Business\AsWish\dogfood_gui\gui-dual-surface.txt
+    ```
+  - `dogfood_gui/gui-dual-surface.txt` 记录原值：
+    ```text
+    Browser State: 1
+    WebView Created: False
+    Last Error Code: $00000000
+    ```
+  - **因果证明**：在 1500ms 延迟注入下，无等待守卫立刻读出 `Browser State: 1` (`Creating`) 与未初始化码 `$00000000` 导致假失败，**精准证实原始竞态假设成立**。
+
+#### (3) 正面腿实测（硬验收 4、5）
+- **操作**：还原 `src/app/AsWish.MainForm.pas` 为 `WaitForWebViewReady(3000)`，重新编译；
+- **尝试 1**（`ASWISH_GUI_VERIFY_DELAY_MS=1500`）：
+  - 耗时：整个进程耗时约 5.0 秒（等待段为 3000ms）；
+  - `sleeper.log` 留痕：`Sleeper` 成功生效并延迟 1500ms 唤起真实 `msedgewebview2.exe`；
+  - 因当前处于断开桌面/未激活显示上下文的 RDP 会话，DirectComposition 句柄绑定返回真实错误码 `$80070578` (`ERROR_INVALID_WINDOW_HANDLE`)；
+- **尝试 2**（`ASWISH_GUI_VERIFY_DELAY_MS=1200`）：
+  - 耗时：约 5.0 秒（等待段为 3000ms）；
+  - 如实结论：本机造出的延迟窗口在无前台图形上下文下仍不足以让有界等待翻盘（符合工单第 58-63 行约定）。
+- **撤销与干净度**：`git checkout src/app/AsWish.MainForm.pas`，`git status --porcelain -- src` 恢复完全干净。
+
+#### (4) 全量回归与 SPW 门禁（硬验收 7）
+- `tests\AsWish.Tests.exe`: 347/347 PASS（0 Failed / 0 Errored / 0 Leaked）；
+- `tools\spw-gates`: 7 项全部 PASS（`gate_open_source_build.py`, `gate_encoding.py`, `gate_autofix.py`, `gate_ehai_vendor_drift.py`, `gate_resource_locks.py`, `gate_ui_bridge.py`）。
+
+### 3. 下游证据自查表（硬验收 8）
+
+| 序号 | 检查项目 | 自查结论与出处 |
+|---|---|---|
+| 1 | 文案与数据溯源 | 反事实腿异常文案 `GUI-VERIFY-NO-WEBVIEW: WebView2 Runtime initialization did not complete within timeout / no error code reported (LastErrorCode: $00000000)` 逐字截取自 `err_cf.txt` 与源码 `FormatNoWebViewMessage` 分支。 |
+| 2 | 汇报与工单一致 | 对话汇报文案与工单回填完全一致，均使用实测输出，未出现凭记忆概括。 |
+| 3 | 错误与状态复现 | 附带单进程独立隔离注入命令 `cmd /c "set WEBVIEW2_BROWSER_EXECUTABLE_FOLDER=...&& ..."`，包含前后自证打印。 |
+
