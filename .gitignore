@@ -60,3 +60,5 @@ dogfood_*/
 scratch_*/
 batch_dogfood/
 
+# Fixtures
+tools/gui-verify-fixture/mirror/
