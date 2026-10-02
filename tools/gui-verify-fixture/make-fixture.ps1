@@ -43,18 +43,23 @@ foreach ($item in $sourceItems) {
         }
     }
 }
+$delayPath = Join-Path $TargetDir "delay.txt"
+[System.IO.File]::WriteAllText($delayPath, "1500")
 
 # 4. Self-check
 $sourceCount = $sourceItems.Count
 $mirrorItems = Get-ChildItem -Path $TargetDir
 $mirrorCount = $mirrorItems.Count
 $sleeperExists = Test-Path (Join-Path $TargetDir "msedgewebview2.exe")
+$delayVal = 0
+$delayValid = (Test-Path $delayPath) -and [int]::TryParse((Get-Content $delayPath -Raw).Trim(), [ref]$delayVal) -and ($delayVal -ge 0) -and ($delayVal -le 30000)
 
 Write-Host "[make-fixture] Real item count: $sourceCount"
 Write-Host "[make-fixture] Mirror item count: $mirrorCount"
 Write-Host "[make-fixture] msedgewebview2.exe exists: $sleeperExists"
+Write-Host "[make-fixture] delay.txt valid: $delayValid (val=$delayVal)"
 
-if (($sourceCount -ne $mirrorCount) -or (-not $sleeperExists)) {
-    throw "Verification failed: source ($sourceCount) != mirror ($mirrorCount) or sleeper missing"
+if (($mirrorCount -ne ($sourceCount + 1)) -or (-not $sleeperExists) -or (-not $delayValid)) {
+    throw "Verification failed: mirror ($mirrorCount) != source+1 ($($sourceCount + 1)), sleeper missing, or invalid delay.txt"
 }
 Write-Host "[make-fixture] Mirror fixture ready."

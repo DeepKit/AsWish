@@ -3,18 +3,29 @@ program Sleeper;
 {$APPTYPE CONSOLE}
 
 uses
-  Windows,
-  SysUtils,
-  Registry;
+  Windows, SysUtils, Registry, IOUtils;
 
 function GetDelayMs: Integer;
 var
-  S: string;
+  P, S: string;
+  V: Integer;
 begin
-  S := GetEnvironmentVariable('ASWISH_GUI_VERIFY_DELAY_MS');
-  Result := StrToIntDef(Trim(S), 1500);
-  if Result < 0 then
-    Result := 1500;
+  P := ExtractFilePath(ParamStr(0)) + 'delay.txt';
+  if not FileExists(P) then
+  begin
+    Writeln(ErrOutput, 'Sleeper: delay=1500 source=default');
+    Exit(1500);
+  end;
+  try
+    S := Trim(TFile.ReadAllText(P));
+    if (Length(S) > 0) and (S[1] = #$FEFF) then Delete(S, 1, 1);
+    if not TryStrToInt(Trim(S), V) or (V < 0) or (V > 30000) then raise Exception.Create('');
+    Writeln(ErrOutput, 'Sleeper: delay=' + IntToStr(V) + ' source=file');
+    Result := V;
+  except
+    Writeln(ErrOutput, 'Sleeper: invalid delay in delay.txt');
+    Halt(2);
+  end;
 end;
 
 function GetRealBrowserExe: string;
@@ -30,25 +41,17 @@ begin
     RegPath := 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
     if Reg.OpenKeyReadOnly(RegPath) then
     begin
-      if Reg.ValueExists('pv') then
-        Pv := Reg.ReadString('pv');
-      if (Folder = '') and Reg.ValueExists('location') then
-        Folder := Reg.ReadString('location');
+      if Reg.ValueExists('pv') then Pv := Reg.ReadString('pv');
+      if (Folder = '') and Reg.ValueExists('location') then Folder := Reg.ReadString('location');
       Reg.CloseKey;
     end;
   finally
     Reg.Free;
   end;
-
-  if Folder = '' then
-    Folder := 'C:\Program Files (x86)\Microsoft\EdgeWebView\Application';
-
+  if Folder = '' then Folder := 'C:\Program Files (x86)\Microsoft\EdgeWebView\Application';
   if FileExists(IncludeTrailingPathDelimiter(Folder) + 'msedgewebview2.exe') then
     Exit(IncludeTrailingPathDelimiter(Folder) + 'msedgewebview2.exe');
-
-  if Pv <> '' then
-    Folder := IncludeTrailingPathDelimiter(Folder) + Pv;
-
+  if Pv <> '' then Folder := IncludeTrailingPathDelimiter(Folder) + Pv;
   Result := IncludeTrailingPathDelimiter(Folder) + 'msedgewebview2.exe';
 end;
 
