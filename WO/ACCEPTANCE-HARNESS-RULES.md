@@ -1,0 +1,20 @@
+# 验收 Harness 纪律与证据防污染规范
+
+## 一、三项硬规则
+1. **注入仅限单命令进程级**：必须使用 `cmd /c "set X=Y&& exe ..."` 或 `X=Y cmd //c ...`；严禁 PowerShell 会话级 `$env:X=...` 或 `setx`，防止同会话后续正常路径被悄悄污染而制造假因果。
+2. **注入前后必须自证**：每条注入命令前后必须各打印一次环境变量（`echo %X%`），贴入证据，输出为空或未定义才算干净。
+3. **计时必须指明测量点**：等待段（守卫进入至就绪/退出）以进程内日志时间戳或专用计时为准；进程总耗时单独列出，禁止混同等待段阈值直接比较。
+
+## 二、--gui-verify 验收命令模板（可直接复制）
+### 1. 正常路径（无变量污染）
+cmd /c "echo [PRE] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER% && bin\AsWish.exe --gui-verify dogfood_gui_site_final > out.txt 2> err.txt && echo [POST] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER%"
+
+### 2. 强制失败路径（单进程内注入）
+cmd /c "echo [PRE] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER% && set WEBVIEW2_BROWSER_EXECUTABLE_FOLDER=D:\_repro\no_such_browser&& bin\AsWish.exe --gui-verify dogfood_gui_site_final > out.txt 2> err.txt && echo [POST] %WEBVIEW2_BROWSER_EXECUTABLE_FOLDER%"
+
+## 三、下游证据自查表
+| 序号 | 自查要求 | 落地准则 |
+|---|---|---|
+| 1 | 文案与数据溯源 | 汇报所有控制台文案与数字必须直接截取自原始输出或源码，严禁凭记忆改写。 |
+| 2 | 汇报与工单一致 | 对话汇报若与工单回填不一致，以复现实测为准，并显式标注真实版本。 |
+| 3 | 错误与状态复现 | 引用错误码/退出码必须附带完整、自包含且可直接复现的执行命令。 |
