@@ -12,10 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Runtime monochromatic / pure-color blank rejection guard (`SaveBitmapWithContentGuard` in `AsWish.UI.Types.pas`).
   - Emits clear diagnostic warnings (`[CAPTURE-WARN]`) and discards blank PNG evidence, preventing false-positive passes on silent capture failures.
   - Unit tests in `Test.AsWish.GUIDecisions.pas` asserting single-color rejection and multi-color acceptance.
-- **GUI Smoke Verification Gate (WO-0071, WO-0073, WO-0074)**:
+- **GUI Smoke Verification Gate (WO-0071, WO-0073, WO-0074, WO-0077, WO-0078, WO-0087)**:
   - Added `H3.gui-verify-smoke` (`tools/spw-gates/gate_gui_verify_smoke.py`) as a mandatory SPW gate.
   - Directly launches the GUI binary with `--gui-verify` in a clean environment, verifying WebView2 initialization, DOM recovery, and visual capture execution.
-- **External Release Boundary Guard (WO-0084, WO-0086)**:
+  - Hardened with Windows Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`) to eliminate lingering orphan processes, safe truncate cleanup avoiding environment delete guards, and configurable 180s timeout.
+- **Static Anti-Bypass Pattern Gate (WO-0087)**:
+  - Added `H4.bypass-patterns` (`tools/spw-gates/gate_bypass_patterns.py`) and waiver registry (`tools/spw-gates/h4_waivers.json`) to statically audit source code against bypass patterns.
+- **In-Repo Reproducible Evidence Generator (WO-0087)**:
+  - Added in-repo evidence generation tool (`tools/spw-evidence/generate_evidence.py`) ensuring 100% integrity across stdout text, byte length, and SHA-256 hashes.
+- **External Release Boundary Guard (WO-0084, WO-0086, WO-0087)**:
   - Added `H3.external-boundary` (`tools/spw-gates/gate_external_boundary.py`) to prevent internal governance markers or paths from entering release exports.
 - **Delayed Readiness Test Fixture (WO-0069, WO-0070, WO-0072)**:
   - Standalone `Sleeper.dpr` fixture and generator script (`tools/gui-verify-fixture/make-fixture.ps1`) for deterministic testing of WebView2 delay switches and timeout handling.
