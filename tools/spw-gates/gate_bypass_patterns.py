@@ -7,7 +7,13 @@ Scans Pascal source files against h4_patterns configured in spw-manifest.json:
 
 Enforces that every occurrence is tracked, audited, and explicitly justified in
 h4_waivers.json. Un-waived violations cause fail-closed rejection.
+Per WO-20261004-0089:
+- Validates governance fields (scope, approved_by, approved_at, expires_at)
+- Blocks unapproved ongoing waivers (scope=ongoing requires valid approved_by)
+- Blocks expired waivers (expires_at past today)
+- Blocks stale waivers (target file/line does not exist or target code doesn't match pattern)
 """
+from datetime import date, datetime
 import json
 import re
 import subprocess
@@ -18,31 +24,30 @@ from gate_lib import fail, ok, ROOT
 GATE_ID = "H4.bypass-patterns"
 
 
-def load_manifest_patterns() -> list[dict]:
+def load_manifest_config() -> tuple[list[dict], int]:
     manifest_path = ROOT / "spw-manifest.json"
     if not manifest_path.is_file():
         fail(GATE_ID, ["spw-manifest.json not found"])
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        return manifest.get("h4_patterns", [])
+        patterns = manifest.get("h4_patterns", [])
+        max_ongoing = manifest.get("h4_policy", {}).get("max_ongoing_waivers", 0)
+        return patterns, max_ongoing
     except Exception as e:
         fail(GATE_ID, [f"failed to parse spw-manifest.json: {e}"])
+        return [], 0
 
 
-def load_waivers() -> dict[tuple[str, str, int], str]:
-    """Return map of (pattern_id, file, line) -> rationale."""
+def load_waiver_data() -> list[dict]:
     waiver_path = ROOT / "tools" / "spw-gates" / "h4_waivers.json"
     if not waiver_path.is_file():
-        return {}
+        return []
     try:
         data = json.loads(waiver_path.read_text(encoding="utf-8"))
-        waivers = {}
-        for w in data.get("waivers", []):
-            key = (w["pattern_id"], w["file"].replace("\\", "/"), int(w["line"]))
-            waivers[key] = w.get("rationale", "")
-        return waivers
-    except Exception:
-        return {}
+        return data.get("waivers", [])
+    except Exception as e:
+        fail(GATE_ID, [f"failed to parse h4_waivers.json: {e}"])
+        return []
 
 
 def get_pascal_source_files() -> list[str]:
@@ -58,24 +63,118 @@ def get_pascal_source_files() -> list[str]:
         return sorted(files)
     except Exception as e:
         fail(GATE_ID, [f"git ls-files failed: {e}"])
+        return []
+
+
+def validate_waiver_governance(
+    waiver: dict,
+    pattern_regexes: dict[str, re.Pattern],
+    today_str: str,
+) -> tuple[str | None, str | None]:
+    """Validate a waiver entry for stale target, governance fields, and expiration."""
+    pid = waiver.get("pattern_id")
+    file_rel = waiver.get("file", "").replace("\\", "/")
+    line_no = waiver.get("line")
+    scope = waiver.get("scope")
+    approved_by = waiver.get("approved_by")
+    approved_at = waiver.get("approved_at")
+    expires_at = waiver.get("expires_at")
+
+    loc = f"{file_rel}:{line_no}"
+
+    # 1. Stale waiver check: file existence, line bounds, and pattern match
+    p = ROOT / file_rel
+    if not p.is_file():
+        return f"[HIGH] stale waiver: file {file_rel} does not exist", None
+
+    try:
+        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+    except Exception as exc:
+        return f"[HIGH] stale waiver: unable to read {file_rel}: {exc}", None
+
+    if not isinstance(line_no, int) or line_no < 1 or line_no > len(lines):
+        return f"[HIGH] stale waiver: {loc} line number invalid or out of bounds (file has {len(lines)} lines)", None
+
+    rx = pattern_regexes.get(pid)
+    target_line = lines[line_no - 1]
+    if not rx or not rx.search(target_line):
+        return f"[HIGH] stale waiver: {loc} pattern {pid} does not match code '{target_line.strip()[:60]}'", None
+
+    # 2. Scope validation
+    if scope not in ("baseline", "ongoing"):
+        return f"[HIGH] invalid waiver scope: {loc} scope='{scope}' (must be 'baseline' or 'ongoing')", None
+
+    # 3. Governance field validation
+    if scope == "ongoing":
+        if not approved_by or not str(approved_by).strip():
+            return f"[HIGH] unapproved ongoing waiver: {loc} pattern {pid} missing approved_by", None
+        if not approved_at or not str(approved_at).strip():
+            return f"[HIGH] unapproved ongoing waiver: {loc} pattern {pid} missing approved_at", None
+    elif scope == "baseline":
+        if not approved_by or not str(approved_by).strip():
+            warn = f"[WARN] baseline waiver without approver (historical debt): {loc}"
+            return None, warn
+
+    # 4. Expiration check
+    if expires_at and str(expires_at).strip():
+        exp_val = str(expires_at).strip()
+        try:
+            exp_date = datetime.strptime(exp_val, "%Y-%m-%d").date()
+            today_date = datetime.strptime(today_str, "%Y-%m-%d").date()
+            if exp_date <= today_date:
+                return f"[HIGH] waiver expired: {loc} pattern {pid} expired on {exp_val}", None
+        except ValueError:
+            return f"[HIGH] invalid expires_at format: {loc} '{exp_val}' (expected YYYY-MM-DD)", None
+
+    return None, None
 
 
 def main():
-    patterns = load_manifest_patterns()
+    patterns, max_ongoing = load_manifest_config()
     if not patterns:
         fail(GATE_ID, ["no h4_patterns defined in spw-manifest.json"])
 
-    waivers = load_waivers()
+    waivers_raw = load_waiver_data()
     source_files = get_pascal_source_files()
 
+    pattern_regexes = {p["id"]: re.compile(p["pattern"]) for p in patterns}
+    pattern_severities = {p["id"]: p.get("severity", "high") for p in patterns}
+
+    today_str = date.today().isoformat()
+    findings = []
+    warnings = []
+    valid_waivers = {}
+    ongoing_waivers = []
+
+    # 1. Audit all waiver entries in h4_waivers.json
+    for w in waivers_raw:
+        err, warn = validate_waiver_governance(w, pattern_regexes, today_str)
+        if err:
+            findings.append(err)
+        else:
+            key = (w["pattern_id"], w["file"].replace("\\", "/"), int(w["line"]))
+            valid_waivers[key] = w
+            if w.get("scope") == "ongoing":
+                ongoing_waivers.append(w)
+        if warn:
+            warnings.append(warn)
+
+    for warn in warnings:
+        print(f"[{GATE_ID}] {warn}")
+
+    if len(ongoing_waivers) > max_ongoing:
+        findings.append(
+            f"[HIGH] ongoing waivers ({len(ongoing_waivers)}) exceed policy threshold ({max_ongoing})"
+        )
+
+    # 2. Scan Pascal files against patterns
     all_hits = []
-    unwaived_findings = []
     summary_lines = []
 
     for p in patterns:
         pid = p["id"]
-        sev = p.get("severity", "high")
-        rx = re.compile(p["pattern"])
+        sev = pattern_severities.get(pid, "high")
+        rx = pattern_regexes[pid]
         pattern_hits = []
 
         for rel in source_files:
@@ -91,10 +190,10 @@ def main():
                 if rx.search(line):
                     pattern_hits.append((rel, line_no, line.strip()))
                     key = (pid, rel, line_no)
-                    if key in waivers:
-                        all_hits.append((pid, rel, line_no, "WAIVED", waivers[key]))
+                    if key in valid_waivers:
+                        all_hits.append((pid, rel, line_no, "WAIVED", valid_waivers[key].get("rationale", "")))
                     else:
-                        unwaived_findings.append(
+                        findings.append(
                             f"[{sev.upper()}] {pid} un-waived hit at {rel}:{line_no} -> {line.strip()[:80]}"
                         )
                         all_hits.append((pid, rel, line_no, "VIOLATION", ""))
@@ -105,10 +204,10 @@ def main():
     for s in summary_lines:
         print(f"[{GATE_ID}] {s}")
 
-    if unwaived_findings:
-        fail(GATE_ID, unwaived_findings)
+    if findings:
+        fail(GATE_ID, findings)
 
-    ok(GATE_ID, f"verified {len(all_hits)} hits; all findings accounted for in h4_waivers.json")
+    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for")
 
 
 if __name__ == "__main__":
