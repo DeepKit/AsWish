@@ -66,7 +66,13 @@
     "deepbase": {
       "integration_level": "L3"
     },
-    "code_retrieval": "explicit-resource-then-codebase-memory"
+    "code_retrieval": "explicit-resource-then-codebase-memory",
+    "evidence_generator": [
+      "python",
+      "-X",
+      "utf8",
+      "D:/_Progs/02Business/AsWish/tools/spw-evidence/generate_evidence.py"
+    ]
   },
   "flash_policy": {
     "staging_only": true,
@@ -183,7 +189,7 @@
         "utf8",
         "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_gui_verify_smoke.py"
       ],
-      "timeout": 120
+      "timeout": 180
     },
     {
       "gate_id": "H3.external-boundary",
@@ -196,6 +202,20 @@
         "-X",
         "utf8",
         "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_external_boundary.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "gate_id": "H4.bypass-patterns",
+      "required": true,
+      "claims": [
+        "counterfactual_bypass"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_bypass_patterns.py"
       ],
       "timeout": 120
     }
@@ -243,6 +263,9 @@
     ],
     "counterfactual_boundary": [
       "gate_external_boundary.py: internal governance markers or leaked export paths must fail"
+    ],
+    "counterfactual_bypass": [
+      "gate_bypass_patterns.py: un-waived TFile or OutputDebugString calls fail-closed"
     ]
   },
   "h4_patterns": [

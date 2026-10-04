@@ -1,0 +1,571 @@
+{
+  "waivers": [
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "Spikes/WO-0030-VCL-HighFidelity/TargetApp.dpr",
+      "line": 108,
+      "code": "TFile.WriteAllText(ExtractFilePath(ParamStr(0)) + 'RuntimeObservation.json', LJson, TEncoding.UTF8);",
+      "rationale": "Authorized non-spec disk operation"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/app/AsWish.MainForm.pas",
+      "line": 1812,
+      "code": "TFile.AppendAllText(FProgressFile, LLine + sLineBreak, TEncoding.UTF8);",
+      "rationale": "Fail-closed progress trace logging (WO-0075/WO-0080)"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/controllers/AsWish.Controller.pas",
+      "line": 992,
+      "code": "TFile.WriteAllText(LPath, LSb.ToString, TEncoding.UTF8);",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/controllers/AsWish.Controller.pas",
+      "line": 1459,
+      "code": "TFile.WriteAllText(LCandidatePath, LResult.Content, TEncoding.UTF8);",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/controllers/AsWish.Controller.pas",
+      "line": 1615,
+      "code": "TFile.WriteAllText(LOutPath, LSb.ToString, TEncoding.UTF8);",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/core/AsWish.Config.pas",
+      "line": 181,
+      "code": "TFile.WriteAllText(LPath, LObj.Format(2), TEncoding.UTF8);",
+      "rationale": "Application settings file save"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/core/AsWish.Logger.pas",
+      "line": 128,
+      "code": "TFile.AppendAllText(FLogPath, LLine + sLineBreak, TEncoding.UTF8);",
+      "rationale": "Direct log file append for diagnostic logging"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Decisions.pas",
+      "line": 211,
+      "code": "// replace with a bare TFile.WriteAllText.",
+      "rationale": "Authorized non-spec disk operation"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Prompts.pas",
+      "line": 58,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, ARelPath), AContent, TEncoding.UTF8);",
+      "rationale": "Authorized non-spec disk operation"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 341,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'scan-report.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 517,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'index.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 851,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, ATreeName + '.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 951,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'evidence.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 1337,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'problems.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 1442,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'bundles.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 1537,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'node-detail.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 1860,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'changeset-review.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.Render.pas",
+      "line": 2160,
+      "code": "TFile.WriteAllText(TPath.Combine(FBasePath, 'visual-preview.html'),",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.RenderDiff.pas",
+      "line": 162,
+      "code": "TFile.WriteAllText(TPath.Combine(ABasePath, 'difference.html'), LSb.ToString, TEncoding.UTF8);",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.RenderDiff.pas",
+      "line": 231,
+      "code": "TFile.WriteAllText(TPath.Combine(ABasePath, 'decisions.html'), LSb.ToString, TEncoding.UTF8);",
+      "rationale": "Export / preview artifact generation outside SpecStore core"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.SpecStore.pas",
+      "line": 151,
+      "code": "TFile.WriteAllText(AFullPath, AContent, TEncoding.UTF8);",
+      "rationale": "Authorized non-spec disk operation"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "src/services/AsWish.Services.VisualWorkflow.pas",
+      "line": 403,
+      "code": "TFile.WriteAllText(LHandoffFile, LSb.ToString, TEncoding.UTF8);",
+      "rationale": "Authorized non-spec disk operation"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.CandidateIngest.pas",
+      "line": 1112,
+      "code": "TFile.WriteAllText(LPath2, TAsWishCandidateIngest.FormatCandidateIntentYaml(LIntent2), TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Commons.pas",
+      "line": 151,
+      "code": "TFile.WriteAllText(LCsFile, 'id: \"cs-payment-test\"'#10 +",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Commons.pas",
+      "line": 177,
+      "code": "TFile.WriteAllText(LCsFile, 'id: \"cs-reject-demo\"'#10 +",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Commons.pas",
+      "line": 375,
+      "code": "TFile.WriteAllText(LAbs, LText, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Commons.pas",
+      "line": 392,
+      "code": "TFile.WriteAllText(LCsFile, Format('id: \"%s\"'#10 +",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 392,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 395,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'app.py'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1217,
+      "code": "TFile.WriteAllText(LCsFile, 'change_set_id: \"' + AId + '\"'#10 +",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1331,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'app.py'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1393,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1421,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1462,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'service.py'), 'def serve(): return True' + sLineBreak, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1517,
+      "code": "TFile.WriteAllText(TPath.Combine(LSub, 'core.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1553,
+      "code": "TFile.WriteAllText(TPath.Combine(LTree, 'function-tree.yaml'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1614,
+      "code": "TFile.WriteAllText(LCand,",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1670,
+      "code": "TFile.WriteAllText(LCand,",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1778,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1781,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'app.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Controller.pas",
+      "line": 1902,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'src\\MainForm.dfm'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.EHAI.Binding.pas",
+      "line": 160,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.EHAI.Binding.pas",
+      "line": 162,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'main.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Evidence.pas",
+      "line": 115,
+      "code": "TFile.WriteAllText(LAbsSourcePath, ASourceContent, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Evidence.pas",
+      "line": 195,
+      "code": "TFile.WriteAllText(LAbsFile, LSourceContent2, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.GUIDecisions.pas",
+      "line": 131,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.GUIDecisions.pas",
+      "line": 133,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'main.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.GUIDecisions.pas",
+      "line": 171,
+      "code": "TFile.WriteAllText(TPath.Combine(FDir, 'extra.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.GUIDecisions.pas",
+      "line": 174,
+      "code": "TFile.AppendAllText(TPath.Combine(FDir, 'README.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Scan.pas",
+      "line": 55,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, LName), '// fixture');",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.Snapshot.pas",
+      "line": 62,
+      "code": "TFile.WriteAllText(LFullPath, AContent, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.SpecStore.pas",
+      "line": 280,
+      "code": "TFile.WriteAllText(LPath, '# stale' + sLineBreak + 'html/', TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TextIO.pas",
+      "line": 64,
+      "code": "TFile.WriteAllBytes(APath, AContent);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 67,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'models/user.ts'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 72,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'data/users.json'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 113,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'README.md'), '# Demo', TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 148,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'Main.pas'), 'unit Main; interface implementation end.', TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 153,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, '.AsWish\\project-spec.yaml'), 'name: test', TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 154,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, '.AsWish\\snapshots\\view-tree.yaml'), 'tree: view', TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 192,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'SampleOrder.pas'), LContent, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 224,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'corpus.txt'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 275,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'docs\\corpus.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 281,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'App.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 333,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'docs\\01_req.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 339,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'src\\App.pas'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 350,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'src\\MainForm.dfm'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 405,
+      "code": "TFile.WriteAllBytes(TPath.Combine(LDir, 'docs', 'gbk.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 410,
+      "code": "TFile.WriteAllBytes(TPath.Combine(LDir, 'docs', 'utf16.txt'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.TreeBuilder.pas",
+      "line": 460,
+      "code": "TFile.WriteAllText(TPath.Combine(LDir, 'docs\\req.md'),",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Evolution.pas",
+      "line": 306,
+      "code": "TFile.WriteAllText(LMetaFile, LYaml, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.Compliant.pas",
+      "line": 126,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.Compliant.pas",
+      "line": 131,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'visual-binding.yaml'), LBindingYaml, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.Compliant.pas",
+      "line": 145,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'runtime-observation.json'), LObsJson, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.Diff.pas",
+      "line": 127,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.Diff.pas",
+      "line": 132,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'visual-binding.yaml'), LBindingYaml, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.Diff.pas",
+      "line": 146,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'runtime-observation.json'), LObsJson, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.DIRECT_DISK_WRITE",
+      "file": "tests/Test.AsWish.VisualWorkflow.Provenance.pas",
+      "line": 114,
+      "code": "TFile.WriteAllText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);",
+      "rationale": "Unit test fixture / test output setup"
+    },
+    {
+      "pattern_id": "H4.SILENT_INIT_FAILURE",
+      "file": "src/services/AsWish.Services.Decisions.pas",
+      "line": 557,
+      "code": "OutputDebugString(PChar('AsWish: ' + LError));",
+      "rationale": "Legacy state transition failure debug trace (BUG-7 prototype)"
+    },
+    {
+      "pattern_id": "H4.SILENT_INIT_FAILURE",
+      "file": "src/services/AsWish.Services.Decisions.pas",
+      "line": 561,
+      "code": "OutputDebugString(PChar('AsWish: ' + LError));",
+      "rationale": "Legacy state transition failure debug trace (BUG-7 prototype)"
+    },
+    {
+      "pattern_id": "H4.SILENT_INIT_FAILURE",
+      "file": "src/services/AsWish.Services.Decisions.pas",
+      "line": 571,
+      "code": "OutputDebugString(PChar('AsWish: ' + LError));",
+      "rationale": "Legacy state transition failure debug trace (BUG-7 prototype)"
+    },
+    {
+      "pattern_id": "H4.SILENT_INIT_FAILURE",
+      "file": "src/services/AsWish.Services.Decisions.pas",
+      "line": 575,
+      "code": "OutputDebugString(PChar('AsWish: ' + LError));",
+      "rationale": "Legacy state transition failure debug trace (BUG-7 prototype)"
+    }
+  ]
+}
