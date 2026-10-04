@@ -284,6 +284,78 @@ def check_manifest_gates(exported: set[str], manifest_bytes: bytes | None) -> li
     return findings
 
 
+def check_export_content_markers(exported: set[str]) -> list[str]:
+    """Scan all exported files for internal governance markers (WO-20261004-0087 Stage 1 item 3)."""
+    findings = []
+    markers = ["主控", "开发AI", "WorkBuddy", "工单", "BCW", "BetterCiv"]
+    statutory_triples = {
+        ("LICENSE", 178, "BetterCiv"),
+        ("NOTICE", 2, "BetterCiv"),
+        ("NOTICE", 57, "BCW"),
+        ("README.md", 375, "BetterCiv"),
+        ("installer/AsWish.iss", 12, "BetterCiv"),
+        ("protocol/NOTICE", 2, "BetterCiv"),
+        ("protocol/NOTICE", 57, "BCW"),
+        ("protocol/README.md", 122, "BetterCiv"),
+    }
+    binary_exts = {
+        ".exe", ".dll", ".pak", ".png", ".ico", ".res", ".zip", ".dcu", ".data",
+        ".identcache", ".local", ".tvsconfig", ".bpl"
+    }
+
+    try:
+        out = subprocess.run(
+            ["git", "archive", "--format=zip", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+        ).stdout
+        internal_ignore_patterns = [
+            r"(^|/)docs/07\.",
+            r"(^|/)docs/13\.",
+            r"(^|/)docs/15\.",
+            r"(^|/)docs/AsWish-Commons-PG",
+            r"(^|/)docs/归档/",
+            r"(^|/)docs/_archive/",
+            r"(^|/)docs/.*交接.*",
+            r"(^|/)WO/",
+            r"(^|/)\.workbuddy/",
+            r"(^|/)\.AsWish/",
+            r"(^|/)\.ai-workbench/",
+            r"(^|/)_repro/",
+        ]
+
+        with zipfile.ZipFile(io.BytesIO(out)) as zf:
+            for name in zf.namelist():
+                if name.endswith("/") or name not in exported:
+                    continue
+                if Path(name).suffix.lower() in binary_exts:
+                    continue
+                if name.startswith("tools/spw-gates/"):
+                    continue
+                if any(re.search(pat, name) for pat in internal_ignore_patterns):
+                    continue
+                # If working tree has modified file, test working tree content
+                p = ROOT / name
+                if p.is_file():
+                    try:
+                        text = p.read_text(encoding="utf-8", errors="replace")
+                    except Exception:
+                        text = zf.read(name).decode("utf-8", errors="replace")
+                else:
+                    text = zf.read(name).decode("utf-8", errors="replace")
+
+                for line_num, line in enumerate(text.splitlines(), 1):
+                    for m in markers:
+                        if m in line:
+                            if (name, line_num, m) in statutory_triples:
+                                continue
+                            findings.append(f"导出文件内容含内部治理标记: {name}:{line_num} 命中 '{m}'")
+    except Exception as e:
+        findings.append(f"扫描导出文件内容标记异常: {e}")
+    return findings
+
+
 def main() -> None:
     findings = []
     findings.extend(check_no_python_command_in_pascal())
@@ -351,6 +423,7 @@ def main() -> None:
         ref_findings, prose_hits = references_to_internal(exported)
         findings.extend(ref_findings)
         findings.extend(check_exported_python_files(exported))
+        findings.extend(check_export_content_markers(exported))
         if prose_hits:
             print(f"[{GATE}] 注意: 公开文档有 {prose_hits} 处指向未导出出处"
                   f"（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）")
@@ -365,4 +438,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except BaseException as e:
+        print(f"[{GATE}][ABORTED] {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(1)

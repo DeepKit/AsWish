@@ -1,13 +1,13 @@
 """H3.external-boundary: external boundary leak prevention.
 
 Guards against accidental leakage of internal governance artifacts or markers
-into the open source release (WO-20261004-0086 Stage 0).
+into the open source release (WO-20261004-0086 & WO-20261004-0087 Stage 0).
 
 Assertion 1: Paths candidate for release (untracked/dry-run or in git archive HEAD)
 must not match the REQUIRED_EXPORT_IGNORE blacklist.
 Assertion 2: Content of files candidate for release must not contain internal
 governance markers (主控, 开发AI, WorkBuddy, 工单, BCW, BetterCiv), reporting
-filename and matched term.
+filename, line number and matched term.
 """
 import io
 import re
@@ -44,14 +44,17 @@ GIT_ADD_BLACKLIST = [
 # Internal governance markers that must not appear in exported code/spec files
 INTERNAL_MARKERS = ["主控", "开发AI", "WorkBuddy", "工单", "BCW", "BetterCiv"]
 
-# Statutory attribution files where BetterCiv/BCW are authorized as copyright holder
+# Exact line-level statutory attribution triples (file, line_1_indexed, term)
+# per WO-20261004-0087 Stage 0 requirement 3
 STATUTORY_ALLOWLIST = {
-    "LICENSE",
-    "NOTICE",
-    "README.md",
-    "installer/AsWish.iss",
-    "protocol/NOTICE",
-    "protocol/README.md",
+    ("LICENSE", 178, "BetterCiv"),
+    ("NOTICE", 2, "BetterCiv"),
+    ("NOTICE", 57, "BCW"),
+    ("README.md", 375, "BetterCiv"),
+    ("installer/AsWish.iss", 12, "BetterCiv"),
+    ("protocol/NOTICE", 2, "BetterCiv"),
+    ("protocol/NOTICE", 57, "BCW"),
+    ("protocol/README.md", 122, "BetterCiv"),
 }
 
 # Internal files/dirs that are excluded from open source export
@@ -65,10 +68,14 @@ INTERNAL_PATTERNS = [
     r"(^|/)docs/归档/",
     r"(^|/)docs/_archive/",
     r"(^|/)docs/.*交接.*",
+    r"(^|/)docs/07\..*",
+    r"(^|/)docs/13\..*",
+    r"(^|/)docs/15\..*",
+    r"(^|/)docs/AsWish-Commons-PG.*",
     r"(^|/)AUDIT-REQUEST-",
     r"(^|/)AGENTS\.md$",
     r"(^|/)spw-evidence-.*\.json$",
-    r"(^|/)gate_external_boundary\.py$",  # self
+    r"(^|/)gate_(external_boundary|open_source_build)\.py$",  # self and export gate marker definitions
 ]
 
 BINARY_EXTENSIONS = {
@@ -133,49 +140,63 @@ def check_exported_paths(exported: set[str]) -> list[str]:
     return findings
 
 
+def get_candidate_files() -> list[str]:
+    """Get all candidate files from git ls-files and untracked unignored files.
+
+    Per WO-20261004-0087 Stage 0: no hardcoded scan directory whitelist.
+    Scans all tracked files plus untracked candidate files, filtering out
+    internal/export-ignored assets and binary extensions.
+    """
+    candidates = set()
+    try:
+        raw_tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT)
+        for b in raw_tracked.split(b"\0"):
+            if b:
+                rel = b.decode("utf-8", "replace").replace("\\", "/")
+                if not is_internal(rel):
+                    candidates.add(rel)
+    except Exception:
+        pass
+
+    try:
+        raw_untracked = subprocess.check_output(
+            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            cwd=ROOT
+        )
+        for b in raw_untracked.split(b"\0"):
+            if b:
+                rel = b.decode("utf-8", "replace").replace("\\", "/")
+                if not is_internal(rel):
+                    candidates.add(rel)
+    except Exception:
+        pass
+
+    return sorted(candidates)
+
+
 def check_content_markers() -> list[str]:
-    """Assert 2: Content of all candidate files for release must not contain internal markers."""
+    """Assert 2: Content of candidate files must not contain internal markers."""
     findings = []
+    candidates = get_candidate_files()
 
-    # Check all files in public candidate paths (src, cli, tests, protocol, tools, root)
-    scan_roots = ["src", "cli", "tests", "tools", "protocol", "installer"]
-    candidate_paths = []
-
-    for sr in scan_roots:
-        base = ROOT / sr
-        if not base.is_dir():
+    for rel in candidates:
+        p = ROOT / rel
+        if not p.is_file():
             continue
-        for p in base.rglob("*"):
-            if p.is_file():
-                rel = p.relative_to(ROOT).as_posix()
-                if not is_internal(rel) and "mirror" not in p.parts:
-                    candidate_paths.append((p, rel))
-
-    # Also check tracked/unignored files at root
-    for p in ROOT.iterdir():
-        if p.is_file():
-            rel = p.relative_to(ROOT).as_posix()
-            if not is_internal(rel):
-                ign = subprocess.run(
-                    ["git", "check-ignore", "-q", rel],
-                    cwd=ROOT,
-                )
-                if ign.returncode != 0:
-                    candidate_paths.append((p, rel))
-
-    for p, rel in candidate_paths:
         if p.suffix.lower() in BINARY_EXTENSIONS:
             continue
+
         try:
-            content = p.read_text(encoding="utf-8", errors="replace")
+            lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
         except Exception:
             continue
 
-        for m in INTERNAL_MARKERS:
-            if m in ("BetterCiv", "BCW") and rel in STATUTORY_ALLOWLIST:
-                continue
-            if m in content:
-                findings.append(f"内容含内部治理标记: {rel} 命中 '{m}'")
+        for line_num, line in enumerate(lines, 1):
+            for m in INTERNAL_MARKERS:
+                if m in line:
+                    if (rel, line_num, m) in STATUTORY_ALLOWLIST:
+                        continue
+                    findings.append(f"内容含内部治理标记: {rel}:{line_num} 命中 '{m}'")
 
     return findings
 
@@ -183,21 +204,31 @@ def check_content_markers() -> list[str]:
 def main():
     findings = []
 
-    # 1. Check git add dry-run for blacklisted paths
-    findings.extend(check_git_add_dry_run())
+    # 1. Check dry-run leak risks
+    dry_run_findings = check_git_add_dry_run()
+    findings.extend(dry_run_findings)
 
-    # 2. Check exported paths against blacklist
+    # 2. Check exported paths in git archive HEAD
     exported = get_exported_paths()
     if exported:
-        findings.extend(check_exported_paths(exported))
+        export_findings = check_exported_paths(exported)
+        findings.extend(export_findings)
 
-    # 3. Check content of candidate release files for markers
-    findings.extend(check_content_markers())
+    # 3. Check content markers across all candidate files
+    content_findings = check_content_markers()
+    findings.extend(content_findings)
 
     if findings:
         fail(GATE_ID, findings)
-    ok(GATE_ID, f"外部边界干净（检查通过）")
+
+    ok(GATE_ID, "外部边界干净（检查通过）")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except BaseException as e:
+        print(f"[{GATE_ID}][ABORTED] {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(1)

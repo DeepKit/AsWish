@@ -31,6 +31,10 @@ docs/归档/         export-ignore
 docs/_archive/     export-ignore
 docs/*交接*         export-ignore
 docs/*交接包*       export-ignore
+docs/07.*          export-ignore
+docs/13.*          export-ignore
+docs/15.*          export-ignore
+docs/AsWish-Commons-PG* export-ignore
 AUDIT-REQUEST-*    export-ignore
 
 src/services/AsWish.Binding.HB.pas -text diff
