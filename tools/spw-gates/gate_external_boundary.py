@@ -201,6 +201,64 @@ def check_content_markers() -> list[str]:
     return findings
 
 
+CREDENTIAL_PATTERNS = [
+    re.compile(r"ghp_[A-Za-z0-9]{20,}"),
+    re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
+]
+
+
+def mask_secret(secret: str) -> str:
+    """Mask token showing only first 8 chars and total length (WO-20261004-0090)."""
+    prefix = secret[:8]
+    return f"{prefix}... (length={len(secret)})"
+
+
+def check_git_config_credentials() -> list[str]:
+    """Check git config for embedded PAT credentials (WO-20261004-0090 Stage 5)."""
+    findings = []
+    try:
+        res = subprocess.run(
+            ["git", "config", "--list", "--show-origin"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=True,
+        )
+        for line in res.stdout.splitlines():
+            for pat in CREDENTIAL_PATTERNS:
+                m = pat.search(line)
+                if m:
+                    secret = m.group(0)
+                    origin = line.split("\t")[0] if "\t" in line else "git-config"
+                    findings.append(f"git 配置含明文凭据: {origin} -> {mask_secret(secret)}")
+    except Exception as e:
+        findings.append(f"检查 git config 凭据异常: {e}")
+    return findings
+
+
+def check_file_credentials() -> list[str]:
+    """Check repo files for embedded GitHub PAT credentials (WO-20261004-0090 Stage 5)."""
+    findings = []
+    candidates = get_candidate_files()
+    for rel in candidates:
+        p = ROOT / rel
+        if not p.is_file() or p.suffix.lower() in BINARY_EXTENSIONS:
+            continue
+        try:
+            content = p.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        for line_num, line in enumerate(content.splitlines(), 1):
+            for pat in CREDENTIAL_PATTERNS:
+                m = pat.search(line)
+                if m:
+                    secret = m.group(0)
+                    findings.append(f"文件含明文 GitHub 凭据: {rel}:{line_num} -> {mask_secret(secret)}")
+    return findings
+
+
 def main():
     findings = []
 
@@ -217,6 +275,12 @@ def main():
     # 3. Check content markers across all candidate files
     content_findings = check_content_markers()
     findings.extend(content_findings)
+
+    # 4. Check credentials in git config and candidate files (WO-20261004-0090)
+    config_cred_findings = check_git_config_credentials()
+    findings.extend(config_cred_findings)
+    file_cred_findings = check_file_credentials()
+    findings.extend(file_cred_findings)
 
     if findings:
         fail(GATE_ID, findings)
