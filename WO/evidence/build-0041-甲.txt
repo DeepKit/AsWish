@@ -1,0 +1,7 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\app\AsWish.MainForm.pas(1416) Warning: W1057 Implicit string cast from 'AnsiString' to 'string'
+24896 lines, 2.55 seconds, 6894920 bytes code, 691208 bytes data.
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+30519 lines, 3.12 seconds, 9514992 bytes code, 861368 bytes data.

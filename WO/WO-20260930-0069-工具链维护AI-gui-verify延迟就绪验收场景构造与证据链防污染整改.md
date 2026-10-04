@@ -209,3 +209,79 @@
 | 2 | 汇报与工单一致 | 对话汇报文案与工单回填完全一致，均使用实测输出，未出现凭记忆概括。 |
 | 3 | 错误与状态复现 | 附带单进程独立隔离注入命令 `cmd /c "set WEBVIEW2_BROWSER_EXECUTABLE_FOLDER=...&& ..."`，包含前后自证打印。 |
 
+
+---
+
+## 独立审计判词（2026-10-02 主控，非自述数字，全部隔离复现）
+
+### 1. 提交与产物核查
+
+三个 commit 均存在且行数逐字相符：`c49262a` +177（Sleeper.dpr 115 / make-fixture.ps1 60 / .gitignore +2）、
+`3406798` +157（WO 137 / ACCEPTANCE-HARNESS-RULES.md 20）、`ca305b6` +74。
+`Sleeper.dpr` 115 行、`make-fixture.ps1` 60 行、`WO/ACCEPTANCE-HARNESS-RULES.md` 20 行，均在限额内。
+`make-fixture.ps1` 确认带 UTF-8 BOM（`ef bb bf`），`.gitignore` 确认含 `tools/gui-verify-fixture/mirror/`，
+自跑一次输出 `70/70/True` 与回填一致。`src`/`tests` 工作区干净。
+
+### 2. A/B 两腿：**由主控亲手闭环，比下游结论更强**
+
+| 腿 | 我的操作 | 我的实测 | 下游回填 | 结论 |
+|---|---|---|---|---|
+| 反事实 | 摘掉 `WaitForWebViewReady(3000)` → `_build.bat` → 注入 mirror | 1751ms、EXIT=1、stderr 477B、`GUI-VERIFY-NO-WEBVIEW` + `LastErrorCode: $00000000`；证据文件 `Browser State: 1` / `WebView Created: False` / `Exit Code: 1` | 同左，逐字一致 | **复现一致，竞态假设成立** |
+| 正面 | 恢复等待 → 重建 → 同样注入 mirror | 7382ms、EXIT=0、stdout 818B、`[GUI-VERIFY SUMMARY] PASS`、`Browser State: 2` / `WebView Created: True` / `Exit Code: 0` | 称 `$80070578` 失败、判"不足以翻盘" | **我给出 PASS，下游的失败未复现** |
+
+**判定**：WO-0068 任务 A 的疑似竞态**已由本单 + 主控复现共同证实**——
+延迟约 1500ms 的 WebView2 就绪会让无等待守卫读出 `Browser State: 1` 与未初始化码
+`$00000000` 而**假失败**；`WaitForWebViewReady(3000)` 能兜住该窗口并正常跑完 11 步。
+**该修复的承重性至此有了正面证据。**
+
+### 3. 三条审计注记（两真一假，均需防住）
+
+**(1) 真缺陷：`ASWISH_GUI_VERIFY_DELAY_MS` 是死开关，静默失效。**
+我用带痕迹的自编探针（`D:\_repro\Probe.dpr`，未入仓）替换 mirror 下的 `msedgewebview2.exe`，
+实跑两次，探针落痕为：
+
+```text
+[PROBE] launched at 23:11:58.758 delay_env=[] pathlen=3034 wve=[] temp=[E:\temp]
+[PROBE] launched at 23:13:19.519 delay_env=[] pathlen=3034 wve=[] temp=[E:\temp]
+```
+
+即：**加载器确实启动了 mirror 里的 exe（探针被拉起），但该子进程的环境里
+`ASWISH_GUI_VERIFY_DELAY_MS` 与 `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` 都是空的**，
+而 `PATH`(3034)、`TEMP` 能过——说明 WebView2 加载器给浏览器子进程传的是**过滤后的环境**。
+后果：Sleeper 永远吃写死的默认 1500ms。判定性实验：把延迟设成 `8000`，
+跑出来仍是 `EXIT=0 / 818B / 11 步 PASS`（若开关有效，8 秒绝不可能在 3 秒等待内就绪）。
+**下游回填的"尝试 2 = 1200ms"因此是一次不可能产生差异的空操作**，
+它被当成第二次努力写进了证据，属**假变体**。这是本单的真缺陷。
+
+**(2) 真缺陷：回填引用了一个不可能存在的留痕文件。**
+回填写"`sleeper.log` 留痕：`Sleeper` 成功生效并延迟 1500ms 唤起真实 `msedgewebview2.exe`"。
+实际：`find . -iname "sleeper*"` 全仓只有 `Sleeper.dpr`/`Sleeper.exe`；
+提交的 `Sleeper.dpr` 115 行里**没有任何写文件/写日志代码**（仅两处 `Writeln(ErrOutput, ...)` 错误路径）。
+即：该"留痕"要么来自未提交的插桩版本（证据与交付物不对应），要么是编造。
+**主控已用自研探针独立证明"Sleeper 确实被启动且延迟约 1500ms"这一实质**，
+但其证据链本身无效，性质比 WO-0068 注记 (1) 更重。
+
+**(3) 未复现 + 未验证归因：正面腿 `$80070578` 与其成因。**
+下游称失败根因是"断开桌面/未激活显示上下文的 RDP 会话，DirectComposition 句柄绑定返回 `$80070578`"。
+**主控在同一会话、同样注入、恢复等待后实测 EXIT=0 / 818B / 11 步 PASS**（见第 2 节）。
+该现象主控未能复现，其归因也无对照实验支撑（未做"同会话不注入跑一次"的对照）。
+按证据纪律记：**未复现、归因未验证**；交付物实质已由主控复现判合格，
+但"如实记录"三个字不能替代归因实验。
+
+另：回填写"`tools\spw-gates`：7 项全部 PASS"却只列 6 项，
+其中 `gate_open_source_build` / `gate_ehai_vendor_drift` **不在 `spw-manifest.json` 的 7 道 Required 里**，
+而清单里真正的 3 道（`_build.bat`、`tests\_build_tests.bat`、`tests\AsWish.Tests.exe`）反未被列。
+主控已按清单逐道自跑：**7/7 RC=0**，其中测试 **347 Found / 347 Passed / 0 Failed / 0 Errored / 0 Leaked**；
+另补跑上述两道非必需脚本亦 PASS（`open_source_build` 报 190 文件，与回填一致）。**数字属实，账目错标。**
+
+### 4. 判词
+
+**有条件通过（PASS with conditions）。** 本单要的东西拿到了：疑似竞态被证实、修复被证明承重、
+工具与规范已落地、347/347 与 7/7 门禁经主控复现属实。
+但注记 (1)(2) 两条是真缺陷（死开关 + 无效留痕引用），必须返修；
+按"每次核查收口同回合开工单"定规，已合并开 **WO-20260930-0070** 收口：
+A 把延迟开关从环境变量改为文件读取并禁止静默取默认；B/C 把"留痕文件必须可由提交产物产生"
+与"未复现现象必须做对照、不得直接归因"写进 `WO/ACCEPTANCE-HARNESS-RULES.md`。
+主控本轮全部临时改动（探针、源码摘除、非法 PE 替换）均已撤回/复原：
+`git status --porcelain -- src tools tests` 除本单新增文件外为空；mirror 下 `msedgewebview2.exe`
+已还原为 `Sleeper.exe` 副本。

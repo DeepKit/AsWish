@@ -5,6 +5,12 @@
 - 承接方：有 `.BetterCiv` / `00Common/skills` 写权限的维护AI（与 WO-0042 同侧，可同人顺序执行）
 - 优先级：P1 · 单 commit ≤200 行，按 P-1→P-2→P-3 顺序三批提交
 
+> **2026-09-30 主控更新（零开工复核）**：主控按 `WO-20260924-0048-完工核验报告-未开工.md`
+> 的口径重跑了一遍，结论不变——**仍是零行开工**：`bcw_work_system` 全树搜不到
+> `commons_lesson` / `commons-sync` / `publish_consent`，`migrations/` 仍只有 3 个文件
+> （最新 `2026-09-02_daily_record_and_production_line.sql`），无 commons 版本号。
+> 老板 2026-09-26 已决定另找 AI 开发本单。**下游 WO-0049 的 P-5 端到端验收整条挂在本单上。**
+
 ## 任务（细节以设计文档为准，此处只列验收）
 
 | 步 | 内容 | 硬验收 |

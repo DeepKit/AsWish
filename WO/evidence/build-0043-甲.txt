@@ -1,0 +1,8 @@
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\services\AsWish.Services.Commons.pas(142) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list
+24994 lines, 2.77 seconds, 6899416 bytes code, 691600 bytes data.
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+D:\_Progs\02Business\AsWish\src\services\AsWish.Services.Commons.pas(142) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list
+30677 lines, 3.39 seconds, 9522192 bytes code, 861728 bytes data.

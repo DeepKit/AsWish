@@ -4,6 +4,23 @@
   维护AI 执行。补丁包三件齐（remap_apply.py / README.md / review_queue.md，后者已回填
   主控 §C 五项裁定，无待老板项）。
 
+> **2026-09-30 主控更新（实测，非采信票面）**：
+> ① Phase 1 的 1:1 重映射**已被人执行过**——`remap_apply.py` dry-run 从开票时的 76 处
+>    降为今天的 **0 处**可替换，但本票"执行记录"节仍为空，**无人回填**。
+> ② Phase 1 冒烟判据**不过**：`bcw.py verify-pools` 今天退出码 **7**
+>    （L1缺:主力别名不在网关models_usable / L2孤儿 / L3γ探针失败），
+>    连重映射目标名 `claude-glm-5.3` / `claude-gpt-5.6-sol` / `claude-sonnet-5` /
+>    `claude-qwen3.8-max` 也大量不在册。**先归因（网关目录变了，还是 `models_usable`
+>    取法受 401 影响），不许照旧名单再 remap 一次。**
+> ③ 票面声称"补齐"的 `README.md` 与 `review_queue.md` **不在盘上**
+>    （`D:/BCW/inbox/bcw/aswish-wo0040/` 只有 `remap_apply.py` 和
+>    `expert-model-policy.json.bak`），Phase 2 的 28 条队列无清单可执行。
+> ④ Phase 3 六项加固锚点（`MODEL_NOT_IN_POOL` / `MEETING_NO_QUORUM` 等）0 命中 ⇒ 全未做。
+>
+> 以上全部由 **WO-20260930-0065** 承接（T-1 归因 / T-2 补清单并收口 Phase 2 /
+> T-3 Phase 3 六项加固）。**本票不要再整体重新认领**；
+> §C 五项主控裁定继续有效，直接采用，不要重复上报老板。
+
 - 下发时间：2026-09-23 (GMT+8)
 - 下发人：Amy（代甲的执行成果打包）
 - 承接方：有 `D:\_Progs\.BetterCiv` 与 `D:\_Progs\00Common\skills` 写权限的维护AI（bcw/luoji）
