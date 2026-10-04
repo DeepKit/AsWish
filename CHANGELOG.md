@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Delayed Readiness Test Fixture (WO-0069, WO-0070, WO-0072)**:
   - Standalone `Sleeper.dpr` fixture and generator script (`tools/gui-verify-fixture/make-fixture.ps1`) for deterministic testing of WebView2 delay switches and timeout handling.
 
+- **Master Quality Gates Runner (WO-0088)**:
+  - Added in-repo master quality gate runner (`tools/spw-gates/run_all_gates.py`) dynamically executing all 12 gates registered in `spw-manifest.json`.
+  - Built-in guard against unmanaged gate scripts in `tools/spw-gates/` preventing gate drift.
+  - Aligned CI pipeline (`.github/workflows/build.yml`) to invoke the master gate runner directly.
+- **H4 Bypass Waiver Governance (WO-0089)**:
+  - Upgraded waiver ledger (`tools/spw-gates/h4_waivers.json`) with governance metadata (`scope`, `approved_by`, `approved_at`, `expires_at`).
+  - Added strict anti-stale assertions (verifying file existence, line bounds, and pattern hit matching), unapproved ongoing waiver rejection, and expiration checks in `gate_bypass_patterns.py`.
+- **Open-Source Export & Vendor Drift Gate Registration (WO-0088)**:
+  - Formally registered `G.open-source-build` (`gate_open_source_build.py`) and `G.vendored-upstream-drift` (`gate_ehai_vendor_drift.py`) in `spw-manifest.json`.
+  - Added `tools/spw-evidence/README.md` and authorized it in `gate_open_source_build.py`.
+
 ### Fixed
 - **Fail-Closed Progress Logging (WO-0075, WO-0080, WO-0081)**:
   - In `AsWish.MainForm.pas`, step-by-step state progress is flushed to `gui-verify-progress.txt` upon entering and exiting each verification step.
@@ -42,14 +53,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Standardized project paths with `TPath.GetFullPath` in `AsWish.Services.Project.pas`.
 
 ### Changed
-- **Required Gate Coverage (WO-0082, WO-0086)**:
-  - `spw-manifest.json` expanded to 9 mandatory gates (`H1.resource-locks`, `H2.compile-build`, `H2.compile-tests`, `H2.unit-tests`, `H3.encoding-guard`, `H3.runtime-autofix`, `H3.deep-ui-test`, `H3.gui-verify-smoke`, `H3.external-boundary`).
+- **Required Gate Coverage (WO-0082, WO-0086, WO-0088)**:
+  - `spw-manifest.json` expanded to 12 mandatory gates (`H1.resource-locks`, `H2.compile-build`, `H2.compile-tests`, `H2.unit-tests`, `H3.encoding-guard`, `H3.runtime-autofix`, `H3.deep-ui-test`, `H3.gui-verify-smoke`, `H3.external-boundary`, `H4.bypass-patterns`, `G.open-source-build`, `G.vendored-upstream-drift`).
   - Open-source export gate (`gate_open_source_build.py`) now validates manifest gate script completeness and enforces consistency between working tree and commit HEAD.
 - **Ignore Rules Hardening (WO-0084, WO-0086)**:
   - Updated `.gitignore` and `.gitattributes` to explicitly ignore and export-ignore internal governance structures (`.AsWish/`, `.ai-workbench/`, `_repro/`, `_audit_*`).
 
 ### Security
-- Hardened repository boundary gate (`H3.external-boundary`) to prevent internal governance markers or unexported paths from leaking into open-source release distributions.
+- **Credential Sanitization & GitHub PAT Sentinel (WO-0090)**:
+  - Sanitized git remote URL to eliminate embedded plaintext PAT tokens and configured Git Credential Manager.
+  - Added fail-closed PAT detection sentinel in `gate_external_boundary.py` scanning git configuration and repository text for `ghp_` and `github_pat_` tokens, outputting masked diagnostics without echoing secret keys.
+- **Release Boundary Hardening (WO-0084, WO-0086, WO-0087)**:
+  - Hardened repository boundary gate (`H3.external-boundary`) to prevent internal governance markers or unexported paths from leaking into open-source release distributions.
 
 ## [0.1.0] - 2026-09-05
 
