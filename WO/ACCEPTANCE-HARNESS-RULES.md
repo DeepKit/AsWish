@@ -8,6 +8,8 @@
 5. **严禁无差异空变体**：多轮尝试必须指明与上一轮的实质变量差异与预期影响；无实质变更的重复执行禁止列为有效尝试。
 6. **未复现归因必须对照**：凡异常或未复现结论，必须附至少一条同会话单变量对照实验，未验证假设必须显式标注"未复现"或"归因假设，未验证"，禁止将未经对照的推测作为事实。
 7. **必需门禁必须覆盖产品自身的真实运行路径**：`H3.deep-ui-test` 源码自述 "static bridge dispatch audit; deep UI runtime is the GUI test's job"，0.1s 跑完，属于静态审计；不得把静态审计的绿灯当作运行时绿灯的证据，必须配置真实 GUI 运行门禁（如 `H3.gui-verify-smoke`）直跑产品自身完整路径。
+8. **门禁退出必须自报家门与防环境删除守卫（WO-0077）**：每道 gate 在任何退出路径上都必须至少输出一次自己的 gate ID；清理类操作不得使用会触发环境删除守卫的 API（如 `unlink`/`rm`），改用覆盖写/截断写；致命异常须在顶层捕获并在退出前输出 `[<GATE_ID>][ABORTED] <异常类名>: <消息>`，禁止出现 RC≠0 但 stdout 无 gate ID 的静默死亡形态。
+9. **环境删除守卫排查隔离（WO-0078）**：环境级安全删除守卫由 `CODEBUDDY_TOOL_CALL_ID` 与 `CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR` 驱动，跨会话共享预算耗尽时会直接抛 SystemExit；若门禁报 RC≠0 且 stdout 无 gate ID，先执行 `env -u CODEBUDDY_TOOL_CALL_ID -u CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR <命令>` 重跑以排除环境守卫配额干扰，再判定产品。
 
 ## 二、--gui-verify 验收命令模板（可直接复制）
 ### 1. 正常路径（无变量污染）

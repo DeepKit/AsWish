@@ -78,3 +78,26 @@ cli\vendor\shim\sitecustomize.py:843-875`），它在 `Path.unlink` 内部直接
 
 - 全部实测证据回填本文件；**自建自跑**，不许引用主控数字。
 - 发现新缺陷/遗留/疑似项**同回合开工单**（含默认路线），不许写"建议另开单"。
+
+
+---
+
+## 交付与验收实测留痕（2026-10-04）
+
+### 1. 反事实自证（清理抛 BaseException / SystemExit）
+- 测试代码：临时在清理块注入 `raise SystemExit("safe-delete guard simulation")`
+- 执行输出：
+  ```text
+  [H3.gui-verify-smoke][ABORTED] SystemExit: safe-delete guard simulation
+  RC=1
+  ```
+- 结果：自报门禁 ID，不再静默死亡，自证通过。
+
+### 2. 正常路径验证
+- 命令：`python -X utf8 tools\spw-gates\gate_gui_verify_smoke.py`
+- 输出：`[H3.gui-verify-smoke] PASS RC=0 stdout=819B [PASS]=12`
+- 结果：正常腿 RC=0 成立。
+
+### 3. 规则落纸
+- `WO/ACCEPTANCE-HARNESS-RULES.md` 第 8 条已落纸。
+- 全量门禁回归：10/10 RC=0；测试 348/348。
