@@ -170,6 +170,34 @@
         "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_ui_bridge.py"
       ],
       "timeout": 120
+    },
+    {
+      "gate_id": "H3.gui-verify-smoke",
+      "required": true,
+      "claims": [
+        "counterfactual_smoke"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_gui_verify_smoke.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "gate_id": "H3.external-boundary",
+      "required": true,
+      "claims": [
+        "counterfactual_boundary"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_external_boundary.py"
+      ],
+      "timeout": 120
     }
   ],
   "claim_evidence": {
@@ -209,6 +237,12 @@
     ],
     "counterfactual_8": [
       "gate_ui_bridge.py: bridge dispatch audit deterministic on Render.pas + MainView.pas"
+    ],
+    "counterfactual_smoke": [
+      "gate_gui_verify_smoke.py: 0ms wait guard or failed WebView2 causes verification to fail"
+    ],
+    "counterfactual_boundary": [
+      "gate_external_boundary.py: internal governance markers or leaked export paths must fail"
     ]
   },
   "h4_patterns": [

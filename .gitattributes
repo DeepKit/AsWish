@@ -15,6 +15,12 @@ WO/                export-ignore
 .workbuddy/        export-ignore
 .AsWish/           export-ignore
 .ai-workbench/     export-ignore
+_repro/            export-ignore
+_audit_out.txt     export-ignore
+_audit_err.txt     export-ignore
+err_file           export-ignore
+out_file           export-ignore
+AGENTS.md          export-ignore
 
 # Internal audit / handover / onboarding material that lives outside WO/. Found
 # while verifying the export list: the numbered docs under docs/ are product and
@@ -22,6 +28,7 @@ WO/                export-ignore
 # handover note and the product-manager onboarding pack are not, and one audit
 # request was sitting at the repository root. All excluded by pattern below.
 docs/归档/         export-ignore
+docs/_archive/     export-ignore
 docs/*交接*         export-ignore
 docs/*交接包*       export-ignore
 AUDIT-REQUEST-*    export-ignore

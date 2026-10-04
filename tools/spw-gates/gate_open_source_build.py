@@ -18,11 +18,12 @@ this gate itself would otherwise have missed.
    clean clone built fine and failed 6 tests. A reference to an ignored path
    is invisible to the build, so it is checked statically here.
 """
+import io
+import json
 import re
 import subprocess
 import sys
 import zipfile
-import io
 from pathlib import Path
 
 GATE = "G.open-source-build"
@@ -53,13 +54,26 @@ INTERNAL_PATTERNS = [
     (r"(^|/)\.AsWish/", "protocol workspace state"),
     (r"(^|/)\.ai-workbench/", "workbench state"),
     (r"(^|/)\.claude/", "local agent state"),
+    (r"(^|/)_repro/", "internal repro directory"),
+    (r"(^|/)_audit_(out|err)\.txt$", "internal audit log"),
+    (r"(^|/)(err_file|out_file)$", "internal temp runner output"),
     (r"(^|/)AUDIT-REQUEST-", "internal audit request"),
     (r"(^|/)AUDIT-VERDICT-", "internal audit verdict"),
     (r"(^|/)\.env", "environment / secrets"),
     (r"(^|/)(id_rsa|.*\.pem|.*\.p12|.*\.key)$", "key material"),
 ]
 
-REQUIRED_EXPORT_IGNORE = ["WO/", ".workbuddy/", ".AsWish/", ".ai-workbench/"]
+REQUIRED_EXPORT_IGNORE = [
+    "WO/",
+    ".workbuddy/",
+    ".AsWish/",
+    ".ai-workbench/",
+    "_repro/",
+    "_audit_out.txt",
+    "_audit_err.txt",
+    "err_file",
+    "out_file",
+]
 RELEASE_ESSENTIALS = ["README.md", "LICENSE", "NOTICE"]
 
 
@@ -67,8 +81,8 @@ def read(p: Path) -> str:
     return p.read_bytes().decode("utf-8", errors="replace")
 
 
-def exported_files() -> set[str]:
-    """Names inside `git archive HEAD`, read via zipfile.
+def exported_archive() -> tuple[set[str], bytes | None]:
+    """Names and manifest inside `git archive HEAD`, read via zipfile.
 
     Earlier revision parsed the tar stream by hand and stepped every 512 bytes,
     which treated file *content* as headers and invented 7648 bogus entries -
@@ -81,7 +95,14 @@ def exported_files() -> set[str]:
         check=True,
     ).stdout
     with zipfile.ZipFile(io.BytesIO(out)) as zf:
-        return {n.rstrip("/") for n in zf.namelist() if not n.endswith("/")}
+        names = {n.rstrip("/") for n in zf.namelist() if not n.endswith("/")}
+        manifest_bytes = zf.read("spw-manifest.json") if "spw-manifest.json" in names else None
+        return names, manifest_bytes
+
+
+def exported_files() -> set[str]:
+    names, _ = exported_archive()
+    return names
 
 
 def tree_paths() -> set[str]:
@@ -175,6 +196,94 @@ def check_exported_python_files(exported: set[str]) -> list[str]:
     return findings
 
 
+def check_manifest_gates(exported: set[str], manifest_bytes: bytes | None) -> list[str]:
+    """Verify manifest integrity and export self-sufficiency (WO-20261004-0082 / WO-0086 Stage 1)."""
+    findings = []
+    wt_manifest_path = ROOT / "spw-manifest.json"
+    if not wt_manifest_path.is_file():
+        findings.append("工作树缺少 spw-manifest.json")
+        return findings
+
+    try:
+        wt_manifest = json.loads(read(wt_manifest_path))
+    except Exception as exc:
+        findings.append(f"解析工作树 spw-manifest.json 失败: {exc}")
+        return findings
+
+    wt_required = {g["gate_id"] for g in wt_manifest.get("gates", []) if g.get("required")}
+
+    try:
+        head_raw = subprocess.check_output(
+            ["git", "show", "HEAD:spw-manifest.json"],
+            cwd=ROOT,
+        )
+        head_manifest = json.loads(head_raw.decode("utf-8", "replace"))
+        head_required = {g["gate_id"] for g in head_manifest.get("gates", []) if g.get("required")}
+    except Exception as exc:
+        findings.append(f"读取 HEAD:spw-manifest.json 失败: {exc}")
+        head_required = set()
+
+    # Reverse assertion: working tree must not drop any required gates present in HEAD
+    dropped = head_required - wt_required
+    if dropped:
+        findings.append(
+            f"工作树 spw-manifest.json 较 HEAD 删除了必需门禁: {sorted(dropped)}（防提交时手改清单把门禁悄悄删掉）"
+        )
+
+    # When spw-manifest.json is clean in working tree, exact equality is required
+    try:
+        status_proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", "spw-manifest.json"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        manifest_dirty = bool(status_proc.stdout.strip())
+    except Exception:
+        manifest_dirty = False
+
+    if not manifest_dirty and wt_required != head_required:
+        findings.append(
+            f"工作树与 HEAD 必需门禁集合不一致: 工作树={sorted(wt_required)}, HEAD={sorted(head_required)}"
+        )
+
+    # Check that all required gate scripts are present in exported archive
+    target_manifest = wt_manifest
+    if manifest_bytes:
+        try:
+            target_manifest = json.loads(manifest_bytes.decode("utf-8", "replace"))
+        except Exception:
+            target_manifest = wt_manifest
+
+    root_posix = ROOT.as_posix()
+    for g in target_manifest.get("gates", []):
+        if not g.get("required"):
+            continue
+        gid = g.get("gate_id", "unknown")
+        for arg in g.get("command", []):
+            if arg.endswith(".py"):
+                norm = arg.replace("\\", "/")
+                if norm.startswith(root_posix + "/"):
+                    rel = norm[len(root_posix) + 1:]
+                elif norm.startswith("./"):
+                    rel = norm[2:]
+                elif Path(arg).is_absolute():
+                    try:
+                        rel = Path(arg).relative_to(ROOT).as_posix()
+                    except ValueError:
+                        rel = norm
+                else:
+                    rel = norm
+
+                if rel not in exported:
+                    findings.append(
+                        f"必需门禁 {gid} 的脚本 {rel} 未包含在导出清单中（干净快照将无法执行该门禁）"
+                    )
+
+    return findings
+
+
 def main() -> None:
     findings = []
     findings.extend(check_no_python_command_in_pascal())
@@ -200,10 +309,13 @@ def main() -> None:
                 findings.append(f".gitattributes 缺少 {entry} 的 export-ignore")
 
     try:
-        exported = exported_files()
+        exported, manifest_bytes = exported_archive()
     except (subprocess.CalledProcessError, zipfile.BadZipFile) as exc:
         findings.append(f"git archive HEAD 失败: {exc}")
         exported = set()
+        manifest_bytes = None
+
+    findings.extend(check_manifest_gates(exported, manifest_bytes))
 
     # A {$R x.res} directive whose file is not version-controlled compiles fine
     # on a reused working directory and fails with E1026 on any clean checkout.

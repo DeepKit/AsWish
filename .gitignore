@@ -31,7 +31,15 @@ tests/_debug_parser.dpr
 # External article copies
 docs/refs/
 
-# Internal governance, workorders and private discussion files
+# Internal governance, workorders and private discussion files (不进公开仓库，同 WO/ 一类)
+.AsWish/
+.ai-workbench/
+_repro/
+_audit_out.txt
+_audit_err.txt
+err_file
+out_file
+spw-evidence-*.json
 boundary.json
 bugfix.md
 tasks.md

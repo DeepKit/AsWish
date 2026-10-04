@@ -10,3 +10,5 @@ This directory contains development-side automated quality gates used by the Sin
 - `gate_ehai_vendor_drift.py`: Guards vendored DeepBase EHAI types against unwanted upstream drift.
 - `gate_resource_locks.py`: Validates resource locks and concurrent editing protections.
 - `gate_ui_bridge.py`: Enforces UI bridge and contract boundaries between the core engine and GUI surface.
+- `gate_gui_verify_smoke.py`: Runs end-to-end GUI verification in headless smoke mode.
+- `gate_external_boundary.py`: Prevents leakage of internal governance artifacts and markers into the open source release.
