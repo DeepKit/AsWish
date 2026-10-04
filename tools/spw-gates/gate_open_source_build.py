@@ -173,14 +173,36 @@ def check_no_python_command_in_pascal() -> list[str]:
     return findings
 
 
+def is_export_ignored(rel_path: str) -> bool:
+    try:
+        out = subprocess.check_output(
+            ["git", "check-attr", "export-ignore", "--", rel_path],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        return ": export-ignore: set" in out
+    except Exception:
+        return False
+
+
 def check_exported_python_files(exported: set[str]) -> list[str]:
-    """Ensure all exported .py files belong to authorized and documented categories (WO-20260930-0062)."""
+    """Ensure all exported .py files belong to authorized and documented categories (WO-20260930-0062 / WO-20261004-0088)."""
     findings = []
     AUTHORIZED_PY_DIRS = {
         "protocol/": "protocol/README.md",
         "tools/spw-gates/": "tools/spw-gates/README.md",
+        "tools/spw-evidence/": "tools/spw-evidence/README.md",
     }
-    for rel in sorted(exported):
+    candidates = set(exported)
+    if (ROOT / "tools").is_dir():
+        for p in (ROOT / "tools").rglob("*.py"):
+            rel = p.relative_to(ROOT).as_posix()
+            if not is_export_ignored(rel):
+                candidates.add(rel)
+
+    for rel in sorted(candidates):
         if rel.endswith(".py"):
             matched_doc = None
             for prefix, doc in AUTHORIZED_PY_DIRS.items():
@@ -189,9 +211,12 @@ def check_exported_python_files(exported: set[str]) -> list[str]:
                     break
             if not matched_doc:
                 findings.append(
-                    f"未授权或未归属的导出 Python 文件: {rel}（仅允许 protocol/ 与 tools/spw-gates/ 并在对应 README 中说明）"
+                    f"未授权或未归属的导出 Python 文件: {rel}（仅允许 protocol/、tools/spw-gates/ 与 tools/spw-evidence/ 并在对应 README 中说明）"
                 )
             elif matched_doc not in exported:
+                doc_path = ROOT / matched_doc
+                if doc_path.is_file() and not is_export_ignored(matched_doc):
+                    continue
                 findings.append(f"导出 Python 脚本 {rel} 缺少对应说明文档 {matched_doc}")
     return findings
 

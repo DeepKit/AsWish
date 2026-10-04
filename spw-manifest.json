@@ -218,6 +218,34 @@
         "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_bypass_patterns.py"
       ],
       "timeout": 120
+    },
+    {
+      "gate_id": "G.open-source-build",
+      "required": true,
+      "claims": [
+        "counterfactual_export"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_open_source_build.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "gate_id": "G.vendored-upstream-drift",
+      "required": true,
+      "claims": [
+        "upstream_vendor_drift"
+      ],
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_ehai_vendor_drift.py"
+      ],
+      "timeout": 120
     }
   ],
   "claim_evidence": {
@@ -266,6 +294,12 @@
     ],
     "counterfactual_bypass": [
       "gate_bypass_patterns.py: un-waived TFile or OutputDebugString calls fail-closed"
+    ],
+    "counterfactual_export": [
+      "gate_open_source_build.py: unauthorized python files or missing README must fail"
+    ],
+    "upstream_vendor_drift": [
+      "gate_ehai_vendor_drift.py: drift against DeepBase must fail"
     ]
   },
   "h4_patterns": [
