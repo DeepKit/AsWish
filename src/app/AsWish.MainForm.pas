@@ -87,6 +87,8 @@ type
     // WebView2 RPC thread may still be writing into it.
     FPendingStream: TMemoryStream;
     FLastHtmlPath: string;
+    FProgressFile: string;
+    FProgressFailCount: Integer;
 
     // HB Choice Deck UI & Binding
     FHBBinding: TAsWishHBBinding;
@@ -149,8 +151,13 @@ type
     procedure SetHbExtractControlsVisible(const AVisible: Boolean);
     function GetHBShareConsent: Boolean;
     function DomExcerptForLog(const ARaw: string): string;
+    function FormatDomDiagnostic(const ARaw: string): string;
+    procedure FailDomAssert(const AMessage, ADomText: string);
 
     procedure DrainCaptureWarnings(const ALog: TStringList);
+    procedure AddCaptureWarning(const AMsg: string);
+    procedure LogProgress(const ADetail: string);
+    procedure LogStepProgress(const AStep, AState: string);
 
     procedure HandleScanEvent(const AEvent: TDeepShellEvent);
     procedure PopulateTreeFromSpec(ATree: TTreeView; ANodes: TList<TSpecNode>);
@@ -763,6 +770,7 @@ begin
 
     if LTarget <> '' then
     begin
+      LTarget := TPath.GetFullPath(LTarget);
       FLastHtmlPath := LTarget;
       LUrl := 'file:///' + LTarget.Replace('\', '/');
     end;
@@ -937,6 +945,33 @@ begin
       Exit(Format('[dom-text-undecodable len=%d]', [Length(ARaw)]));
     end;
   Result := Copy(ARaw.Replace(#13, ' ').Replace(#10, ' '), 1, 160);
+end;
+
+function TAsWishMainForm.FormatDomDiagnostic(const ARaw: string): string;
+var
+  I, LLen: Integer;
+  C: Char;
+begin
+  if ARaw = '' then Exit('(empty)');
+  LLen := Length(ARaw);
+  if LLen > 160 then LLen := 160;
+  Result := '';
+  for I := 1 to LLen do
+  begin
+    C := ARaw[I];
+    if (C >= #32) and (C <= #126) and (C <> '\') then
+      Result := Result + C
+    else if C = '\' then
+      Result := Result + '\\'
+    else if C = #13 then
+      Result := Result + '\r'
+    else if C = #10 then
+      Result := Result + '\n'
+    else if C = #9 then
+      Result := Result + '\t'
+    else
+      Result := Result + '\u' + IntToHex(Ord(C), 4);
+  end;
 end;
 
 procedure TAsWishMainForm.DoSpecTreeChange(Sender: TObject; Node: TTreeNode);
@@ -1750,6 +1785,8 @@ begin
   SetStatusMessage(AMsg);
 end;
 
+procedure ConsoleError(const AText: string); forward;
+
 procedure TAsWishMainForm.DrainCaptureWarnings(const ALog: TStringList);
 var
   I: Integer;
@@ -1759,6 +1796,46 @@ begin
   for I := 0 to FCaptureWarnings.Count - 1 do
     ALog.Add('       ' + FCaptureWarnings[I]);
   FCaptureWarnings.Clear;
+end;
+
+procedure TAsWishMainForm.LogProgress(const ADetail: string);
+var
+  LLine: string;
+begin
+  if FProgressFile = '' then Exit;
+  LLine := Format('%s | pid=%d | %s', [
+    FormatDateTime('hh:nn:ss.zzz', Now),
+    GetCurrentProcessId,
+    ADetail
+  ]);
+  try
+    TFile.AppendAllText(FProgressFile, LLine + sLineBreak, TEncoding.UTF8);
+    FProgressFailCount := 0;
+  except
+    on E: Exception do
+    begin
+      Inc(FProgressFailCount);
+      if FProgressFailCount = 1 then
+      begin
+        ConsoleError('[PROGRESS-WARN] progress log write failed: ' + E.Message);
+        AddCaptureWarning('[PROGRESS-WARN] progress log write failed: ' + E.Message);
+      end;
+    end;
+  end;
+end;
+
+procedure TAsWishMainForm.LogStepProgress(const AStep, AState: string);
+begin
+  LogProgress(Format('step=%s | state=%s', [AStep, AState]));
+end;
+
+procedure TAsWishMainForm.AddCaptureWarning(const AMsg: string);
+begin
+  if FCaptureWarnings = nil then
+    FCaptureWarnings := TStringList.Create;
+  FCaptureWarnings.Add(AMsg);
+  if (FProgressFile <> '') and (FProgressFailCount = 0) then
+    LogProgress(AMsg);
 end;
 
 function TAsWishMainForm.CaptureBrowserToStream(ABrowser: TEdgeBrowser;
@@ -1776,8 +1853,7 @@ begin
     on E: Exception do
     begin
       FCaptureDone := False;
-      if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
-      FCaptureWarnings.Add(Format('[CAPTURE-WARN] CapturePreview(stream) raised %s: %s',
+      AddCaptureWarning(Format('[CAPTURE-WARN] CapturePreview(stream) raised %s: %s',
         [E.ClassName, E.Message]));
       Exit;
     end;
@@ -1804,17 +1880,15 @@ begin
   Result := False;
   if (AControl = nil) or (not AControl.HandleAllocated) then
     Exit;
-  if FCaptureWarnings = nil then
-    FCaptureWarnings := TStringList.Create;
 
   Result := CaptureControlBitmapDirect(AControl, ABmp, LDiag);
   if not Result then
   begin
     if LDiag <> '' then
-      FCaptureWarnings.Add('[CAPTURE-WARN] ' + LDiag + '; no visual evidence emitted');
+      AddCaptureWarning('[CAPTURE-WARN] ' + LDiag + '; no visual evidence emitted');
     Exit;
   end;
-  FCaptureWarnings.Add('[CAPTURE-DIAG] ' + LDiag);
+  AddCaptureWarning('[CAPTURE-DIAG] ' + LDiag);
 end;
 
 procedure TAsWishMainForm.SaveControlImage(AControl: TWinControl; const AFilePath: string);
@@ -1846,12 +1920,13 @@ end;
 procedure TAsWishMainForm.SaveWindowScreenshot(const AFilePath: string);
 var
   LBmp: Vcl.Graphics.TBitmap;
-  LPng, LBrowserPng: TPngImage;
+  LBrowserPng: TPngImage;
   LBrowser: TEdgeBrowser;
   LTempPng: string;
   LStream: TMemoryStream;
   LRect: TRect;
   LComposited: Boolean;
+  LDiag: string;
 begin
   TDirectory.CreateDirectory(TPath.GetDirectoryName(AFilePath));
   LBmp := GetFormImage;
@@ -1888,8 +1963,7 @@ begin
           LStream.Size := 0;
           if not CaptureBrowserToStream(LBrowser, LStream) then
           begin
-            if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
-            FCaptureWarnings.Add(Format('[CAPTURE-WARN] browser capture did not complete ' +
+            AddCaptureWarning(Format('[CAPTURE-WARN] browser capture did not complete ' +
               '(result=$%.8x, size=%d); browser region covered by the HTML ' +
               'render fallback', [FCaptureResult, LStream.Size]));
           end;
@@ -1910,8 +1984,7 @@ begin
           except
             on E: Exception do
             begin
-              if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
-              FCaptureWarnings.Add(Format('[CAPTURE-WARN] browser capture unreadable: %s: %s',
+              AddCaptureWarning(Format('[CAPTURE-WARN] browser capture unreadable: %s: %s',
                 [E.ClassName, E.Message]));
             end;
           end;
@@ -1943,18 +2016,16 @@ begin
       end
       else
       begin
-        if FCaptureWarnings = nil then FCaptureWarnings := TStringList.Create;
-        FCaptureWarnings.Add(Format('[CAPTURE-WARN] native HTML screenshot render failed for %s', [FLastHtmlPath]));
+        AddCaptureWarning(Format('[CAPTURE-WARN] native HTML screenshot render failed for %s', [FLastHtmlPath]));
       end;
     end;
 
-    LPng := TPngImage.Create;
-    try
-      LPng.Assign(LBmp);
-      LPng.SaveToFile(AFilePath);
-    finally
-      LPng.Free;
+    if not SaveBitmapWithContentGuard(LBmp, AFilePath, LDiag, 4) then
+    begin
+      AddCaptureWarning('[CAPTURE-WARN] ' + LDiag);
+      Exit;
     end;
+    AddCaptureWarning('[CAPTURE-DIAG] ' + LDiag);
   finally
     LBmp.Free;
   end;
@@ -1977,6 +2048,12 @@ end;
 procedure ConsoleError(const AText: string);
 begin
   TAsWishCommandLine.OutputConsoleError(AText, GStdErrOrig);
+end;
+
+procedure TAsWishMainForm.FailDomAssert(const AMessage, ADomText: string);
+begin
+  ConsoleError('[DOM-DIAGNOSTIC] ' + FormatDomDiagnostic(ADomText));
+  raise Exception.Create(AMessage);
 end;
 
 procedure TAsWishMainForm.RunGuiVerification(const AProjectPath: string);
@@ -2013,11 +2090,24 @@ begin
       LEvidenceDir := TPath.Combine(LRepoRoot, 'dogfood_gui');
       LShotDir := TPath.Combine(LEvidenceDir, 'screenshots');
       LLogFile := TPath.Combine(LEvidenceDir, 'gui-dual-surface.txt');
+      FProgressFile := TPath.Combine(LEvidenceDir, 'gui-verify-progress.txt');
       try
         TDirectory.CreateDirectory(LShotDir);
       except
         on E: Exception do
           raise Exception.Create(Format('Cannot create verification directory "%s": %s', [LShotDir, E.Message]));
+      end;
+      FProgressFailCount := 0;
+      try
+        with TFileStream.Create(FProgressFile, fmCreate) do
+          Free;
+      except
+        on E: Exception do
+        begin
+          ConsoleError('[PROGRESS-WARN] progress log truncate failed: ' + E.Message);
+          FProgressFile := '';
+          AddCaptureWarning('[PROGRESS-WARN] progress log truncate failed: ' + E.Message);
+        end;
       end;
 
       LLog.Add('============================================================');
@@ -2060,14 +2150,15 @@ begin
       end;
 
       // Step 1: Open and scan project in GUI
+      LogStepProgress('1', 'enter');
       SetStatusMessage('GUI Step 1: Opening project in GUI...');
       FController.OpenAndScan(AProjectPath);
       FLastHtmlPath := TPath.Combine(FProjectService.AsWishPath, 'html\index.html');
       Update;
       Application.ProcessMessages;
       if not WaitForBrowserReady('AsWish', 2000, LDomText) then
-        raise Exception.Create(Format('Step 1 DOM assertion failed: index.html did not render in DOM. DOM excerpt: %s',
-          [DomExcerptForLog(LDomText)]));
+        FailDomAssert(Format('Step 1 DOM assertion failed: index.html did not render in DOM. DOM excerpt: %s',
+          [DomExcerptForLog(LDomText)]), LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-01-project-open.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 1: OpenAndScan executed in GUI.');
@@ -2075,6 +2166,7 @@ begin
       LLog.Add('       [DOM-ASSERT] index.html rendered in WebView2, DOM excerpt: ' +
         Copy(DomExcerptForLog(LDomText), 1, 120));
       ConsolePrint('[GUI-VERIFY] Step 1: OpenAndScan executed in GUI.');
+      LogStepProgress('1', 'exit');
 
       // Dynamic Baseline Resolution
       LBaselines := FController.ListBaselines;
@@ -2088,6 +2180,7 @@ begin
         LBaselineId := LBaselines[0].BaselineId;
 
       // Step 2: Navigate to structural difference view
+      LogStepProgress('2', 'enter');
       SetStatusMessage('GUI Step 2: Navigating to difference view...');
       LDiffReport := FController.ComputeDifference(LBaselineId);
       LDiffCount := Length(LDiffReport.Items);
@@ -2097,8 +2190,8 @@ begin
       Update;
       Application.ProcessMessages;
       if not WaitForBrowserReady(IntToStr(LDiffCount), 2000, LDomText) then
-        raise Exception.Create(Format('Step 2 DOM assertion failed: difference.html did not render difference count %d. DOM excerpt: %s',
-          [LDiffCount, DomExcerptForLog(LDomText)]));
+        FailDomAssert(Format('Step 2 DOM assertion failed: difference.html did not render difference count %d. DOM excerpt: %s',
+          [LDiffCount, DomExcerptForLog(LDomText)]), LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-02-difference-view.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 2: Difference view loaded. Path: ' + LDiffPath);
@@ -2106,8 +2199,10 @@ begin
       LLog.Add(Format('       [DOM-ASSERT] difference.html rendered, difference count verified in DOM: %d items', [LDiffCount]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' + Copy(DomExcerptForLog(LDomText), 1, 160));
       ConsolePrint(Format('[GUI-VERIFY] Step 2: Difference view loaded (%d items).', [LDiffCount]));
+      LogStepProgress('2', 'exit');
 
       // Step 3: Trigger Unacceptable judgment via GUI Controller channel
+      LogStepProgress('3', 'enter');
       SetStatusMessage('GUI Step 3: Triggering Unacceptable judgment...');
       LDec1 := FController.RecordDifferenceDecision(LBaselineId, 'unacceptable', 'GUI rejected item');
       LDecPath := TPath.Combine(FProjectService.AsWishPath, 'html\decisions.html');
@@ -2116,8 +2211,8 @@ begin
       Update;
       Application.ProcessMessages;
       if not WaitForBrowserReady(LDec1, 2000, LDomText) then
-        raise Exception.Create(Format('Step 3 DOM assertion failed: decisions.html did not render decision %s. DOM excerpt: %s',
-          [LDec1, DomExcerptForLog(LDomText)]));
+        FailDomAssert(Format('Step 3 DOM assertion failed: decisions.html did not render decision %s. DOM excerpt: %s',
+          [LDec1, DomExcerptForLog(LDomText)]), LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-03-judge-unacceptable.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 3: Recorded Unacceptable decision %s in GUI.', [LDec1]));
@@ -2125,8 +2220,10 @@ begin
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec1]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' + Copy(DomExcerptForLog(LDomText), 1, 160));
       ConsolePrint(Format('[GUI-VERIFY] Step 3: Recorded Unacceptable decision %s.', [LDec1]));
+      LogStepProgress('3', 'exit');
 
       // Step 4: Trigger Acceptable judgment via GUI Controller channel
+      LogStepProgress('4', 'enter');
       SetStatusMessage('GUI Step 4: Triggering Acceptable judgment...');
       LDec2 := FController.RecordDifferenceDecision(LBaselineId, 'acceptable', 'GUI accepted item');
       FLastHtmlPath := LDecPath;
@@ -2134,8 +2231,8 @@ begin
       Update;
       Application.ProcessMessages;
       if not WaitForBrowserReady(LDec2, 2000, LDomText) then
-        raise Exception.Create(Format('Step 4 DOM assertion failed: decisions.html did not render decision %s. DOM excerpt: %s',
-          [LDec2, DomExcerptForLog(LDomText)]));
+        FailDomAssert(Format('Step 4 DOM assertion failed: decisions.html did not render decision %s. DOM excerpt: %s',
+          [LDec2, DomExcerptForLog(LDomText)]), LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-04-judge-acceptable.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 4: Recorded Acceptable decision %s in GUI.', [LDec2]));
@@ -2143,8 +2240,10 @@ begin
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains decision "%s" in DOM', [LDec2]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' + Copy(DomExcerptForLog(LDomText), 1, 160));
       ConsolePrint(Format('[GUI-VERIFY] Step 4: Recorded Acceptable decision %s.', [LDec2]));
+      LogStepProgress('4', 'exit');
 
       // Step 5: Trigger Evolve Baseline via GUI Controller channel
+      LogStepProgress('5', 'enter');
       SetStatusMessage('GUI Step 5: Triggering Baseline Evolution...');
       LEvolveId := FController.EvolveBaseline(LBaselineId, 'GUI evolved baseline from reality', LNewBaseline);
       FController.ComputeDifference(LEvolveId);
@@ -2153,8 +2252,8 @@ begin
       Update;
       Application.ProcessMessages;
       if not WaitForBrowserReady(LEvolveId, 2000, LDomText) then
-        raise Exception.Create(Format('Step 5 DOM assertion failed: difference.html did not render evolved baseline %s. DOM excerpt: %s',
-          [LEvolveId, DomExcerptForLog(LDomText)]));
+        FailDomAssert(Format('Step 5 DOM assertion failed: difference.html did not render evolved baseline %s. DOM excerpt: %s',
+          [LEvolveId, DomExcerptForLog(LDomText)]), LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-05-evolve-baseline.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add(Format('[PASS] Step 5: Evolved new baseline %s (parent: %s) in GUI.',
@@ -2163,8 +2262,10 @@ begin
       LLog.Add(Format('       [DOM-ASSERT] difference.html rendered for evolved baseline %s in DOM', [LEvolveId]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' + Copy(DomExcerptForLog(LDomText), 1, 160));
       ConsolePrint(Format('[GUI-VERIFY] Step 5: Evolved new baseline %s.', [LEvolveId]));
+      LogStepProgress('5', 'exit');
 
       // Step 6: Verify updated decisions history page
+      LogStepProgress('6', 'enter');
       SetStatusMessage('GUI Step 6: Viewing updated decisions history...');
       FLastHtmlPath := LDecPath;
       OpenView(TShellObjectRef.Make('decisions-html', 'html', 'Decisions', LDecPath));
@@ -2182,8 +2283,8 @@ begin
       else
         LTargetDecId := LDec2;
       if not WaitForBrowserReady(LTargetDecId, 2000, LDomText) then
-        raise Exception.Create(Format('Step 6 DOM assertion failed: decisions.html did not render decision %s. DOM excerpt: %s',
-          [LTargetDecId, DomExcerptForLog(LDomText)]));
+        FailDomAssert(Format('Step 6 DOM assertion failed: decisions.html did not render decision %s. DOM excerpt: %s',
+          [LTargetDecId, DomExcerptForLog(LDomText)]), LDomText);
       SaveWindowScreenshot(TPath.Combine(LShotDir, 'gui-06-decisions-history.png'));
       DrainCaptureWarnings(LLog);
       LLog.Add('[PASS] Step 6: Decisions history displayed in GUI.');
@@ -2191,8 +2292,10 @@ begin
       LLog.Add(Format('       [DOM-ASSERT] decisions.html rendered, contains history (%s) in DOM', [LDecIds]));
       LLog.Add('       [DOM-ASSERT] DOM excerpt: ' + Copy(DomExcerptForLog(LDomText), 1, 220));
       ConsolePrint('[GUI-VERIFY] Step 6: Decisions history displayed in GUI.');
+      LogStepProgress('6', 'exit');
 
       // Step 7: Verify D-1 Inspector Sidebar Dialog (WO-0044)
+      LogStepProgress('7', 'enter');
       SetStatusMessage('GUI Step 7: Verifying D-1 Inspector Sidebar Dialog...');
       if (FFuncTree <> nil) and (FFuncTree.Items.Count > 0) then
       begin
@@ -2223,8 +2326,10 @@ begin
       LLog.Add(Format('[PASS] Step 7: D-1 Inspector Sidebar verified. ChangeSet: %s submitted via SSOT.', [LSubmittedCs]));
       LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-07-inspector-dialog.png');
       ConsolePrint(Format('[GUI-VERIFY] Step 7: D-1 Inspector Sidebar verified (%s).', [LSubmittedCs]));
+      LogStepProgress('7', 'exit');
 
       // Step 8: Verify D-2 Ghosts Context Hints & Badges (WO-0044)
+      LogStepProgress('8', 'enter');
       SetStatusMessage('GUI Step 8: Verifying D-2 Ghosts Context Hints...');
       LLessons := FController.Commons.ListLessons;
       if Length(LLessons) = 0 then
@@ -2288,8 +2393,10 @@ begin
       LLog.Add('[PASS] Step 8: D-2 Ghosts context chips (matching, narrative badges, dismiss) verified.');
       LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-08-ghosts-hints.png');
       ConsolePrint('[GUI-VERIFY] Step 8: D-2 Ghosts context chips verified.');
+      LogStepProgress('8', 'exit');
 
       // Step 9: Verify D-3 Immersive Review Surface (F11) (WO-0044)
+      LogStepProgress('9', 'enter');
       SetStatusMessage('GUI Step 9: Verifying D-3 Immersive Review Surface...');
       if not LeftPanel.Visible then LeftPanel.Visible := True;
       ToggleFullscreenReview;
@@ -2306,8 +2413,10 @@ begin
       LLog.Add('[PASS] Step 9: D-3 Immersive review surface (F11 toggle, panel hide/restore) verified.');
       LLog.Add('       Screenshot: dogfood_gui/screenshots/gui-09-immersive-review.png');
       ConsolePrint('[GUI-VERIFY] Step 9: D-3 Immersive review surface verified.');
+      LogStepProgress('9', 'exit');
 
       // Step 9.5: Verify WO-20260924-0049 P-4 share-to-hub consent (HB Deck)
+      LogStepProgress('9.5', 'enter');
       SetStatusMessage('GUI Step 9.5: Verifying Commons share-to-hub consent...');
       if HBShareConsent then
         raise Exception.Create('P-4 assertion failed: consent checkbox must default to unchecked');
@@ -2378,8 +2487,10 @@ begin
       LLog.Add('[PASS] Step 9.5c: Opted-out extraction stays local-only; no publish_consent on disk.');
       LLog.Add('       Lesson draft: ' + LFiles[High(LFiles)]);
       ConsolePrint('[GUI-VERIFY] Step 9.5: Commons share-to-hub consent verified.');
+      LogStepProgress('9.5', 'exit');
 
       // Step 10: Verify disk artifacts
+      LogStepProgress('10', 'enter');
       LLog.Add('------------------------------------------------------------');
       LLog.Add('Physical Disk Verification:');
       LLog.Add('  - difference.html exists: ' + BoolToStr(TFile.Exists(LDiffPath), True) + ' (' + LDiffPath + ')');
@@ -2395,6 +2506,8 @@ begin
       LLog.SaveToFile(LLogFile, TEncoding.UTF8);
       ConsolePrint('[GUI-VERIFY] Step 10: Physical disk verification completed.');
       ConsolePrint('[GUI-VERIFY SUMMARY] PASS: All verification steps completed successfully. Evidence: ' + LLogFile);
+      LogStepProgress('10', 'exit');
+      LogProgress('state=done rc=0');
 
       if LHasConsole then
       begin
@@ -2406,6 +2519,7 @@ begin
     except
       on E: Exception do
       begin
+        LogProgress('state=error exception=' + E.ClassName + ': ' + E.Message);
         LLog.Add('============================================================');
         LLog.Add('[FAILED] ' + E.ClassName + ': ' + E.Message);
         LLog.Add('GUI Verification Exit Code: 1');

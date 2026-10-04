@@ -47,8 +47,8 @@ begin
   if not TDirectory.Exists(APath) then
     raise Exception.CreateFmt('Project path does not exist: %s', [APath]);
 
-  FProjectPath := APath;
-  FProjectName := TPath.GetFileName(APath);
+  FProjectPath := TPath.GetFullPath(APath);
+  FProjectName := TPath.GetFileName(FProjectPath);
   FProjectType := 'unknown';
   FIsOpen := True;
 end;

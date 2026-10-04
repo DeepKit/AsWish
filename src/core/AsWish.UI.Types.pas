@@ -30,7 +30,10 @@ type
 
 function CaptureModeReflectsLiveState(AMode: TCaptureMode): Boolean;
 function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
+function BitmapDistinctColorsSampled(ABmp: Vcl.Graphics.TBitmap; AStep: Integer = 4): Integer;
 function CaptureControlBitmapDirect(AControl: TWinControl; ABmp: Vcl.Graphics.TBitmap; var ADiag: string): Boolean;
+function SaveBitmapWithContentGuard(ABmp: Vcl.Graphics.TBitmap; const AFilePath: string;
+  var ADiag: string; AStep: Integer = 4): Boolean;
 
 type
   // ---------------------------------------------------------------------------
@@ -262,6 +265,10 @@ type
 
 implementation
 
+uses
+  System.IOUtils,
+  Vcl.Imaging.pngimage;
+
 { TShellObjectRef }
 
 class function TShellObjectRef.Empty: TShellObjectRef;
@@ -403,25 +410,69 @@ begin
   end;
 end;
 
-function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
+function BitmapDistinctColorsSampled(ABmp: Vcl.Graphics.TBitmap; AStep: Integer = 4): Integer;
 var
   X, Y: Integer;
   LSeen: TStringList;
   LC: TColor;
 begin
+  Result := 0;
+  if (ABmp = nil) or (ABmp.Width <= 0) or (ABmp.Height <= 0) then
+    Exit;
+  if AStep < 1 then
+    AStep := 1;
   LSeen := TStringList.Create;
   try
     LSeen.Sorted := True;
     LSeen.Duplicates := TDuplicates.dupIgnore;
-    for Y := 0 to ABmp.Height - 1 do
-      for X := 0 to ABmp.Width - 1 do
+    Y := 0;
+    while Y < ABmp.Height do
+    begin
+      X := 0;
+      while X < ABmp.Width do
       begin
         LC := ABmp.Canvas.Pixels[X, Y];
         LSeen.Add(Format('%.6x', [ColorToRGB(LC)]));
+        Inc(X, AStep);
       end;
+      Inc(Y, AStep);
+    end;
     Result := LSeen.Count;
   finally
     LSeen.Free;
+  end;
+end;
+
+function BitmapDistinctColors(ABmp: Vcl.Graphics.TBitmap): Integer;
+begin
+  Result := BitmapDistinctColorsSampled(ABmp, 1);
+end;
+
+function SaveBitmapWithContentGuard(ABmp: Vcl.Graphics.TBitmap; const AFilePath: string;
+  var ADiag: string; AStep: Integer = 4): Boolean;
+var
+  LDistinct: Integer;
+  LPng: TPngImage;
+begin
+  Result := False;
+  ADiag := '';
+  if (ABmp = nil) or (ABmp.Width <= 0) or (ABmp.Height <= 0) then
+    Exit;
+  LDistinct := BitmapDistinctColorsSampled(ABmp, AStep);
+  ADiag := Format('screenshot at (%d,%d) distinctColors=%d', [ABmp.Width, ABmp.Height, LDistinct]);
+  if LDistinct <= 1 then
+  begin
+    ADiag := ADiag + '; no visual evidence emitted';
+    Exit;
+  end;
+  TDirectory.CreateDirectory(TPath.GetDirectoryName(AFilePath));
+  LPng := TPngImage.Create;
+  try
+    LPng.Assign(ABmp);
+    LPng.SaveToFile(AFilePath);
+    Result := True;
+  finally
+    LPng.Free;
   end;
 end;
 
