@@ -34,20 +34,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deterministic gates (vendored-upstream drift / open-source export)
+      - name: Pre-flight gate check (verify manifest gate scripts exist)
+        working-directory: ${{ github.workspace }}
+        run: |
+          python -X utf8 -c "import json, os, sys; m = json.load(open('spw-manifest.json', encoding='utf-8')); missing = [os.path.basename(arg) for g in m.get('gates', []) if g.get('required') for arg in g.get('command', []) if arg.endswith('.py') and not os.path.isfile(os.path.join('tools', 'spw-gates', os.path.basename(arg)))]; (print('Gate script missing in tools/spw-gates/:', missing) or sys.exit(1)) if missing else print('All required gate scripts present.')"
+
+      - name: Deterministic gates (vendored-upstream drift / external boundary / open-source export)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
+        working-directory: ${{ github.workspace }}
         run: |
-          python -X utf8 ..\tools\spw-gates\gate_ehai_vendor_drift.py
+          python -X utf8 tools\spw-gates\gate_ehai_vendor_drift.py
           if errorlevel 1 exit /b 1
-          python -X utf8 ..\tools\spw-gates\gate_open_source_build.py
+          python -X utf8 tools\spw-gates\gate_external_boundary.py
+          if errorlevel 1 exit /b 1
+          python -X utf8 tools\spw-gates\gate_open_source_build.py
           if errorlevel 1 exit /b 1
 
       - name: Build main program (AsWish.exe)
         env:
           BDS: d:\Program Files (x86)\Embarcadero\Studio\37.0
           DEEPBASE_HOME: D:\_Progs\02Business\DeepBase
+        working-directory: ${{ github.workspace }}
         run: .\_build.bat
 
       - name: Build CLI (AsWish.CLI.exe)
