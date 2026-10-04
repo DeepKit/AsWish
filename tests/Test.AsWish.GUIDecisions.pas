@@ -91,6 +91,7 @@ type
     [Test] procedure Test_DualSurface_D1_SubmitUserIntent_WithTreeInference;
     [Test] procedure Test_DualSurface_D2_Ghosts_MatchingAndNarrativeBadge;
     [Test] procedure Test_CaptureConstraint_CheckBoxState_WindowScreenshotInert_ControlCaptureDiverges;
+    [Test] procedure Test_WindowScreenshot_SingleColorGuard_RejectsBlank_AndEmitsWarning;
   end;
 
 implementation
@@ -383,6 +384,48 @@ begin
     end;
   finally
     LForm.Free;
+  end;
+end;
+
+procedure TTestAsWishGUIDecisions.Test_WindowScreenshot_SingleColorGuard_RejectsBlank_AndEmitsWarning;
+var
+  LBmp: Vcl.Graphics.TBitmap;
+  LTempFile: string;
+  LDiag: string;
+  LWarnings: TStringList;
+begin
+  LTempFile := TPath.Combine(FDir, 'test-blank-guard.png');
+  LBmp := Vcl.Graphics.TBitmap.Create;
+  LWarnings := TStringList.Create;
+  try
+    LBmp.SetSize(200, 100);
+    LBmp.Canvas.Brush.Color := clBlack;
+    LBmp.Canvas.FillRect(Rect(0, 0, 200, 100));
+
+    // Attempt save with content guard
+    if not SaveBitmapWithContentGuard(LBmp, LTempFile, LDiag, 4) then
+      LWarnings.Add('[CAPTURE-WARN] ' + LDiag);
+
+    // Assert (a): File was NOT written
+    Assert.IsFalse(TFile.Exists(LTempFile), 'Pure color bitmap must not be written to disk');
+    // Assert (b): Warning was recorded
+    Assert.AreEqual(1, LWarnings.Count, 'A capture warning must be emitted');
+    Assert.IsTrue(LWarnings[0].Contains('[CAPTURE-WARN]'), 'Warning must contain [CAPTURE-WARN]');
+    Assert.IsTrue(LWarnings[0].Contains('distinctColors=1'), 'Warning must report distinctColors=1');
+    Assert.IsTrue(LWarnings[0].Contains('no visual evidence emitted'), 'Warning must state no visual evidence emitted');
+
+    // Multi-color bitmap must pass
+    LBmp.Canvas.Pixels[10, 10] := clWhite;
+    LBmp.Canvas.Pixels[20, 20] := clRed;
+    LWarnings.Clear;
+    Assert.IsTrue(SaveBitmapWithContentGuard(LBmp, LTempFile, LDiag, 4), 'Multi-color bitmap should be saved');
+    Assert.IsTrue(TFile.Exists(LTempFile), 'Multi-color bitmap must be written to disk');
+    Assert.AreEqual(0, LWarnings.Count, 'No warning should be emitted for multi-color bitmap');
+  finally
+    LWarnings.Free;
+    LBmp.Free;
+    if TFile.Exists(LTempFile) then
+      TFile.Delete(LTempFile);
   end;
 end;
 
