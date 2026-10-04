@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated `.gitignore` and `.gitattributes` to explicitly ignore and export-ignore internal governance structures (`.AsWish/`, `.ai-workbench/`, `_repro/`, `_audit_*`).
 
 ### Security
-- Hardened external boundary gate to strictly prohibit leaking internal governance tags (`主控`, `开发AI`, `WorkBuddy`, `工单`) outside authorized statutory attribution notices.
+- Hardened repository boundary gate (`H3.external-boundary`) to prevent internal governance markers or unexported paths from leaking into open-source release distributions.
 
 ## [0.1.0] - 2026-09-05
 

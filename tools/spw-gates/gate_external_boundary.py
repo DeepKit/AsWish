@@ -67,6 +67,7 @@ INTERNAL_PATTERNS = [
     r"(^|/)docs/.*交接.*",
     r"(^|/)AUDIT-REQUEST-",
     r"(^|/)AGENTS\.md$",
+    r"(^|/)spw-evidence-.*\.json$",
     r"(^|/)gate_external_boundary\.py$",  # self
 ]
 
@@ -155,7 +156,12 @@ def check_content_markers() -> list[str]:
         if p.is_file():
             rel = p.relative_to(ROOT).as_posix()
             if not is_internal(rel):
-                candidate_paths.append((p, rel))
+                ign = subprocess.run(
+                    ["git", "check-ignore", "-q", rel],
+                    cwd=ROOT,
+                )
+                if ign.returncode != 0:
+                    candidate_paths.append((p, rel))
 
     for p, rel in candidate_paths:
         if p.suffix.lower() in BINARY_EXTENSIONS:
