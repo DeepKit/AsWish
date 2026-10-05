@@ -265,7 +265,7 @@ def main():
     if findings:
         fail(GATE_ID, findings)
 
-    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for ({len(warnings)} baseline debt warnings emitted)")
+    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for ({len(warnings)} baseline debt warnings emitted)", claims=["counterfactual_bypass"])
 
 
 if __name__ == "__main__":

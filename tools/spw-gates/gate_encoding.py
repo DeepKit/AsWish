@@ -100,5 +100,5 @@ for f in sorted(script_files):
 
 if findings:
     fail("H3.encoding-guard", findings)
-ok("H3.encoding-guard")
+ok("H3.encoding-guard", claims=["counterfactual_1", "counterfactual_2"])
 

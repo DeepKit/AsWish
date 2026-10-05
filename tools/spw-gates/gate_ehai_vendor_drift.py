@@ -86,6 +86,7 @@ def main() -> None:
             for f in findings:
                 print(f"  - {f}")
             sys.exit(1)
+        print("[CLAIM_ASSERTED] upstream_vendor_drift")
         sys.exit(0)
 
     print(f"[{GATE}] 上游定位: {upstream}")
@@ -108,6 +109,7 @@ def main() -> None:
         for f in findings:
             print(f"  - {f}")
         sys.exit(1)
+    print("[CLAIM_ASSERTED] upstream_vendor_drift")
     print(f"[{GATE}] PASS 上游与登记值一致，本仓副本未被误改（{len(records)} 个文件）")
     sys.exit(0)
 

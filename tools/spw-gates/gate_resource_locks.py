@@ -49,4 +49,4 @@ if core:
 
 if findings:
     fail("H1.resource-locks", findings)
-ok("H1.resource-locks")
+ok("H1.resource-locks", claims=["controlled_entry_only"])

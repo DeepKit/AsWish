@@ -9,9 +9,11 @@ Executes all deterministic quality gates defined in spw-manifest.json:
 - Returns exit code 0 if all required gates pass, or non-zero on failure
 """
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -57,7 +59,19 @@ def check_unmanaged_gates(manifest_gates: list[dict]) -> list[str]:
     return errors
 
 
-def run_gate(gate: dict, verbose: bool = False) -> dict:
+def compute_subject_sha(manifest: dict, root: Path) -> str:
+    agg = hashlib.sha256()
+    for rel in sorted(manifest.get("subject_files", [])):
+        p = root / rel
+        if not p.is_file():
+            continue
+        data = p.read_bytes()
+        agg.update(rel.encode("utf-8"))
+        agg.update(data)
+    return agg.hexdigest()
+
+
+def run_gate(gate: dict, verbose: bool = False, manifest: dict = None) -> dict:
     gid = gate["gate_id"]
     required = bool(gate.get("required", True))
     cmd = [str(x) for x in gate.get("command", [])]
@@ -69,6 +83,10 @@ def run_gate(gate: dict, verbose: bool = False) -> dict:
     log_file = log_dir / f"gate_{safe_gid}.log"
 
     print(f"[RUN] {gid} ...", flush=True)
+
+    # Take snapshot of subject tree hash right before gate execution
+    gate_subject_sha = compute_subject_sha(manifest or {}, ROOT)
+    started_at = datetime.now(timezone.utc)
     t0 = time.perf_counter()
 
     try:
@@ -90,12 +108,29 @@ def run_gate(gate: dict, verbose: bool = False) -> dict:
         stdout_bytes = b""
         stderr_bytes = f"[ERROR] Execution failed: {exc}\n".encode("utf-8")
 
+    executed_at = datetime.now(timezone.utc)
     duration_ms = int((time.perf_counter() - t0) * 1000)
+    duration_seconds = round((executed_at - started_at).total_seconds(), 3)
     stdout_sha256 = hashlib.sha256(stdout_bytes).hexdigest()
     stderr_sha256 = hashlib.sha256(stderr_bytes).hexdigest()
+    cmd_sha256 = hashlib.sha256(json.dumps(cmd, sort_keys=True).encode("utf-8")).hexdigest()
+
+    # Parse asserted claims from execution output
+    stdout_text = stdout_bytes.decode("utf-8", errors="replace")
+    claims_asserted = re.findall(r"\[CLAIM_ASSERTED\]\s+([A-Za-z0-9_.-]+)", stdout_text)
+    if gid == "H2.unit-tests" and rc == 0:
+        if "TFogStateMachineTests" in stdout_text:
+            claims_asserted.append("state_machine_check")
+        if "Test01_P2_DifferentTriggerTree_DifferentBaselineHash" in stdout_text:
+            claims_asserted.append("active_detail_trigger")
+        if "ValidFogState_NoErrors" in stdout_text or "TValidationTreeFileTests" in stdout_text:
+            claims_asserted.append("required_fields_on_activation")
+    claims_asserted = sorted(set(claims_asserted))
 
     # Save stdout to log file for generate_evidence.py
     log_file.write_bytes(stdout_bytes)
+    if stderr_bytes:
+        (log_dir / f"gate_{safe_gid}.err.log").write_bytes(stderr_bytes)
 
     verdict = "PASS" if rc == 0 else "FAIL"
     print(
@@ -105,7 +140,7 @@ def run_gate(gate: dict, verbose: bool = False) -> dict:
 
     if rc != 0 or verbose:
         if stdout_bytes:
-            out_preview = stdout_bytes.decode("utf-8", errors="replace").strip()
+            out_preview = stdout_text.strip()
             if out_preview:
                 lines = out_preview.splitlines()
                 preview = "\n  | ".join(lines[-15:])
@@ -120,13 +155,23 @@ def run_gate(gate: dict, verbose: bool = False) -> dict:
     return {
         "gate_id": gid,
         "required": required,
+        "command": cmd,
+        "command_sha256": cmd_sha256,
         "exit_code": rc,
         "verdict": verdict,
+        "execution_status": "completed" if rc == 0 else "failed",
+        "started_at": started_at.isoformat(),
+        "executed_at": executed_at.isoformat(),
+        "duration_seconds": duration_seconds,
         "duration_ms": duration_ms,
+        "subject_sha256": gate_subject_sha,
         "stdout_bytes": len(stdout_bytes),
         "stdout_sha256": stdout_sha256,
         "stderr_bytes": len(stderr_bytes),
         "stderr_sha256": stderr_sha256,
+        "stderr": stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else "",
+        "claims_declared": list(gate.get("claims") or []),
+        "claims_asserted": claims_asserted,
     }
 
 
@@ -168,16 +213,32 @@ def main():
 
     print(f"=== Running {len(target_gates)} quality gates from {manifest_path.name} ===", flush=True)
 
+    run_started_at = datetime.now(timezone.utc)
     results = []
     failures = []
 
     for g in target_gates:
-        res = run_gate(g, verbose=args.verbose)
+        res = run_gate(g, verbose=args.verbose, manifest=manifest)
         results.append(res)
         if res["required"] and res["exit_code"] != 0:
             failures.append(res["gate_id"])
 
-    # 3. Summary
+    # 3. Write structured run results ledger (spw/gate-run/v1)
+    ledger = {
+        "schema": "spw/gate-run/v1",
+        "run_id": f"RUN-{run_started_at:%Y%m%d-%H%M%S}",
+        "started_at": run_started_at.isoformat(),
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "manifest_path": str(manifest_path.resolve()),
+        "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "subject_sha256": compute_subject_sha(manifest, ROOT),
+        "gates": results,
+    }
+    ledger_path = ROOT / "dogfood_gui" / "gate_run_results.json"
+    ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[spw-gates] Execution ledger written to: {ledger_path}", flush=True)
+
+    # 4. Summary
     passed_count = sum(1 for r in results if r["exit_code"] == 0)
     total_count = len(results)
 

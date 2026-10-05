@@ -500,6 +500,7 @@ def main() -> None:
         for f in findings:
             print(f"  - {f}")
         sys.exit(1)
+    print("[CLAIM_ASSERTED] counterfactual_export")
     print(f"[{GATE}] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（{len(exported)} 个文件）")
     sys.exit(0)
 

@@ -49,4 +49,4 @@ if orphans:
 
 if findings:
     fail("H3.deep-ui-test", findings)
-ok("H3.deep-ui-test", f"rendered={len(r1)} handlers={len(h1)}")
+ok("H3.deep-ui-test", f"rendered={len(r1)} handlers={len(h1)}", claims=["counterfactual_6", "counterfactual_7", "counterfactual_8"])

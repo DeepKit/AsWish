@@ -39,4 +39,4 @@ else:
 
 if findings:
     fail("H3.runtime-autofix", findings)
-ok("H3.runtime-autofix")
+ok("H3.runtime-autofix", claims=["counterfactual_3", "counterfactual_4", "counterfactual_5"])

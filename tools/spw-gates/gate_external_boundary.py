@@ -285,7 +285,7 @@ def main():
     if findings:
         fail(GATE_ID, findings)
 
-    ok(GATE_ID, "外部边界干净（检查通过）")
+    ok(GATE_ID, "外部边界干净（检查通过）", claims=["counterfactual_boundary"])
 
 
 if __name__ == "__main__":

@@ -212,7 +212,7 @@ def main():
     if findings:
         fail(GATE_ID, findings)
 
-    ok(GATE_ID, f"RC=0 stdout={out_bytes}B [PASS]={pass_count}")
+    ok(GATE_ID, f"RC=0 stdout={out_bytes}B [PASS]={pass_count}", claims=["counterfactual_smoke"])
 
 
 if __name__ == "__main__":

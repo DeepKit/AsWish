@@ -30,6 +30,8 @@ def fail(gate_id: str, findings):
     sys.exit(1)
 
 
-def ok(gate_id: str, note: str = ""):
+def ok(gate_id: str, note: str = "", claims: list = None):
+    for c in (claims or []):
+        print(f"[CLAIM_ASSERTED] {c}")
     print(f"[{gate_id}] PASS {note}".rstrip())
     sys.exit(0)
