@@ -322,6 +322,12 @@
       "rationale": "Absolute machine path baked into production code (MainForm AutoFix open-project scenario)."
     }
   ],
+  "h4_policy": {
+    "max_ongoing_waivers": 0,
+    "impersonation_patterns": [
+      "^(MasterController|SPW|\\u4e3b\\u63a7)-.*$"
+    ]
+  },
   "observer_models": [
     "qoder-GLM-5.2",
     "stepfun-step-3.7-flash"

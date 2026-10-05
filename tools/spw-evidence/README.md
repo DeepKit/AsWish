@@ -9,6 +9,7 @@
   - 记录各门禁命令的 `command`、`exit_code`、耗时 `duration_ms`；
   - 完整记录 `stdout`、`stdout_bytes` 以及 `stdout_sha256`，杜绝任何截断失真；
   - 诚实记录 H5 异构观察席位状态，当缺乏外部观察席位时如实申报 `degraded` 降级，避免违规发证；
+  - 诚实保留 H4 反绕过历史欠账告警（81 项 baseline 豁免尚未经审核席位批准，以 WARN 形式如实落盘）；
   - 将证据包结构化输出至仓库根目录 `spw-evidence-<commit_sha>.json`，并通过 `spw.py verify` 进行规范性验证。
 
 ## 运行方式

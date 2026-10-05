@@ -53,17 +53,23 @@ H4 门禁用于防范代码中绕过 SpecStore 原子写/备份机制或隐藏�
 - `code`: 命中的具体代码片段；
 - `rationale`: 具体的业务理由或变更出处；
 - `scope`: 范围分类：
-  - `baseline`: 历史存量遗留项，经架构评审复核确认；
+  - `baseline`: 历史存量，尚未逐条经审核席位批准，门禁以 WARN 形式持续提示（属于已知技术债务）；
   - `ongoing`: 封版后日常新增项，必须经专门审批；
-- `approved_by`: 批准人或批准角色（必填非空，禁止自签）；
+- `approved_by`: 批准人或批准角色（仅限 `h4_approvers.json` 登记角色，禁止自签或冒充，存量项可留空）；
 - `approved_at`: 批准日期（`YYYY-MM-DD`）；
 - `expires_at`: （可选）到期日，若填，到期后门禁立即 fail-closed。
 
 ### 2. 门禁硬校验规则
 - **陈旧豁免断言（Stale Waiver）**：若台账中记录的 `file` 不存在、行号越界、或对应行不再命中该模式，门禁直接报 `[HIGH] stale waiver` 失败，防止代码修改后豁免暗中漂移；
+- **冒充与未授权批准人阻断（Impersonation & Whitelist）**：`approved_by` 命中冒充模式（如 `MasterController-*`、`SPW-*`）或未在 `h4_approvers.json` 登记时直接报 `[HIGH] impersonated approver` 或 `[HIGH] unauthorized approver` 失败；
+- **自签阻断（Self-Signing）**：若 `submitted_by` 与 `approved_by` 相同，直接报 `[HIGH] self-signed waiver` 失败；
 - **未审批新增豁免（Unapproved Ongoing）**：`scope="ongoing"` 的条目若缺少 `approved_by` 或 `approved_at`，门禁报 `[HIGH] unapproved ongoing waiver` 失败；
 - **过期豁免断言（Expired Waiver）**：若 `expires_at` 已过，门禁报 `[HIGH] waiver expired` 失败；
 - **未登记违规（Un-waived Hit）**：任何未在台账中登记的模式命中均报 `[HIGH] un-waived hit` 并以 `RC=1` 阻断。
+
+### 3. 审批权责与申请流程 (WO-20261004-0091)
+- **有效批准人清单**：有效角色统一由 `tools/spw-gates/h4_approvers.json` 维护，门禁只读白名单。该文件缺失时门禁自动 fail-closed。
+- **豁免申请规范**：下游开发角色严禁自填批准人。当新功能开发确实需要豁免时，需提交工程变更申请并如实填写 `submitted_by`，由独立审核角色（Master Controller）批准后登记真实的 `approved_by` 与 `approved_at`。未获正式核准的豁免一律不得并入基线。
 
 ---
 

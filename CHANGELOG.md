@@ -29,8 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added in-repo master quality gate runner (`tools/spw-gates/run_all_gates.py`) dynamically executing all 12 gates registered in `spw-manifest.json`.
   - Built-in guard against unmanaged gate scripts in `tools/spw-gates/` preventing gate drift.
   - Aligned CI pipeline (`.github/workflows/build.yml`) to invoke the master gate runner directly.
-- **H4 Bypass Waiver Governance (WO-0089)**:
-  - Upgraded waiver ledger (`tools/spw-gates/h4_waivers.json`) with governance metadata (`scope`, `approved_by`, `approved_at`, `expires_at`).
+- **H4 Bypass Waiver Governance & Approver Whitelist (WO-0089, WO-0091)**:
+  - Upgraded waiver ledger (`tools/spw-gates/h4_waivers.json`) with governance metadata (`scope`, `approved_by`, `approved_at`, `expires_at`), resetting baseline unapproved items to empty approver with runtime historical debt warnings.
+  - Added approver role whitelist (`tools/spw-gates/h4_approvers.json`) and impersonation pattern detection (`h4_policy.impersonation_patterns` in `spw-manifest.json`) to prevent fabricated approvals and self-signing.
   - Added strict anti-stale assertions (verifying file existence, line bounds, and pattern hit matching), unapproved ongoing waiver rejection, and expiration checks in `gate_bypass_patterns.py`.
 - **Open-Source Export & Vendor Drift Gate Registration (WO-0088)**:
   - Formally registered `G.open-source-build` (`gate_open_source_build.py`) and `G.vendored-upstream-drift` (`gate_ehai_vendor_drift.py`) in `spw-manifest.json`.

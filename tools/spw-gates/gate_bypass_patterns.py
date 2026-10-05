@@ -7,11 +7,15 @@ Scans Pascal source files against h4_patterns configured in spw-manifest.json:
 
 Enforces that every occurrence is tracked, audited, and explicitly justified in
 h4_waivers.json. Un-waived violations cause fail-closed rejection.
-Per WO-20261004-0089:
+Per WO-20261004-0089 & WO-20261004-0091:
 - Validates governance fields (scope, approved_by, approved_at, expires_at)
 - Blocks unapproved ongoing waivers (scope=ongoing requires valid approved_by)
 - Blocks expired waivers (expires_at past today)
 - Blocks stale waivers (target file/line does not exist or target code doesn't match pattern)
+- Rejects impersonated approver roles (WO-0091: forbidden impersonation patterns from manifest)
+- Enforces approver role whitelist via tools/spw-gates/h4_approvers.json (fail-closed if missing/unauthorized)
+- Rejects self-signed waivers (submitted_by == approved_by)
+- Historical debt without authentic approver emits [WARN] baseline waiver without approver and passes
 """
 from datetime import date, datetime
 import json
@@ -24,18 +28,45 @@ from gate_lib import fail, ok, ROOT
 GATE_ID = "H4.bypass-patterns"
 
 
-def load_manifest_config() -> tuple[list[dict], int]:
+def load_manifest_config() -> tuple[list[dict], int, list[str]]:
     manifest_path = ROOT / "spw-manifest.json"
     if not manifest_path.is_file():
         fail(GATE_ID, ["spw-manifest.json not found"])
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         patterns = manifest.get("h4_patterns", [])
-        max_ongoing = manifest.get("h4_policy", {}).get("max_ongoing_waivers", 0)
-        return patterns, max_ongoing
+        policy = manifest.get("h4_policy", {})
+        max_ongoing = policy.get("max_ongoing_waivers", 0)
+        impersonation_patterns = policy.get("impersonation_patterns", [])
+        return patterns, max_ongoing, impersonation_patterns
     except Exception as e:
         fail(GATE_ID, [f"failed to parse spw-manifest.json: {e}"])
-        return [], 0
+        return [], 0, []
+
+
+def load_approvers(impersonation_rx_list: list[re.Pattern]) -> set[str]:
+    """Load authorized approvers whitelist from h4_approvers.json (WO-0091 Stage 2)."""
+    approvers_path = ROOT / "tools" / "spw-gates" / "h4_approvers.json"
+    if not approvers_path.is_file():
+        fail(GATE_ID, ["[HIGH] h4_approvers.json missing (fail-closed: approver whitelist required)"])
+    try:
+        data = json.loads(approvers_path.read_text(encoding="utf-8"))
+        approvers = set(data.get("authorized_approvers", []))
+        if not approvers:
+            fail(GATE_ID, ["[HIGH] h4_approvers.json contains empty authorized_approvers (fail-closed)"])
+        for app in approvers:
+            for imp_rx in impersonation_rx_list:
+                if imp_rx.search(app):
+                    fail(
+                        GATE_ID,
+                        [f"[HIGH] h4_approvers.json contains forbidden impersonated role: '{app}'"],
+                    )
+        return approvers
+    except SystemExit:
+        raise
+    except Exception as exc:
+        fail(GATE_ID, [f"[HIGH] failed to parse h4_approvers.json: {exc}"])
+        return set()
 
 
 def load_waiver_data() -> list[dict]:
@@ -70,8 +101,10 @@ def validate_waiver_governance(
     waiver: dict,
     pattern_regexes: dict[str, re.Pattern],
     today_str: str,
+    impersonation_rx_list: list[re.Pattern],
+    authorized_approvers: set[str],
 ) -> tuple[str | None, str | None]:
-    """Validate a waiver entry for stale target, governance fields, and expiration."""
+    """Validate a waiver entry for stale target, governance fields, approver authorization, and expiration."""
     pid = waiver.get("pattern_id")
     file_rel = waiver.get("file", "").replace("\\", "/")
     line_no = waiver.get("line")
@@ -79,6 +112,7 @@ def validate_waiver_governance(
     approved_by = waiver.get("approved_by")
     approved_at = waiver.get("approved_at")
     expires_at = waiver.get("expires_at")
+    submitted_by = waiver.get("submitted_by")
 
     loc = f"{file_rel}:{line_no}"
 
@@ -104,18 +138,37 @@ def validate_waiver_governance(
     if scope not in ("baseline", "ongoing"):
         return f"[HIGH] invalid waiver scope: {loc} scope='{scope}' (must be 'baseline' or 'ongoing')", None
 
-    # 3. Governance field validation
+    app_str = str(approved_by).strip() if approved_by is not None else ""
+
+    # 3. Approver anti-impersonation, whitelist, and anti-self-signing (WO-0091)
+    if app_str:
+        for imp_rx in impersonation_rx_list:
+            if imp_rx.search(app_str):
+                return (
+                    f"[HIGH] impersonated approver: {loc} approved_by='{app_str}' matches forbidden pattern '{imp_rx.pattern}'",
+                    None,
+                )
+        if app_str not in authorized_approvers:
+            return (
+                f"[HIGH] unauthorized approver: {loc} approved_by='{app_str}' not in h4_approvers.json",
+                None,
+            )
+        if submitted_by and str(submitted_by).strip() == app_str:
+            return f"[HIGH] self-signed waiver: {loc} submitted_by matches approved_by", None
+
+    # 4. Governance field validation based on scope
     if scope == "ongoing":
-        if not approved_by or not str(approved_by).strip():
+        if not app_str:
             return f"[HIGH] unapproved ongoing waiver: {loc} pattern {pid} missing approved_by", None
         if not approved_at or not str(approved_at).strip():
             return f"[HIGH] unapproved ongoing waiver: {loc} pattern {pid} missing approved_at", None
     elif scope == "baseline":
-        if not approved_by or not str(approved_by).strip():
+        if not app_str:
+            # Honest historical debt warning (WO-0089/WO-0091)
             warn = f"[WARN] baseline waiver without approver (historical debt): {loc}"
             return None, warn
 
-    # 4. Expiration check
+    # 5. Expiration check
     if expires_at and str(expires_at).strip():
         exp_val = str(expires_at).strip()
         try:
@@ -130,9 +183,12 @@ def validate_waiver_governance(
 
 
 def main():
-    patterns, max_ongoing = load_manifest_config()
+    patterns, max_ongoing, impersonation_patterns = load_manifest_config()
     if not patterns:
         fail(GATE_ID, ["no h4_patterns defined in spw-manifest.json"])
+
+    impersonation_rx_list = [re.compile(p) for p in impersonation_patterns]
+    authorized_approvers = load_approvers(impersonation_rx_list)
 
     waivers_raw = load_waiver_data()
     source_files = get_pascal_source_files()
@@ -148,7 +204,9 @@ def main():
 
     # 1. Audit all waiver entries in h4_waivers.json
     for w in waivers_raw:
-        err, warn = validate_waiver_governance(w, pattern_regexes, today_str)
+        err, warn = validate_waiver_governance(
+            w, pattern_regexes, today_str, impersonation_rx_list, authorized_approvers
+        )
         if err:
             findings.append(err)
         else:
@@ -207,7 +265,7 @@ def main():
     if findings:
         fail(GATE_ID, findings)
 
-    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for")
+    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for ({len(warnings)} baseline debt warnings emitted)")
 
 
 if __name__ == "__main__":
