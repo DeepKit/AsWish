@@ -1,0 +1,30 @@
+{
+  "verdict": "not_ready",
+  "verdict_reason": "The waiver ledger shows 81 waivers with no approvers despite a policy of max_ongoing_waivers=0, indicating non‑compliance and enabling self‑approval; internal governance details are exposed in the ledger, and no external certification evidence is present.",
+  "findings": [
+    {
+      "severity": "blocker",
+      "area": "evidence_integrity",
+      "description": "h4_policy sets max_ongoing_waivers to 0 but h4_waiver_ledger reports 81 waivers with zero approvers, violating the policy.",
+      "evidence": "\"h4_policy\":{\"max_ongoing_waivers\":0} and \"h4_waiver_ledger\":{\"total\":81,\"with_approver\":0}"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "A developer could self‑grant a waiver by editing tools/spw-gates/h4_waivers.json to set approved_by to an authorized approver (e.g., MasterController) without that party's agreement.",
+      "evidence": "\"h4_waiver_ledger\":{\"samples\":[{\"approved_by\":\"\"}]} and \"authorized_approvers\":[\"MasterController\",\"ArchitectureReviewBoard\"]"
+    },
+    {
+      "severity": "medium",
+      "area": "leak",
+      "description": "The waiver ledger contains detailed internal governance information (file paths, lines, rationales) that would be exposed if the repository were cloned.",
+      "evidence": "\"h4_waiver_ledger\":{\"samples\":[{\"file\":\"Spikes/WO-0030-VCL-HighFidelity/TargetApp.dpr\",\"line\":108,\"code\":\"TFile.WriteAllText(...)\",\"rationale\":\"Authorized non-spec disk operation\"}]}"
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "No external observation or certification outcome field is present to verify release readiness; the material lacks any audit result or release approval.",
+      "evidence": "Absence of any field such as \"certification_outcome\", \"release_approval\", or similar in the provided JSON."
+    }
+  ]
+}

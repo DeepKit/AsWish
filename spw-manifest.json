@@ -67,6 +67,7 @@
       "integration_level": "L3"
     },
     "code_retrieval": "explicit-resource-then-codebase-memory",
+    "observer_input": "spw-observations.json",
     "evidence_generator": [
       "python",
       "-X",
@@ -329,10 +330,21 @@
     ]
   },
   "observer_models": [
-    "qoder-GLM-5.2",
-    "stepfun-step-3.7-flash"
+    "claude-deepseek-v4-pro",
+    "claude-nemotron-120b-nim"
   ],
   "min_observer_families": 2,
+  "observer_family_whitelist": [
+    "deepseek",
+    "nemotron",
+    "glm",
+    "stepfun",
+    "qwen",
+    "kimi",
+    "minimax",
+    "gemini"
+  ],
+  "observations_sha256": "e61b0050093bee007eab2eafbe4a001297a8c73bd18e54a3816b0d2be6afe005",
   "forbidden_tracked_paths": [
     ".workbuddy/",
     ".AsWish/",

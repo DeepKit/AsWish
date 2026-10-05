@@ -1,0 +1,48 @@
+{
+  "verdict": "not_ready",
+  "verdict_reason": "All declared gates are recorded as passing, but the H4 waiver ledger has 81 unapproved exemptions and the recorded state lacks external observation or artifact evidence, so the PASS verdicts are not independently verifiable.",
+  "findings": [
+    {
+      "severity": "info",
+      "area": "gate_alignment",
+      "description": "All 12 manifest-declared gate IDs have a recorded PASS verdict with exit_code 0. No gate mismatch found.",
+      "evidence": "manifest_declared_gates vs recorded_gate_verdicts"
+    },
+    {
+      "severity": "medium",
+      "area": "evidence_integrity",
+      "description": "Recorded verdicts contain only id, verdict, and exit_code. No evidence path, artifact hash, log reference, timestamp, or executed command is present, so the PASS verdicts are unverifiable assertions.",
+      "evidence": "recorded_gate_verdicts entries"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "The exemption ledger records 81 waivers with an empty approved_by field, despite the ledger declaring authorized_approvers MasterController and ArchitectureReviewBoard. A developer can add a waiver entry with approved_by set to an empty string or omit it entirely and the ledger counts it as a waiver; no separate approval field or workflow is required by the stated schema.",
+      "evidence": "h4_waiver_ledger.with_approver: 0, without_approver: 81, samples approved_by: \"\""
+    },
+    {
+      "severity": "high",
+      "area": "leak",
+      "description": "The H4 waiver ledger exposes internal governance artifact paths and production source file names with line numbers and code snippets, including paths such as src/app/AsWish.MainForm.pas and src/controllers/AsWish.Controller.pas. If the repository is cloned as-is, these internal files and rationale statements would be included.",
+      "evidence": "h4_waiver_ledger.path: tools/spw-gates/h4_waivers.json, sample file fields"
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "No external observation or certification outcome field is present for the audited run, as noted in _note. This prevents independent confirmation that the recorded PASS verdicts correspond to the stated subject_sha256 and head_commit.",
+      "evidence": "_note and subject_sha256/head_commit"
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "No build artifact, test report, coverage report, or dependency/supply-chain verification data is included, making it impossible to verify that H2 and H3 gates actually executed against the subject commit.",
+      "evidence": "absent fields"
+    },
+    {
+      "severity": "high",
+      "area": "missing",
+      "description": "The H4 waiver ledger has no approval timestamps or expiry for 81 waivers and no submitted_by field, so the authorization state of these exemptions is undefined.",
+      "evidence": "h4_waiver_ledger.total: 81, approved_at: null, expires_at: null, with_submitted_by: 0"
+    }
+  ]
+}

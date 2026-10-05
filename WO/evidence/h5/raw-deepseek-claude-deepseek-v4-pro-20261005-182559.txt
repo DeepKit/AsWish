@@ -1,0 +1,36 @@
+{
+  "verdict": "not_ready",
+  "verdict_reason": "The evidence bundle explicitly declares release_ready:false and certification status withheld due to missing required external observations, so the release cannot be certified as ready.",
+  "findings": [
+    {
+      "severity": "medium",
+      "area": "gate_alignment",
+      "description": "The manifest declares H4.bypass-patterns as a required gate and the evidence bundle records it as PASS, but the h4_ledger shows 81 exemptions without approver and 0 with approver, while h4_policy states max_ongoing_waivers is 0. This suggests the gate passed despite a policy violation.",
+      "evidence": "h4_policy.max_ongoing_waivers = 0, h4_ledger.without_approver = 81"
+    },
+    {
+      "severity": "blocker",
+      "area": "evidence_integrity",
+      "description": "The evidence bundle's self-description says release_ready is false and certification status is withheld because H5_HETEROGENEOUS_OBSERVATION_UNAVAILABLE. The certification reason and degradation reasons are internally consistent, but they contradict any claim of release readiness.",
+      "evidence": "evidence.release_ready = false, evidence.certification.status = withheld"
+    },
+    {
+      "severity": "blocker",
+      "area": "missing",
+      "description": "The evidence bundle records required_observer_families = 2 but valid_observer_families is empty and external_observations is empty. No independent external verification exists.",
+      "evidence": "evidence.required_observer_families = 2, evidence.valid_observer_families = []"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "The h4_ledger shows 81 exemptions without approver, indicating exemptions were created without approval. If the ledger is append-only and only authorized_approvers can approve, a developer could add an exemption without approver and the gate would still pass because the evidence records H4.bypass-patterns as PASS.",
+      "evidence": "h4_ledger.without_approver = 81, h4_ledger.authorized_approvers = [MasterController, ArchitectureReviewBoard]"
+    },
+    {
+      "severity": "medium",
+      "area": "leak",
+      "description": "The material contains h4_ledger entries with total, scopes, and authorized_approvers fields. If the repository includes the full h4_ledger file with exemption details, it could expose internal governance decisions. However, the provided material does not include the actual ledger entries, only aggregate counts, so leakage cannot be fully confirmed.",
+      "evidence": "h4_ledger.total = 81, h4_ledger.scopes = [baseline]"
+    }
+  ]
+}

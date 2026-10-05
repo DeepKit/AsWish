@@ -116,3 +116,27 @@ WO-0091 以下成果主控**全部亲自复跑通过**，不要改动：
 ## 六、仍待老板本人执行
 
 - **GitHub 侧吊销 `DeepKit-Fyi` 名下原 `ghp_` token**（WO-0090 阶段 1，唯一无法代办的的动作）。
+
+---
+
+## 七、WO-20261005-0093 阶段的独立补强（2026-10-05）
+
+WO-0093 阶段 3 跑通真实异构只读观测后，**两个互不通信的模型家族**
+（deepseek 经 `claude-deepseek-v4-pro`，gemini 经 `gemini-3.8-flash-cli`，
+各自独立读取脱环观测材料 `obs_material_v2.json`，互不共享上下文）
+**对本单主体给出一致判级**：
+
+| 家族 | 严重度 | 域 | 原文要点 |
+|---|---|---|---|
+| deepseek | **BLOCKER** | evidence_integrity | `max_ongoing_waivers: 0`，台账 81 条在册，H4.bypass-patterns 却记 PASS，二者必有一假 |
+| deepseek | **BLOCKER** | self_approval | 81 条 `approved_by` 全为空；schema 要求该字段必需却无一满足；把 `approved_by` 改成 `MasterController` 即可自批 |
+| gemini | **BLOCKER** | evidence_integrity | 同一政策矛盾（0 vs 81 vs PASS） |
+| gemini | **BLOCKER** | self_approval | scope=baseline 的条目接受空批准人，开发者可自行追加 |
+
+即：本单单独立为 P3 是**定级偏低**。两个外部独立家族都把它判为阻断级，
+而不是"低危但有审计价值"。**定级调整请主控裁定，工具链维护AI 不自行改。**
+
+新增一条本单未覆盖的泄露面（deepseek 判 HIGH / gemini 判 leak）：
+`h4_waivers.json` 与 `h4_policy.impersonation_patterns`、`authorized_approvers`
+随仓库对外公开，克隆者直接获得内部治理材料。WO-0094 只挡 `.workbuddy/`，
+未挡"治理配置本身即治理情报"这一层。已在 WO-0093 §7.8 登记待裁定，不擅自扩面。

@@ -1,0 +1,60 @@
+{
+  "verdict": "not_ready",
+  "verdict_reason": "The manifest gates are all recorded as passing, but the waiver ledger shows 81 exemptions with no approver, and the H4 policy allows zero ongoing waivers, creating an internal contradiction. The material lacks any evidence trail linking the PASS verdicts to actual test execution, outputs, or hashes.",
+  "findings": [
+    {
+      "severity": "info",
+      "area": "gate_alignment",
+      "description": "All 12 gates declared in manifest_declared_gates have matching PASS verdicts in recorded_gate_verdicts. No mismatch found.",
+      "evidence": "manifest_declared_gates length 12 matches recorded_gate_verdicts length 12, all verdicts PASS"
+    },
+    {
+      "severity": "blocker",
+      "area": "evidence_integrity",
+      "description": "H4 policy declares max_ongoing_waivers: 0, but h4_waiver_ledger.total is 81, all without approver. This means either the gate H4.bypass-patterns PASS verdict is false, or the ledger is not being enforced. The recorded state claims a stronger compliance state than the waiver data supports.",
+      "evidence": "h4_policy.max_ongoing_waivers = 0 vs h4_waiver_ledger.total = 81, with_approver = 0, without_approver = 81"
+    },
+    {
+      "severity": "blocker",
+      "area": "evidence_integrity",
+      "description": "All 81 waivers have approved_by empty string, approved_at null, and submitted_by null. The schema lists approved_by as a required field, yet no waiver has an approver. The H4 gate passes despite these unauthorized exemptions.",
+      "evidence": "h4_waiver_ledger.with_approver = 0, without_approver = 81, samples show approved_by: \"\""
+    },
+    {
+      "severity": "blocker",
+      "area": "self_approval",
+      "description": "The waiver ledger schema includes 'submitted_by' but no sample includes it. A developer could add a waiver entry with approved_by set to 'MasterController' or 'ArchitectureReviewBoard' (the only authorized approvers listed) without any independent verification, since the ledger is a flat JSON file at tools/spw-gates/h4_waivers.json and no cryptographic signature or separate approval channel is described.",
+      "evidence": "h4_waiver_ledger.authorized_approvers = ['MasterController', 'ArchitectureReviewBoard']; no approval workflow or signature field described in schema"
+    },
+    {
+      "severity": "high",
+      "area": "missing",
+      "description": "No test execution logs, output artifacts, timestamps, or evidence hashes are provided for any of the PASS verdicts. The recorded_gate_verdicts only contain id, verdict, and exit_code, with no link to the actual test run, log files, or commit hashes that produced those results.",
+      "evidence": "recorded_gate_verdicts entries contain only id, verdict, exit_code; no log references, timestamps, or artifact hashes"
+    },
+    {
+      "severity": "high",
+      "area": "missing",
+      "description": "No claims-to-evidence mapping is provided. The manifest declares specific claims for each gate (e.g., H2.unit-tests claims 'active_detail_trigger', 'state_machine_check', 'required_fields_on_activation'), but there is no per-claim evidence that these specific behaviors were actually tested and passed.",
+      "evidence": "manifest_declared_gates claims arrays have no corresponding evidence mapping in recorded_gate_verdicts"
+    },
+    {
+      "severity": "high",
+      "area": "missing",
+      "description": "The subject_sha256 is provided but there is no way to verify that the recorded PASS verdicts correspond to this specific subject hash. No build artifact hashes, source tree hashes at test time, or CI pipeline identifiers are provided.",
+      "evidence": "subject_sha256: '0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76' with no linkage to verdicts"
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "The bypass-scan policy is declared but no evidence of the actual scan execution or its results is provided. The H4.bypass-patterns gate passes despite 81 unapproved waivers and max_ongoing_waivers set to 0.",
+      "evidence": "H4.bypass-patterns verdict PASS, but h4_waiver_ledger shows 81 unapproved entries"
+    },
+    {
+      "severity": "medium",
+      "area": "leak",
+      "description": "The h4_waiver_ledger contains file paths and code snippets that may reference internal development paths (e.g., 'D:\\\\_Progs', 'Spikes/WO-0030-VCL-HighFidelity/'), potentially leaking internal directory structure and development project names if the repository is cloned.",
+      "evidence": "h4_patterns includes 'D:\\\\_Progs' and waiver samples reference 'Spikes/WO-0030-VCL-HighFidelity/TargetApp.dpr'"
+    }
+  ]
+}

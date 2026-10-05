@@ -1,0 +1,17 @@
+{
+  "requested_model": "gemini-3.8-flash-cli",
+  "resolved_model": "gemini-3.8-flash",
+  "response_id": "24rDarvhIIrJ-8YPnoyYmAk",
+  "created": 1791199973,
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 611,
+    "prompt_tokens": 2837,
+    "total_tokens": 5636
+  },
+  "finish_reason": "stop",
+  "raw_file": "raw-gemini-gemini-3.8-flash-cli-r3-20261005-192948.txt",
+  "raw_sha256": "d447e906c60cf5034d43694f19a03c7faf21c1b058cc6d23febba50dcf7d8db5",
+  "material_sha256": "1b99c6bfefe4bc0a6135ad39d6b9abcdf91d36304d8d1928e4bb2fc70655c81f",
+  "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76"
+}

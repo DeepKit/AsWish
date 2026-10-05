@@ -1,0 +1,17 @@
+{
+  "requested_model": "claude-deepseek-v4-pro",
+  "resolved_model": "deepseek-v4-pro",
+  "response_id": "cmb-3da05d4fc0ad11f19dbbae03be3413a2",
+  "created": 1791198398,
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 2781,
+    "completion_tokens": 1198,
+    "total_tokens": 3979
+  },
+  "finish_reason": "stop",
+  "raw_file": "raw-deepseek-claude-deepseek-v4-pro-r3-20261005-190639.txt",
+  "raw_sha256": "6540aeaf2bc331357baf3f8b9756179800e44aee320d457db98236c93c43769d",
+  "material_sha256": "1b99c6bfefe4bc0a6135ad39d6b9abcdf91d36304d8d1928e4bb2fc70655c81f",
+  "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76"
+}

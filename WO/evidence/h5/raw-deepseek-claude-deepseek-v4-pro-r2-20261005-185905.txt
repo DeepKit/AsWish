@@ -1,0 +1,66 @@
+{
+  "verdict": "not_ready",
+  "verdict_reason": "The H4 waiver ledger contains 81 active waivers with no approver recorded, violating the stated H4 policy of zero ongoing waivers, and no evidence is provided that any gate output, claim, or exemption was independently observed.",
+  "findings": [
+    {
+      "severity": "blocker",
+      "area": "gate_alignment",
+      "description": "Every manifest-declared gate has a matching recorded PASS verdict; no gate name mismatch found.",
+      "evidence": "manifest_declared_gates ids vs recorded_gate_verdicts ids"
+    },
+    {
+      "severity": "high",
+      "area": "evidence_integrity",
+      "description": "The manifest declares per-gate claims, but no recorded verdict contains claim-level outcomes, so the claims themselves cannot be verified as passing.",
+      "evidence": "manifest_declared_gates[].claims are absent from recorded_gate_verdicts[]"
+    },
+    {
+      "severity": "high",
+      "area": "evidence_integrity",
+      "description": "Recorded gate verdicts contain only id, verdict, and exit_code; no command, log, artifact hash, duration, or observing system identity is present, so PASS verdicts are unsubstantiated.",
+      "evidence": "recorded_gate_verdicts[] fields"
+    },
+    {
+      "severity": "blocker",
+      "area": "self_approval",
+      "description": "The H4 waiver ledger schema includes approved_by, but all 81 waivers have an empty approved_by and null approved_at, and there is no submitted_by or second-party control, so a developer can add or alter a waiver entry without any other party's agreement.",
+      "evidence": "h4_waiver_ledger.total=81, with_approver=0, without_approver=81, approved_by=\"\", approved_at=null"
+    },
+    {
+      "severity": "blocker",
+      "area": "self_approval",
+      "description": "The H4 policy sets max_ongoing_waivers to 0, but the ledger reports 81 waivers in baseline scope, directly contradicting the policy.",
+      "evidence": "h4_policy.max_ongoing_waivers=0 vs h4_waiver_ledger.total=81"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "Authorized approvers are declared as MasterController and ArchitectureReviewBoard, but no waiver names either approver; the ledger is entirely unapproved.",
+      "evidence": "h4_waiver_ledger.authorized_approvers vs samples[].approved_by=\"\""
+    },
+    {
+      "severity": "medium",
+      "area": "leak",
+      "description": "The waiver ledger includes internal file paths such as D:\\_Progs and source file references that may reveal internal directory structure or project layout if the repository is cloned.",
+      "evidence": "h4_patterns[].pattern includes 'D:\\\\_Progs'; waiver samples include 'src/app/AsWish.MainForm.pas' and 'Spikes/WO-0030-VCL-HighFidelity/TargetApp.dpr'"
+    },
+    {
+      "severity": "high",
+      "area": "missing",
+      "description": "There is no field describing the independent observation or certification outcome of the run, so the material cannot demonstrate that the recorded PASS state was produced by an automated gate run rather than self-reported.",
+      "evidence": "_note says the material deliberately contains no external-observation or certification outcome fields"
+    },
+    {
+      "severity": "high",
+      "area": "missing",
+      "description": "No subject identity is supplied: subject_sha256 is given, but there is no repository URL, project name, or provenance tying the hash to the claimed software.",
+      "evidence": "subject_sha256='0f4bb...' with no repository or project identifier"
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "The manifest claims specific counterfactual and unit-test behaviors, but no test names, logs, or assertion results are present to confirm those claims.",
+      "evidence": "manifest_declared_gates[].claims such as counterfactual_1 through counterfactual_8"
+    }
+  ]
+}
