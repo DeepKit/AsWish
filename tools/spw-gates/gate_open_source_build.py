@@ -381,8 +381,50 @@ def check_export_content_markers(exported: set[str]) -> list[str]:
     return findings
 
 
+def check_tracked_internal_dirs() -> list[str]:
+    """Assert git does not *track* any internal runtime directory (WO-20261005-0094).
+
+    export-ignore only shapes `git archive`; a tracked internal directory is
+    still fully visible to anyone who clones the repository, and its blobs stay
+    reachable so no prune can reclaim them. Those are different leakage surfaces
+    and both need their own assertion.
+    """
+    findings = []
+    manifest_path = ROOT / "spw-manifest.json"
+    if not manifest_path.is_file():
+        return findings
+    try:
+        manifest = json.loads(read(manifest_path))
+    except Exception as exc:
+        return [f"解析工作树 spw-manifest.json 失败: {exc}"]
+
+    forbidden = manifest.get("forbidden_tracked_paths") or []
+    if not forbidden:
+        findings.append("manifest 缺少 forbidden_tracked_paths（内部运行态目录清单）")
+        return findings
+
+    out = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
+    ).stdout
+    tracked = {n.decode("utf-8", "replace") for n in out.split(b"\0") if n}
+
+    for entry in sorted(forbidden):
+        norm = entry.replace("\\", "/")
+        hits = sorted(n for n in tracked if n.startswith(norm))
+        if hits:
+            findings.append(
+                f"git 跟踪了内部运行态目录 {norm}: {len(hits)} 个（例: {hits[0]}）"
+                f"——export-ignore 只挡 git archive，挡不住 clone，必须 git rm --cached"
+            )
+    return findings
+
+
 def main() -> None:
     findings = []
+    findings.extend(check_tracked_internal_dirs())
     findings.extend(check_no_python_command_in_pascal())
 
     for rel in BUILD_SCRIPTS:

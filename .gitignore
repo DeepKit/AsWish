@@ -70,3 +70,7 @@ batch_dogfood/
 
 # Fixtures
 tools/gui-verify-fixture/mirror/
+
+# Local runtime state (never tracked — see WO-20261005-0094)
+.workbuddy/
+.claude/sessions/

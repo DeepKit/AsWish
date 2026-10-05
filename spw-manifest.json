@@ -332,5 +332,11 @@
     "qoder-GLM-5.2",
     "stepfun-step-3.7-flash"
   ],
-  "min_observer_families": 2
+  "min_observer_families": 2,
+  "forbidden_tracked_paths": [
+    ".workbuddy/",
+    ".AsWish/",
+    ".ai-workbench/",
+    "_repro/"
+  ]
 }
