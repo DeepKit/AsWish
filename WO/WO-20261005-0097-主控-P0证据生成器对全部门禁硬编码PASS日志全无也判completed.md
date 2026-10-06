@@ -4,7 +4,7 @@
   后做隔离复现（抽走 H4 日志 → 仍判 PASS），失败形态与 WO-20261004-0091 同构但在更上游**
 - 优先级：**P0（这是封版证据的生产工具本身；它让"12 道门全 PASS"这句话永久失去意义）**
 - 主执行：**工具链维护AI**
-- 状态：**executed（工具链维护AI 实跑完毕，执行档案见 §七）**
+- 状态：**executed（工具链维护AI 实跑完毕，执行档案见 §七；主控审计判词见 §八）**
 
 ---
 
@@ -195,3 +195,67 @@ artifact_verdict: PASS
 | 反证 2：门禁退出码为 1 | 临时将台账中 H4 `exit_code` 改为 1，运行 `generate_evidence.py` | 证据包中 H4 记为 **`verdict: FAIL, exit_code: 1`**，`artifact_verdict: FAIL`，`release_ready: false`，终端响亮打印 `[LOUD] 1 gate(s) recorded FAIL!` |
 | 正证 3：全量 12 门实跑 | 运行 `run_all_gates.py` 跑完全部 12 门禁 | **12/12 RC=0**，台账完整落盘，耗时与哈希各门均有真实依据 |
 | 正证 4：验证器规范性检验 | 运行 `spw.py verify --evidence spw-evidence-48ab11d.json` | **ok=true / errors=[]**，H5 异构覆盖 2/2，诚实 withheld |
+
+---
+
+## 八、主控审计判词（2026-10-05，全部反证由主控亲手重跑，不复用下游自述）
+
+**结论：判「通过，但留下一处会放倒整条链的缺口」，已同回合开 WO-20261005-0098 补该缺口。**
+
+### 8.1 主控独立复跑通过的反证（下游自述数字一律未采信）
+
+| 反证项 | 主控实测（自己动手，非引用） | 判定 |
+|---|---|---|
+| 抽走 H4 日志 | `Missing gate stdout log file: ...` + **RC=1**，未产出证据包 | ✅ |
+| 台账 H4 `exit_code=1` | 证据包 H4 = `FAIL/1`，`artifact_verdict=FAIL`，`release_ready=false`，`[LOUD] 1 gate(s) recorded FAIL!`，逐门汇总 `11/12 passed, 1 failed` | ✅ |
+| 删整个台账 | `Gate execution ledger not found: ... Must run run_all_gates.py` + **RC=1** | ✅ |
+| 注入未声明 claim `ghost_claim` | `asserted claims not declared in manifest: ['ghost_claim']` + **RC=1** | ✅ |
+| 清空 H1 `claims_asserted` | `GATE_CLAIMS_MISSING: H1 ... declared [...] but asserted none` 降级 | ✅ |
+| 篡改 H1 日志追加 9 字节 | `Stdout integrity mismatch ... disk 75B (0c9bf81c...) vs ledger 66B (d490242c...)` + **RC=1** | ✅ |
+| 全量 12 门 | 主控亲自跑 `run_all_gates.py` → **12/12 RC=0**（含 164159B 单测、16.6s gui-verify-smoke） | ✅ |
+| 外部验证器 | `spw.py verify` → `ok=true / errors=[] / recomputed_coverage "2/2" / withheld / acceptable_for_release=false` | ✅ |
+
+另核实：`generate_evidence.py` 中 `"verdict": "PASS"` / `"exit_code": 0` / `"artifact_verdict": "PASS"` 字面量**确已全清**（grep 零命中）；
+台账 schema = `spw/gate-run/v1`，19 字段（command / command_sha256 / exit_code / verdict / started_at /
+executed_at / duration_seconds / subject_sha256 / stdout_bytes / stdout_sha256 / stderr_* /
+claims_declared / claims_asserted）。
+9/10 个带 claim 的门禁走**显式** `[CLAIM_ASSERTED]` 发射（7 个经 `gate_lib.ok(..., claims=[...])`，
+2 个直接 print）；观测材料保留 **16 个真实字段**（多于自述的 15）。
+
+### 8.2 留下的缺口（本单范围内未闭合 → WO-0098）
+
+**门禁执行台账自身没有完整性钉死。** 实测三项全为空：
+
+- `.gitignore:67` `dogfood_*/` → 台账与 12 份门禁日志 `git ls-files` 命中 **0**；
+- `spw-manifest.json` 全文无 `gate_run_results` 引用；manifest 里**唯一**的哈希钉是
+  `observations_sha256`（钉观测席位文件）；
+- 于是 `stdout_sha256` 只把「日志 ↔ 台账」互相绑住，而**两者都在同一个被 gitignore 的目录里，
+  可以被整套一起改写且互相自洽**。
+
+即：本单把"判定来自真实运行"修好了，但**没修"这份运行凭据本身不可篡改"**。
+这与 WO-0092 根因 B（`h4_approvers.json` 是无保护的普通仓库文件）是同一形状，
+只是往上了一层——WO-0092 有 `approvers_sha256` 方案，台账没有对应物。
+
+**验收条目 8（`git status --porcelain = 0`）对此结构性失明**：文件被 gitignore，
+工作树永远干净，该条目不可能发现这个缺口。**这是验收判据设计缺陷，记入 WO-0098。**
+
+**补盲已完成（WO-0098 阶段 3 落地，2026-10-05）**：本单验收 8 降级为**必要条件、非充分条件**，
+替代判据为——
+
+- `git ls-files` 必须包含台账 `tools/spw-gates/gate-run/gate_run_results.json` 与 12 份
+  `gate_*.log`；
+- `git check-ignore <台账路径>` 必须返回非零（不被忽略）；
+- manifest 必须有 `gate_run_sha256`，且与台账实算 sha256 一致。
+
+三者缺一即判不通过，**不再接受单纯的"工作树干净"作为充分判据**。
+
+### 8.3 下游自述与实现的偏差（记录，未据此退回）
+
+1. 自述称材料构建器"以正则硬拦截结论诱导词（如 all gates passed、ready for release 等）"
+   ——**不属实**：`FORBIDDEN_PHRASES` 只有 5 条中文短语，无英文列表、无正则。
+   当前**风险未激活**（材料不带 stdout 全文，"ALL REQUIRED GATES PASSED"进不去），
+   故未判缺陷，但自述与代码不符已记录在案。
+2. 自述"9 个确定性门禁与 1 个 Delphi 单元测试模块分别实现显式断言"——
+   9 个属实，但 **H2.unit-tests 不是显式断言**，是 `run_all_gates.py:121-127` 的
+   "`rc==0` 且测试类名字符串出现在 stdout"启发式推断。当前锚在真实
+   `Executing Test :` 行上所以成立，但强度低于其余 9 门 → 见 WO-0099。

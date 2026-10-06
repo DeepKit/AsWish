@@ -16,6 +16,16 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools" / "spw-gates"))
+from gate_lib import GATE_RUN_DIR
+import run_all_gates
+
+# 运行时自洽断言（WO-20261006-0100 阶段 2）：读取方与写入方的 GATE_RUN_DIR 必须绝对一致
+if run_all_gates.GATE_RUN_DIR != GATE_RUN_DIR:
+    raise RuntimeError(
+        f"GATE_RUN_DIR mismatch between run_all_gates ({run_all_gates.GATE_RUN_DIR}) "
+        f"and generate_evidence ({GATE_RUN_DIR})"
+    )
 
 
 def get_git_head_short() -> str:
@@ -423,7 +433,8 @@ def _degraded(required: int, reasons: list[str], subject_sha: str, manifest_data
 
 def generate_bundle(output_dir: Path = None) -> Path:
     if output_dir is None:
-        output_dir = ROOT
+        output_dir = ROOT / "_repro"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_path = ROOT / "spw-manifest.json"
     if not manifest_path.is_file():
@@ -454,15 +465,36 @@ def generate_bundle(output_dir: Path = None) -> Path:
     subject_sha = agg.hexdigest()
 
     # 2. Collect gate records from real execution ledger with 100% integrity (WO-0097 & WO-0095)
-    ledger_file = ROOT / "dogfood_gui" / "gate_run_results.json"
+    ledger_file = GATE_RUN_DIR / "gate_run_results.json"
     if not ledger_file.is_file():
         raise RuntimeError(
-            f"Gate execution ledger not found: {ledger_file}. "
+            f"Gate execution ledger not found: {ledger_file} "
+            f"(generate_evidence GATE_RUN_DIR={GATE_RUN_DIR}, "
+            f"run_all_gates GATE_RUN_DIR={run_all_gates.GATE_RUN_DIR}). "
             f"Must run tools/spw-gates/run_all_gates.py to produce real execution records."
         )
 
+    # The ledger is the only source of truth for PASS/FAIL, so it must be pinned.
+    # observations_sha256 already pins the observer seats; without a sibling pin
+    # for this file, rewriting the ledger and the 12 logs together leaves every
+    # downstream check satisfied (WO-20261005-0098). The pin is filled in by hand
+    # and never recomputed back into the manifest by this generator.
+    pinned_ledger = manifest.get("gate_run_sha256")
+    if not pinned_ledger:
+        raise RuntimeError(
+            "manifest 缺少 gate_run_sha256——门禁执行台账未被完整性钉死，"
+            "允许整套无痕改写（WO-20261005-0098）"
+        )
+    ledger_bytes = ledger_file.read_bytes()
+    actual_ledger_sha = hashlib.sha256(ledger_bytes).hexdigest()
+    if actual_ledger_sha != pinned_ledger:
+        raise RuntimeError(
+            f"[HIGH] gate execution ledger tampered: {ledger_file} "
+            f"sha256={actual_ledger_sha[:16]} != manifest pinned {str(pinned_ledger)[:16]}"
+        )
+
     try:
-        ledger_data = json.loads(ledger_file.read_bytes())
+        ledger_data = json.loads(ledger_bytes)
     except Exception as e:
         raise RuntimeError(f"Failed to parse gate execution ledger: {e}")
 
@@ -502,7 +534,7 @@ def generate_bundle(output_dir: Path = None) -> Path:
 
         safe_gid = gid.replace(".", "_")
         log_name = f"gate_{safe_gid}.log"
-        log_file = ROOT / "dogfood_gui" / log_name
+        log_file = GATE_RUN_DIR / log_name
         if not log_file.is_file():
             raise RuntimeError(f"Missing gate stdout log file: {log_file}")
 

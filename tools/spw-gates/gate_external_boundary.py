@@ -75,7 +75,14 @@ INTERNAL_PATTERNS = [
     r"(^|/)AUDIT-REQUEST-",
     r"(^|/)AGENTS\.md$",
     r"(^|/)spw-evidence-.*\.json$",
-    r"(^|/)gate_(external_boundary|open_source_build)\.py$",  # self and export gate marker definitions
+    r"(^|/)(gate_(external_boundary|open_source_build)\.py|tools/spw-gates/README\.md)$",  # marker definitions and doc
+    # Gate execution evidence. WO-20261005-0098 moved this tree under version
+    # control so that rewriting it leaves a git trace, and
+    # gate_open_source_build.py already skips all of tools/spw-gates/. Without
+    # the same skip here, one marker hit poisons two logs that then fail this
+    # gate forever, and the only way out is editing the logs - falsifying the
+    # evidence. It is export-ignored in .gitattributes for the same reason.
+    r"(^|/)tools/spw-gates/gate-run/",
 ]
 
 BINARY_EXTENSIONS = {
@@ -259,7 +266,54 @@ def check_file_credentials() -> list[str]:
     return findings
 
 
+def run_selftest() -> None:
+    """Fast 1-second precheck for authors (WO-20261006-0101 Stage 2).
+
+    Only runs get_candidate_files() and checks against INTERNAL_MARKERS.
+    Does NOT touch git archive or git add -A dry-run.
+    Prints cleanly grouped hits by file, exits 0 if clean, 1 if markers found.
+    """
+    candidates = get_candidate_files()
+    file_hits: dict[str, list[tuple[int, str, str]]] = {}
+
+    for rel in candidates:
+        p = ROOT / rel
+        if not p.is_file():
+            continue
+        if p.suffix.lower() in BINARY_EXTENSIONS:
+            continue
+        try:
+            lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+        except Exception:
+            continue
+
+        for line_num, line in enumerate(lines, 1):
+            for m in INTERNAL_MARKERS:
+                if m in line:
+                    if (rel, line_num, m) in STATUTORY_ALLOWLIST:
+                        continue
+                    if rel not in file_hits:
+                        file_hits[rel] = []
+                    file_hits[rel].append((line_num, m, line.strip()))
+
+    if file_hits:
+        print(f"[{GATE_ID}][SELFTEST] FAIL: 发现内部治理标记泄漏（{len(file_hits)} 个文件）:")
+        for f, hits in sorted(file_hits.items()):
+            print(f"  {f}:")
+            for line_num, m, snippet in hits:
+                snip_preview = snippet if len(snippet) <= 60 else snippet[:57] + "..."
+                print(f"    行 {line_num} 命中 '{m}': {snip_preview}")
+        sys.exit(1)
+    else:
+        print(f"[{GATE_ID}][SELFTEST] PASS: 工作区公开面文件无内部治理标记（扫描了 {len(candidates)} 个文件）")
+        sys.exit(0)
+
+
 def main():
+    if "--selftest" in sys.argv:
+        run_selftest()
+        return
+
     findings = []
 
     # 1. Check dry-run leak risks

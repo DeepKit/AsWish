@@ -7,6 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = json.loads((ROOT / "spw-manifest.json").read_text(encoding="utf-8"))
 
+# 门禁凭据与运行日志目录的唯一定义源（WO-20261006-0100 单一真值）
+GATE_RUN_DIR = ROOT / "tools" / "spw-gates" / "gate-run"
+
 SRC_DIRS = ["src", "cli", "tests"]
 
 

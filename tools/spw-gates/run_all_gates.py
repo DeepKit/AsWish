@@ -5,7 +5,7 @@ Executes all deterministic quality gates defined in spw-manifest.json:
 - Detects unmanaged gate scripts in tools/spw-gates/ to prevent gate drift (WO-20261004-0088)
 - Detects dropped required gates compared to HEAD
 - Captures exit_code, stdout, stderr, hashes, and execution duration
-- Writes full raw logs to dogfood_gui/gate_<id>.log for reproducible evidence packaging
+- Writes full raw logs to tools/spw-gates/gate-run/ for reproducible evidence packaging
 - Returns exit code 0 if all required gates pass, or non-zero on failure
 """
 import argparse
@@ -21,6 +21,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GATES_DIR = ROOT / "tools" / "spw-gates"
+sys.path.insert(0, str(GATES_DIR))
+from gate_lib import GATE_RUN_DIR
+
 EXCLUDED_SCRIPTS = {"gate_lib.py", "run_all_gates.py"}
 
 
@@ -78,7 +81,7 @@ def run_gate(gate: dict, verbose: bool = False, manifest: dict = None) -> dict:
     timeout = int(gate.get("timeout", 180))
 
     safe_gid = gid.replace(".", "_")
-    log_dir = ROOT / "dogfood_gui"
+    log_dir = GATE_RUN_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / f"gate_{safe_gid}.log"
 
@@ -234,7 +237,7 @@ def main():
         "subject_sha256": compute_subject_sha(manifest, ROOT),
         "gates": results,
     }
-    ledger_path = ROOT / "dogfood_gui" / "gate_run_results.json"
+    ledger_path = GATE_RUN_DIR / "gate_run_results.json"
     ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[spw-gates] Execution ledger written to: {ledger_path}", flush=True)
 

@@ -39,7 +39,9 @@ _audit_out.txt
 _audit_err.txt
 err_file
 out_file
+# SPW 证据包与观测材料派生产物（WO-20261006-0102：即使误落仓库根亦被忽略，第二道防线）
 spw-evidence-*.json
+obs_material*.json
 boundary.json
 bugfix.md
 tasks.md
@@ -64,6 +66,9 @@ cli/cli_build.txt
 tests/test_build.txt
 tests/test_run.txt
 _handoff/
+dogfood_*/
+# 门禁凭据例外：tools/spw-gates/gate-run/（gate_run_results.json + 12 份 gate_*.log）
+# 是 PASS/FAIL 的唯一真值源，必须受版本控制，不得再挪回 ignore 目录（WO-20261005-0098）。
 dogfood_*/
 scratch_*/
 batch_dogfood/

@@ -16,8 +16,14 @@ python -X utf8 tools/spw-gates/run_all_gates.py
 - **动态驱动**：直接从 `spw-manifest.json` 读取 `gates[]`，不硬编码门禁列表；
 - **防脱管哨兵**：自动扫描本目录下所有 `gate_*.py`，若存在未在 manifest 登记的门禁脚本，立即报错中断（防门禁脱管，见 WO-20261004-0088）；
 - **防遗漏断言**：对比当前工作树与 `HEAD:spw-manifest.json`，禁止悄悄删除必需门禁；
-- **真实日志落盘**：将各门禁真实 `stdout` 输出至 `dogfood_gui/gate_<id>.log`，供证据生成器（`generate_evidence.py`）打包；
+- **真实日志落盘**：将各门禁真实 `stdout` 输出至 `tools/spw-gates/gate-run/gate_<id>.log`，供证据生成器（`generate_evidence.py`）打包；
 - **Fail-Closed 退出码**：任意 `required: true` 门禁非零退出即整体验收失败。
+
+### 凭据与日志目录单一真值源 (WO-20261006-0100)
+- 门禁执行凭据与日志目录路径（`GATE_RUN_DIR`）的唯一真值定义位于 `tools/spw-gates/gate_lib.py`：
+  `GATE_RUN_DIR = ROOT / "tools" / "spw-gates" / "gate-run"`
+- 门禁总运行器（`run_all_gates.py`）与证据生成器（`generate_evidence.py`）必须统一从此模块 import 该常量，严禁在下游脚本中二次硬编码或私自定义。
+- `generate_evidence.py` 启动时内置强一致性运行时断言：若读取方与写入方所引用的 `GATE_RUN_DIR` 不一致，直接抛出 `RuntimeError` 并中断执行。
 
 ---
 
@@ -75,3 +81,53 @@ H4 门禁用于防范代码中绕过 SpecStore 原子写/备份机制或隐藏�
 
 ## 文档内部溯源说明
 公开文档（如 `README.md`、`.github/CONTRIBUTING.md`）中存在少量对内部历史研发纪要及治理规范的学术溯源引用（如 `docs/13.*`、`docs/07.*`）。这些属于事实性出处标注（Provenance Citation），在源码导出包中作为外部历史参照，不影响软件开源构建与独立运行。
+
+---
+
+## 发布面边界规则与本地自检 (WO-20261006-0101)
+
+为确保开源代码仓库与发布包的纯净性，门禁 `H3.external-boundary` 与 `G.open-source-build` 对公开面内容实施静态审查。
+
+> ⚠️ **写 README / docs 前先看一眼这里**：严禁在面向外部发布的源码与公开文档中引入内部治理标记或未导出的私有路径引用。
+
+### 1. 内部治理标记词清单（SSOT 定义源：`tools/spw-gates/gate_external_boundary.py:45`）
+以下 6 个词汇为内部治理标记，除在法律许可/历史学术归因声明（`STATUTORY_ALLOWLIST`）指定的三元组文件行外，**严禁出现在任何公开面代码或文档中**：
+1. `主控`
+2. `开发AI`
+3. `WorkBuddy`
+4. `工单`
+5. `BCW`
+6. `BetterCiv`
+
+### 2. 公开面 vs 内部面路径定义
+- **内部面路径（受排除，不作为公开面扫描）**：
+  - `WO/`（内部工单与测试留痕）
+  - `.workbuddy/`（工作区本地工作日志）
+  - `.AsWish/`、`.ai-workbench/`、`_repro/`、`.claude/`
+  - `docs/归档/`、`docs/_archive/`、`docs/*交接*`
+  - 内部文档规范：`docs/07.*`、`docs/13.*`、`docs/15.*`、`docs/AsWish-Commons-PG.*`
+  - 治理协议与审计件：`AGENTS.md`、`AUDIT-REQUEST-*`、`spw-evidence-*.json`
+  - 门禁自身定义与执行凭据：`gate_external_boundary.py`、`gate_open_source_build.py`、`tools/spw-gates/README.md`、`tools/spw-gates/gate-run/`
+- **公开面路径**：除上述受排除模式以外的所有源码（`src/`、`cli/`、`tests/`）、公开规范文档（`docs/01.*` ~ `docs/06.*` 等）、项目根目录公开文档（`README.md`、`LICENSE`、`NOTICE`、`.github/`）等。
+
+### 3. 1 秒级本地极速预检
+在提交前或编写文档后，作者可运行极速自查命令（耗时 < 1 秒，不依赖慢速的 `git archive` 或 `git add -A`）：
+```bash
+python -X utf8 tools/spw-gates/gate_external_boundary.py --selftest
+```
+该命令与正式门禁共享完全相同的 `INTERNAL_MARKERS` 与 `INTERNAL_PATTERNS` 判定逻辑，若命中标记将按文件归类打印精确行号与代码片段，便于即时修正。
+
+### 4. 公开文档未导出出处引用台账 (8 处死链欠账明细)
+公开文档中当前存在 8 处指向未导出内部出处（`docs/` 内部规范或内部文件）的引用。门禁 `G.open-source-build` 当前以 **WARN** 形式提示且不阻断发布构建。账目明细如下：
+
+| 序号 | 所在文件及行号 | 引用的未导出内部路径 | 账目性质与处理建议 |
+|---|---|---|---|
+| 1 | `.github/CONTRIBUTING.md:4` | `docs/13.治理-文档治理与工程纪律.md` | 内部规范引用；保留内部溯源注记或替换为站内公开贡献说明 |
+| 2 | `.github/CONTRIBUTING.md:31` | `docs/13.治理-文档治理与工程纪律.md` | 同上 |
+| 3 | `.github/copilot-instructions.md:4` | `docs/13.治理-文档治理与工程纪律.md` | 内部规范引用；保留或替换为公开指引 |
+| 4 | `README.md:87` | `docs/13.治理-文档治理与工程纪律.md` | 事实性溯源引用；属于已知技术债务，保留 WARN 不阻断 |
+| 5 | `README.md:201` | `docs/07.工程-工程路线与Dogfood验收.md` | 事实性出处引用；保留 WARN 不阻断 |
+| 6 | `README.md:228` | `AGENTS.md` | 内部 Agent 执行纪律指针；保留 WARN 不阻断 |
+| 7 | `docs/11.理论-理论归因与CTF.md:130` | `docs/15.参考-工程与外部参考资料.md` | 理论外部参考引用；保留内部溯源注记 |
+| 8 | `protocol/invariants.md:22` | `docs/07.工程-工程路线与Dogfood验收.md` | 协议事实出处引用；保留 WARN 不阻断 |
+| 9 | `protocol/state-machine.md:5` | `docs/07.工程-工程路线与Dogfood验收.md` | 协议事实出处引用；保留 WARN 不阻断 |

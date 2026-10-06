@@ -169,7 +169,7 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
     material_digest = hashlib.sha256(raw_bytes).hexdigest()
 
     if output_path is None:
-        output_path = ROOT / "obs_material.json"
+        output_path = ROOT / "_repro" / "obs_material.json"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_bytes(raw_bytes)
@@ -179,7 +179,7 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
 def main():
     parser = argparse.ArgumentParser(description="Generate un-biased observation material for H5 reviewers")
     parser.add_argument("--evidence", required=True, help="Path to SPW evidence bundle JSON")
-    parser.add_argument("--output", default=None, help="Output JSON path (default: obs_material.json)")
+    parser.add_argument("--output", default=None, help="Output JSON path (default: _repro/obs_material.json)")
     args = parser.parse_args()
 
     evidence_path = Path(args.evidence).resolve()
