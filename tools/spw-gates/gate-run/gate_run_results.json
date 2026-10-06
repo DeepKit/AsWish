@@ -1,0 +1,372 @@
+{
+  "schema": "spw/gate-run/v1",
+  "run_id": "RUN-20261006-090409",
+  "started_at": "2026-10-06T09:04:09.166210+00:00",
+  "finished_at": "2026-10-06T09:05:07.646848+00:00",
+  "manifest_path": "D:\\_Progs\\02Business\\AsWish\\spw-manifest.json",
+  "manifest_sha256": "9cad3f2e1e091ac7ef04dd977a68432d4577743835e3f1201e42d82344f16ddd",
+  "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+  "gates": [
+    {
+      "gate_id": "H1.resource-locks",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_resource_locks.py"
+      ],
+      "command_sha256": "a1f52c185520dbb14f2d5529a47b4957d980176fccff1618d3a869aef1b8a326",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:09.180694+00:00",
+      "executed_at": "2026-10-06T09:04:11.486662+00:00",
+      "duration_seconds": 2.306,
+      "duration_ms": 2305,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 66,
+      "stdout_sha256": "d490242cbbc789b8b2bd2532339065c7bd9e1d5af1242acd4c4b47ead9d255ed",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "controlled_entry_only"
+      ],
+      "claims_asserted": [
+        "controlled_entry_only"
+      ]
+    },
+    {
+      "gate_id": "H2.compile-build",
+      "required": true,
+      "command": [
+        "cmd",
+        "/c",
+        "D:\\_Progs\\02Business\\AsWish\\_build.bat"
+      ],
+      "command_sha256": "56310f0c59c5169604b3d4d6277fdba170f10c5402620f5821a01305872a1712",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:11.498526+00:00",
+      "executed_at": "2026-10-06T09:04:17.021503+00:00",
+      "duration_seconds": 5.523,
+      "duration_ms": 5522,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 1351,
+      "stdout_sha256": "0f1faec13d40088b94d4951dbd252ba84f5ef4f3070bb34b73f7d2a3e5bccd30",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [],
+      "claims_asserted": []
+    },
+    {
+      "gate_id": "H2.compile-tests",
+      "required": true,
+      "command": [
+        "cmd",
+        "/c",
+        "D:\\_Progs\\02Business\\AsWish\\tests\\_build_tests.bat"
+      ],
+      "command_sha256": "d1bc3e1647690560488d233f06e98ef0f443d8b7438f04a681cb11939014ab9a",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:17.113707+00:00",
+      "executed_at": "2026-10-06T09:04:20.879116+00:00",
+      "duration_seconds": 3.765,
+      "duration_ms": 3765,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 782,
+      "stdout_sha256": "ef7381782b565d40aa8631e56acff0b27d552e567222fd427d1add270eed5c70",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [],
+      "claims_asserted": []
+    },
+    {
+      "gate_id": "H2.unit-tests",
+      "required": true,
+      "command": [
+        "D:\\_Progs\\02Business\\AsWish\\tests\\AsWish.Tests.exe"
+      ],
+      "command_sha256": "0a4f37f3c1ed54320f75bf564ee17fbc9de7adb56b3b9dc774139759760d11c6",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:20.895878+00:00",
+      "executed_at": "2026-10-06T09:04:45.597903+00:00",
+      "duration_seconds": 24.702,
+      "duration_ms": 24702,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 164159,
+      "stdout_sha256": "07532672e8c5d4b05bbb9522132fef7b4868d55c6a069696a1396750af59cd1c",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "active_detail_trigger",
+        "state_machine_check",
+        "required_fields_on_activation"
+      ],
+      "claims_asserted": [
+        "active_detail_trigger",
+        "required_fields_on_activation",
+        "state_machine_check"
+      ]
+    },
+    {
+      "gate_id": "H3.encoding-guard",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_encoding.py"
+      ],
+      "command_sha256": "9d2160a70596b15650a9432605a7c5e55fa04b50fec1c2eeed7f648f7c7ea942",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:45.618235+00:00",
+      "executed_at": "2026-10-06T09:04:46.298559+00:00",
+      "duration_seconds": 0.68,
+      "duration_ms": 680,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 96,
+      "stdout_sha256": "b325972265fbf73f16a812aea0ed1ec3334d95672cd03f3634fc4ddb7c5eae73",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_1",
+        "counterfactual_2"
+      ],
+      "claims_asserted": [
+        "counterfactual_1",
+        "counterfactual_2"
+      ]
+    },
+    {
+      "gate_id": "H3.runtime-autofix",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_autofix.py"
+      ],
+      "command_sha256": "b89a98494abe132de8eb7b86c0718fdfca9fb10563feef450a814b22c5811645",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:46.314874+00:00",
+      "executed_at": "2026-10-06T09:04:46.410344+00:00",
+      "duration_seconds": 0.095,
+      "duration_ms": 95,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 132,
+      "stdout_sha256": "0f491c00ca2523b3722170778b0554f15eaf7eb0219eead4d24441de72b14a9c",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_3",
+        "counterfactual_4",
+        "counterfactual_5"
+      ],
+      "claims_asserted": [
+        "counterfactual_3",
+        "counterfactual_4",
+        "counterfactual_5"
+      ]
+    },
+    {
+      "gate_id": "H3.deep-ui-test",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_ui_bridge.py"
+      ],
+      "command_sha256": "c6e4b85ab8483c9ecdab91c52ef8119939eac02764550a009e4da9f1e72b765b",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:46.423993+00:00",
+      "executed_at": "2026-10-06T09:04:46.522464+00:00",
+      "duration_seconds": 0.098,
+      "duration_ms": 98,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 153,
+      "stdout_sha256": "093395c0031acfb67d2e4a83b194bd041fa8dc41fe27e647ffade42fa71fb005",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_6",
+        "counterfactual_7",
+        "counterfactual_8"
+      ],
+      "claims_asserted": [
+        "counterfactual_6",
+        "counterfactual_7",
+        "counterfactual_8"
+      ]
+    },
+    {
+      "gate_id": "H3.gui-verify-smoke",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_gui_verify_smoke.py"
+      ],
+      "command_sha256": "95abe83ff6e1ffc963c5213c658dccaf2c78ebe54dfbff5004ed42a2c2293a9e",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:04:46.538155+00:00",
+      "executed_at": "2026-10-06T09:05:03.232402+00:00",
+      "duration_seconds": 16.694,
+      "duration_ms": 16694,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 94,
+      "stdout_sha256": "78a879569a6fc0666734e7bff81f2ad424e7a94d45821221be3f9585f6660bf8",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_smoke"
+      ],
+      "claims_asserted": [
+        "counterfactual_smoke"
+      ]
+    },
+    {
+      "gate_id": "H3.external-boundary",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_external_boundary.py"
+      ],
+      "command_sha256": "9c77044aa01884a1ee8ddbc80b5b9cc05700a17e1e5b4076739e412150ed3a75",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:05:03.250304+00:00",
+      "executed_at": "2026-10-06T09:05:04.576090+00:00",
+      "duration_seconds": 1.326,
+      "duration_ms": 1325,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 108,
+      "stdout_sha256": "1ef97f167b0c809fae0d53b944c07ca9337b6fc96d10470638f16bc60181d046",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_boundary"
+      ],
+      "claims_asserted": [
+        "counterfactual_boundary"
+      ]
+    },
+    {
+      "gate_id": "H4.bypass-patterns",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_bypass_patterns.py"
+      ],
+      "command_sha256": "f93779be1f0cbb65f14a4f10b07a4261b4c44a50116b037ba4e715bbf1e5d6ed",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:05:04.594613+00:00",
+      "executed_at": "2026-10-06T09:05:05.042423+00:00",
+      "duration_seconds": 0.448,
+      "duration_ms": 447,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 10298,
+      "stdout_sha256": "d17245c2ea24c26557defc026412fc57ba3c2a692970f3e84e675e46a878449a",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_bypass"
+      ],
+      "claims_asserted": [
+        "counterfactual_bypass"
+      ]
+    },
+    {
+      "gate_id": "G.open-source-build",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_open_source_build.py"
+      ],
+      "command_sha256": "d4adf71c11ed5a28a77db230a4eca9e8c4eedd729e7852ad9093362e796a7e23",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:05:05.056611+00:00",
+      "executed_at": "2026-10-06T09:05:07.496583+00:00",
+      "duration_seconds": 2.44,
+      "duration_ms": 2439,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 319,
+      "stdout_sha256": "db9aee5c9738a7111b918c853a909a5349817f49a9cad0b9775711e7d2eac935",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "counterfactual_export"
+      ],
+      "claims_asserted": [
+        "counterfactual_export"
+      ]
+    },
+    {
+      "gate_id": "G.vendored-upstream-drift",
+      "required": true,
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "D:/_Progs/02Business/AsWish/tools/spw-gates/gate_ehai_vendor_drift.py"
+      ],
+      "command_sha256": "802805fb68428343d8d1d6bcf3f8344065396e2568d0cdf00d6f770a0627b32c",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "execution_status": "completed",
+      "started_at": "2026-10-06T09:05:07.512387+00:00",
+      "executed_at": "2026-10-06T09:05:07.645103+00:00",
+      "duration_seconds": 0.133,
+      "duration_ms": 132,
+      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
+      "stdout_bytes": 216,
+      "stdout_sha256": "3a75609a68cd50866a189d4010593556bd24e7bde39f125048ba8939c4430d8e",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "claims_declared": [
+        "upstream_vendor_drift"
+      ],
+      "claims_asserted": [
+        "upstream_vendor_drift"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+[1/2] Building GUI: bin\AsWish.exe ...
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+src\services\AsWish.Services.Commons.pas(148) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list
+src\controllers\AsWish.Controller.pas(1349) Hint: H2077 Value assigned to 'LFound' never used
+26998 lines, 2.95 seconds, 7028192 bytes code, 700656 bytes data.
+[2/2] Building CLI: cli\bin\AsWish.CLI.exe ...
+Embarcadero Delphi for Win64 compiler version 37.0
+Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
+D:\_Progs\02Business\AsWish\src\services\AsWish.Services.Commons.pas(148) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(1349) Hint: H2077 Value assigned to 'LFound' never used
+21259 lines, 2.27 seconds, 6037012 bytes code, 625768 bytes data.
+
+============================================================================
+  bin/AsWish.exe          = GUI  (desktop; do NOT pass CLI arguments)
+  cli/bin/AsWish.CLI.exe  = CLI  (headless command line)
+============================================================================
