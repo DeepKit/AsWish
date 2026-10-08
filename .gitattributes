@@ -41,6 +41,8 @@ AUDIT-REQUEST-*    export-ignore
 # WO-20261005-0098 moved this tree into version control so that rewriting it
 # leaves a git trace, but it is internal verification evidence, not source.
 tools/spw-gates/gate-run/ export-ignore
+# Gate documentation and internal boundary rules (WO-20261006-0104)
+tools/spw-gates/README.md export-ignore
 
 src/services/AsWish.Binding.HB.pas -text diff
 src/services/AsWish.Services.VisualWorkflow.pas -text diff

@@ -106,3 +106,175 @@ RZB-002 ~ RZB-005 已从本记录升格为正式工单并全部修复闭环，�
 | RZB-003 产物默认落点污染仓库根 | WO-20261006-0102 | P3 | 已闭合 |
 | RZB-004 凭据路径硬编码两处 | WO-20261006-0100 | P2 | 已闭合 |
 | RZB-005 安全删除钩子按回合计数误挡单文件 | WO-20261006-0103 | P3 | 已闭合 |
+
+---
+
+## 追加：2026-10-06 主控复跑审计 WO-0100~0103 交付（commit c94ff87），新发现三项缺陷
+
+12 门由主控亲手重跑仍 12/12、台账钉死值吻合、WO-0102 默认落点与 WO-0100
+单一真值均核实无误。但以下三条为**亲手复现确认的真缺陷**，已转 WO-20261006-0104。
+
+### RZB-006 治理标记表被写进了公开发布，且两道门禁都主动跳过它（WO-0101 的修复引入）
+
+- **复现**（主控实跑，非推测）：
+
+  ```
+  git archive --format=zip HEAD → tools/spw-gates/README.md 在发布包内
+  该文件含 6 个治理标记词共 7 处（主控 / 开发AI / WorkBuddy / 工单 / BCW / BetterCiv）
+  ```
+
+- **根因**：WO-0101 为"让作者看见标记表"，把标记词原样写进
+  `tools/spw-gates/README.md`，并把该文件加进
+  `gate_external_boundary.py:78` 的 `INTERNAL_PATTERNS` 排除项；
+  而 `gate_open_source_build.py:359` 本来就 `startswith("tools/spw-gates/")`
+  整目录跳过。`.gitattributes` 只 export-ignore 了 `tools/spw-gates/gate-run/`，
+  **没有 ignore README**。于是两门都闭嘴、发布包却带着标记词出厂。
+- **影响**：WO-0101 要治的是"规矩只在判官手里、作者看不见"；修完之后变成
+  "规矩写在了公开发布里、而判官恰好不看这一页"——病下移了一层，且从
+  WARN 级摩擦升级成**无门禁可发现的公开面泄漏**。
+- **违反**：WO-0101 §四 禁条 4（不得为少踩雷而扩大排除范围）。
+- **优化建议**：`tools/spw-gates/README.md` 补 `export-ignore`，与它已被
+  两道门排除的事实对齐；更稳的形状是标记表只放在受排除路径里（如
+  `_repro/` 之外的内部文档位），README 用"引用 + 引用源"指过去——
+  既满足作者可见，又不让标记词本身进入发布包。
+- **解决方案**：见 WO-20261006-0104 阶段 1。
+
+### RZB-007 证据链只钉单向：台账记下的 manifest 哈希从不被校验
+
+- **复现**（主控实跑）：
+
+  ```
+  tools/spw-gates/gate-run/gate_run_results.json → "manifest_sha256": "1b22628a…"
+  spw-manifest.json 实际 sha256                           → "d3a8f75c…"
+  spw.py verify --evidence _repro/spw-evidence-588c19f.json → ok=true, errors=[]
+  ```
+
+  台账声称"这些门是在 manifest 1b22628a 下跑的"，而磁盘上的 manifest 早已是
+  d3a8f75c，**全套校验一路绿灯**。
+- **根因**：`generate_evidence.py` 只在三个地方**写** `manifest_sha256`
+  （:346 / :428 / :445 → 打进证据包 :680），从不**读**台账里那个值来与
+  实际 manifest 比对。同族缺口还有一处：`ledger.gates[].subject_sha256`
+  被原样抄进证据包（:615），却从不与本次新鲜冻结的 `subject_sha`（:460）
+  比对——而 H5 观察者席位是**要比对**的（:93 / :135 / :394）。
+- **影响**：门禁跑完后改动 manifest，只要不动任何 gate 的 `command` 数组
+  （改 `required` / `claims` / `subject_files` / `min_observer_families` 都在此列），
+  台账钉死值不变、12 份日志不变、证据包照样 `ok=true`。
+  "门禁跑过的 manifest" 与 "当前 manifest" 可以静默分裂。
+- **优化建议**：补两处双向断言——台账的 `manifest_sha256` ≠ 实际 manifest 即
+  `RuntimeError`；每个 gate 的 `subject_sha256` ≠ 本次冻结 `subject_sha` 即
+  `RuntimeError`。与 WO-0100 的阶段 2 同一形状：把"记得改两处"变成"改漏了就响"。
+- **解决方案**：见 WO-20261006-0104 阶段 2。
+
+### RZB-008 安全删除钩子的"自建"判据拿时间戳冒充创建记录
+
+- **复现**（主控亲手复跑 WO-0103 四条反证 **A/B/C/D 全部通过**，但加压测试不过）：
+
+  | 用例 | 目标 | 预期 | 实测 |
+  |---|---|---|---|
+  | 反证 A | 本回合自建 49B 探针 | 放行 | 放行 ✓ |
+  | 反证 B | 非自建目录 | 拦截 | 拦截 ✓ |
+  | 反证 C | 20 个自建文件 | 拦截 | 拦截 ✓ |
+  | 反证 D | `--dry-run` | 预览且不改状态 | ✓ |
+  | 加压 E | **既有未跟踪文件，本回合仅被写过一次** | 拦截 | **放行** ✗ |
+  | 加压 F | 三个时间戳均为 3 小时前的既有文件 | 拦截 | **放行** ✗ |
+  | 加压 G | 5 小时前创建、本回合被写过的既有文件 | 拦截 | **放行** ✗ |
+
+  注：E/F/G 的"既有"均用 PowerShell 设定 CreationTime/LastWriteTime 构造；
+  F 的 ctime 被设定动作本身刷新（见下方根因）。
+- **根因**：`isSelfCreatedTarget()` 判定式为
+
+  ```js
+  const fileTime = Math.max(stat.birthtimeMs || 0, stat.ctimeMs || 0, stat.mtimeMs || 0);
+  if (fileTime >= sessionStartTime - 30000) return true;
+  ```
+
+  Windows 上 `ctimeMs` 是 **MFT 记录变更时间**——复制、改名落位、改属性、
+  乃至给 CreationTime 赋值本身都会刷新它；`mtimeMs` 任何一次内容写都会刷新。
+  取三者 max 等于"任一时间戳新过就算自建"。于是**任何 AI 在本会话里写过的
+  既有文件都自动获得"自建探针"身份**，一旦回合累计超限即可被 quietly 放行删除。
+- **违反**：WO-0103 §二 阶段 1 明确要求"每个目标都在本会话内由 AI 自己创建
+  （**有创建记录**）"——时间戳不是创建记录。
+- **优化建议**：改为真实创建台账（写文件时登记 path+session），或至少退到
+  `birthtimeMs` **单项**与 session 目录创建时间比较（不取 max、不认 ctime/mtime），
+  并补一条反证：既有文件被写一次后必须仍判非自建。
+- **解决方案**：见 WO-20261006-0104 阶段 3。
+
+### 方法论备注：一次险些误报的"锁泄漏"（记录 harness 对齐的重要性）
+
+- 我最初直接 `node safe-delete-bulk-guard.cjs check …` 复跑，连续撞
+  `SAFE_DELETE_BULK_GUARD_ERROR state lock timeout`，一度要报
+  "钩子放锁失败 → 会话内后续删除全部失效 5 分钟"。
+- 插桩拿到真实栈后定位到根因是**我的 harness**：Claude Code 的 bash 里
+  `NODE_OPTIONS=--require …/node-language-shim.cjs`，该垫片会 patch
+  `fs.rmdirSync` 走 safe-delete 门禁；钩子自己正持着 `.lock` 时调
+  `rmdirSync(lockDir)` 就递归调回门禁 → 自锁。
+- 真实运行路径是 WorkBuddy 以 `env: { …process.env, NODE_OPTIONS: '' }`
+  派生子进程跑 guard（`node-safe-delete-shim.cjs:227-232`），垫片不进子进程，
+  **产品里不存在这个问题**。清空 `NODE_OPTIONS` 后四条反证全部按预期通过。
+- **教训**：隔离复现前必须先对齐真实运行路径的环境变量与进程树，
+  否则测出来的是 harness 的鬼影。这与"缺陷论断必须先隔离复现才能上报"
+  是同一条纪律的两面。
+
+### 另记：WO-0103 的修复落在版本控制之外
+
+- `safe-delete-bulk-guard.cjs` 位于
+  `D:\Program Files\WorkBuddy\resources\app.asar.unpacked\cli\vendor\shim\`，
+  **不在 AsWish 仓库内**：本次修复无 commit、无回归测试、无 gate 覆盖，
+  WorkBuddy 升级/重装即回退；备份 `.bak.wo0103` 同样是无主文件。
+- 复跑过程中我曾用硬链接做对照实验，改动经共享 MFT 记录误染该备份文件，
+  已按字节截断复原至 16725 字节并 `node --check` 通过、与现行件只差 WO-0103
+  七处 hunk、尾部一致。**此处如实记录，事故已闭合。**
+
+---
+
+## 2026-10-07 · 主控二次复验（WO-0104 下发前的最后确认）
+
+不复用下游数字，全部亲手重跑。结论：**三条缺陷全部复现，WO-0104 维持 P1 下发。**
+
+| 复验项 | 方法 | 结果 |
+|---|---|---|
+| 标记词出厂 | `git archive --format=zip HEAD` 解包检查 | 发布包**含** `tools/spw-gates/README.md`，6 个标记词、命中 7 行 |
+| 证据链单向 | 读台账 `manifest_sha256` vs 实算 `spw-manifest.json` | 台账 `1b22628a…` vs 实际 `d3a8f75c…`，**不一致**，而 `spw.py verify` 仍 `ok=true` |
+| 钩子判据 | `run_cf2.py` 全量重跑（`NODE_OPTIONS=''`） | A/B/C/D 通过；加压 E/F/G **三条全部不符合预期** |
+
+### 新增精确根因（本次才钉死）
+
+`isSelfCreatedTarget()` 取 `max(birthtimeMs, ctimeMs, mtimeMs)`。对一个
+"3 小时前创建"的既有文件实测：`birthtimeMs` 与 `mtimeMs` 都在 3 小时前，
+`ctimeMs` 却被"改属性"这个动作本身刷新到当下——`max()` 取到的正是它。
+**即 `max()` 在 Windows 上几乎恒等于 `ctime`，而 `ctime` ≈ 最近一次元数据变更。**
+同侧 `sessionStartTime = Math.min(birthtimeMs||ctimeMs, ctimeMs||birthtimeMs)`
+还有个坑：`birthtimeMs` 取不到（个别卷/挂载点为 0）时 `min(0, ctime)` 退化成 **0**，
+于是 `fileTime >= 0 - 30000` 恒真——**全部目标都算自建**。且 `stat` 失败时兜底
+`now - 3600*1000`，窗口地板是 1 小时，不是"本会话创建"。
+
+据此 WO-0104 阶段 3 已补强：光删 `max()` 里的 `ctime/mtime` 不够，
+`sessionStartTime` 的 `min()` 坍缩与 1 小时兜底必须一起改，并新增反证 I
+（只改元数据 / 改名 / 复制落位仍应判非自建）。
+
+### 一条正向数据点（可作修法样板）
+
+台账自身的 sha 是**有**校验的：`generate_evidence.py` 会把实算
+`sha256(ledger)` 与 manifest 的 `gate_run_sha256` 比对，不一致即
+`RuntimeError`。我本次复跑重写了台账，该检查当场咬住（`1f5405c6` vs 钉死
+`2687002b`），还原后台账恢复一致。**阶段 2 要补的两条断言应当照这个形状写，
+机制里已有正确样板，不是从零发明。**
+
+### 复验现场顺带证实的两件事
+
+1. 我自己删 5 个本回合自建的清理文件时，钩子打印
+   `[safe-delete][SAFE_DELETE_SELF_CREATED_ALLOWED] targets=5 count=219 threshold=50`
+   ——WO-0103 的放行留痕机制真实在工作，非纸面。
+2. `git status` 因复跑变脏后，`git checkout -- tools/spw-gates/gate-run/` 即还原，
+   钉死值重新吻合。**每次全量复跑都会动台账，复跑后必须显式还原**，
+   否则会把"审计动作"本身变成一个新的红。
+
+---
+
+## 追加：2026-10-08 RZB-006 ~ RZB-008 已全部在 WO-20261006-0104 闭环
+
+| 记录 | 工单 | 优先级 | 状态 |
+|---|---|---|---|
+| RZB-006 治理标记表进入公开发布 | WO-20261006-0104 | P1 | 已闭合 |
+| RZB-007 证据链只钉单向 | WO-20261006-0104 | P1 | 已闭合 |
+| RZB-008 钩子判据拿时间戳冒充自建 | WO-20261006-0104 | P1 | 已闭合 |

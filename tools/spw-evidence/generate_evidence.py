@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "spw-gates"))
-from gate_lib import GATE_RUN_DIR
+from gate_lib import GATE_RUN_DIR, compute_manifest_sha
 import run_all_gates
 
 # 运行时自洽断言（WO-20261006-0100 阶段 2）：读取方与写入方的 GATE_RUN_DIR 必须绝对一致
@@ -442,7 +442,7 @@ def generate_bundle(output_dir: Path = None) -> Path:
 
     manifest_data = manifest_path.read_bytes()
     manifest = json.loads(manifest_data)
-    manifest_sha256 = hashlib.sha256(manifest_data).hexdigest()
+    manifest_sha256 = compute_manifest_sha(manifest_data)
 
     head_commit = get_git_head_short()
 
@@ -501,6 +501,23 @@ def generate_bundle(output_dir: Path = None) -> Path:
     if ledger_data.get("schema") != "spw/gate-run/v1":
         raise RuntimeError(f"Invalid execution ledger schema: {ledger_data.get('schema')}")
 
+    # 2b. Bidirectional ledger integrity assertions (WO-20261006-0104 Stage 2)
+    ledger_manifest_sha = ledger_data.get("manifest_sha256")
+    if ledger_manifest_sha != manifest_sha256:
+        raise RuntimeError(
+            f"[HIGH] manifest_sha256 mismatch: ledger recorded {ledger_manifest_sha} "
+            f"vs current manifest {manifest_sha256}. "
+            f"Must rerun tools/spw-gates/run_all_gates.py after modifying manifest."
+        )
+
+    ledger_subject_sha = ledger_data.get("subject_sha256")
+    if ledger_subject_sha != subject_sha:
+        raise RuntimeError(
+            f"[HIGH] subject_sha256 mismatch: ledger recorded {ledger_subject_sha} "
+            f"vs current frozen subject {subject_sha}. "
+            f"Must rerun tools/spw-gates/run_all_gates.py after modifying subject files."
+        )
+
     ledger_gates = {}
     for entry in ledger_data.get("gates", []):
         if isinstance(entry, dict) and "gate_id" in entry:
@@ -531,6 +548,12 @@ def generate_bundle(output_dir: Path = None) -> Path:
         gate_subject_sha = entry.get("subject_sha256")
         if not gate_subject_sha:
             raise RuntimeError(f"Missing subject_sha256 binding for gate {gid}")
+        if gate_subject_sha != subject_sha:
+            raise RuntimeError(
+                f"[HIGH] subject_sha256 mismatch for gate {gid}: ledger recorded {gate_subject_sha} "
+                f"vs current frozen subject {subject_sha}. "
+                f"Must rerun tools/spw-gates/run_all_gates.py after modifying subject files."
+            )
 
         safe_gid = gid.replace(".", "_")
         log_name = f"gate_{safe_gid}.log"

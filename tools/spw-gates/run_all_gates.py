@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GATES_DIR = ROOT / "tools" / "spw-gates"
 sys.path.insert(0, str(GATES_DIR))
-from gate_lib import GATE_RUN_DIR
+from gate_lib import GATE_RUN_DIR, compute_manifest_sha
 
 EXCLUDED_SCRIPTS = {"gate_lib.py", "run_all_gates.py"}
 
@@ -233,7 +233,7 @@ def main():
         "started_at": run_started_at.isoformat(),
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "manifest_path": str(manifest_path.resolve()),
-        "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "manifest_sha256": compute_manifest_sha(manifest_path.read_bytes()),
         "subject_sha256": compute_subject_sha(manifest, ROOT),
         "gates": results,
     }
