@@ -345,7 +345,7 @@
     "gemini"
   ],
   "observations_sha256": "e61b0050093bee007eab2eafbe4a001297a8c73bd18e54a3816b0d2be6afe005",
-  "gate_run_sha256": "3d4055959f7196a1fae1b2d83754935d3b3c9d242393bfd566f195558d8ed7b9",
+  "gate_run_sha256": "8cc54dd177dfa984ff5c8457da3638026d52e4d765527ee7bad463ce4be2656a",
   "forbidden_tracked_paths": [
     ".workbuddy/",
     ".AsWish/",
