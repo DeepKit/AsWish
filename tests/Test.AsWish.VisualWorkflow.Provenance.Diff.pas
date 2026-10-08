@@ -11,6 +11,7 @@ interface
 uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
   System.Generics.Collections, AsWish.Models, AsWish.Hash,
+  Test.AsWish.FixtureHelper,
   AsWish.Services.SpecStore, AsWish.Services.Snapshot, AsWish.Services.Decisions,
   AsWish.Services.Difference, AsWish.Services.VisualWorkflow;
 
@@ -124,12 +125,12 @@ begin
     '    }' + sLineBreak +
     '  }' + sLineBreak +
     '}';
-  TFile.WriteAllText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);
 
   LBindingYaml := 'identity_map:' + sLineBreak +
     '  AW_BtnConfirm: node_btn_confirm' + sLineBreak +
     '  AW_BtnCancel: node_btn_cancel' + sLineBreak;
-  TFile.WriteAllText(TPath.Combine(LAsWishDir, 'visual-binding.yaml'), LBindingYaml, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(LAsWishDir, 'visual-binding.yaml'), LBindingYaml, TEncoding.UTF8);
 
   LDecId := FDecisions.AddDecision(dtConfirm, 'Init Baseline', 'Init', 'Approved',
     ['node_btn_cancel', 'node_btn_confirm']);
@@ -143,7 +144,7 @@ begin
   LObsJson := '{"Platform": "VCL", "Observations": [' + sLineBreak +
     '  {"Name": "AW_BtnConfirm", "Bounds": {"Left": 180, "Top": 160, "Width": 80, "Height": 30}},' + sLineBreak +
     '  {"Name": "AW_BtnCancel", "Bounds": {"Left": 276, "Top": 160, "Width": 80, "Height": 30}}]}';
-  TFile.WriteAllText(TPath.Combine(LAsWishDir, 'runtime-observation.json'), LObsJson, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(LAsWishDir, 'runtime-observation.json'), LObsJson, TEncoding.UTF8);
 
   LReport := FWorkflow.ComputeDifference(FTestDir, LBaseId);
   Assert.AreEqual(1, Integer(Length(LReport.Items)), 'Must report exactly 1 difference item for inverted layout');

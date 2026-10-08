@@ -338,8 +338,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'scan-report.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'scan-report.html'),
+      LSb.ToString);
   finally
     LSb.Free;
   end;
@@ -514,8 +514,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'index.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'index.html'),
+      LSb.ToString);
   finally
     LSb.Free;
     if LSorted <> nil then LSorted.Free;
@@ -848,8 +848,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, ATreeName + '.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, ATreeName + '.html'),
+      LSb.ToString);
   finally
     LSb.Free;
     LNodeMap.Free;
@@ -948,8 +948,8 @@ begin
     end;
 
     LSb.Append(PageFooter);
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'evidence.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'evidence.html'),
+      LSb.ToString);
   finally
     LSb.Free;
   end;
@@ -1334,8 +1334,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'problems.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'problems.html'),
+      LSb.ToString);
   finally
     LSb.Free;
   end;
@@ -1439,8 +1439,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'bundles.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'bundles.html'),
+      LSb.ToString);
   finally
     LSb.Free;
     LAllNodes.Free;
@@ -1534,8 +1534,8 @@ begin
     LSb.AppendLine('</script>');
 
     LSb.Append(PageFooter);
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'node-detail.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'node-detail.html'),
+      LSb.ToString);
   finally
     LSb.Free;
   end;
@@ -1857,8 +1857,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'changeset-review.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'changeset-review.html'),
+      LSb.ToString);
   finally
     LSb.Free;
   end;
@@ -2157,8 +2157,8 @@ begin
 
     LSb.Append(PageFooter);
 
-    TFile.WriteAllText(TPath.Combine(FBasePath, 'visual-preview.html'),
-      LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, 'visual-preview.html'),
+      LSb.ToString);
   finally
     LSb.Free;
   end;

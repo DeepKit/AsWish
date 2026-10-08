@@ -1809,7 +1809,12 @@ begin
     ADetail
   ]);
   try
-    TFile.AppendAllText(FProgressFile, LLine + sLineBreak, TEncoding.UTF8);
+    var LWriter := TStreamWriter.Create(FProgressFile, True, TEncoding.UTF8);
+    try
+      LWriter.WriteLine(LLine);
+    finally
+      LWriter.Free;
+    end;
     FProgressFailCount := 0;
   except
     on E: Exception do

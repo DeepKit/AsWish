@@ -15,6 +15,7 @@ uses
   System.SysUtils,
   System.IOUtils,
   DUnitX.TestFramework,
+  Test.AsWish.FixtureHelper,
   AsWish.Services.Scan;
 
 type
@@ -52,7 +53,7 @@ begin
   TDirectory.CreateDirectory(LDir);
   try
     for var LName in AFileNames do
-      TFile.WriteAllText(TPath.Combine(LDir, LName), '// fixture');
+      WriteFixtureText(TPath.Combine(LDir, LName), '// fixture');
   except
     TDirectory.Delete(LDir, True);
     raise;

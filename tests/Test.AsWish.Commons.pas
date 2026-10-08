@@ -12,6 +12,7 @@ uses
   AsWish.Services.Project, AsWish.Services.Scan, AsWish.Services.Render,
   AsWish.Services.TreeBuilder, AsWish.Services.Prompts, AsWish.Services.Decisions,
   AsWish.Services.LLM, AsWish.Services.Settings, AsWish.Controller,
+  Test.AsWish.FixtureHelper,
   Test.AsWish.Controller;
 
 type
@@ -148,7 +149,7 @@ begin
   TDirectory.CreateDirectory(LCsDir);
 
   LCsFile := TPath.Combine(LCsDir, 'change-set-cs-payment-test.yaml');
-  TFile.WriteAllText(LCsFile, 'id: "cs-payment-test"'#10 +
+  WriteFixtureText(LCsFile, 'id: "cs-payment-test"'#10 +
     'intent_node_id: "func-payment-retry"'#10 + 'intent_tree: "function"'#10 +
     'raw_user_intent: "Implement payment retry loop without limits"'#10 +
     'author: "ai-assistant"'#10 + 'items: []'#10, TEncoding.UTF8);
@@ -174,7 +175,7 @@ begin
   TDirectory.CreateDirectory(LCsDir);
 
   LCsFile := TPath.Combine(LCsDir, 'change-set-cs-reject-demo.yaml');
-  TFile.WriteAllText(LCsFile, 'id: "cs-reject-demo"'#10 +
+  WriteFixtureText(LCsFile, 'id: "cs-reject-demo"'#10 +
     'intent_node_id: "func-delete-user"'#10 + 'intent_tree: "function"'#10 +
     'raw_user_intent: "Physical deletion requested"'#10 +
     'author: "ai-assistant"'#10 + 'items: []'#10, TEncoding.UTF8);
@@ -372,7 +373,7 @@ begin
     else
       LText := LText + LLine + sLineBreak;
   Assert.IsTrue(LFoundKey, 'precondition: publish_consent line must exist before stripping');
-  TFile.WriteAllText(LAbs, LText, TEncoding.UTF8);
+  WriteFixtureText(LAbs, LText, TEncoding.UTF8);
   Assert.IsFalse(FStore.ReadCommonsLessonFile(LRel).PublishConsent,
     'legacy file without key must read False');
 
@@ -389,7 +390,7 @@ var
   procedure PrepareRejectedCs(const ACsId: string);
   begin
     TDirectory.CreateDirectory(LCsDir);
-    TFile.WriteAllText(LCsFile, Format('id: "%s"'#10 +
+    WriteFixtureText(LCsFile, Format('id: "%s"'#10 +
       'intent_node_id: "func-delete-user"'#10 + 'intent_tree: "function"'#10 +
       'raw_user_intent: "Physical deletion requested"'#10 +
       'author: "ai-assistant"'#10 + 'items: []'#10, [ACsId]), TEncoding.UTF8);

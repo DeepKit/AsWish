@@ -8,7 +8,8 @@ uses
   System.Classes,
   System.IOUtils,
   System.DateUtils,
-  AsWish.Models;
+  AsWish.Models,
+  AsWish.Services.SpecStore;
 
 type
   TAsWishDiffRenderHelper = class
@@ -159,7 +160,7 @@ begin
 
     LSb.AppendLine('</body></html>');
 
-    TFile.WriteAllText(TPath.Combine(ABasePath, 'difference.html'), LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(ABasePath, 'difference.html'), LSb.ToString);
   finally
     LSb.Free;
   end;
@@ -228,7 +229,7 @@ begin
 
     LSb.AppendLine('</body></html>');
 
-    TFile.WriteAllText(TPath.Combine(ABasePath, 'decisions.html'), LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(ABasePath, 'decisions.html'), LSb.ToString);
   finally
     LSb.Free;
   end;

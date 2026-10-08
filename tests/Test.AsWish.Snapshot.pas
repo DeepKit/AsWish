@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.Snapshot
 
   DUnitX tests for AsWish.Services.Snapshot -- full-tree snapshot, listing
@@ -33,6 +33,7 @@ implementation
 uses
   System.SysUtils,
   System.IOUtils,
+  Test.AsWish.FixtureHelper,
   AsWish.Services.SpecStore,
   AsWish.Services.Snapshot;
 
@@ -59,7 +60,7 @@ begin
   LDir := TPath.GetDirectoryName(LFullPath);
   if not TDirectory.Exists(LDir) then
     TDirectory.CreateDirectory(LDir);
-  TFile.WriteAllText(LFullPath, AContent, TEncoding.UTF8);
+  WriteFixtureText(LFullPath, AContent, TEncoding.UTF8);
 end;
 
 function ReadSpecFile(const AProjectDir, ARelPath: string): string;

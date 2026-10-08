@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.SpecStore
 
   DUnitX tests for AsWish.Services.SpecStore persistence — focused on the
@@ -42,6 +42,7 @@ uses
   System.SysUtils,
   System.IOUtils,
   System.Generics.Collections,
+  Test.AsWish.FixtureHelper,
   AsWish.Models,
   AsWish.Services.SpecStore;
 
@@ -277,7 +278,7 @@ begin
     // generated file silently stays stale for every existing project and the
     // fix never reaches anyone who already ran the tool.
     LPath := TPath.Combine(LDir, '.AsWish\.gitignore');
-    TFile.WriteAllText(LPath, '# stale' + sLineBreak + 'html/', TEncoding.UTF8);
+    WriteFixtureText(LPath, '# stale' + sLineBreak + 'html/', TEncoding.UTF8);
 
     LStore.WriteGitIgnore;
     LContent := TFile.ReadAllText(LPath, TEncoding.UTF8);

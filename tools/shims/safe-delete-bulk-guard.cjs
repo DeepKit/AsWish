@@ -59,8 +59,8 @@ function normalizeThreshold(value) {
 }
 
 function createSafeDeleteBulkGuardContext(input) {
-    if (!input || !input.stateRoot || !input.sessionId || !input.toolCallId) {
-        fail('missing bulk guard context');
+    if (!input || !input.stateRoot || !input.sessionId || !input.toolCallId || !input.conversationRequestId) {
+        fail('missing bulk guard context: CODEBUDDY_CONVERSATION_REQUEST_ID is required');
     }
     const threshold = normalizeThreshold(input.threshold);
     const sessionId = input.sessionId;
@@ -71,7 +71,7 @@ function createSafeDeleteBulkGuardContext(input) {
         stateRoot: input.stateRoot,
         sessionId,
         toolCallId: input.toolCallId,
-        requestId: conversationRequestId || input.toolCallId,
+        requestId: conversationRequestId,
         threshold,
         conversationRequestId,
         sessionHash,
@@ -85,7 +85,7 @@ function getContext() {
         stateRoot: requireEnv('CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR'),
         sessionId: requireEnv('CODEBUDDY_SESSION_ID'),
         toolCallId: requireEnv('CODEBUDDY_TOOL_CALL_ID'),
-        conversationRequestId: process.env.CODEBUDDY_CONVERSATION_REQUEST_ID,
+        conversationRequestId: requireEnv('CODEBUDDY_CONVERSATION_REQUEST_ID'),
         threshold: process.env.CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD || DEFAULT_THRESHOLD,
     });
 }

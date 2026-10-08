@@ -15,6 +15,7 @@ uses
   System.IOUtils,
   System.Classes,
   DUnitX.TestFramework,
+  Test.AsWish.FixtureHelper,
   AsWish.TextIO;
 
 type
@@ -61,7 +62,7 @@ end;
 
 procedure WriteBytes(const APath: string; const AContent: TBytes);
 begin
-  TFile.WriteAllBytes(APath, AContent);
+  WriteFixtureBytes(APath, AContent);
 end;
 
 procedure TTextIOTests.ReadLines_PlainUtf8_ReturnsContent;

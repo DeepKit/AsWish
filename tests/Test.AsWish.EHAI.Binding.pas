@@ -25,6 +25,7 @@ uses
   System.SysUtils,
   System.Classes,
   System.IOUtils,
+  Test.AsWish.FixtureHelper,
   DeepBase.EHAI.Types,
   DeepBase.HB.Choice.Types,
   AsWish.Models,
@@ -157,9 +158,9 @@ begin
   FDir := TPath.Combine(TPath.GetTempPath, 'aswish-ehai-' + TGuid.NewGuid.ToString.Substring(1, 8));
   TDirectory.CreateDirectory(FDir);
 
-  TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),
+  WriteFixtureText(TPath.Combine(FDir, 'README.md'),
     '# EHAI Binding Test Project' + sLineBreak + 'Initial requirements documentation.', TEncoding.UTF8);
-  TFile.WriteAllText(TPath.Combine(FDir, 'main.pas'),
+  WriteFixtureText(TPath.Combine(FDir, 'main.pas'),
     'unit main; interface procedure RunApp; implementation procedure RunApp; begin end; end.', TEncoding.UTF8);
 
   FProject := TAsWishProjectService.Create;

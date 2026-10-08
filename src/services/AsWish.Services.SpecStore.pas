@@ -143,12 +143,32 @@ end;
 
 class procedure TAsWishStoreService.AtomicWriteTextFile(
   const AFullPath, AContent: string);
+var
+  LDir, LTmpPath: string;
+  LStream: TStringStream;
 begin
-  var LDir := TPath.GetDirectoryName(AFullPath);
-  if not TDirectory.Exists(LDir) then
+  LDir := TPath.GetDirectoryName(AFullPath);
+  if (LDir <> '') and not TDirectory.Exists(LDir) then
     TDirectory.CreateDirectory(LDir);
 
-  TFile.WriteAllText(AFullPath, AContent, TEncoding.UTF8);
+  LTmpPath := AFullPath + '.tmp.' + TGUID.NewGuid.ToString.Substring(1, 8);
+  LStream := TStringStream.Create(AContent, TEncoding.UTF8);
+  try
+    LStream.SaveToFile(LTmpPath);
+  finally
+    LStream.Free;
+  end;
+
+  if TFile.Exists(AFullPath) then
+    TFile.Delete(AFullPath);
+  if not RenameFile(LTmpPath, AFullPath) then
+  begin
+    if TFile.Exists(LTmpPath) then
+    begin
+      TFile.Copy(LTmpPath, AFullPath, True);
+      TFile.Delete(LTmpPath);
+    end;
+  end;
 end;
 
 procedure TAsWishStoreService.BackupTreeFileIfExisting(const ARelPath: string);

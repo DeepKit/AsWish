@@ -989,7 +989,7 @@ begin
     LDir := TPath.Combine(FProjectService.AsWishPath, 'prompts');
     TDirectory.CreateDirectory(LDir);
     LPath := TPath.Combine(LDir, 'optimization-prompt.md');
-    TFile.WriteAllText(LPath, LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(LPath, LSb.ToString);
 
     FStatus.Info('AsWish',
       'Exported optimization prompt to ' + LPath +
@@ -1456,7 +1456,7 @@ begin
 
             if LResult.Success then
             begin
-              TFile.WriteAllText(LCandidatePath, LResult.Content, TEncoding.UTF8);
+              TAsWishStoreService.AtomicWriteTextFile(LCandidatePath, LResult.Content);
               // BUG-8 close the loop: ingest candidate through the strongly-
               // typed sandbox, merge into live trees, persist, and re-render.
               // All on the UI thread (we are inside TThread.Queue). Failure
@@ -1612,7 +1612,7 @@ begin
     end;
 
     LOutPath := TPath.Combine(FProjectService.AsWishPath, 'docs-summary.yaml');
-    TFile.WriteAllText(LOutPath, LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(LOutPath, LSb.ToString);
   finally
     LSb.Free;
   end;

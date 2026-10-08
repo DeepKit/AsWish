@@ -400,7 +400,7 @@ begin
     LSb.AppendLine('Implement the VCL UI controls to strictly satisfy the declared layout constraints above.');
     LSb.AppendLine('Do NOT reverse the relative ordering confirmed by Human.');
 
-    TFile.WriteAllText(LHandoffFile, LSb.ToString, TEncoding.UTF8);
+    TAsWishStoreService.AtomicWriteTextFile(LHandoffFile, LSb.ToString);
     Result := LHandoffFile;
   finally
     if LViewNodes <> nil then LViewNodes.Free;

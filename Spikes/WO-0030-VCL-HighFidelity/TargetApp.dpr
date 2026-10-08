@@ -105,7 +105,12 @@ begin
   LJson := LJson + sLineBreak + '  ]';
   LJson := LJson + sLineBreak + '}';
   
-  TFile.WriteAllText(ExtractFilePath(ParamStr(0)) + 'RuntimeObservation.json', LJson, TEncoding.UTF8);
+  var LTargetStream := TStringStream.Create(LJson, TEncoding.UTF8);
+  try
+    LTargetStream.SaveToFile(ExtractFilePath(ParamStr(0)) + 'RuntimeObservation.json');
+  finally
+    LTargetStream.Free;
+  end;
   
   TargetForm.Show;
   Application.ProcessMessages;

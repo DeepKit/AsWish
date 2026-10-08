@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.Controller
 
   Headless mock tests for the desktop-app workflow layer — the exact paths
@@ -44,6 +44,7 @@ uses
   AsWish.Services.Difference,
   AsWish.Services.VisualWorkflow,
   AsWish.Shell.Headless,
+  Test.AsWish.FixtureHelper,
   AsWish.Controller;
 
 type
@@ -389,10 +390,10 @@ begin
   FDir := TPath.Combine(TPath.GetTempPath, 'aswish-ctl-' +
     TGuid.NewGuid.ToString.Substring(1, 8));
   TDirectory.CreateDirectory(FDir);
-  TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),
+  WriteFixtureText(TPath.Combine(FDir, 'README.md'),
     '# mock project' + sLineBreak + 'Sample docs for controller tests.',
     TEncoding.UTF8);
-  TFile.WriteAllText(TPath.Combine(FDir, 'app.py'),
+  WriteFixtureText(TPath.Combine(FDir, 'app.py'),
     'def hello():' + sLineBreak + '    return 42' + sLineBreak,
     TEncoding.UTF8);
 
@@ -1214,7 +1215,7 @@ var
   LResult: TChangeSetDecisionResult;
   procedure WriteCs(const AId, AIntent: string);
   begin
-    TFile.WriteAllText(LCsFile, 'change_set_id: "' + AId + '"'#10 +
+    WriteFixtureText(LCsFile, 'change_set_id: "' + AId + '"'#10 +
       'intent_node_id: "func-alias-probe"'#10 + 'intent_tree: "function"'#10 +
       'raw_user_intent: "' + AIntent + '"'#10 +
       'author: "test"'#10 + 'items: []'#10, TEncoding.UTF8);
@@ -1328,7 +1329,7 @@ begin
   Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept initial baseline B-0001'));
 
   // Collect initial evidence and modify source file
-  TFile.WriteAllText(TPath.Combine(FDir, 'app.py'),
+  WriteFixtureText(TPath.Combine(FDir, 'app.py'),
     'def hello():' + sLineBreak + '    return 42' + sLineBreak +
     'def world():' + sLineBreak + '    return 100' + sLineBreak,
     TEncoding.UTF8);
@@ -1390,7 +1391,7 @@ begin
   Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
 
   // Alter code to cause structural diff
-  TFile.WriteAllText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);
   FController.RunScan;
 
   LDecId := FController.RecordDifferenceDecision('B-0001', 'unacceptable', 'Feature rejected for revision');
@@ -1418,7 +1419,7 @@ begin
   LCSId := FController.SubmitUserIntent(LFuncId, ttFunction, 'Base feature spec');
   Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
 
-  TFile.WriteAllText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(FDir, 'extra.py'), 'def extra(): pass' + sLineBreak, TEncoding.UTF8);
   FController.RunScan;
 
   LDecId := FController.RecordDifferenceDecision('B-0001', 'acceptable', 'Item count probe', LItemCount);
@@ -1459,7 +1460,7 @@ begin
   Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
 
   // Add new implementation
-  TFile.WriteAllText(TPath.Combine(FDir, 'service.py'), 'def serve(): return True' + sLineBreak, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(FDir, 'service.py'), 'def serve(): return True' + sLineBreak, TEncoding.UTF8);
   FController.RunScan;
 
   LNewBaseId := FController.EvolveBaseline('B-0001', 'Evolve B-0002 from reality', LNewBaseline);
@@ -1514,7 +1515,7 @@ begin
   // on that alone passes either way and proves nothing.
   LSub := TPath.Combine(FDir, 'fresh-project');
   TDirectory.CreateDirectory(LSub);
-  TFile.WriteAllText(TPath.Combine(LSub, 'core.pas'),
+  WriteFixtureText(TPath.Combine(LSub, 'core.pas'),
     'unit core;' + sLineBreak + 'interface' + sLineBreak + 'implementation' + sLineBreak + 'end.',
     TEncoding.UTF8);
   LPath := FController.InitializeProject(LSub);
@@ -1550,7 +1551,7 @@ begin
   TDirectory.CreateDirectory(LSub);
   LTree := TPath.Combine(LSub, '.AsWish', 'trees');
   TDirectory.CreateDirectory(LTree);
-  TFile.WriteAllText(TPath.Combine(LTree, 'function-tree.yaml'),
+  WriteFixtureText(TPath.Combine(LTree, 'function-tree.yaml'),
     'version: "1.0"' + sLineBreak +
     'tree: function' + sLineBreak +
     'generated_at: "2026-09-25T00:00:00+08:00"' + sLineBreak +
@@ -1611,7 +1612,7 @@ begin
   // purpose: an unknown parent is a warning-grade route, not a rejection, so
   // the batch still merges and the counts stay real.
   LCand := TPath.Combine(FDir, 'cand.yaml');
-  TFile.WriteAllText(LCand,
+  WriteFixtureText(LCand,
     'tree: function' + sLineBreak +
     'version: "1.0"' + sLineBreak +
     'nodes:' + sLineBreak +
@@ -1667,7 +1668,7 @@ begin
   // with the CLI reporting failure. A bad-only batch could not catch that,
   // because an all-rejected batch has nothing to write in the first place.
   LCand := TPath.Combine(FDir, 'bad-cand.yaml');
-  TFile.WriteAllText(LCand,
+  WriteFixtureText(LCand,
     'tree: function' + sLineBreak +
     'version: "1.0"' + sLineBreak +
     'nodes:' + sLineBreak +
@@ -1775,10 +1776,10 @@ begin
   FDir := TPath.Combine(TPath.GetTempPath, 'aswish-headless-' +
     TGuid.NewGuid.ToString.Substring(1, 8));
   TDirectory.CreateDirectory(FDir);
-  TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),
+  WriteFixtureText(TPath.Combine(FDir, 'README.md'),
     '# headless fixture' + sLineBreak + 'Sample docs for headless tests.',
     TEncoding.UTF8);
-  TFile.WriteAllText(TPath.Combine(FDir, 'app.pas'),
+  WriteFixtureText(TPath.Combine(FDir, 'app.pas'),
     'unit app;' + sLineBreak + 'end.' + sLineBreak, TEncoding.UTF8);
 
   FEventCount := 0;
@@ -1899,7 +1900,7 @@ begin
   // built from -- and a view baseline is the only kind the VCL comparator can
   // handle, so it is the only kind that can expose the divergence.
   ForceDirectories(TPath.Combine(FDir, 'src'));
-  TFile.WriteAllText(TPath.Combine(FDir, 'src\MainForm.dfm'),
+  WriteFixtureText(TPath.Combine(FDir, 'src\MainForm.dfm'),
     'object MainForm: TMainForm' + sLineBreak +
     '  Caption = ''Main''' + sLineBreak +
     'end' + sLineBreak, TEncoding.UTF8);

@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Config
   ---------------------------------------------------------------------------
   Lightweight standalone configuration storage for AsWish.
@@ -178,7 +178,12 @@ begin
   try
     for LPair in FSettings do
       LObj.AddPair(LPair.Key, LPair.Value);
-    TFile.WriteAllText(LPath, LObj.Format(2), TEncoding.UTF8);
+    var LStream := TStringStream.Create(LObj.Format(2), TEncoding.UTF8);
+    try
+      LStream.SaveToFile(LPath);
+    finally
+      LStream.Free;
+    end;
     FModified := False;
   finally
     LObj.Free;

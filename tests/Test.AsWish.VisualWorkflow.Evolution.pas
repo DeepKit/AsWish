@@ -10,6 +10,7 @@ interface
 uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
   System.Generics.Collections, AsWish.Models, AsWish.Hash,
+  Test.AsWish.FixtureHelper,
   AsWish.Services.SpecStore, AsWish.Services.Snapshot, AsWish.Services.Decisions,
   AsWish.Services.Difference, AsWish.Services.VisualWorkflow;
 
@@ -303,7 +304,7 @@ begin
     LMetaFile := TPath.Combine(FStore.BasePath, 'snapshots\' + LParent.SnapshotName + '\snapshot.yaml');
     LYaml := TFile.ReadAllText(LMetaFile, TEncoding.UTF8);
     LYaml := LYaml.Replace('tree_type: "view"', 'tree_type: "all"');
-    TFile.WriteAllText(LMetaFile, LYaml, TEncoding.UTF8);
+    WriteFixtureText(LMetaFile, LYaml, TEncoding.UTF8);
 
     Assert.IsTrue(FSnapshot.LoadBaseline(LParentId, LParent));
     Assert.AreEqual<string>('all', LParent.TreeType, 'Precondition: parent baseline tree_type must be all');

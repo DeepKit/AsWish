@@ -22,6 +22,7 @@ uses
   System.Classes,
   System.IOUtils,
   System.Generics.Collections,
+  Test.AsWish.FixtureHelper,
   AsWish.Models,
   AsWish.Hash,
   AsWish.Services.SpecStore,
@@ -112,7 +113,7 @@ begin
   var LSourceDir := TPath.GetDirectoryName(LAbsSourcePath);
   if not TDirectory.Exists(LSourceDir) then
     TDirectory.CreateDirectory(LSourceDir);
-  TFile.WriteAllText(LAbsSourcePath, ASourceContent, TEncoding.UTF8);
+  WriteFixtureText(LAbsSourcePath, ASourceContent, TEncoding.UTF8);
 
   // 2. Create nodes with source_refs
   LNodes := TList<TSpecNode>.Create;
@@ -192,7 +193,7 @@ begin
   // Change file content
   LAbsFile := TPath.Combine(FTestDir, 'src\Foo.pas');
   LSourceContent2 := 'function Foo: Integer; begin Result := 42; end; // modified';
-  TFile.WriteAllText(LAbsFile, LSourceContent2, TEncoding.UTF8);
+  WriteFixtureText(LAbsFile, LSourceContent2, TEncoding.UTF8);
 
   // Re-collect
   LEv2 := FCollector.CollectImplementationEvidence(FTestDir, FBaselineId);

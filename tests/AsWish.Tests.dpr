@@ -14,6 +14,7 @@ uses
   DUnitX.TestFramework,
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
+  Test.AsWish.FixtureHelper in 'Test.AsWish.FixtureHelper.pas',
   Test.AsWish.Yaml.Parser in 'Test.AsWish.Yaml.Parser.pas',
   Test.AsWish.Validation in 'Test.AsWish.Validation.pas',
   Test.AsWish.Models in 'Test.AsWish.Models.pas',

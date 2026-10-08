@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   AsWish.Logger
   ---------------------------------------------------------------------------
   Lightweight standalone logger for AsWish.
@@ -125,7 +125,12 @@ begin
   if FLogPath <> '' then
   begin
     try
-      TFile.AppendAllText(FLogPath, LLine + sLineBreak, TEncoding.UTF8);
+      var LWriter := TStreamWriter.Create(FLogPath, True, TEncoding.UTF8);
+      try
+        LWriter.WriteLine(LLine);
+      finally
+        LWriter.Free;
+      end;
     except
     end;
   end;

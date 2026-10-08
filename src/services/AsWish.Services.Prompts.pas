@@ -44,7 +44,8 @@ implementation
 
 uses
   System.IOUtils,
-  System.StrUtils;
+  System.StrUtils,
+  AsWish.Services.SpecStore;
 
 procedure TAsWishPromptService.Initialize(const AAsWishPath: string);
 begin
@@ -55,7 +56,7 @@ end;
 
 procedure TAsWishPromptService.WritePromptFile(const ARelPath, AContent: string);
 begin
-  TFile.WriteAllText(TPath.Combine(FBasePath, ARelPath), AContent, TEncoding.UTF8);
+  TAsWishStoreService.AtomicWriteTextFile(TPath.Combine(FBasePath, ARelPath), AContent);
 end;
 
 procedure TAsWishPromptService.WriteContextPack(AScan: TAsWishScanService;

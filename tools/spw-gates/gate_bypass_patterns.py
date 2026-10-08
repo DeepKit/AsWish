@@ -139,34 +139,25 @@ def validate_waiver_governance(
         return f"[HIGH] invalid waiver scope: {loc} scope='{scope}' (must be 'baseline' or 'ongoing')", None
 
     app_str = str(approved_by).strip() if approved_by is not None else ""
+    if not app_str:
+        return f"[HIGH] unapproved waiver: {loc} pattern {pid} missing approved_by", None
+    if not approved_at or not str(approved_at).strip():
+        return f"[HIGH] unapproved waiver: {loc} pattern {pid} missing approved_at", None
 
     # 3. Approver anti-impersonation, whitelist, and anti-self-signing (WO-0091)
-    if app_str:
-        for imp_rx in impersonation_rx_list:
-            if imp_rx.search(app_str):
-                return (
-                    f"[HIGH] impersonated approver: {loc} approved_by='{app_str}' matches forbidden pattern '{imp_rx.pattern}'",
-                    None,
-                )
-        if app_str not in authorized_approvers:
+    for imp_rx in impersonation_rx_list:
+        if imp_rx.search(app_str):
             return (
-                f"[HIGH] unauthorized approver: {loc} approved_by='{app_str}' not in h4_approvers.json",
+                f"[HIGH] impersonated approver: {loc} approved_by='{app_str}' matches forbidden pattern '{imp_rx.pattern}'",
                 None,
             )
-        if submitted_by and str(submitted_by).strip() == app_str:
-            return f"[HIGH] self-signed waiver: {loc} submitted_by matches approved_by", None
-
-    # 4. Governance field validation based on scope
-    if scope == "ongoing":
-        if not app_str:
-            return f"[HIGH] unapproved ongoing waiver: {loc} pattern {pid} missing approved_by", None
-        if not approved_at or not str(approved_at).strip():
-            return f"[HIGH] unapproved ongoing waiver: {loc} pattern {pid} missing approved_at", None
-    elif scope == "baseline":
-        if not app_str:
-            # Honest historical debt warning (WO-0089/WO-0091)
-            warn = f"[WARN] baseline waiver without approver (historical debt): {loc}"
-            return None, warn
+    if app_str not in authorized_approvers:
+        return (
+            f"[HIGH] unauthorized approver: {loc} approved_by='{app_str}' not in h4_approvers.json",
+            None,
+        )
+    if submitted_by and str(submitted_by).strip() == app_str:
+        return f"[HIGH] self-signed waiver: {loc} submitted_by matches approved_by", None
 
     # 5. Expiration check
     if expires_at and str(expires_at).strip():

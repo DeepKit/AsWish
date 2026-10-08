@@ -134,6 +134,7 @@ implementation
 
 uses
   System.IOUtils,
+  Test.AsWish.FixtureHelper,
   AsWish.Services.Render;
 
 { TCandidateIngestTests }
@@ -1109,7 +1110,7 @@ begin
     FCand.SaveCandidateIntent(LTempDir, LIntent1);
     // Write second intent with distinct filename
     LPath2 := TPath.Combine(TPath.Combine(TPath.Combine(LTempDir, '.AsWish'), 'llm'), 'candidate-intent-02.yaml');
-    TFile.WriteAllText(LPath2, TAsWishCandidateIngest.FormatCandidateIntentYaml(LIntent2), TEncoding.UTF8);
+    WriteFixtureText(LPath2, TAsWishCandidateIngest.FormatCandidateIntentYaml(LIntent2), TEncoding.UTF8);
 
     LList := FCand.ListCandidateIntents(LTempDir);
     Assert.AreEqual<Integer>(2, Length(LList), 'ListCandidateIntents must return all saved candidate intents');

@@ -1,4 +1,4 @@
-﻿
+
 { ============================================================================
   AsWish.Services.Decisions
 
@@ -14,7 +14,6 @@ uses
   System.SysUtils,
   System.Classes,
   System.Generics.Collections,
-  Winapi.Windows,
   AsWish.Models;
 
 type
@@ -92,6 +91,7 @@ implementation
 uses
   System.IOUtils,
   System.DateUtils,
+  AsWish.Logger,
   AsWish.Yaml.Writer,
   AsWish.Yaml.Parser,
   AsWish.Services.SpecStore;
@@ -208,7 +208,7 @@ begin
   try
     LWriter.WriteDecisionsFile(FDecisions);
     // Atomic write (bugfix.md BUG-5 path) — never bypass the crash-safe
-    // replace with a bare TFile.WriteAllText.
+    // replace with a bare file write.
     TAsWishStoreService.AtomicWriteTextFile(
       TPath.Combine(FBasePath, 'requirement-decisions.yaml'),
       LWriter.ToString);
@@ -554,11 +554,11 @@ begin
             if TSpecEnums.TryTransitionGen(LNode.GenStatus, gsConfirmed, LError) then
               LChanged := True
             else
-              OutputDebugString(PChar('AsWish: ' + LError));
+              Logger.Warn('AsWish: ' + LError, 'Decisions');
             if TSpecEnums.TryTransitionReview(LNode.ReviewStatus, rsAccepted, LError) then
               LChanged := True
             else
-              OutputDebugString(PChar('AsWish: ' + LError));
+              Logger.Warn('AsWish: ' + LError, 'Decisions');
             // Also update legacy Status
             LNode.Status := nsConfirmed;
           end;
@@ -568,11 +568,11 @@ begin
             if TSpecEnums.TryTransitionGen(LNode.GenStatus, gsSkipped, LError) then
               LChanged := True
             else
-              OutputDebugString(PChar('AsWish: ' + LError));
+              Logger.Warn('AsWish: ' + LError, 'Decisions');
             if TSpecEnums.TryTransitionReview(LNode.ReviewStatus, rsRejected, LError) then
               LChanged := True
             else
-              OutputDebugString(PChar('AsWish: ' + LError));
+              Logger.Warn('AsWish: ' + LError, 'Decisions');
             LNode.Status := nsRejected;
           end;
         end;

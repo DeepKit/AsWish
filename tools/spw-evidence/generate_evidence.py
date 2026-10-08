@@ -523,11 +523,32 @@ def generate_bundle(output_dir: Path = None) -> Path:
                     text=True,
                     encoding="utf-8",
                 ).splitlines()
-                allowed_prefixes = ("tools/spw-gates/gate-run/", "spw-manifest.json", "WO/")
-                if diff_files and all(
-                    any(f.strip().strip('"').startswith(p) for p in allowed_prefixes)
-                    for f in diff_files if f.strip()
-                ):
+                allowed_prefixes = ("tools/spw-gates/gate-run/", "WO/")
+                is_diff_allowed = True
+                for f in diff_files:
+                    f_clean = f.strip().strip('"')
+                    if not f_clean:
+                        continue
+                    if any(f_clean.startswith(p) for p in allowed_prefixes):
+                        continue
+                    if f_clean == "spw-manifest.json":
+                        # Door 1 security check (WO-0106):
+                        # Changing spw-manifest.json in a pin commit is strictly forbidden if ANY
+                        # canonical configuration (subject_files, gates, h4_patterns, policies) changed.
+                        # Only the ledger pin (gate_run_sha256) itself is permitted to change without re-running gates.
+                        try:
+                            old_manifest = subprocess.check_output(["git", "show", "HEAD~1:spw-manifest.json"], cwd=ROOT)
+                            new_manifest = subprocess.check_output(["git", "show", "HEAD:spw-manifest.json"], cwd=ROOT)
+                            if compute_manifest_sha(old_manifest) != compute_manifest_sha(new_manifest):
+                                is_diff_allowed = False
+                                break
+                            continue
+                        except Exception:
+                            is_diff_allowed = False
+                            break
+                    is_diff_allowed = False
+                    break
+                if diff_files and is_diff_allowed:
                     is_valid_head = True
         except Exception:
             pass

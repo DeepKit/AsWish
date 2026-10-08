@@ -72,8 +72,17 @@ def get_git_head_long() -> str:
 
 def check_tree_dirty() -> tuple[bool, str]:
     try:
+        run_dir_rel = GATE_RUN_DIR.relative_to(ROOT).as_posix()
         proc = subprocess.run(
-            ["git", "status", "--porcelain", "--", ".", ":(exclude)tools/spw-gates/gate-run/"],
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--",
+                ".",
+                f":(exclude){run_dir_rel}/gate_run_results.json",
+                f":(exclude){run_dir_rel}/gate_*.log",
+            ],
             cwd=ROOT,
             capture_output=True,
             text=True,

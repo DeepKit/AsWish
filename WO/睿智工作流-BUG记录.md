@@ -383,3 +383,65 @@ WO-0104 阶段 4 确曾把其处置交给下游，故不视为越权，但此处
 - **RZB-010 解决方案**：`safe-delete-bulk-guard.cjs` 将 `requests` / `toolApprovals` / `requestRejections` 的键由 `context.toolCallId` 统一修复为 `context.requestId`；同步至 WorkBuddy 安装目录；补充反证 J（同回合跨工具调用累计达阈值拦截）与反证 K（不同回合计数隔离）。
 - **RZB-011 解决方案**：将 6 个治理标记词移出 `tools/spw-gates/README.md`，归入 `tools/spw-gates/gate-run/internal_markers.json`（受 `export-ignore` 保护且列入 `INTERNAL_PATTERNS`）；`.gitattributes` 撤销对 `README.md` 的 `export-ignore`，使其恢复随包出厂；`README.md` 仅保留引用源指引，0 标记词。
 
+
+---
+
+## 2026-10-08 · 主控复验下游 WO-0105 交付（commit `1614048` + `d436912`），三项病灶确认真修对，新查实三项遗留
+
+### RZB-012 · H4 基线豁免零审批仍全绿：81 条豁免的 approved_by 全是空字符串（P1，已复现）
+
+`tools/spw-gates/h4_waivers.json` 的 `waivers` 共 **81 条**，
+`approved_by` 为空的 **81/81**（主控逐条统计，非抽样）；
+`spw-manifest.json` 的 `h4_policy.max_ongoing_waivers = 0`。
+而 `gate_bypass_patterns.py:141-162` 把审批检查包在 `if app_str:` 里——
+`approved_by` 非空才查白名单/冒充/自签；为空时**只有 `scope=ongoing` 才出 finding**，
+`scope=baseline` 空审批零 finding。`:223` 的阈值比较也只数 `ongoing`，baseline 不进分母。
+
+**后果**：任何人可无限追加 `scope=baseline` 的空审批豁免，H4 永远绿。
+两名异构 observer（deepseek / gemini）在 `_repro/spw-evidence-d436912.json`
+的 `observer_seat_outcomes` 里**各自独立**判了 `[BLOCKER]`：
+"要么 H4 的 PASS 是假的，要么台账根本没在执行" / "开发者可自行追加豁免，无需第三方复核」。
+
+**为什么不是伪造绿灯**：门禁确实按自己的规则跑通了，PASS 本身不假。
+**但规则本身留着"零审批也算合规"的口子**——与 RZB-009 同族：
+绿灯照着未治理状态。这是主控在 WO-0105 复验里**没有预想到会复发**的一处。
+
+### RZB-013 · head_commit 逃逸口过宽：manifest 变更可在"文档型提交"里换掉被哈希钉住的范围（P2，已复现）
+
+`generate_evidence.py` 阶段 2b 为放行"台账 pin 提交自己"设了逃逸口：
+`ledger_head == HEAD~1` 且 `diff HEAD~1 HEAD` 全部落在
+`("tools/spw-gates/gate-run/", "spw-manifest.json", "WO/")` 即视为合法。
+本意正当（`d436912` 正是这种提交，不放行会无限回归），但带来两道门：
+
+1. `spw-manifest.json` 在放行名单里，而它定义 `subject_files`——
+   也就是 `subject_sha256` 到底覆盖哪些文件。改它即可换掉受保护范围而不用重跑门禁；
+2. `check_tree_dirty()` 用 `:(exclude)tools/spw-gates/gate-run/` **整目录**排除，
+   而 `gate-run/internal_markers.json`（RZB-011 新迁入的**标记词探测器自己的配置**）
+   正住在这个被排除的目录里——改它既不记脏、又能被逃逸口放行。
+
+**这正是 WO-0105 自己想堵的洞的隔壁**：RZB-011 把探测器配置搬进了受保护目录，
+却没给这个目录里除台账以外的文件设防线。
+
+### RZB-014 · 回合计数键在环境变量缺失时静默退回 RZB-010 病灶形态（P2，已复现）
+
+`safe-delete-bulk-guard.cjs:70-81`：
+`requestId: conversationRequestId || input.toolCallId`。
+已查实 harness 侧确实会注入 `CODEEBUDDY_CONVERSATION_REQUEST_ID`
+（`cli/dist/codebuddy-headless.js` 含该变量的赋值），但**钩子自己没有校验**。
+一旦注入方式变化，计数键无声退回 `toolCallId`，同一回合跨调用不再累计、
+阈值永不触发，且**不报错、不留痕**——正好是 RZB-010 的原始病灶形态复现。
+
+---
+
+## 追加：2026-10-08 RZB-012 ~ RZB-014 已同回合开 WO-20261006-0106
+
+| 记录 | 工单 | 优先级 | 状态 |
+|---|---|---|---|
+| RZB-012 H4 baseline 豁免零审批仍全绿 | WO-20261006-0106 | P1 | 已开单，待执行 |
+| RZB-013 head_commit 逃逸口过宽 | WO-20261006-0106 | P2 | 已开单，待执行 |
+| RZB-014 计数键缺 env 静默降级 | WO-20261006-0106 | P2 | 已开单，待执行 |
+
+- **RZB-009/010/011 主控复验结论**：WO-0105 三项病灶**全部真修对**，
+  主控在提交树 `d436912` 上亲手实跑 12/12 RC=0（`RUN-20261008-063751`）、
+  用手写探针复现场景 J/K/L、亲手注入三种篡改均 RC=1，
+  已接受闭合，未退回。详见 `WO/WO-20261006-0105` §九。

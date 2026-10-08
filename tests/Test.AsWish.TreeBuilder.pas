@@ -14,6 +14,7 @@ uses
   System.IOUtils,
   System.Generics.Collections,
   DUnitX.TestFramework,
+  Test.AsWish.FixtureHelper,
   AsWish.Models,
   AsWish.Services.Scan,
   AsWish.Services.TreeBuilder;
@@ -64,12 +65,12 @@ begin
   try
     TDirectory.CreateDirectory(TPath.Combine(LDir, 'models'));
     TDirectory.CreateDirectory(TPath.Combine(LDir, 'data'));
-    TFile.WriteAllText(TPath.Combine(LDir, 'models/user.ts'),
+    WriteFixtureText(TPath.Combine(LDir, 'models/user.ts'),
       'export interface User {' + sLineBreak +
       '  id: string;' + sLineBreak +
       '  displayName: string;' + sLineBreak +
       '}' + sLineBreak, TEncoding.UTF8);
-    TFile.WriteAllText(TPath.Combine(LDir, 'data/users.json'),
+    WriteFixtureText(TPath.Combine(LDir, 'data/users.json'),
       '{"profiles":[{"email":"Ada"}]}', TEncoding.UTF8);
 
     LScan.ScanDirectory(LDir);
@@ -110,7 +111,7 @@ begin
   LBuilder := TAsWishTreeBuilder.Create;
   try
     TDirectory.CreateDirectory(LDir);
-    TFile.WriteAllText(TPath.Combine(LDir, 'README.md'), '# Demo', TEncoding.UTF8);
+    WriteFixtureText(TPath.Combine(LDir, 'README.md'), '# Demo', TEncoding.UTF8);
 
     LScan.ScanDirectory(LDir);
     LBuilder.BuildFromScan(LScan, 'Demo', LDir);
@@ -145,13 +146,13 @@ begin
   LScan := TAsWishScanService.Create;
   try
     TDirectory.CreateDirectory(LDir);
-    TFile.WriteAllText(TPath.Combine(LDir, 'Main.pas'), 'unit Main; interface implementation end.', TEncoding.UTF8);
+    WriteFixtureText(TPath.Combine(LDir, 'Main.pas'), 'unit Main; interface implementation end.', TEncoding.UTF8);
 
     // Create .AsWish and .aswish directory structures with internal files
     TDirectory.CreateDirectory(TPath.Combine(LDir, '.AsWish'));
     TDirectory.CreateDirectory(TPath.Combine(LDir, '.AsWish\snapshots'));
-    TFile.WriteAllText(TPath.Combine(LDir, '.AsWish\project-spec.yaml'), 'name: test', TEncoding.UTF8);
-    TFile.WriteAllText(TPath.Combine(LDir, '.AsWish\snapshots\view-tree.yaml'), 'tree: view', TEncoding.UTF8);
+    WriteFixtureText(TPath.Combine(LDir, '.AsWish\project-spec.yaml'), 'name: test', TEncoding.UTF8);
+    WriteFixtureText(TPath.Combine(LDir, '.AsWish\snapshots\view-tree.yaml'), 'tree: view', TEncoding.UTF8);
 
     LScan.ScanDirectory(LDir);
 
@@ -189,7 +190,7 @@ begin
       '  end;' + sLineBreak +
       'implementation' + sLineBreak +
       'end.' + sLineBreak;
-    TFile.WriteAllText(TPath.Combine(LDir, 'SampleOrder.pas'), LContent, TEncoding.UTF8);
+    WriteFixtureText(TPath.Combine(LDir, 'SampleOrder.pas'), LContent, TEncoding.UTF8);
 
     LBuilder.ProjectRootPath := LDir;
     LEv := LBuilder.MakeEvidenceForFile('SampleOrder.pas');
@@ -221,7 +222,7 @@ begin
   LBuilder := TAsWishTreeBuilder.Create;
   try
     TDirectory.CreateDirectory(LDir);
-    TFile.WriteAllText(TPath.Combine(LDir, 'corpus.txt'),
+    WriteFixtureText(TPath.Combine(LDir, 'corpus.txt'),
       StringOfChar('#', 1) + ' heading one' + sLineBreak +
       'body' + sLineBreak +
       '## heading two' + sLineBreak +
@@ -272,13 +273,13 @@ begin
 
     // One doc whose headings all cite the same file is the shape that used to
     // collapse N evidence entries onto a single id.
-    TFile.WriteAllText(TPath.Combine(LDir, 'docs\corpus.md'),
+    WriteFixtureText(TPath.Combine(LDir, 'docs\corpus.md'),
       '# Alpha' + sLineBreak + 'a' + sLineBreak +
       '## Beta' + sLineBreak + 'b' + sLineBreak +
       '## Gamma' + sLineBreak + 'c' + sLineBreak +
       '# Delta' + sLineBreak + 'd' + sLineBreak, TEncoding.UTF8);
 
-    TFile.WriteAllText(TPath.Combine(LDir, 'App.pas'),
+    WriteFixtureText(TPath.Combine(LDir, 'App.pas'),
       'unit App;' + sLineBreak +
       'interface' + sLineBreak +
       'type' + sLineBreak +
@@ -330,13 +331,13 @@ begin
     TDirectory.CreateDirectory(TPath.Combine(LDir, 'docs'));
     TDirectory.CreateDirectory(TPath.Combine(LDir, 'src'));
 
-    TFile.WriteAllText(TPath.Combine(LDir, 'docs\01_req.md'),
+    WriteFixtureText(TPath.Combine(LDir, 'docs\01_req.md'),
       '# Requirements' + sLineBreak +
       'Must process payments.' + sLineBreak +
       '## SubRequirement' + sLineBreak +
       'Must record audit.' + sLineBreak, TEncoding.UTF8);
 
-    TFile.WriteAllText(TPath.Combine(LDir, 'src\App.pas'),
+    WriteFixtureText(TPath.Combine(LDir, 'src\App.pas'),
       'unit App;' + sLineBreak +
       'interface' + sLineBreak +
       'type' + sLineBreak +
@@ -347,7 +348,7 @@ begin
       'implementation' + sLineBreak +
       'end.' + sLineBreak, TEncoding.UTF8);
 
-    TFile.WriteAllText(TPath.Combine(LDir, 'src\MainForm.dfm'),
+    WriteFixtureText(TPath.Combine(LDir, 'src\MainForm.dfm'),
       'object MainForm: TMainForm' + sLineBreak +
       '  Caption = ''Main''' + sLineBreak +
       'end' + sLineBreak, TEncoding.UTF8);
@@ -402,12 +403,12 @@ begin
     // killed the whole scan, leaving trees/*.yaml as empty stubs.
     // Literal bytes for "# 遗留文档标题" + CRLF + "正文" in code page 936:
     // TEncoding.GetEncoding(936) is not guaranteed to be GBK on this machine.
-    TFile.WriteAllBytes(TPath.Combine(LDir, 'docs', 'gbk.md'),
+    WriteFixtureBytes(TPath.Combine(LDir, 'docs', 'gbk.md'),
       [$23, $20, $D2, $C5, $C1, $F4, $CE, $C4, $B5, $B5, $B1, $EA, $CC, $E2,
        $0D, $0A, $D5, $FD, $CE, $C4, $C4, $DA, $C8, $DD, $0A]);
 
     // UTF-16LE with no BOM: also not valid UTF-8.
-    TFile.WriteAllBytes(TPath.Combine(LDir, 'docs', 'utf16.txt'),
+    WriteFixtureBytes(TPath.Combine(LDir, 'docs', 'utf16.txt'),
       TEncoding.Unicode.GetBytes('# UTF16 标题' + sLineBreak + '第二行'));
 
     // The scan must survive both files and still extract their headings.
@@ -457,7 +458,7 @@ begin
   LBuilder := TAsWishTreeBuilder.Create;
   try
     TDirectory.CreateDirectory(TPath.Combine(LDir, 'docs'));
-    TFile.WriteAllText(TPath.Combine(LDir, 'docs\req.md'),
+    WriteFixtureText(TPath.Combine(LDir, 'docs\req.md'),
       '# Must record payments' + sLineBreak + 'Body text.', TEncoding.UTF8);
 
     LScan.ScanDirectory(LDir);

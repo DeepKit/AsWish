@@ -51,11 +51,13 @@ python -X utf8 tools/spw-gates/run_all_gates.py
 
 ---
 
-## H4 豁免治理与审批流程 (WO-20261004-0089)
+## H4 豁免治理与审批流程 (WO-20261004-0089 / WO-20261006-0106)
 
 H4 门禁用于防范代码中绕过 SpecStore 原子写/备份机制或隐藏错误的绕过模式（如 `TFile` 直写磁盘、`OutputDebugString` 静默吞错、硬编码绝对路径等）。
 
-为杜绝“开发者自签免罪牌”，所有豁免必须在 `h4_waivers.json` 中统一纳管，并遵守以下治理规范：
+经 WO-20261006-0106 治理，全仓 81 处历史存量绕过模式已全数在源码与测试集中结构性清除（包括统一采用 `SpecStore.AtomicWriteTextFile` 与 `Test.AsWish.FixtureHelper`），历史存量技术债务清零，`h4_waivers.json` 归零（`waivers: []`）。
+
+为杜绝“开发者自签免罪牌”及未经审批放行，所有豁免必须在 `h4_waivers.json` 中统一纳管，并遵守以下治理规范：
 
 ### 1. 台账字段规范
 每条豁免记录必须包含以下字段：
@@ -63,18 +65,16 @@ H4 门禁用于防范代码中绕过 SpecStore 原子写/备份机制或隐藏�
 - `file` / `line`: 命中的源文件相对路径与代码行号（1-based）；
 - `code`: 命中的具体代码片段；
 - `rationale`: 具体的业务理由或变更出处；
-- `scope`: 范围分类：
-  - `baseline`: 历史存量，尚未逐条经审核席位批准，门禁以 WARN 形式持续提示（属于已知技术债务）；
-  - `ongoing`: 封版后日常新增项，必须经专门审批；
-- `approved_by`: 批准人或批准角色（仅限 `h4_approvers.json` 登记角色，禁止自签或冒充，存量项可留空）；
-- `approved_at`: 批准日期（`YYYY-MM-DD`）；
+- `scope`: 范围分类（`baseline` 或 `ongoing`）；
+- `approved_by`: 批准人或批准角色（仅限 `h4_approvers.json` 登记角色，禁止自签或冒充，严禁留空）；
+- `approved_at`: 批准日期（`YYYY-MM-DD`，严禁留空）；
 - `expires_at`: （可选）到期日，若填，到期后门禁立即 fail-closed。
 
 ### 2. 门禁硬校验规则
+- **零债务与未审批阻断（Strict Approval & Zero Empty Approvers）**：所有范围分类（无论是 `baseline` 还是 `ongoing`）的豁免均强制要求有效的 `approved_by` 与 `approved_at`，任何空缺直接报 `[HIGH] unapproved waiver` 失败（Fail-Closed RC=1）；
 - **陈旧豁免断言（Stale Waiver）**：若台账中记录的 `file` 不存在、行号越界、或对应行不再命中该模式，门禁直接报 `[HIGH] stale waiver` 失败，防止代码修改后豁免暗中漂移；
 - **冒充与未授权批准人阻断（Impersonation & Whitelist）**：`approved_by` 命中冒充模式（如 `MasterController-*`、`SPW-*`）或未在 `h4_approvers.json` 登记时直接报 `[HIGH] impersonated approver` 或 `[HIGH] unauthorized approver` 失败；
 - **自签阻断（Self-Signing）**：若 `submitted_by` 与 `approved_by` 相同，直接报 `[HIGH] self-signed waiver` 失败；
-- **未审批新增豁免（Unapproved Ongoing）**：`scope="ongoing"` 的条目若缺少 `approved_by` 或 `approved_at`，门禁报 `[HIGH] unapproved ongoing waiver` 失败；
 - **过期豁免断言（Expired Waiver）**：若 `expires_at` 已过，门禁报 `[HIGH] waiver expired` 失败；
 - **未登记违规（Un-waived Hit）**：任何未在台账中登记的模式命中均报 `[HIGH] un-waived hit` 并以 `RC=1` 阻断。
 

@@ -8,6 +8,7 @@ uses
   System.Classes,
   System.IOUtils,
   Winapi.Windows,
+  Test.AsWish.FixtureHelper,
   Vcl.Forms,
   Vcl.Controls,
   Vcl.StdCtrls,
@@ -128,9 +129,9 @@ procedure TTestAsWishGUIDecisions.SetUp;
 begin
   FDir := TPath.Combine(TPath.GetTempPath, 'aswish-gui-' + TGuid.NewGuid.ToString.Substring(1, 8));
   TDirectory.CreateDirectory(FDir);
-  TFile.WriteAllText(TPath.Combine(FDir, 'README.md'),
+  WriteFixtureText(TPath.Combine(FDir, 'README.md'),
     '# GUI Decision Test Project' + sLineBreak + 'Specification docs.', TEncoding.UTF8);
-  TFile.WriteAllText(TPath.Combine(FDir, 'main.pas'),
+  WriteFixtureText(TPath.Combine(FDir, 'main.pas'),
     'unit main; interface function RunApp: Integer; implementation function RunApp: Integer; begin Result := 1; end; end.', TEncoding.UTF8);
 
   FProject := TAsWishProjectService.Create;
@@ -168,10 +169,10 @@ begin
   Assert.IsTrue(FController.AcceptChangeSet(LCSId, 'Accept B-0001'));
 
   // 2. Modify code and documentation to produce difference in function tree
-  TFile.WriteAllText(TPath.Combine(FDir, 'extra.pas'),
+  WriteFixtureText(TPath.Combine(FDir, 'extra.pas'),
     'unit extra; interface function ExtraFunc: string; implementation function ExtraFunc: string; begin Result := ''extra''; end; end.',
     TEncoding.UTF8);
-  TFile.AppendAllText(TPath.Combine(FDir, 'README.md'),
+  AppendFixtureText(TPath.Combine(FDir, 'README.md'),
     sLineBreak + '## Extra Feature' + sLineBreak + 'New capability implementation.' + sLineBreak,
     TEncoding.UTF8);
   FController.RunScan;

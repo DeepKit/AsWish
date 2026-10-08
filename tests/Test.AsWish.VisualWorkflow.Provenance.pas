@@ -10,6 +10,7 @@ interface
 uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
   System.Generics.Collections, AsWish.Models, AsWish.Hash,
+  Test.AsWish.FixtureHelper,
   AsWish.Services.SpecStore, AsWish.Services.Snapshot, AsWish.Services.Decisions,
   AsWish.Services.Difference, AsWish.Services.VisualWorkflow;
 
@@ -111,7 +112,7 @@ begin
     '    }' + sLineBreak +
     '  }' + sLineBreak +
     '}';
-  TFile.WriteAllText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);
+  WriteFixtureText(TPath.Combine(LAsWishDir, 'layout-constraints.json'), LConstraintsJson, TEncoding.UTF8);
 
   // Human confirmed baseline decision (AC1)
   LDecId := FDecisions.AddDecision(dtConfirm, 'Accepted Visual Baseline with Layout Intent',
