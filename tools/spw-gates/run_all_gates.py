@@ -62,6 +62,31 @@ def check_unmanaged_gates(manifest_gates: list[dict]) -> list[str]:
     return errors
 
 
+def get_git_head_long() -> str:
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT)
+        return out.decode("utf-8").strip()
+    except Exception:
+        return ""
+
+
+def check_tree_dirty() -> tuple[bool, str]:
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", ".", ":(exclude)tools/spw-gates/gate-run/"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        dirty_lines = [line for line in proc.stdout.splitlines() if line.strip()]
+        if dirty_lines:
+            return True, "\n".join(dirty_lines)
+    except Exception as exc:
+        return True, str(exc)
+    return False, ""
+
+
 def compute_subject_sha(manifest: dict, root: Path) -> str:
     agg = hashlib.sha256()
     for rel in sorted(manifest.get("subject_files", [])):
@@ -227,9 +252,20 @@ def main():
             failures.append(res["gate_id"])
 
     # 3. Write structured run results ledger (spw/gate-run/v1)
+    is_dirty, dirty_detail = check_tree_dirty()
+    if is_dirty:
+        print("[WARN] Working tree is dirty at run time; recording tree_dirty_at_run: true", file=sys.stderr)
+        if dirty_detail:
+            for l in dirty_detail.splitlines():
+                print(f"  [DIRTY] {l}", file=sys.stderr)
+
+    head_commit = get_git_head_long()
+
     ledger = {
         "schema": "spw/gate-run/v1",
         "run_id": f"RUN-{run_started_at:%Y%m%d-%H%M%S}",
+        "head_commit": head_commit,
+        "tree_dirty_at_run": is_dirty,
         "started_at": run_started_at.isoformat(),
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "manifest_path": str(manifest_path.resolve()),

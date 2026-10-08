@@ -10,12 +10,13 @@ governance markers (主控, 开发AI, WorkBuddy, 工单, BCW, BetterCiv), report
 filename, line number and matched term.
 """
 import io
+import json
 import re
 import subprocess
 import sys
 import zipfile
 from pathlib import Path
-from gate_lib import fail, ok, ROOT
+from gate_lib import fail, ok, ROOT, GATE_RUN_DIR
 
 GATE_ID = "H3.external-boundary"
 
@@ -41,8 +42,22 @@ GIT_ADD_BLACKLIST = [
     r"(^|/)out_file$",
 ]
 
-# Internal governance markers that must not appear in exported code/spec files
-INTERNAL_MARKERS = ["主控", "开发AI", "WorkBuddy", "工单", "BCW", "BetterCiv"]
+# Internal governance markers file located in excluded internal path (WO-20261006-0105)
+INTERNAL_MARKERS_FILE = GATE_RUN_DIR / "internal_markers.json"
+
+
+def _load_internal_markers() -> list[str]:
+    if INTERNAL_MARKERS_FILE.is_file():
+        try:
+            data = json.loads(INTERNAL_MARKERS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, list) and data:
+                return data
+        except Exception:
+            pass
+    return ["主控", "开发AI", "WorkBuddy", "工单", "BCW", "BetterCiv"]
+
+
+INTERNAL_MARKERS = _load_internal_markers()
 
 # Exact line-level statutory attribution triples (file, line_1_indexed, term)
 # per WO-20261004-0087 Stage 0 requirement 3
@@ -75,7 +90,7 @@ INTERNAL_PATTERNS = [
     r"(^|/)AUDIT-REQUEST-",
     r"(^|/)AGENTS\.md$",
     r"(^|/)spw-evidence-.*\.json$",
-    r"(^|/)(gate_(external_boundary|open_source_build)\.py|tools/spw-gates/README\.md)$",  # marker definitions and doc
+    r"(^|/)gate_(external_boundary|open_source_build)\.py$",  # marker definitions
     # Gate execution evidence. WO-20261005-0098 moved this tree under version
     # control so that rewriting it leaves a git trace, and
     # gate_open_source_build.py already skips all of tools/spw-gates/. Without

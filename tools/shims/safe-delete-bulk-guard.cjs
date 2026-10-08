@@ -378,7 +378,7 @@ function checkSafeDeleteBulkGuard(context, targets) {
         const now = Date.now();
         const state = readState(statePath);
         const pruned = pruneExpired(state, now);
-        const rejection = normalizeRequestRejection(state.requestRejections && state.requestRejections[context.toolCallId], now);
+        const rejection = normalizeRequestRejection(state.requestRejections && state.requestRejections[context.requestId], now);
         if (rejection.rejected) {
             decision = {
                 kind: 'rejected',
@@ -393,8 +393,8 @@ function checkSafeDeleteBulkGuard(context, targets) {
             if (pruned) writeState(statePath, state);
             return;
         }
-        const request = normalizeRequest(state.requests[context.toolCallId], now);
-        const approval = normalizeToolApproval(state.toolApprovals[context.toolCallId], now);
+        const request = normalizeRequest(state.requests[context.requestId], now);
+        const approval = normalizeToolApproval(state.toolApprovals[context.requestId], now);
         const deleteCount = countTargets(targets, DISPLAY_COUNT_LIMIT);
         if (deleteCount === 0) {
             if (pruned) writeState(statePath, state);
@@ -402,7 +402,7 @@ function checkSafeDeleteBulkGuard(context, targets) {
         }
         const totalCount = request.count + deleteCount;
         if (approval.approved) {
-            state.requests[context.toolCallId] = { count: totalCount, updatedAt: now };
+            state.requests[context.requestId] = { count: totalCount, updatedAt: now };
             writeState(statePath, state);
             return;
         }
@@ -411,7 +411,7 @@ function checkSafeDeleteBulkGuard(context, targets) {
                 process.stderr.write(
                     `[safe-delete][SAFE_DELETE_SELF_CREATED_ALLOWED] targets=${targets.length} count=${totalCount} threshold=${context.threshold}\n`
                 );
-                state.requests[context.toolCallId] = { count: totalCount, updatedAt: now };
+                state.requests[context.requestId] = { count: totalCount, updatedAt: now };
                 writeState(statePath, state);
                 return;
             }
@@ -429,7 +429,7 @@ function checkSafeDeleteBulkGuard(context, targets) {
             if (pruned) writeState(statePath, state);
             return;
         }
-        state.requests[context.toolCallId] = { count: totalCount, updatedAt: now };
+        state.requests[context.requestId] = { count: totalCount, updatedAt: now };
         writeState(statePath, state);
     });
     return decision;
@@ -487,7 +487,7 @@ function approveSafeDeleteBulkGuard(context, scope) {
         const now = Date.now();
         const state = readState(statePath);
         pruneExpired(state, now);
-        state.toolApprovals[context.toolCallId] = { approved: true, updatedAt: now };
+        state.toolApprovals[context.requestId] = { approved: true, updatedAt: now };
         writeState(statePath, state);
     });
 }
@@ -498,11 +498,11 @@ function rejectSafeDeleteBulkGuard(context, payload) {
         const now = Date.now();
         const state = readState(statePath);
         pruneExpired(state, now);
-        state.requests[context.toolCallId] = {
+        state.requests[context.requestId] = {
             count: normalized.count,
             updatedAt: now,
         };
-        state.requestRejections[context.toolCallId] = {
+        state.requestRejections[context.requestId] = {
             rejected: true,
             updatedAt: now,
             count: normalized.count,
@@ -510,7 +510,7 @@ function rejectSafeDeleteBulkGuard(context, payload) {
             targets: normalized.targets,
             targetCount: normalized.targetCount,
         };
-        delete state.toolApprovals[context.toolCallId];
+        delete state.toolApprovals[context.requestId];
         writeState(statePath, state);
     });
 }

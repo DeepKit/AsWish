@@ -278,3 +278,93 @@ RZB-002 ~ RZB-005 已从本记录升格为正式工单并全部修复闭环，�
 | RZB-006 治理标记表进入公开发布 | WO-20261006-0104 | P1 | 已闭合 |
 | RZB-007 证据链只钉单向 | WO-20261006-0104 | P1 | 已闭合 |
 | RZB-008 钩子判据拿时间戳冒充自建 | WO-20261006-0104 | P1 | 已闭合 |
+
+---
+
+## 2026-10-08 · 主控复验下游 WO-0104 交付（commit 75253b4），新发现三项缺陷
+
+### RZB-009 · 台账记的是假绿灯：G 门实跑 FAIL，台账记 PASS（P0）
+
+提交版台账 `gate_run_results.json`（`run_id=RUN-20261008-022616`）记
+`G.open-source-build verdict=PASS rc=0`；主控在同一提交树（`git status` 干净、
+HEAD=`75253b4`）实跑 `run_all_gates.py` 得 **11/12，G 门 FAIL RC=1、12 条 finding**，
+全部同源于"`tools/spw-gates/README.md` 不在导出清单内"（1 条自引用 + 12 条说明文档缺失）。
+
+机制（逐环钉死）：`gate_open_source_build.py:84 exported_archive()` 读的是
+`git archive HEAD`，即**按 HEAD 的 `.gitattributes` 出包，不看工作树**。
+
+```
+git archive c94ff87 → 含 tools/spw-gates/README.md   ← 下游跑门禁时看到的世界
+git archive HEAD     → 不含                            ← 提交后对外发售的世界
+```
+
+下游跑门禁时 HEAD 还是 `c94ff87`，那一刻 G 门**确实** PASS，台账那一行没说谎；
+但提交把 `export-ignore` 写进 HEAD 之后，**对外发售的那份包变了**，门禁没有重跑。
+manifest 的 `gate_run_sha256` 钉死值（`0c1bfc27…`）遂把过期裁决洗成"已核验"。
+
+**WO-0104 阶段 2 新加的两条断言抓不到这一种**：`compute_manifest_sha()` 按设计
+排除 `gate_run_sha256`，而本次唯一变的就是这个字段，故 `manifest_sha256` 摘要不变、
+断言通过；`.gitattributes` 不在 `subject_files` 里，`subject_sha256` 也不变。
+台账字段里**没有 `head_commit`**，所以"提交前跑门禁、提交后变天"在结构上无法被发现。
+
+`spw.py verify` 报 `ok=true / errors=[]` 这半句没错，但它只验证据包自洽、
+从不重跑门禁，包内那条假裁决照单全收；该 bundle 自身
+`execution_status: degraded`、`acceptable_for_release: false`。
+
+**教训（比缺陷本身更重要）**：这不是撒谎，是**没有任何机制要求"在提交后的树上复跑"**。
+门禁读 `git archive HEAD`，于是"跑门禁"与"提交"之间有一个窗口，
+窗口内任何 `.gitattributes` / 门禁脚本本身的改动都会让裁决悄悄过期，
+而钉死值机制负责把过期裁决洗成"已核验"。
+
+### RZB-010 · 钩子计数键从"回合"改成"单次工具调用"，按回合防批量删除整体失效（P0）
+
+`tools/shims/safe-delete-bulk-guard.cjs:396/405/414/432` 全部用
+`context.toolCallId` 作计数键，而 `context.requestId`（`:74`，
+由 `CODEBUDDY_CONVERSATION_REQUEST_ID` 正确推导）**算出来后一次都没用**。
+
+主控实测（`D:/_repro/hookaudit/probe_accum.py`，阈值=2）：
+
+| 场景 | 姿势 | 结果 |
+|---|---|---|
+| 1 | 同回合、两次**不同**工具调用各删 1 个 | 两次都 `rc=0`，**计数各算各的，阈值永不触发** |
+| 2 | **同一**工具调用 ID 跑两次 | 第二次 `count=2` 触发 |
+| 3 | **不同回合**、同一工具调用 ID | `count=2` 触发，连回合边界都不分 |
+
+`state.json` 为证：`{"toolA":{"count":1},"toolB":{"count":1},"toolC":{"count":2},"toolD":{"count":2}}`
+
+后果：护栏退化成"只看单次工具调用内是否一次删够 50 个"。
+WO-0103 的原始病灶原文是"本回合累计删除 50 次（为搬迁做过 13 个 `mv`、若干次尝试）"——
+**那正是跨调用的回合累计场景，现在一次都撞不到阈值**，且是静默放行。
+
+**下游 9 条验收全是单次调用形状，故这条回归一条都测不出来；主控的
+`run_cf2.py`（先播种、再检查，分两次调用）是唯一测出它的东西。**
+
+**教训**：改"计数键"这种看似无关紧要的重构，必须有**跨调用**形状的反证。
+否则旧的正确行为会在新代码里静默消失，而所有单次调用的测试照样全绿。
+
+### RZB-011 · WO-0104 阶段 1 给的修法本身走不通（P1）
+
+`gate_open_source_build.py:195 AUTHORIZED_PY_DIRS` 要求
+`tools/spw-gates/README.md` 随包出厂，作为 12 个 gate 脚本的指定说明文档；
+`:155 references_to_internal()` 又会因它缺席报"干净克隆里它不存在"。
+于是"给 README 补 `export-ignore`"与"G 门通过"**直接互斥**——
+它同时就是 RZB-009 那 12 条 finding 的直接来源。
+
+WO-0104 阶段 1 写"两条路选一条，不得两条都不满足"时漏判了这一点：
+路 (a) 不是"可用但次优"，是会把 G 门直接打红。正确形状是路 (b)：
+标记表本体移入已在 `INTERNAL_PATTERNS` 内且已 `export-ignore` 的路径，
+README 只留"引用 + 引用源"，并**恢复出厂**。
+
+### 另记：`.bak.wo0103` 被删除
+
+安装目录下的 `safe-delete-bulk-guard.cjs.bak.wo0103` 已被下游删除
+（完工报告写"已清空"）。它是 WO-0103 之前**唯一**的二进制基线，
+删掉后 WO-0103 那 7 处改动除工单文字描述外已无二进制级凭据。
+WO-0104 阶段 4 确曾把其处置交给下游，故不视为越权，但此处如实入账。
+
+### 复验脚本留存
+
+- `D:/_repro/hookaudit/probe_accum.py` — 计数键语义（RZB-010 场景 1/2/3）
+- `D:/_repro/hookaudit/verify_stage2.py` — 三条哈希断言亲手注入假值（还原后树干净）
+- `D:/_repro/hookaudit/run_cf2.py` — 钩子 A~I 反证
+- `D:/_repro/hookaudit/probe_selfcreated.py` — 自建判据正确姿势（同 toolCallId 先播种再检查）

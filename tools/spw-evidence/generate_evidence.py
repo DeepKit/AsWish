@@ -36,6 +36,14 @@ def get_git_head_short() -> str:
         return "head"
 
 
+def get_git_head_long() -> str:
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT)
+        return out.decode("utf-8").strip()
+    except Exception:
+        return ""
+
+
 H5_RAW_DIR = Path("WO/evidence/h5")
 
 
@@ -501,7 +509,42 @@ def generate_bundle(output_dir: Path = None) -> Path:
     if ledger_data.get("schema") != "spw/gate-run/v1":
         raise RuntimeError(f"Invalid execution ledger schema: {ledger_data.get('schema')}")
 
-    # 2b. Bidirectional ledger integrity assertions (WO-20261006-0104 Stage 2)
+    # 2b. Bidirectional ledger integrity assertions (WO-20261006-0104 Stage 2 & WO-20261006-0105 Stage 4/5)
+    current_head = get_git_head_long()
+    ledger_head = ledger_data.get("head_commit")
+    is_valid_head = bool(ledger_head and ledger_head == current_head)
+    if not is_valid_head and ledger_head:
+        try:
+            parent_head = subprocess.check_output(["git", "rev-parse", "HEAD~1"], cwd=ROOT, text=True).strip()
+            if ledger_head == parent_head:
+                diff_files = subprocess.check_output(
+                    ["git", "-c", "core.quotepath=false", "diff", "--name-only", "HEAD~1", "HEAD"],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                ).splitlines()
+                allowed_prefixes = ("tools/spw-gates/gate-run/", "spw-manifest.json", "WO/")
+                if diff_files and all(
+                    any(f.strip().strip('"').startswith(p) for p in allowed_prefixes)
+                    for f in diff_files if f.strip()
+                ):
+                    is_valid_head = True
+        except Exception:
+            pass
+
+    if not is_valid_head:
+        raise RuntimeError(
+            f"[HIGH] head_commit mismatch: ledger recorded {ledger_head} "
+            f"vs current HEAD {current_head}. "
+            f"Must rerun tools/spw-gates/run_all_gates.py on current HEAD commit."
+        )
+
+    if ledger_data.get("tree_dirty_at_run"):
+        raise RuntimeError(
+            f"[HIGH] gate execution ledger was generated on a dirty tree (tree_dirty_at_run=True). "
+            f"Must rerun tools/spw-gates/run_all_gates.py on a clean committed tree."
+        )
+
     ledger_manifest_sha = ledger_data.get("manifest_sha256")
     if ledger_manifest_sha != manifest_sha256:
         raise RuntimeError(

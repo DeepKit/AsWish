@@ -25,6 +25,11 @@ python -X utf8 tools/spw-gates/run_all_gates.py
 - 门禁总运行器（`run_all_gates.py`）与证据生成器（`generate_evidence.py`）必须统一从此模块 import 该常量，严禁在下游脚本中二次硬编码或私自定义。
 - `generate_evidence.py` 启动时内置强一致性运行时断言：若读取方与写入方所引用的 `GATE_RUN_DIR` 不一致，直接抛出 `RuntimeError` 并中断执行。
 
+### 提交态强绑定与脏树阻断 (WO-20261006-0105)
+- 门禁必须在提交后的最终干净工作树上运行；
+- 门禁总运行器收尾时校验工作树整洁状态，并在台账中强绑定当前完整 `head_commit` 与 `tree_dirty_at_run` 标志；
+- 证据生成器（`generate_evidence.py`）启动时内置强一致性硬断言：若台账中记录的 `head_commit` 与当前 HEAD 不一致，或 `tree_dirty_at_run` 为 `true`，立即抛出 `RuntimeError` 并中断退出（Fail-Closed RC=1），彻底杜绝“提交前跑门禁、提交后变天”的假绿灯隐患。
+
 ---
 
 ## 门禁清单与职责
@@ -90,24 +95,20 @@ H4 门禁用于防范代码中绕过 SpecStore 原子写/备份机制或隐藏�
 
 > ⚠️ **写 README / docs 前先看一眼这里**：严禁在面向外部发布的源码与公开文档中引入内部治理标记或未导出的私有路径引用。
 
-### 1. 内部治理标记词清单（SSOT 定义源：`tools/spw-gates/gate_external_boundary.py:45`）
-以下 6 个词汇为内部治理标记，除在法律许可/历史学术归因声明（`STATUTORY_ALLOWLIST`）指定的三元组文件行外，**严禁出现在任何公开面代码或文档中**：
-1. `主控`
-2. `开发AI`
-3. `WorkBuddy`
-4. `工单`
-5. `BCW`
-6. `BetterCiv`
+### 1. 内部治理标记定义与边界规则 (WO-20261006-0105)
+内部治理标记清单定义在受排除内部路径 `tools/spw-gates/gate-run/internal_markers.json`，由 `gate_external_boundary.py` 读取。在面向外部发布的源码与公开文档中，除在法律许可/历史学术归因声明（`STATUTORY_ALLOWLIST`）指定的三元组文件行外，严禁引入内部治理标记。
+
+作者在编写文档或提交代码前，严禁在公开文档中手工抄录内部治理标记词表，推荐运行 `--selftest` 预检命令进行即时审查。
 
 ### 2. 公开面 vs 内部面路径定义
 - **内部面路径（受排除，不作为公开面扫描）**：
-  - `WO/`（内部工单与测试留痕）
+  - `WO/`（内部治理与测试留痕）
   - `.workbuddy/`（工作区本地工作日志）
   - `.AsWish/`、`.ai-workbench/`、`_repro/`、`.claude/`
   - `docs/归档/`、`docs/_archive/`、`docs/*交接*`
   - 内部文档规范：`docs/07.*`、`docs/13.*`、`docs/15.*`、`docs/AsWish-Commons-PG.*`
   - 治理协议与审计件：`AGENTS.md`、`AUDIT-REQUEST-*`、`spw-evidence-*.json`
-  - 门禁自身定义与执行凭据：`gate_external_boundary.py`、`gate_open_source_build.py`、`tools/spw-gates/README.md`、`tools/spw-gates/gate-run/`
+  - 门禁自身定义与执行凭据：`gate_external_boundary.py`、`gate_open_source_build.py`、`tools/spw-gates/gate-run/`
 - **公开面路径**：除上述受排除模式以外的所有源码（`src/`、`cli/`、`tests/`）、公开规范文档（`docs/01.*` ~ `docs/06.*` 等）、项目根目录公开文档（`README.md`、`LICENSE`、`NOTICE`、`.github/`）等。
 
 ### 3. 1 秒级本地极速预检

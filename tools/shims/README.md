@@ -39,3 +39,12 @@ copy /y tools\shims\safe-delete-bulk-guard.cjs "<CLI_RUNTIME_DIR>\resources\app.
 ```bash
 python D:\_repro\hookaudit\run_cf2.py
 ```
+
+---
+
+## 4. 治理标记与规则引用规范 (WO-20261006-0105)
+
+本目录下所有代码与文档必须严格保持发布面纯净：
+- 内部治理标记清单的唯一本体定义位于受排除内部路径 `tools/spw-gates/gate-run/internal_markers.json`；
+- 门禁规则与自检说明请统一参阅 `tools/spw-gates/README.md` 与 `tools/spw-gates/gate_external_boundary.py`；
+- 严禁在本目录任何文件中复制、抄录内部治理标记词表，避免产生无主分叉副本或泄漏至公开源码。
