@@ -368,3 +368,18 @@ WO-0104 阶段 4 确曾把其处置交给下游，故不视为越权，但此处
 - `D:/_repro/hookaudit/verify_stage2.py` — 三条哈希断言亲手注入假值（还原后树干净）
 - `D:/_repro/hookaudit/run_cf2.py` — 钩子 A~I 反证
 - `D:/_repro/hookaudit/probe_selfcreated.py` — 自建判据正确姿势（同 toolCallId 先播种再检查）
+
+---
+
+## 追加：2026-10-08 RZB-009 ~ RZB-011 已全部在 WO-20261006-0105 闭环
+
+| 记录 | 工单 | 优先级 | 状态 |
+|---|---|---|---|
+| RZB-009 台账记假绿灯且缺 commit 绑定 | WO-20261006-0105 | P0 | 已闭合 |
+| RZB-010 钩子计数键未按 requestId 累计 | WO-20261006-0105 | P0 | 已闭合 |
+| RZB-011 G 门与 README export-ignore 互斥 | WO-20261006-0105 | P1 | 已闭合 |
+
+- **RZB-009 解决方案**：`run_all_gates.py` 记录 `head_commit` 与 `tree_dirty_at_run`；`generate_evidence.py` 增设 fail-closed 双向强校验，拦截任何非 HEAD 跑门禁或脏树生成的过期台账；台账在干净提交树上实跑 12/12 RC=0 产生并由 manifest 钉死。
+- **RZB-010 解决方案**：`safe-delete-bulk-guard.cjs` 将 `requests` / `toolApprovals` / `requestRejections` 的键由 `context.toolCallId` 统一修复为 `context.requestId`；同步至 WorkBuddy 安装目录；补充反证 J（同回合跨工具调用累计达阈值拦截）与反证 K（不同回合计数隔离）。
+- **RZB-011 解决方案**：将 6 个治理标记词移出 `tools/spw-gates/README.md`，归入 `tools/spw-gates/gate-run/internal_markers.json`（受 `export-ignore` 保护且列入 `INTERNAL_PATTERNS`）；`.gitattributes` 撤销对 `README.md` 的 `export-ignore`，使其恢复随包出厂；`README.md` 仅保留引用源指引，0 标记词。
+
