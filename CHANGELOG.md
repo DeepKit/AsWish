@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.1] - 2026-10-11
 
 ### Added
+- **Real-World Closed Loop & External Agent Bidirectional Adapter (WO-0108 Stage 2.5, WP1)**:
+  - Added `agent execute <dir> [baseline-id]` command in `AsWish.CLI.exe` orchestrating external Coding Agents (Claude Code, mock, or custom command lines).
+  - Automatically exports `agent-handoff.md` with explicit execution scopes (Target Project Root, Allowed Modified Files, Strictly Forbidden Paths `.AsWish/**`, Build & Verify Command).
+  - Enforces fail-closed security boundary checks via git porcelain inspection before and after execution, strictly preventing unauthorized modifications to `.AsWish` data.
+  - Automatically records execution metadata to `.AsWish/agent-runs/<run_id>/agent-execution.yaml` and triggers implementation evidence collection.
+- **Non-Invasive VCL Reality Observer (WO-0108 Stage 2.5, WP2)**:
+  - Added standalone `tools/vcl-observe/observe_vcl.py` utilizing native Windows UI Automation (UIA) and Win32 APIs for non-invasive bounding box extraction of running VCL controls without source modification or DLL injection.
+  - Added safe process termination, DFM-to-control name resolution fallback, and normalized runtime observation output (`runtime-observation.json`).
+  - Added unobservable style attribute tolerance (`FontColorKnown` in `AsWish.Plugins.VCL.Difference.pas`) avoiding false-positive passes or false-negative failures on runtime controls whose style attributes cannot be inspected via standard accessibility APIs.
+- **Rejected Difference Revision Loop & Immutable Baseline Defense (WO-0108 Stage 2.5, WP3)**:
+  - Added `revision export <dir> <baseline-id> <decision-id>` command in `AsWish.CLI.exe` producing `revision-handoff-<decision-id>.md` linking rejected decision rationale, observed differences, and correction instructions for Coding Agents.
+  - Hardened `EvolveBaseline` in `AsWish.Controller.pas` and `AsWish.Services.VisualWorkflow.pas` to fail-closed if the latest decision on the target baseline is rejected (`dsRejected`), strictly preserving baseline immutability until human signs acceptance.
+  - Verified 8-step dogfood closed-loop in `dogfood/dogfood_vcl_loop`: handoff -> agent deviation -> live UIA observation -> structural difference detection -> human rejection & fail-closed lock -> revision package export -> agent fix -> difference zero verification -> human acceptance -> evolution to `B-0002`.
 - **Crash-Safe Atomic Write & Snapshot Backup (WO-0108, RZB-015)**:
   - Replaced unsafe `TFile.Delete` + `RenameFile` pattern with native Windows `ReplaceFile` in `TAsWishStoreService.AtomicWriteTextFile`, eliminating file deletion vulnerability window.
   - Added automated rolling snapshot backups to `snapshots/<name>.bak.<ext>` before overwriting existing files.
@@ -22,10 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Upgraded `run_all_gates.py` to assert zero failures (`Tests Failed: 0`, `Tests Errored: 0`) before accepting claim assertions.
 - **12 Mandatory Gate Export Integrity (WO-0108)**:
   - Hardened `G.open-source-build` (`gate_open_source_build.py`) to assert that all 12 required quality gates exist in the working tree and are included in export archives.
+- **H4 Approval Gate Fail-Closed & Bypass Governance (WO-0106, WO-0108)**:
+  - Enforced fail-closed behavior on H4 approvals and closed manifest escape hatch patterns.
 
 ### Changed
 - **Zero Bypass Debt Architecture (WO-0106, WO-0108)**:
   - Maintained zero waivers (`max_ongoing_waivers: 0`) in `tools/spw-gates/h4_waivers.json` without unapproved baseline exemptions.
+- **H5 Dual-Seat Independent Supervision (WO-0108)**:
+  - Formally grounded H5 independent supervisory seats in gate execution manifests.
 
 ## [0.2.0] - 2026-10-04
 
