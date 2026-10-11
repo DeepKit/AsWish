@@ -4,4 +4,4 @@ D:\_Progs\02Business\AsWish\src\services\AsWish.Services.Commons.pas(148) Hint: 
 D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(1349) Hint: H2077 Value assigned to 'LFound' never used
 Test.AsWish.Controller.pas(890) Hint: H2077 Value assigned to 'LNodeTotal' never used
 Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used in 'TTestAsWishController.Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline'
-35799 lines, 3.89 seconds, 9809060 bytes code, 882216 bytes data.
+35923 lines, 3.09 seconds, 9816980 bytes code, 882424 bytes data.

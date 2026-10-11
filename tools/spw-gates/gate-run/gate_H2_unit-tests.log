@@ -1458,10 +1458,11 @@
              
              Executing Test : Test01_P2_DifferentTriggerTree_DifferentBaselineHash
              
+               [CLAIM_ASSERTED] active_detail_trigger
              
               Running Teardown for Test : Test01_P2_DifferentTriggerTree_DifferentBaselineHash
               
-               Success.
+               Success : [CLAIM_ASSERTED] active_detail_trigger
             
              Test : Test.AsWish.Difference.TTestAsWishDifference.Test02_P2_SingleTreeHash_Determinism
              -------------------------------------------------
@@ -2062,7 +2063,8 @@
              -------------------------------------------------
              Executing Test : SameState_IsAlwaysAllowed
              
-               Success.
+               [CLAIM_ASSERTED] state_machine_check
+               Success : [CLAIM_ASSERTED] state_machine_check
             
              Test : Test.AsWish.Models.TFogStateMachineTests.UnknownUnknowns_ToFoggy_Allowed
              -------------------------------------------------
@@ -2557,6 +2559,18 @@
              
                Success.
             
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_AtomicWrite_HTML_Prompt_Decisions_ByteForByte
+             -------------------------------------------------
+             Executing Test : Test_AtomicWrite_HTML_Prompt_Decisions_ByteForByte
+             
+               Success.
+            
+             Test : Test.AsWish.SpecStore.TTestAsWishSpecStore.Test_AtomicWrite_PreservesTargetFileOnFailure
+             -------------------------------------------------
+             Executing Test : Test_AtomicWrite_PreservesTargetFileOnFailure
+             
+               Success.
+            
             Running Fixture Teardown Method : Destroy
             
          
@@ -2989,7 +3003,8 @@
              -------------------------------------------------
              Executing Test : ValidFogState_NoErrors
              
-               Success.
+               [CLAIM_ASSERTED] required_fields_on_activation
+               Success : [CLAIM_ASSERTED] required_fields_on_activation
             
              Test : Test.AsWish.Validation.TValidationTreeFileTests.InvalidFogState_ReportedAsError
              -------------------------------------------------
@@ -3422,9 +3437,9 @@
    
 
 Done testing.
-Tests Found   : 348
+Tests Found   : 350
 Tests Ignored : 0
-Tests Passed  : 348
+Tests Passed  : 350
 Tests Leaked  : 0
 Tests Failed  : 0
 Tests Errored : 0
