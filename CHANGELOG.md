@@ -5,6 +5,28 @@ All notable changes to the **AsWish** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-10-11
+
+### Added
+- **Crash-Safe Atomic Write & Snapshot Backup (WO-0108, RZB-015)**:
+  - Replaced unsafe `TFile.Delete` + `RenameFile` pattern with native Windows `ReplaceFile` in `TAsWishStoreService.AtomicWriteTextFile`, eliminating file deletion vulnerability window.
+  - Added automated rolling snapshot backups to `snapshots/<name>.bak.<ext>` before overwriting existing files.
+  - Added comprehensive test suites in `Test.AsWish.SpecStore.pas` asserting byte-for-byte write fidelity across HTML/YAML/Markdown files and file content preservation under lock failure.
+
+### Fixed
+- **Pascal UTF-8 BOM Consistency & H3 Encoding Guard (WO-0108, RZB-017)**:
+  - Restored UTF-8 BOM (`\xef\xbb\xbf`) across all Pascal source units containing non-ASCII or Chinese characters.
+  - Hardened `H3.encoding-guard` (`gate_encoding.py`) to fail-closed on any `.pas` unit with non-ASCII characters lacking UTF-8 BOM.
+- **Genuine Test Claims & Zero-Guesswork Gate Runner (WO-0108, WO-0099)**:
+  - Enforced actual DUnitX test output claims (`[CLAIM_ASSERTED]`) in `Test.AsWish.Difference.pas`, `Test.AsWish.Models.pas`, and `Test.AsWish.Validation.pas`.
+  - Upgraded `run_all_gates.py` to assert zero failures (`Tests Failed: 0`, `Tests Errored: 0`) before accepting claim assertions.
+- **12 Mandatory Gate Export Integrity (WO-0108)**:
+  - Hardened `G.open-source-build` (`gate_open_source_build.py`) to assert that all 12 required quality gates exist in the working tree and are included in export archives.
+
+### Changed
+- **Zero Bypass Debt Architecture (WO-0106, WO-0108)**:
+  - Maintained zero waivers (`max_ongoing_waivers: 0`) in `tools/spw-gates/h4_waivers.json` without unapproved baseline exemptions.
+
 ## [0.2.0] - 2026-10-04
 
 ### Added

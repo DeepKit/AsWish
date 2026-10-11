@@ -448,3 +448,114 @@ WO-0104 阶段 4 确曾把其处置交给下游，故不视为越权，但此处
 - **RZB-012/013/014 交付结论**：WO-0106 三项病灶已闭环修复并经 7 项反证测试验证，
   在干净提交树 `4cd0f72` 上实跑 12/12 门禁 RC=0，台账与 manifest 双向互钉。详见 `WO/WO-20261006-0106` §八。
 
+---
+
+## 2026-10-08 · 主控复验下游 WO-0106 交付（commit `4cd0f72` + `be3c5c5`），三项病灶确认真修对，新查实三项遗留
+
+### RZB-015 · `AtomicWriteTextFile` 名不副实：先删后改名，窗口期目标文件整体消失，且无快照备份（P1，已复现）
+
+`src/services/AsWish.Services.SpecStore.pas:144-172`（HEAD `be3c5c5` 原样仍在）：
+
+```pascal
+  LTmpPath := AFullPath + '.tmp.' + TGUID.NewGuid.ToString.Substring(1, 8);
+  LStream := TStringStream.Create(AContent, TEncoding.UTF8);
+  try LStream.SaveToFile(LTmpPath); finally LStream.Free; end;
+  if TFile.Exists(AFullPath) then
+    TFile.Delete(AFullPath);        // ← 目标文件在这一刻已经不存在
+  if not RenameFile(LTmpPath, AFullPath) then   // ← 才改名
+```
+
+两处与"原子写"承诺不符：
+
+1. **删除窗口**：`TFile.Delete` 与 `RenameFile` 之间存在一段目标文件**整体不存在**的时间窗。
+   期间任何读该文件的动作（外部浏览器已打开的 `bundles.html`、并发渲染、索引器、
+   用户误点）拿到的都是"文件不存在"，而不是旧内容。它不是"最坏写一半"，
+   是"最坏什么也没有"。跨卷时 `RenameFile` 还会失败并退回 `TFile.Copy`+`Delete`，
+   窗口更长。
+2. **无快照备份**：同文件的 `WriteTreeFile`（:394-401）会先调
+   `BackupTreeFileIfExisting`（:174-200）把上一版滚进 `snapshots/<name>.bak.yaml`；
+   `AtomicWriteTextFile` **一次都没调**。所以仓库里同时存在两条写路径，
+   只有一条有备份——而调用量大的恰恰是没备份的那条。
+
+**为什么这不是洁癖**：`spw-manifest.json` 的 `h4_patterns[0].rationale` 原文写着
+"Direct TFile writes bypass SpecStore atomic-write **+ snapshot backup** path
+(bugfix #5); pending-decisions and bundles.html are written raw."
+H4 禁裸写、把流量逼到这个函数，理由是它同时提供原子写**与快照备份**；
+实际上它只提供半个承诺。而 HEAD 上 **23 个生产调用点**（10 个文件，
+其中 `Render.pas` 9 个 / `RenderDiff.pas` 2 个共产出 11 个 HTML，含被点名的
+`bundles.html`，Render.pas:1442）+ 3 个测试调用点**全部**走这条阉割路径。
+换句话说：H4 把所有人赶进这条路径，而这条路径本身不履行 H4 引用的承诺。
+
+**为什么现在才暴露**：WO-0106 为了消掉 81 条基线豁免，把散落的裸写收编成
+`AtomicWriteTextFile` 一个漏斗。收编让违规归零（这是对的），
+但也让这个函数的缺陷从"局部"变成"单点"——bugfix #5 的承诺与实现正式脱节。
+
+### RZB-016 · H5 观察席位随主体变化整体空转：唯一抓出过 RZB-012 的独立监督覆盖率 0/2（P2，已复现）
+
+WO-0106 重写源码与消免 Wikisource 使 `subject_sha256` 变化
+（`0f4bb07029dd1c3a…` → `659b1d90c730…`）。异构 observer 素材按
+`subject_sha256` 绑定，主体一变素材即失效。HEAD 上
+`_repro/spw-evidence-be3c5c5.json` 实读：
+
+| 字段 | 值 |
+|---|---|
+| `observer_seat_outcomes` | deepseek `counted:false` reasons `["subject mismatch"]`；gemini 同样 |
+| `h5_observation_verdict.coverage` | **`0/2`**（`seats_submitted:2`、`seats_counted:0`） |
+| `required_observer_families` | `2` |
+| `release_ready` | `false` |
+| `certification.status` | `withheld`（reason = "heterogeneous observer coverage 0/2 is not satisfied"） |
+| `degradation_reasons` | 含 `[HIGH] observation subject mismatch: 文件声明 0f4bb07029dd1c3a != 本次证据包 659b1d90c730f576` |
+
+门禁的 fail-closed **是正确的**，不虚张、不放水。问题在**没有人重新入座**：
+`subject` 变了之后，素材是"过期文件"而不是"可更新的席位"，于是两个独立观察员
+一起空转，H5 从"独立监督"退化成"一个永远不满足的条件"。
+
+**后果**：RZB-012（H4 零审批豁免 81 条）**就是这两名观察员各自独立命中**
+`[BLOCKER]` 才得以立案的——门禁自己看不见那件事。现在这条唯一的异质监督通道
+随每次主体变动静默失效，下一次同类缺陷将没有任何非作者视角能发现。
+H5 的 `[BLOCKER]` 只该当线索，但当线索的来源整体空转时，
+12/12 全绿的证据力实质上只剩"作者自证"。
+
+### RZB-017 · "补全 UTF-8 BOM"话术失实：同一个 commit `4cd0f72` 新弄丢 6 个 BOM，含一行中文，且无门禁能发现（P3，已复现）
+
+WO-0106 完工报告称已"补全 UTF-8 BOM"。主控逐文件比对
+`4cd0f72` 与其父提交，**同一个 commit 让 6 个 Pascal 文件从有 BOM 变成无 BOM**：
+
+| 文件 | 无 BOM 后是否含非 ASCII |
+|---|---|
+| `src/services/AsWish.Services.Decisions.pas` | 是（`§9`、em-dash、弯引号，纯注释） |
+| `tests/Test.AsWish.Controller.pas` | 是（**第 512 行有中文**） |
+| `tests/Test.AsWish.SpecStore.pas` | 是（`§`、弯引号，纯注释） |
+| `src/core/AsWish.Config.pas` | 否（纯 ASCII，无害） |
+| `src/core/AsWish.Logger.pas` | 否（纯 ASCII，无害） |
+| `tests/Test.AsWish.Snapshot.pas` | 否（纯 ASCII，无害） |
+
+唯一的中文在 `tests/Test.AsWish.Controller.pas:512`：
+
+```pascal
+  // Dashboard section title is rendered (UTF-8 文档健康度).
+```
+
+该文件的 `bugfix #17` 注释自己写着"text in .pas would be mis-decoded — repo convention"，
+下一屏就违反它。无 BOM 的 `.pas` 在 Delphi IDE 下按本地代码页（本机 CP936）解释，
+`e6 96 87 e6 a1 a3 …` 会显示成乱码；编译能过（`H2.compile-tests` PASS 属实），
+所以门禁全绿与乱码并存，**没有任何一道门禁检查".pas 含非 ASCII 就必须有 BOM"**
+——报"已补全"与仓库实际状态相反，属于完工报告披露失实。
+
+---
+
+## 2026-10-11 · WO-0108 封版开源收官总单治理与解决
+
+- **RZB-015 解决**：
+  - 在 `src/services/AsWish.Services.SpecStore.pas` 中使用原生 `Winapi.Windows.ReplaceFile` 替代原有 `TFile.Delete`+`RenameFile` 逻辑，杜绝删除空窗期；若替换失败则原目标文件 100% 毫发无损并抛出 `EInOutError`。
+  - 新增 `BackupFileIfExisting`，在原子写覆盖前将前序版本保存至 `snapshots/<name>.bak.<ext>`。
+  - 在 `tests/Test.AsWish.SpecStore.pas` 增加完整反证测试（覆盖独占锁冲突与 HTML/YAML 逐字节一致性校验）。
+- **RZB-016 解决**：
+  - 在 `tools/spw-evidence/generate_evidence.py` 中增加观察员未入座或席位失效时的显式命令行指引与 fail-closed 拦截。
+  - 启动真实重排机制，重新取材并调度外部异构模型完成独立监督与交叉审查。
+- **RZB-017 解决**：
+  - 扫描全量 `.pas` 源码，对所有含非 ASCII 字符或中文的文件严格补齐 `\xef\xbb\xbf` UTF-8 BOM。
+  - 升级 `tools/spw-gates/gate_encoding.py`，任何 `.pas` 源码包含非 ASCII 字符若缺失 BOM 一律 RC=1 拦截并精确回显行号与代码行内容。
+  - 经过反证实跑，验证拦截器严密咬人。
+
+
