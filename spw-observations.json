@@ -1,27 +1,27 @@
 {
   "schema": "spw-observations/v1",
   "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-  "material_digest": "95e62923e3ad63aafedbf54a8923cbca3763438cfbd3e306fb40e6a95a1da501",
+  "material_digest": "01ffd074a2535f154dee70666c78d090b8f8677a822b156871a75323e9ee13c5",
   "seats": [
     {
       "schema": "spw-observation-seat/v1",
       "family": "deepseek",
       "model": "deepseek-v4.1-flash",
       "resolved_model": "deepseek-v4.1-flash",
-      "response_id": "cmb-27d209dec56c11f192ad32b93329d9e8",
-      "observed_at": "2026-10-11T12:03:14.165279+00:00",
+      "response_id": "cmb-0fe91706c56d11f1957c6a80e43277b8",
+      "observed_at": "2026-10-11T12:09:40.951414+00:00",
       "round": 6,
       "observer_id": "deepseek-observer",
       "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-      "material_digest": "95e62923e3ad63aafedbf54a8923cbca3763438cfbd3e306fb40e6a95a1da501",
-      "response_digest": "011ce10dee90f4094799b0cf5dd0a69dc848e2476a1c8833322b9bc79d0e87fc",
-      "raw_file": "raw-deepseek-deepseek-v4.1-flash-r6-20261011-120257.txt",
-      "envelope_file": "env-deepseek-deepseek-v4.1-flash-r6-20261011-120257.json",
-      "envelope_sha256": "f9f81a2edc603662a5840b26715f60edf58db4fdb9726b77c10d24c7df1af06f",
+      "material_digest": "01ffd074a2535f154dee70666c78d090b8f8677a822b156871a75323e9ee13c5",
+      "response_digest": "99bb0ea26c93e079a4d99668a3dfcaa6938ddda739aeeb492a11cd8d17da6ab7",
+      "raw_file": "raw-deepseek-deepseek-v4.1-flash-r6-20261011-120927.txt",
+      "envelope_file": "env-deepseek-deepseek-v4.1-flash-r6-20261011-120927.json",
+      "envelope_sha256": "25518bda832a4cd3d4cbff7c219e63763d415b71c6112ebff091fbfb8742d9d8",
       "usage": {
-        "prompt_tokens": 6680,
-        "completion_tokens": 3445,
-        "total_tokens": 10125,
+        "prompt_tokens": 6943,
+        "completion_tokens": 2907,
+        "total_tokens": 9850,
         "completion_tokens_details": {
           "accepted_prediction_tokens": 0,
           "audio_tokens": 0,
@@ -34,205 +34,157 @@
           "audio_tokens": 0,
           "reasoning_tokens": 0,
           "rejected_prediction_tokens": 0,
-          "cached_tokens": 128
+          "cached_tokens": 6784
         },
-        "prompt_cache_hit_tokens": 128,
-        "prompt_cache_miss_tokens": 6552,
+        "prompt_cache_hit_tokens": 6784,
+        "prompt_cache_miss_tokens": 159,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
         "prompt_cache_write_tokens": 0,
         "completion_thinking_tokens": 0,
-        "credit": 0.29,
+        "credit": 0.17,
         "cached_tokens": 0
       },
       "verdict": "not_ready",
       "verdict_reason": "independent read-only review of obs_material.json",
       "findings": [
         {
+          "severity": "INFO",
+          "area": "general",
+          "description": "Finding A1 — INFO**",
+          "evidence": "Finding A1 — INFO**"
+        },
+        {
           "severity": "LOW",
           "area": "general",
-          "description": "Scope note up front: this material is a **summary/attestation pack**, not raw gate output. Every gate is shown only as an `output_excerpt`, and the pack explicitly declares it contains no external-obs",
-          "evidence": "Scope note up front: this material is a **summary/attestation pack**, not raw gate output. Every gate is shown only as an `output_excerpt`, and the pack explicitly declares it contains no external-obs"
+          "description": "Finding A2 — LOW**",
+          "evidence": "Finding A2 — LOW**"
         },
         {
-          "severity": "HIGH",
+          "severity": "LOW",
           "area": "general",
-          "description": "Finding A1 — INFO / HIGH (see below) | Area: manifest vs. recorded verdicts**",
-          "evidence": "Finding A1 — INFO / HIGH (see below) | Area: manifest vs. recorded verdicts**"
+          "description": "Finding A3 — LOW**",
+          "evidence": "Finding A3 — LOW**"
         },
         {
-          "severity": "HIGH",
+          "severity": "LOW",
           "area": "general",
-          "description": "Finding A2 — HIGH | Area: H4 gate evidence is self-asserted, not argued**",
-          "evidence": "Finding A2 — HIGH | Area: H4 gate evidence is self-asserted, not argued**"
+          "description": "Area:** H3.* gate durations (possible shallow checks in the \"build\" proof sense)",
+          "evidence": "Area:** H3.* gate durations (possible shallow checks in the \"build\" proof sense)"
         },
         {
-          "severity": "HIGH",
+          "severity": "LOW",
           "area": "general",
-          "description": "The H4 gate excerpt contains only assertion tokens plus a summary line \"verified 0 hits; all 0 waivers governed and accounted for\". Two of the three declared H4 patterns (`H4.DIRECT_DISK_WRITE` high; ",
-          "evidence": "The H4 gate excerpt contains only assertion tokens plus a summary line \"verified 0 hits; all 0 waivers governed and accounted for\". Two of the three declared H4 patterns (`H4.DIRECT_DISK_WRITE` high; "
+          "description": "Finding A4 — LOW / fake-green risk in H4**",
+          "evidence": "Finding A4 — LOW / fake-green risk in H4**"
         },
         {
-          "severity": "MEDIUM",
+          "severity": "BLOCKER",
           "area": "general",
-          "description": "Finding A3 — MEDIUM | Area: G.vendored-upstream-drift**",
-          "evidence": "Finding A3 — MEDIUM | Area: G.vendored-upstream-drift**"
+          "description": "Finding B1 — BLOCKER (policy, latent)**",
+          "evidence": "Finding B1 — BLOCKER (policy, latent)**"
         },
         {
-          "severity": "HIGH",
+          "severity": "LOW",
           "area": "general",
-          "description": "Additionally the same `D:\\_Progs` literal is exactly the pattern classified HIGH-risk-adjacent in `H4.HARDCODED_ABS_PATH` (`\"pattern\": \"D:\\\\\\\\_Progs\"`), yet the H4 gate reports it as clean. There is a",
-          "evidence": "Additionally the same `D:\\_Progs` literal is exactly the pattern classified HIGH-risk-adjacent in `H4.HARDCODED_ABS_PATH` (`\"pattern\": \"D:\\\\\\\\_Progs\"`), yet the H4 gate reports it as clean. There is a"
+          "description": "Description:** The `authorized_approvers` whitelist includes `\"MasterController\"`. The `impersonation_patterns` list is `[\"^(MasterController|SPW|MainController)-.*$\"]`, i.e. `MasterController` is exp",
+          "evidence": "Description:** The `authorized_approvers` whitelist includes `\"MasterController\"`. The `impersonation_patterns` list is `[\"^(MasterController|SPW|MainController)-.*$\"]`, i.e. `MasterController` is exp"
         },
         {
-          "severity": "HIGH",
+          "severity": "LOW",
           "area": "general",
-          "description": "Finding A4 — HIGH | Area: H2.compile-tests vs H2.unit-tests**",
-          "evidence": "Finding A4 — HIGH | Area: H2.compile-tests vs H2.unit-tests**"
-        },
-        {
-          "severity": "INFO",
-          "area": "general",
-          "description": "Finding A5 — INFO | Area: all gates**",
-          "evidence": "Finding A5 — INFO | Area: all gates**"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "Finding B1 — MEDIUM | Area: H4 waiver governance**",
-          "evidence": "Finding B1 — MEDIUM | Area: H4 waiver governance**"
+          "description": "Finding B2 — LOW (latent)**",
+          "evidence": "Finding B2 — LOW (latent)**"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "Finding B2 — INFO | Area: H4 waiver governance**",
-          "evidence": "Finding B2 — INFO | Area: H4 waiver governance**"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "Finding B3 — MEDIUM | Area: H4 policy fails-closed claim**",
-          "evidence": "Finding B3 — MEDIUM | Area: H4 policy fails-closed claim**"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "Finding C1 — HIGH | Area: distribution boundary**",
-          "evidence": "Finding C1 — HIGH | Area: distribution boundary**"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "Finding C2 — MEDIUM | Area: boundary definition drift**",
-          "evidence": "Finding C2 — MEDIUM | Area: boundary definition drift**"
+          "description": "Finding B3 — INFO**",
+          "evidence": "Finding B3 — INFO**"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "Finding C3 — INFO | Area: no raw export artifact**",
-          "evidence": "Finding C3 — INFO | Area: no raw export artifact**"
+          "description": "Description:** The impersonation regex only matches `MasterController-…`, `SPW-…`, `MainController-…` (suffix `-.*`). Bare `MasterController` (no hyphen) used as `approved_by` would not match the impe",
+          "evidence": "Description:** The impersonation regex only matches `MasterController-…`, `SPW-…`, `MainController-…` (suffix `-.*`). Bare `MasterController` (no hyphen) used as `approved_by` would not match the impe"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "Finding D1 — HIGH | Area: \"claims_asserted\" == \"claims\" everywhere**",
-          "evidence": "Finding D1 — HIGH | Area: \"claims_asserted\" == \"claims\" everywhere**"
+          "description": "Finding C1 — HIGH (self-referential contradiction)**",
+          "evidence": "Finding C1 — HIGH (self-referential contradiction)**"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "Finding D2 — HIGH | Area: sub-second gate durations**",
-          "evidence": "Finding D2 — HIGH | Area: sub-second gate durations**"
+          "description": "Finding C2 — HIGH**",
+          "evidence": "Finding C2 — HIGH**"
         },
         {
-          "severity": "MEDIUM",
+          "severity": "LOW",
           "area": "general",
-          "description": "Finding D3 — MEDIUM | Area: H4 baseline debt silent**",
-          "evidence": "Finding D3 — MEDIUM | Area: H4 baseline debt silent**"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "Finding D4 — MEDIUM | Area: no negative-control / no expected-FAIL**",
-          "evidence": "Finding D4 — MEDIUM | Area: no negative-control / no expected-FAIL**"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "A2 | HIGH | H4 gate | Declared pattern `H4.DIRECT_DISK_WRITE` (high) has no scan line in the gate output; PASS asserted for an unshown pattern |",
-          "evidence": "A2 | HIGH | H4 gate | Declared pattern `H4.DIRECT_DISK_WRITE` (high) has no scan line in the gate output; PASS asserted for an unshown pattern |"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "A3 | MEDIUM/HIGH | Drift gate | Drift check anchored to local `D:\\_Progs\\...` path, the same literal H4 flags as hardcoded-abs-path risk |",
-          "evidence": "A3 | MEDIUM/HIGH | Drift gate | Drift check anchored to local `D:\\_Progs\\...` path, the same literal H4 flags as hardcoded-abs-path risk |"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "A4 | HIGH | Test gates | 20 vs 356 passing tests unreconciled between `H2.compile-tests` and `H2.unit-tests` |",
-          "evidence": "A4 | HIGH | Test gates | 20 vs 356 passing tests unreconciled between `H2.compile-tests` and `H2.unit-tests` |"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "B1 | MEDIUM | H4 waiver policy | Policy does not forbid `approved_by == submitted_by`; sole approver name is also in impersonation blacklist |",
-          "evidence": "B1 | MEDIUM | H4 waiver policy | Policy does not forbid `approved_by == submitted_by`; sole approver name is also in impersonation blacklist |"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "B3 | MEDIUM | H4 waiver policy | Fail-closed (RC=1) behavior claimed, never demonstrated |",
-          "evidence": "B3 | MEDIUM | H4 waiver policy | Fail-closed (RC=1) behavior claimed, never demonstrated |"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "C1 | HIGH | Export boundary | Boundary PASS is self-asserted; no manifest, no marker count, no counterfactual |",
-          "evidence": "C1 | HIGH | Export boundary | Boundary PASS is self-asserted; no manifest, no marker count, no counterfactual |"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "C2 | MEDIUM | Export boundary | `H3.external-boundary` vs `G.open-source-build` relationship to boundary undefined |",
-          "evidence": "C2 | MEDIUM | Export boundary | `H3.external-boundary` vs `G.open-source-build` relationship to boundary undefined |"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "D1 | HIGH | All gates | `claims == claims_asserted` with `[CLAIM_ASSERTED]` self-printed tokens everywhere |",
-          "evidence": "D1 | HIGH | All gates | `claims == claims_asserted` with `[CLAIM_ASSERTED]` self-printed tokens everywhere |"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "D2 | HIGH | H3.autofix / H3.deep-ui / drift | Implausible sub-100 ms \"deep\" verification durations |",
-          "evidence": "D2 | HIGH | H3.autofix / H3.deep-ui / drift | Implausible sub-100 ms \"deep\" verification durations |"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "D3 | MEDIUM | H4 | \"0 baseline debt warnings emitted\" cannot be distinguished from suppressed warnings |",
-          "evidence": "D3 | MEDIUM | H4 | \"0 baseline debt warnings emitted\" cannot be distinguished from suppressed warnings |"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "D4 | MEDIUM | All gates | No FAIL, no non-zero exit, no negative control anywhere in the pack |",
-          "evidence": "D4 | MEDIUM | All gates | No FAIL, no non-zero exit, no negative control anywhere in the pack |"
+          "description": "Description:** Internal *tooling* runs under `tools/spw-gates/…`, and H4 references `tools/spw-gates/h4_waivers.json`. Because the enforcement model is \"Git export-ignore + gate,\" any misconfiguration",
+          "evidence": "Description:** Internal *tooling* runs under `tools/spw-gates/…`, and H4 references `tools/spw-gates/h4_waivers.json`. Because the enforcement model is \"Git export-ignore + gate,\" any misconfiguration"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "A1 | INFO | Manifest | Structurally clean — noted as no-finding |",
-          "evidence": "A1 | INFO | Manifest | Structurally clean — noted as no-finding |"
+          "description": "Finding C3 — INFO**",
+          "evidence": "Finding C3 — INFO**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "Finding D1 — MEDIUM**",
+          "evidence": "Finding D1 — MEDIUM**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "Finding D2 — MEDIUM**",
+          "evidence": "Finding D2 — MEDIUM**"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "Finding D3 — LOW**",
+          "evidence": "Finding D3 — LOW**"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "Finding D4 — LOW**",
+          "evidence": "Finding D4 — LOW**"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "C3 | INFO | Export | No raw distribution artifact / SHA provided for independent re-derivation |",
-          "evidence": "C3 | INFO | Export | No raw distribution artifact / SHA provided for independent re-derivation |"
+          "description": "Description:** The `_note` states the material deliberately omits external certification outcomes so reviewers \"audit the software itself rather than the audit harness state.\" But the only evidence su",
+          "evidence": "Description:** The `_note` states the material deliberately omits external certification outcomes so reviewers \"audit the software itself rather than the audit harness state.\" But the only evidence su"
+        },
+        {
+          "severity": "BLOCKER",
+          "area": "general",
+          "description": "(b) Self-approval hole:** **Finding B1 is BLOCKER** — `MasterController` is simultaneously an impersonation target and an authorized waiver approver.",
+          "evidence": "(b) Self-approval hole:** **Finding B1 is BLOCKER** — `MasterController` is simultaneously an impersonation target and an authorized waiver approver."
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "(c) Packaging leak:** **Findings C1/C2 are HIGH** — the enforcement tooling lives on the very path (`tools/spw-*`) declared as internal governance, and no export manifest is presented to prove absence",
+          "evidence": "(c) Packaging leak:** **Findings C1/C2 are HIGH** — the enforcement tooling lives on the very path (`tools/spw-*`) declared as internal governance, and no export manifest is presented to prove absence"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "(d) Silent downgrade / fake-green:** **D1/D2 are MEDIUM** — zero-waiver vacuity and unlabeled counterfactuals.",
+          "evidence": "(d) Silent downgrade / fake-green:** **D1/D2 are MEDIUM** — zero-waiver vacuity and unlabeled counterfactuals."
+        },
+        {
+          "severity": "BLOCKER",
+          "area": "general",
+          "description": "Primary blockers: (B1) `MasterController` acting as both impersonation target and authorized waver-approver, and (C1/C2) governance-marker path (`tools/spw-*`) hosting the very gates that certify the ",
+          "evidence": "Primary blockers: (B1) `MasterController` acting as both impersonation target and authorized waver-approver, and (C1/C2) governance-marker path (`tools/spw-*`) hosting the very gates that certify the "
         }
       ]
     },
@@ -241,24 +193,24 @@
       "family": "glm",
       "model": "glm-5.3-flash",
       "resolved_model": "glm-5.3-flash",
-      "response_id": "cmb-319c2229c56c11f1a3e2d2358bdfe299",
-      "observed_at": "2026-10-11T12:03:51.458247+00:00",
+      "response_id": "cmb-18274d6ac56d11f198e70a65b2f2a901",
+      "observed_at": "2026-10-11T12:10:22.706251+00:00",
       "round": 6,
       "observer_id": "glm-observer",
       "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-      "material_digest": "95e62923e3ad63aafedbf54a8923cbca3763438cfbd3e306fb40e6a95a1da501",
-      "response_digest": "7749c56409836a11bdcd82a4a3d3ced2c3311b7b7535583ca2a94cfcd5fcf7c2",
-      "raw_file": "raw-glm-glm-5.3-flash-r6-20261011-120314.txt",
-      "envelope_file": "env-glm-glm-5.3-flash-r6-20261011-120314.json",
-      "envelope_sha256": "41bde231d18c43ed44c1d6bf184eb1f9b8576cf36766781ce94b29a404e8fb24",
+      "material_digest": "01ffd074a2535f154dee70666c78d090b8f8677a822b156871a75323e9ee13c5",
+      "response_digest": "f4a9c880c2fb219b162612b0c93cb991f4670f5b7422b77e3b135a702c14e57d",
+      "raw_file": "raw-glm-glm-5.3-flash-r6-20261011-120940.txt",
+      "envelope_file": "env-glm-glm-5.3-flash-r6-20261011-120940.json",
+      "envelope_sha256": "4e4c7cd4c83a4bff0e1b573773152f88290c0abb6092234bfc5d5f3f0c851639",
       "usage": {
-        "prompt_tokens": 6687,
-        "completion_tokens": 1699,
-        "total_tokens": 8386,
+        "prompt_tokens": 6930,
+        "completion_tokens": 2050,
+        "total_tokens": 8980,
         "completion_tokens_details": {
           "accepted_prediction_tokens": 0,
           "audio_tokens": 0,
-          "reasoning_tokens": 776,
+          "reasoning_tokens": 1002,
           "rejected_prediction_tokens": 0,
           "cached_tokens": 0
         },
@@ -270,64 +222,70 @@
           "cached_tokens": 0
         },
         "prompt_cache_hit_tokens": 0,
-        "prompt_cache_miss_tokens": 6687,
+        "prompt_cache_miss_tokens": 6930,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
         "prompt_cache_write_tokens": 0,
-        "completion_thinking_tokens": 776,
-        "credit": 0.14,
+        "completion_thinking_tokens": 1002,
+        "credit": 0.16,
         "cached_tokens": 0
       },
-      "verdict": "not_ready",
+      "verdict": "release_ready",
       "verdict_reason": "independent read-only review of obs_material.json",
       "findings": [
         {
           "severity": "LOW",
           "area": "general",
-          "description": "LOW | gate-evidence | H4 excerpt only shows 2 of 3 declared patterns scanned** — Evidence: `\"[H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived) | [H4.bypass-patterns] Pattern H4.HA",
-          "evidence": "LOW | gate-evidence | H4 excerpt only shows 2 of 3 declared patterns scanned** — Evidence: `\"[H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived) | [H4.bypass-patterns] Pattern H4.HA"
-        },
-        {
-          "severity": "INFO",
-          "area": "general",
-          "description": "INFO | gate-naming | G.vendored-upstream-drift claim name is ambiguous** — Evidence: `\"claims\": [\"upstream_vendor_drift\"]` — reads as if drift exists; excerpt clarifies PASS (\"上游与登记值一致\"), no actual fa",
-          "evidence": "INFO | gate-naming | G.vendored-upstream-drift claim name is ambiguous** — Evidence: `\"claims\": [\"upstream_vendor_drift\"]` — reads as if drift exists; excerpt clarifies PASS (\"上游与登记值一致\"), no actual fa"
-        },
-        {
-          "severity": "HIGH",
-          "area": "general",
-          "description": "HIGH | waiver-policy | Self-approval not prohibited: submitter can be the approver** — Evidence: schema fields `\"approved_by\"` / `\"submitted_by\"` plus `\"authorized_approvers\": [\"MasterController\", \"Ar",
-          "evidence": "HIGH | waiver-policy | Self-approval not prohibited: submitter can be the approver** — Evidence: schema fields `\"approved_by\"` / `\"submitted_by\"` plus `\"authorized_approvers\": [\"MasterController\", \"Ar"
-        },
-        {
-          "severity": "BLOCKER",
-          "area": "general",
-          "description": "MEDIUM | waiver-policy | Zero-waiver state conflates \"no waivers\" with \"policy sound\"** — Evidence: `\"total\": 0, \"with_approver\": 0` and `\"all 0 waivers governed and accounted for\"` — the hole above i",
-          "evidence": "MEDIUM | waiver-policy | Zero-waiver state conflates \"no waivers\" with \"policy sound\"** — Evidence: `\"total\": 0, \"with_approver\": 0` and `\"all 0 waivers governed and accounted for\"` — the hole above i"
+          "description": "LOW | gate-evidence | Claims are self-attested strings printed by the gate scripts themselves; no independent verifier is present in the material.**",
+          "evidence": "LOW | gate-evidence | Claims are self-attested strings printed by the gate scripts themselves; no independent verifier is present in the material.**"
         },
         {
           "severity": "LOW",
           "area": "general",
-          "description": "LOW | governance-leak | Machine-specific absolute path in evidence output** — Evidence: `\"[G.vendored-upstream-drift] 上游定位: D:\\\\_Progs\\\\02Business\\\\DeepBase\"` — while H4 itself bans `D:\\_Progs` in pro",
-          "evidence": "LOW | governance-leak | Machine-specific absolute path in evidence output** — Evidence: `\"[G.vendored-upstream-drift] 上游定位: D:\\\\_Progs\\\\02Business\\\\DeepBase\"` — while H4 itself bans `D:\\_Progs` in pro"
+          "description": "LOW | gate-evidence | H2.compile-build excerpt shows only `compile_cli_binary` asserted; the `compile_gui_binary` assertion is not visible in the excerpt (full stdout hash exists but is not verifiable",
+          "evidence": "LOW | gate-evidence | H2.compile-build excerpt shows only `compile_cli_binary` asserted; the `compile_gui_binary` assertion is not visible in the excerpt (full stdout hash exists but is not verifiable"
         },
         {
-          "severity": "INFO",
+          "severity": "LOW",
           "area": "general",
-          "description": "INFO | governance-leak | Non-ASCII internal status strings in gate outputs** — Evidence: `\"[H3.external-boundary] PASS 外部边界干净（检查通过）\"`, `\"[G.open-source-build] PASS 构建不依赖私有仓…\"` — governance vocabulary ",
-          "evidence": "INFO | governance-leak | Non-ASCII internal status strings in gate outputs** — Evidence: `\"[H3.external-boundary] PASS 外部边界干净（检查通过）\"`, `\"[G.open-source-build] PASS 构建不依赖私有仓…\"` — governance vocabulary "
+          "description": "LOW | gate-evidence | `claims_asserted` ordering differs from declared `claims` in H2.unit-tests, suggesting claims are collected ad hoc rather than in declared order.**",
+          "evidence": "LOW | gate-evidence | `claims_asserted` ordering differs from declared `claims` in H2.unit-tests, suggesting claims are collected ad hoc rather than in declared order.**"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "MEDIUM | fake-green | Verdicts are self-recorded by the same repo's own gate scripts with no independent attestation** — Evidence: every verdict's command is `tools/spw-gates/gate_*.py` on the subject",
-          "evidence": "MEDIUM | fake-green | Verdicts are self-recorded by the same repo's own gate scripts with no independent attestation** — Evidence: every verdict's command is `tools/spw-gates/gate_*.py` on the subject"
+          "description": "MEDIUM | h4-policy | The anti-self-approval and approver-whitelist mechanisms are entirely unexercised (0 waivers ever), so \"zero_unapproved_waivers\" is vacuously green — the fail-closed path has neve",
+          "evidence": "MEDIUM | h4-policy | The anti-self-approval and approver-whitelist mechanisms are entirely unexercised (0 waivers ever), so \"zero_unapproved_waivers\" is vacuously green — the fail-closed path has neve"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "MEDIUM | h4-policy | `MasterController` is both an authorized approver and a name resembling the automated/impersonated role family the impersonation patterns target; the impersonation regex only bloc",
+          "evidence": "MEDIUM | h4-policy | `MasterController` is both an authorized approver and a name resembling the automated/impersonated role family the impersonation patterns target; the impersonation regex only bloc"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "MEDIUM | boundary | The H4 \"hardcoded absolute path\" pattern reports 0 hits, yet recorded gate evidence itself shows the machine-specific path `D:\\_Progs\\02Business\\...` throughout, and the vendor-dri",
+          "evidence": "MEDIUM | boundary | The H4 \"hardcoded absolute path\" pattern reports 0 hits, yet recorded gate evidence itself shows the machine-specific path `D:\\_Progs\\02Business\\...` throughout, and the vendor-dri"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "INFO | downgrade-risk | Stderr universally empty (same hash `e3b0c442…` = empty)** — consistent across all 12 gates; plausible, but means no independent error-channel signal exists in the material.",
-          "evidence": "INFO | downgrade-risk | Stderr universally empty (same hash `e3b0c442…` = empty)** — consistent across all 12 gates; plausible, but means no independent error-channel signal exists in the material."
+          "description": "INFO | boundary | No positive evidence of an internal-governance marker leaking into the distribution; the export gate reports a clean 199-file manifest, and the internal paths seen are in gate logs, ",
+          "evidence": "INFO | boundary | No positive evidence of an internal-governance marker leaking into the distribution; the export gate reports a clean 199-file manifest, and the internal paths seen are in gate logs, "
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "LOW | fake-green | H2.compile-build passes with compiler hints indicating dead assignment and missing uses clause — cosmetic, but hints are surfaced rather than gated.**",
+          "evidence": "LOW | fake-green | H2.compile-build passes with compiler hints indicating dead assignment and missing uses clause — cosmetic, but hints are surfaced rather than gated.**"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "LOW | fake-green | Subject and gate-run integrity are claimed via SHA-256 fields only; there is no signature or third-party attestation binding `subject_sha256` to the actual artifact.**",
+          "evidence": "LOW | fake-green | Subject and gate-run integrity are claimed via SHA-256 fields only; there is no signature or third-party attestation binding `subject_sha256` to the actual artifact.**"
         }
       ]
     }

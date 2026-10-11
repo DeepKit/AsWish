@@ -1,0 +1,41 @@
+## Review Findings
+
+### (a) Gate PASS claims vs. material
+
+- **LOW | gate-evidence | Claims are self-attested strings printed by the gate scripts themselves; no independent verifier is present in the material.**
+  Evidence: `"[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"` (and identically for every other gate).
+- **LOW | gate-evidence | H2.compile-build excerpt shows only `compile_cli_binary` asserted; the `compile_gui_binary` assertion is not visible in the excerpt (full stdout hash exists but is not verifiable from the material).**
+  Evidence: `"[CLAIM_ASSERTED] compile_cli_binary | ==== ... bin/AsWish.exe = GUI (desktop; do NOT pass CLI arguments) ..."` — no `CLAIM_ASSERTED] compile_gui_binary` line appears.
+- **LOW | gate-evidence | `claims_asserted` ordering differs from declared `claims` in H2.unit-tests, suggesting claims are collected ad hoc rather than in declared order.**
+  Evidence: `"claims": ["active_detail_trigger","state_machine_check","required_fields_on_activation"]` vs `"claims_asserted": ["active_detail_trigger","required_fields_on_activation","state_machine_check"]`.
+- No gate shows a contradiction between PASS verdict and recorded output otherwise; all 12 declared gates have recorded verdicts, all exit_code 0.
+
+### (b) H4 waiver / approval policy self-approval holes
+
+- **MEDIUM | h4-policy | The anti-self-approval and approver-whitelist mechanisms are entirely unexercised (0 waivers ever), so "zero_unapproved_waivers" is vacuously green — the fail-closed path has never been demonstrated.**
+  Evidence: `"total": 0, "with_approver": 0, "without_approver": 0` and `"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for"`.
+- **MEDIUM | h4-policy | `MasterController` is both an authorized approver and a name resembling the automated/impersonated role family the impersonation patterns target; the impersonation regex only blocks hyphenated variants, so a process writing plain `MasterController` as approver could be machine self-approval.**
+  Evidence: `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]` vs `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]`.
+- No waivers exist, so no self-signed waiver is actually present — the hole is structural, not realized.
+
+### (c) Packaging / export boundary leaks
+
+- **MEDIUM | boundary | The H4 "hardcoded absolute path" pattern reports 0 hits, yet recorded gate evidence itself shows the machine-specific path `D:\_Progs\02Business\...` throughout, and the vendor-drift gate resolves upstream to a sibling absolute path — the scanner's exclusion scope (why tooling/test paths aren't hits) is not evidenced, a possible coverage downgrade.**
+  Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\_Progs\02Business\DeepBase"` alongside `"[H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived)"`.
+- **INFO | boundary | No positive evidence of an internal-governance marker leaking into the distribution; the export gate reports a clean 199-file manifest, and the internal paths seen are in gate logs, not package contents.**
+  Evidence: `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`.
+- No confirmed leak found in this area.
+
+### (d) Silent downgrade / fake-green risk
+
+- **LOW | fake-green | H2.compile-build passes with compiler hints indicating dead assignment and missing uses clause — cosmetic, but hints are surfaced rather than gated.**
+  Evidence: `"Hint: H2077 Value assigned to 'LFound' never used"`.
+- **LOW | fake-green | Subject and gate-run integrity are claimed via SHA-256 fields only; there is no signature or third-party attestation binding `subject_sha256` to the actual artifact.**
+  Evidence: `"subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177"` (unverifiable from material alone).
+- No silent downgrade of gate `required` flags detected (all 12 remain `required: true` in both manifest and verdicts).
+
+## Summary
+
+No BLOCKER/HIGH findings. The material is internally consistent; residual risk is structural (unexercised waiver governance, self-attested claims, unproven path-scanner scope), not evidence of an actual failed or faked gate.
+
+**VERDICT: release_ready**

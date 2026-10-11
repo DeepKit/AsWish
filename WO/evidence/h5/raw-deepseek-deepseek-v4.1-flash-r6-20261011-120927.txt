@@ -1,0 +1,118 @@
+# Independent Read-Only Review — Release Gate Audit
+
+**Scope:** obs_material.json only. No files modified. Findings derived strictly from the provided evidence.
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**Finding A1 — INFO**
+- **Severity:** INFO
+- **Area:** Gate verdict integrity
+- **Description:** All 12 manifest-declared gates have a matching recorded verdict; every verdict is PASS with exit_code 0; `claims` == `claims_asserted` in every record; no required gate is missing, skipped, or `NOT_RUN`. Internally consistent.
+- **Evidence line:** `"manifest_declared_gates": [ ... 12 entries ... ]` vs `"recorded_gate_verdicts": [ ... 12 entries, all "verdict": "PASS" ... ]`
+
+**Finding A2 — LOW**
+- **Severity:** LOW
+- **Area:** H2.compile-build / test harness credibility
+- **Description:** The compiler output includes `Hint`s but no explicit "0 errors / 0 warnings" summary; the PASS rests on RC=0 plus an excerpt that is `truncated: false` but limited in size. Hints are not errors, so this is not a contradiction, but the pack does not surface an error/warning count for independent verification.
+- **Evidence line:** `"...Hint: H2443 ... | Hint: H2077 ... | 21931 lines, 1.97 seconds, 6080772 bytes code..."`
+
+**Finding A3 — LOW**
+- **Severity:** LOW
+- **Area:** H3.* gate durations (possible shallow checks in the "build" proof sense)
+- **Description:** Several H3 counterfactual gates complete in tens of milliseconds (`duration_seconds` 0.088–0.301) and assert multiple counterfactuals. Not a contradiction, but the time budget is suspiciously small for deep counterfactual execution and would benefit from independent re-run.
+- **Evidence line:** `"duration_seconds": 0.088` (H3.runtime-autofix), `"duration_seconds": 0.089` (H3.deep-ui-test), `"duration_seconds": 0.301` (H4.bypass-patterns)
+
+**Finding A4 — LOW / fake-green risk in H4**
+- **Severity:** LOW
+- **Area:** H4.bypass-patterns
+- **Description:** H4 PASS is "0 hits (0 waived)" across all three patterns with an empty waiver ledger. Zero-hit patterns are trivially green when the ledger is empty and the counterfactual is the only positive control. This is internally consistent but a classic fake-green shape (nothing to waive ⇒ nothing to fail). No evidence of tampering, but no independent positive hit is shown.
+- **Evidence line:** `"[H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived) ... [H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed..."`
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**Finding B1 — BLOCKER (policy, latent)**
+- **Severity:** BLOCKER
+- **Area:** H4 waiver approval — authorized_approvers contains the same identity used as an impersonation marker
+- **Description:** The `authorized_approvers` whitelist includes `"MasterController"`. The `impersonation_patterns` list is `["^(MasterController|SPW|MainController)-.*$"]`, i.e. `MasterController` is explicitly treated as a spoofed/impersonated identity elsewhere in the same policy block. Allowing the same identity token to authorize waivers creates a self-approval/impersonation bypass path: an actor who can present as `MasterController` is simultaneously (i) a flagged impersonation target and (ii) a trusted waiver approver. This is a policy-level hole even though the current ledger is empty.
+- **Evidence line:** `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]` alongside `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]`
+
+**Finding B2 — LOW (latent)**
+- **Severity:** LOW
+- **Area:** Anti-self-approval rule scope
+- **Description:** The rule `approved_by must not equal submitted_by` is stated, but the ledger has 0 waivers, so the rule has never actually been exercised. There is no evidence in the material that the rule is enforced by a negative test (no counterfactual for self-signing is named). The zero-waiver state means the enforcement is unverified rather than verified.
+- **Evidence line:** `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0, "distinct_scopes": [], ... "Anti-self-approval rule enforced: approved_by must not equal submitted_by."`
+
+**Finding B3 — INFO**
+- **Severity:** INFO
+- **Area:** Waiver policy — impersonation regex scope
+- **Description:** The impersonation regex only matches `MasterController-…`, `SPW-…`, `MainController-…` (suffix `-.*`). Bare `MasterController` (no hyphen) used as `approved_by` would not match the impersonation pattern — reinforcing B1.
+- **Evidence line:** `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]`
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**Finding C1 — HIGH (self-referential contradiction)**
+- **Severity:** HIGH
+- **Area:** G.open-source-build / H3.external-boundary
+- **Description:** The pack asserts internal governance directories (`WO/`, `tools/spw-*`, `_repro/`) are excluded from distribution, and both G.open-source-build and H3.external-boundary PASS. However, every gate that is claimed to enforce this boundary (H4, H3.external-boundary, G.open-source-build, G.vendored-upstream-drift) is itself located under `tools/spw-gates/` — i.e. under `tools/spw-*`, which is a declared internal governance path. The gate that certifies "no internal markers in the export" is itself an internal governance artifact on an internal governance path. The material does not show an export listing to prove that `tools/spw-gates/*` and the marker path `tools/spw-gates/h4_waivers.json` are absent from the 199-file distribution.
+- **Evidence line:** `"command": ["python", "-X", "utf8", "tools/spw-gates/gate_open_source_build.py"]` and `"command": ["python","-X","utf8","tools/spw-gates/gate_external_boundary.py"]`, together with `"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution."` and `"...导出清单无内部材料...（199 个文件）"`
+
+**Finding C2 — HIGH**
+- **Severity:** HIGH
+- **Area:** Internal governance markers leaked inside distributed source paths
+- **Description:** Internal *tooling* runs under `tools/spw-gates/…`, and H4 references `tools/spw-gates/h4_waivers.json`. Because the enforcement model is "Git export-ignore + gate," any misconfiguration of export-ignore on `tools/spw-*` would export the entire internal governance tool chain, the waiver ledger schema, the bypass-pattern rationale, and the impersonation-pattern list — i.e. the security-sensitive governance markers. The material provides no allowlist evidence (no explicit export manifest listing) to contain this, only a claim. This is a boundary-leak risk with an empty-blanket-claim, not a demonstrated boundary.
+- **Evidence line:** `"h4_waiver_ledger": { "path": "tools/spw-gates/h4_waivers.json", ... }` and `"distribution_model": "Release packages are produced exclusively via git archive / export-ignore; all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution."`
+
+**Finding C3 — INFO**
+- **Severity:** INFO
+- **Area:** Output excerpt of the boundary gate itself
+- **Description:** The H3.external-boundary PASS message is a bare assertion in Chinese, `[H3.external-boundary] PASS 外部边界干净（检查通过）`, with no enumeration of what was checked or what was skipped. It is a claim of cleanliness, not evidence of it.
+- **Evidence line:** `"output_excerpt": "[CLAIM_ASSERTED] counterfactual_boundary | [H3.external-boundary] PASS 外部边界干净（检查通过）"`
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**Finding D1 — MEDIUM**
+- **Severity:** MEDIUM
+- **Area:** H4.bypass-patterns — zero-waiver / zero-hit circularity
+- **Description:** `max_ongoing_waivers = 0` combined with an empty ledger means the "zero_unapproved_waivers" claim is vacuously true. There is no scenario in the evidence where a waiver *should* exist but is suppressed, so the gate cannot distinguish "no violations" from "violations not detectable in this configuration." This is a structural fake-green risk even though the present evidence is consistent.
+- **Evidence line:** `"h4_policy": { "max_ongoing_waivers": 0, ... }` and `"total": 0, "samples": []`, with claim `"zero_unapproved_waivers"`
+
+**Finding D2 — MEDIUM**
+- **Severity:** MEDIUM
+- **Area:** Counterfactual naming vs. substantive assertions
+- **Description:** H3 gates assert opaque counterfactual identifiers (`counterfactual_1` … `counterfactual_8`, `counterfactual_smoke`, `counterfactual_boundary`) without naming the control being flipped. A gate that only echoes `[CLAIM_ASSERTED] counterfactual_N` and then PASSes cannot be independently distinguished from a no-op that prints the token. The excerpt shows no observed pre/post mutation evidence.
+- **Evidence line:** `"[CLAIM_ASSERTED] counterfactual_3 | [CLAIM_ASSERTED] counterfactual_4 | [CLAIM_ASSERTED] counterfactual_5 | [H3.runtime-autofix] PASS"`
+
+**Finding D3 — LOW**
+- **Severity:** LOW
+- **Area:** Vendor drift gate scope
+- **Description:** `G.vendored-upstream-drift` PASS says "2 个文件" (2 files) compared. The gate `gate_ehai_vendor_drift.py` is named for EHAI vendor drift but the gate_id is generic `G.vendored-upstream-drift`; scope is narrow (2 files) and the excerpt does not disclose which 2 files or hashes. Silent narrowing risk if the vendored surface is larger than 2 files.
+- **Evidence line:** `"[G.vendored-upstream-drift] PASS 上游与登记值一致，本仓副本未被误改（2 个文件）"` with `"command": ["python","-X","utf8","tools/spw-gates/gate_ehai_vendor_drift.py"]`
+
+**Finding D4 — LOW**
+- **Severity:** LOW
+- **Area:** Self-referential "no outcome fields" note
+- **Description:** The `_note` states the material deliberately omits external certification outcomes so reviewers "audit the software itself rather than the audit harness state." But the only evidence supplied *is* harness state (gate runs, hashes, excerpts). This is an INFO-level framing mismatch, not a defect per se, but it means the reviewer has no raw artifact to cross-check the harness's own summaries.
+- **Evidence line:** `"_note": "This is the material provided to independent read-only reviewer seats. It deliberately contains NO fields describing external-observation or certification outcomes..."`
+
+---
+
+## Area-by-area status
+
+- **(a) False PASS claims:** No direct contradiction found between claimed and observed verdicts. Two advisories (A3, A4) flag under-substantiated but self-consistent PASSes. → **no blocker, advisories only.**
+- **(b) Self-approval hole:** **Finding B1 is BLOCKER** — `MasterController` is simultaneously an impersonation target and an authorized waiver approver.
+- **(c) Packaging leak:** **Findings C1/C2 are HIGH** — the enforcement tooling lives on the very path (`tools/spw-*`) declared as internal governance, and no export manifest is presented to prove absence from the 199-file distribution.
+- **(d) Silent downgrade / fake-green:** **D1/D2 are MEDIUM** — zero-waiver vacuity and unlabeled counterfactuals.
+
+---
+
+**VERDICT: not_ready**
+
+Primary blockers: (B1) `MasterController` acting as both impersonation target and authorized waver-approver, and (C1/C2) governance-marker path (`tools/spw-*`) hosting the very gates that certify the export boundary without an export manifest to prove exclusion.

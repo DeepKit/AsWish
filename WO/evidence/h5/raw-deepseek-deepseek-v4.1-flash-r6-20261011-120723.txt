@@ -1,0 +1,126 @@
+# Independent Read-Only Audit — Findings
+
+Scope: observation material `obs_material.json` only. No files modified. Reviewing for (a) false-PASS gates, (b) self-approval/self-signing in H4 waiver/approval, (c) packaging/export boundary leak of internal governance markers, (d) silent downgrade / fake-green.
+
+---
+
+## (a) Gates claiming PASS that the material contradicts
+
+**Finding A1 — HIGH**
+- Area: H2.compile-tests / H2.unit-tests claim coverage vs. manifest
+- Description: `manifest_declared_gates` declares no discrete claim for the 356-test suite's *failure* semantics beyond count; the gate `H2.compile-tests` is declared to assert `test_cases_discovered` and `test_suite_compiled`, but its `output_excerpt` shows a full run (`Tests Found : 20 … Tests Passed : 20`), i.e. it is executing tests, not merely compiling them. The `H2.unit-tests` run separately reports 356 tests. Two overlapping test executions with different counts (20 vs 356) is a scope/attribution ambiguity that could allow a partial suite to be counted as full coverage.
+- Evidence: `"gate_id": "H2.compile-tests" ... "output_excerpt": "... Tests Found   : 20 | Tests Passed  : 20 ..."` and `"gate_id": "H2.unit-tests" ... "output_excerpt": "... Tests Found   : 356 ... Tests Passed  : 356 ..."`
+
+**Finding A2 — MEDIUM**
+- Area: H1.resource-locks
+- Description: Gate claims `controlled_entry_only` and PASSes on a 66-byte stdout. No evidence in the material that the claimed property (controlled-entry-only) was actually exercised or negated; only the assertion marker is present. Assertion-only PASS with no counterfactual/no negative-proof is weak evidence.
+- Evidence: `"[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"`, `"stdout_bytes": 66`
+
+**Finding A3 — MEDIUM**
+- Area: H3.encoding-guard / H3.runtime-autofix / H3.deep-ui-test / H3.gui-verify-smoke / H3.external-boundary
+- Description: Each H3 gate PASSes with an excerpt that is *only* `[CLAIM_ASSERTED]` markers plus a PASS line. No independent artifact, hash check, or fixture outcome is shown to substantiate the counterfactuals. Claim-assertion is not the same as counterfactual demonstration.
+- Evidence: `"[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS"`; `"[CLAIM_ASSERTED] counterfactual_6 | ... | [H3.deep-ui-test] PASS rendered=14 handlers=14"`
+
+**Finding A4 — INFO**
+- Area: All gates
+- Description: Every gate exits 0 with empty stderr and non-truncated stdout; no failure-path evidence exists in this pack, which is expected for a passing run but leaves no proof that gates can actually fail (no negative-control record). Material `_note` explicitly excludes external-observation outcomes, so this is a structural limitation, not a contradiction.
+- Evidence: `"stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"` (empty-hash, repeated for every gate)
+
+No gate is shown to PASS where the material clearly contradicts it; the issue is *insufficient evidence to substantiate* the PASS, not a demonstrated false PASS.
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**Finding B1 — HIGH (policy hole, latent)**
+- Area: H4 waiver governance
+- Description: The policy *text* states an anti-self-approval rule (`approved_by != submitted_by`) and an `authorized_approvers` whitelist including `MasterController`. However, `MasterController` is also listed as an `impersonation_pattern` in `h4_policy.impersonation_patterns` (`^(MasterController|SPW|MainController)-.*$`). A subject/actor could hold both roles; the material does not state that `submitted_by` is validated against the same impersonation/blocklist, nor that `submitted_by` must be disjoint from `authorized_approvers`. Result: a `MasterController-*` actor could plausibly appear as `submitted_by` and a whitelisted `MasterController` as `approved_by` on distinct string values while still being the same principal — the string-inequality check would pass.
+- Evidence: `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]`; `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]`; `"Anti-self-approval rule enforced: approved_by must not equal submitted_by."`
+
+**Finding B2 — MEDIUM**
+- Area: H4 waiver ledger — approval not observed, only policy
+- Description: `total: 0`, `with_approver: 0`, `with_submitted_by: 0`, `samples: []`. The material contains no instance where the anti-self-approval rule was actually exercised. The PASS for `zero_unapproved_waivers` therefore only proves the ledger is empty, not that the enforcement logic is correct. A latent self-sign hole (B1) would not be caught by a zero-waiver run.
+- Evidence: `"total": 0, ... "with_submitted_by": 0, ... "samples": []`; `"zero_hits", "zero_unapproved_waivers" ... "[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for"`
+
+**Finding B3 — LOW**
+- Area: H4 policy — `max_ongoing_waivers: 0`
+- Description: A hard zero cap is stated, but the material does not show the gate rejects an *unknown* pattern_id or an *expired* waiver; only the whitelist/self-sign rules are named. Expiry/unknown-pattern fail-closed behavior is unverified in this pack.
+- Evidence: `"max_ongoing_waivers": 0`; schema includes `"expires_at"` but policy_enforcement text does not mention expiry rejection.
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**Finding C1 — BLOCKER**
+- Area: H3.external-boundary + G.open-source-build + distribution_model
+- Description: The material claims internal governance files (`WO/`, `tools/spw-*`, `_repro/`) are excluded via `export-ignore` and that the boundary gate PASSes ("外部边界干净"). However, the *very gate executables* that enforce this and the H4 policy files are themselves under `tools/spw-gates/` (e.g. `tools/spw-gates/gate_external_boundary.py`, `tools/spw-gates/h4_waivers.json`), and the gate run command paths are recorded using that internal directory. The material does not show the export-ignore pattern actually covers `tools/spw-gates/` (only `tools/spw-*` is named in `distribution_model`), nor does H3.external-boundary's excerpt list the excluded-marker set actually checked. A marker such as `tools/spw-gates/h4_waivers.json` schema/filenames could survive into a distribution while the gate still reports "clean" against a narrower marker list.
+- Evidence: `"distribution_model": "... all internal governance files (WO/, tools/spw-*/, _repro/) are excluded ..."` vs. `"command": ["python","-X","utf8","tools/spw-gates/gate_external_boundary.py"]` and `"path": "tools/spw-gates/h4_waivers.json"` and excerpt `"[H3.external-boundary] PASS 外部边界干净（检查通过）"` (no enumerated marker list shown).
+
+**Finding C2 — HIGH**
+- Area: G.open-source-build
+- Description: The gate reports `199 个文件` (199 files) in the export manifest and PASSes, but the material provides no manifest listing, no marker set, and no diff against the declared exclusions. PASS is asserted; the boundary content is not shown. Combined with C1, this is unverifiable from the pack.
+- Evidence: `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"` — no file list provided.
+
+**Finding C3 — MEDIUM**
+- Area: H4.bypass-patterns pattern definitions contain internal governance vocabulary
+- Description: The H4 pattern IDs and rationales (`H4.DIRECT_DISK_WRITE`, "bugfix #5", "BUG-7", `D:\\_Progs`) are internal-governance markers. If the gate's own source or the pattern catalog is ever exported (it lives under `tools/spw-gates/`), it leaks internal bug IDs and a machine path. The material does not show the pattern catalog is excluded from distribution.
+- Evidence: `"rationale": "Direct TFile writes bypass SpecStore atomic-write + snapshot backup path (bugfix #5)..."`; `"pattern": "D:\\\\_Progs"`; gate path under `tools/spw-gates/`.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**Finding D1 — HIGH**
+- Area: H2.compile-build
+- Description: The build excerpt shows compiler Hints (H2443, H2077) and the gate still PASSes. Hints are not warnings, so this is not necessarily a fake-green, but the presence of H2077 (`Value assigned to 'LFound' never used`) in `AsWish.Controller.pas` is a potential dead-code / logic-smell indicator in a controller on the safety path. The gate claims only `compile_cli_binary`/`compile_gui_binary`; it does not claim warning-free. If any Hint class is silently allowed to escalate without record, this is a downgrade surface.
+- Evidence: `"...H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded...", "...H2077 Value assigned to 'LFound' never used..."` with `"verdict": "PASS"`.
+
+**Finding D2 — MEDIUM**
+- Area: H4.bypass-patterns — "0 baseline debt warnings emitted"
+- Description: PASS text says `0 baseline debt warnings emitted`. This implies a baseline exists, but the material shows no baseline contents. A pre-populated baseline that already contains the real hits would yield "0 hits (0 waived)" and a green PASS — a classic silent-downgrade vector. The pack does not show the baseline, so it cannot be ruled out.
+- Evidence: `"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"` — no baseline artifact in material.
+
+**Finding D3 — MEDIUM**
+- Area: G.vendored-upstream-drift
+- Description: Gate says upstream path is `D:\\_Progs\\02Business\\DeepBase` and PASSes for "2 个文件". This PASS depends on an external, machine-local upstream directory being present and matching a registered value. The material does not show whether a *missing* upstream degrades to PASS (fake-green) or fails closed. Local-path dependence also contradicts the H4.HARDCODED_ABS_PATH rationale that such paths are bad — the drift gate itself hardcodes one.
+- Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase | ... PASS 上游与登记值一致，本仓副本未被误改（2 个文件）"`.
+
+**Finding D4 — LOW**
+- Area: H2.unit-tests vs H2.compile-tests counts
+- Description: Two different test totals (20 vs 356) in overlapping gate scope; without a declared relationship, a drop in discovered tests (e.g. 356 → 20) could pass if only the count assertion is checked loosely. No delta/threshold evidence is present.
+- Evidence: `"Tests Found   : 20 ..."` (compile-tests) vs `"Tests Found   : 356 ..."` (unit-tests).
+
+---
+
+## Areas examined and found NOT wrong
+
+- **(a) False PASS from explicit contradiction:** No gate is shown PASSing against a message that says FAIL. The concern is evidentiary weakness (assertion-only), not demonstrated contradiction. — No BLOCKER for (a) on contradiction grounds beyond the boundary blocker in (c).
+- **(b) Triggered self-approval instance:** None exists — ledger is empty. The hole is *latent* in policy (B1), not exercised. No evidence of an actual self-signed waiver.
+- **(d) Demonstrated fake-green:** None demonstrated; risks are structural (baseline unshown D2, upstream-absence behavior D3).
+
+---
+
+## Severity roll-up
+
+| ID | Severity | Area | One-line |
+|----|----------|------|----------|
+| C1 | BLOCKER | Packaging boundary | export-ignore coverage vs. `tools/spw-gates/` not shown; boundary "clean" unverifiable |
+| B1 | HIGH | H4 waiver policy | `MasterController` both whitelisted approver and impersonation pattern; string-inequality check bypassable |
+| C2 | HIGH | G.open-source-build | 199-file manifest asserted, not shown |
+| D1 | HIGH | H2.compile-build | Safety-path H2077 hint in controller passes green |
+| A1 | HIGH | H2 test gates | 20 vs 356 overlapping test scope, no attribution rule |
+| A2 | MEDIUM | H1.resource-locks | Assertion-only PASS, 66-byte output |
+| A3 | MEDIUM | H3 gates | Counterfactuals asserted, not demonstrated |
+| B2 | MEDIUM | H4 ledger | Zero-waiver run cannot exercise enforcement logic |
+| C3 | MEDIUM | H4 pattern catalog | Internal bug IDs / machine path in gate-owned files |
+| D2 | MEDIUM | H4 baseline | "0 baseline debt" with baseline artifact absent |
+| D3 | MEDIUM | Vendor drift | Machine-local upstream; missing-upstream behavior unshown |
+| B3 | LOW | H4 policy | Expiry/unknown-pattern rejection unverified |
+| D4 | LOW | Test counts | 20 vs 356 delta not bounded |
+| A4 | INFO | All gates | No negative-control record (by design of the pack) |
+
+---
+
+VERDICT: not_ready
+
+Primary blocker: packaging/export boundary (C1) — the material asserts internal-governance exclusion but the exclusion set, manifest, and marker list are not evidenced, and the boundary enforcement tooling itself lives under the potentially leaked `tools/spw-gates/` path. Secondary: latent self-approval hole (B1) and unshown baseline/manifest artifacts (C2, D2).

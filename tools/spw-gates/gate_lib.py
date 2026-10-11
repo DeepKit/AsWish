@@ -20,8 +20,8 @@ def compute_manifest_sha(manifest_bytes: bytes) -> str:
     """
     try:
         obj = json.loads(manifest_bytes.decode("utf-8"))
-        if isinstance(obj, dict) and "gate_run_sha256" in obj:
-            filtered = {k: v for k, v in obj.items() if k != "gate_run_sha256"}
+        if isinstance(obj, dict) and ("gate_run_sha256" in obj or "observations_sha256" in obj):
+            filtered = {k: v for k, v in obj.items() if k not in ("gate_run_sha256", "observations_sha256")}
             return hashlib.sha256(json.dumps(filtered, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
     except Exception:
         pass
