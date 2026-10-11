@@ -1,0 +1,10 @@
+{
+  "resolved_model": "deepseek-v4.1-flash",
+  "response_id": "cmb-27d209dec56c11f192ad32b93329d9e8",
+  "raw_sha256": "011ce10dee90f4094799b0cf5dd0a69dc848e2476a1c8833322b9bc79d0e87fc",
+  "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
+  "material_sha256": "95e62923e3ad63aafedbf54a8923cbca3763438cfbd3e306fb40e6a95a1da501",
+  "observed_at": "2026-10-11T12:03:14.165279+00:00",
+  "family": "deepseek",
+  "requested_model": "deepseek-v4.1-flash"
+}

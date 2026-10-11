@@ -1,0 +1,27 @@
+## Audit Findings — obs_material.json (head 9293915)
+
+### (a) Gates claiming PASS vs. material
+
+- **LOW | gate-evidence | H4 excerpt only shows 2 of 3 declared patterns scanned** — Evidence: `"[H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived) | [H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived)"` — no line for `H4.DIRECT_DISK_WRITE` in the excerpt; likely excerpt truncation (443 bytes total), but unverified from material alone.
+- **INFO | gate-naming | G.vendored-upstream-drift claim name is ambiguous** — Evidence: `"claims": ["upstream_vendor_drift"]` — reads as if drift exists; excerpt clarifies PASS ("上游与登记值一致"), no actual failure.
+- All 12 declared gates have recorded verdicts, matching claim lists, consistent `subject_sha256`, exit_code 0, empty stderr hashes, and sequential timestamps. **No gate is contradicted by its own output.**
+
+### (b) Self-approval / H4 waiver policy holes
+
+- **HIGH | waiver-policy | Self-approval not prohibited: submitter can be the approver** — Evidence: schema fields `"approved_by"` / `"submitted_by"` plus `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]` with **no rule that `approved_by != submitted_by`**, and `MasterController` is itself the automation identity (cf. impersonation guard `"^(MasterController|SPW|MainController)-.*$"`). A waiver could be submitted and approved by the same automated actor and still pass the gate.
+- **MEDIUM | waiver-policy | Zero-waiver state conflates "no waivers" with "policy sound"** — Evidence: `"total": 0, "with_approver": 0` and `"all 0 waivers governed and accounted for"` — the hole above is latent (not exercised), so it downgrades from BLOCKER, but it is a structural gap in the fail-closed claim.
+- Ledger itself is clean: 0 waivers, 0 without approver, policy `max_ongoing_waivers: 0` consistent with H4 claim `zero_unapproved_waivers`.
+
+### (c) Packaging/export boundary leaks
+
+- **LOW | governance-leak | Machine-specific absolute path in evidence output** — Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase"` — while H4 itself bans `D:\_Progs` in production code (`"pattern": "D:\\\\_Progs"`), the same root appears in gate output; harmless to the package (evidence pack ≠ distribution) but an internal-machine disclosure in the material.
+- **INFO | governance-leak | Non-ASCII internal status strings in gate outputs** — Evidence: `"[H3.external-boundary] PASS 外部边界干净（检查通过）"`, `"[G.open-source-build] PASS 构建不依赖私有仓…"` — governance vocabulary present in evidence only; export-ignore boundary claims (`"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded"`) are not contradicted by any material line. **No boundary leak into the distribution itself is evidenced.**
+
+### (d) Silent downgrade / fake-green risk
+
+- **MEDIUM | fake-green | Verdicts are self-recorded by the same repo's own gate scripts with no independent attestation** — Evidence: every verdict's command is `tools/spw-gates/gate_*.py` on the subject itself (e.g., `"command": ["python","-X","utf8","tools/spw-gates/gate_bypass_patterns.py"]`); hashes pin commands/outputs, but nothing in the material evidences an external runner — a modified gate could self-assert `[CLAIM_ASSERTED]` green.
+- **INFO | downgrade-risk | Stderr universally empty (same hash `e3b0c442…` = empty)** — consistent across all 12 gates; plausible, but means no independent error-channel signal exists in the material.
+
+No BLOCKER findings. No area is fully without note except (c) at distribution level.
+
+**VERDICT: not_ready**

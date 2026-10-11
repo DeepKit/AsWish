@@ -1,0 +1,123 @@
+# Independent Read-Only Review — obs_material.json
+
+Scope note up front: this material is a **summary/attestation pack**, not raw gate output. Every gate is shown only as an `output_excerpt`, and the pack explicitly declares it contains no external-observation or certification fields. That structural choice itself is a finding because several areas below cannot be independently corroborated from what is provided.
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**Finding A1 — INFO / HIGH (see below) | Area: manifest vs. recorded verdicts**
+- All 12 `manifest_declared_gates` required=true appear in `recorded_gate_verdicts` with `verdict:"PASS"` and `exit_code:0`. Counts match (12 = 12), claim sets match verbatim per gate, and every claim in `manifest_declared_gates` appears in the corresponding `claims_asserted`. **No manifest/verdict divergence.**
+- Evidence (representative): `"[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"`
+
+**Finding A2 — HIGH | Area: H4 gate evidence is self-asserted, not argued**
+- The H4 gate excerpt contains only assertion tokens plus a summary line "verified 0 hits; all 0 waivers governed and accounted for". Two of the three declared H4 patterns (`H4.DIRECT_DISK_WRITE` high; `H4.HARDCODED_ABS_PATH` medium) have **no corresponding scan line in the excerpt** — only `H4.SILENT_INIT_FAILURE` and `H4.HARDCODED_ABS_PATH` are mentioned. `H4.DIRECT_DISK_WRITE` is declared in `h4_patterns` but absent from the gate's own reported scan output.
+  - Evidence: `"[H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived) | [H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived) | ... [H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`
+  - And in `h4_patterns`: `"id": "H4.DIRECT_DISK_WRITE"` with `"severity": "high"`.
+- The PASS is asserted for a pattern set that is not fully demonstrated to have been scanned. This is a candidate **fake-green** because a high-severity pattern's result is not shown.
+
+**Finding A3 — MEDIUM | Area: G.vendored-upstream-drift**
+- The drift check is anchored to a **local, machine-specific upstream path** (`D:\_Progs\02Business\DeepBase`), not a pinned remote or hash. If that local copy is itself stale or modified, the gate cannot detect drift — it only verifies self-consistency with a local directory.
+  - Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase | [CLAIM_ASSERTED] upstream_vendor_drift | [G.vendored-upstream-drift] PASS 上游与登记值一致，本仓副本未被误改（2 个文件）"`
+- Additionally the same `D:\_Progs` literal is exactly the pattern classified HIGH-risk-adjacent in `H4.HARDCODED_ABS_PATH` (`"pattern": "D:\\\\_Progs"`), yet the H4 gate reports it as clean. There is an internal tension: the drift gate depends on a hardcoded path while the H4 gate claims no hardcoded path hits.
+
+**Finding A4 — HIGH | Area: H2.compile-tests vs H2.unit-tests**
+- `H2.compile-tests` passes with `Tests Passed : 20`, while `H2.unit-tests` on the same subject passes with `Tests Passed : 356`. Two different test populations both reported as "the" test result with no reconciling field. This is not necessarily wrong (compile-tests = discovery build; unit-tests = full run) but the material never states the relationship, so the 20→356 delta is unexplained.
+  - Evidence: `"Tests Passed  : 20"` vs `"Tests Found   : 356 | ... Tests Passed  : 356"`
+
+**Finding A5 — INFO | Area: all gates**
+- All verdicts are `PASS` with `exit_code:0` and `stderr_bytes:0`. Uniformly green. No negative controls, no expected-fail reference, no counterfactual that shows a gate CAN fail on this subject. Absence of any FAIL sample means the pack provides no evidence that the gates discriminate success from failure.
+  - Evidence: every `recorded_gate_verdicts[*].verdict == "PASS"` and `"stderr_bytes": 0`.
+
+**Verdict for (a):** Manifest-to-verdict consistency is clean; however H4 evidence quality (A2) and the drift/hardcoded-path tension (A3) mean the PASS claims are not fully supported.
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**Finding B1 — MEDIUM | Area: H4 waiver governance**
+- `authorized_approvers` includes `"MasterController"`, and `impersonation_patterns` is `["^(MasterController|SPW|MainController)-.*$"]`. Nothing in the material demonstrates that the approver identity and the submitting identity are constrained to be **distinct**. The ledger schema lists both `approved_by` and `submitted_by` as separate fields, which implies the distinction is tracked, but no policy text states they must differ.
+  - Evidence: `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]` and `"schema": ["pattern_id", "file", "line", "code", "rationale", "scope", "approved_by", "approved_at", "expires_at", "submitted_by"]`.
+- Because the only concrete authorized approver token is a controller-style name that also appears in the impersonation-pattern blacklist, the policy does not visibly prevent an actor who can sign as `MasterController` from being the same actor who submitted the waiver.
+
+**Finding B2 — INFO | Area: H4 waiver governance**
+- `max_ongoing_waivers: 0` and `total: 0`, `with_approver: 0`, `without_approver: 0`. With zero waivers there is nothing to self-approve **today**, so the hole is latent, not exploited.
+  - Evidence: `"max_ongoing_waivers": 0` and `"total": 0, "with_approver": 0, "without_approver": 0`.
+
+**Finding B3 — MEDIUM | Area: H4 policy fails-closed claim**
+- The policy text asserts "Any waiver without pre-approved authorized approver or unapproved ongoing scope fails closed (RC=1 in H4 gate)." This is a **claim about behavior**, but the material contains no test, counterfactual, or reference showing the fail-closed path was exercised. It is asserted, not evidenced.
+  - Evidence: `"policy_enforcement": "Zero-waiver architecture: ... Any waiver without pre-approved authorized approver or unapproved ongoing scope fails closed (RC=1 in H4 gate)."`
+
+**Verdict for (b):** No active self-approval (zero waivers), but the policy does not visibly forbid approver == submitter, and the fail-closed behavior is claimed rather than demonstrated. **Do not certify the waiver mechanism from this pack alone.**
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**Finding C1 — HIGH | Area: distribution boundary**
+- The pack declares the boundary is enforced by two mechanisms and quotes a gate PASS. But the material itself **contains** internal governance markers verbatim: `WO/`, `tools/spw-*`, `_repro/`, `h4_waivers.json`, gate scripts, controller names. That is expected for an audit pack. The leak concern is the **public** distribution, and the pack only provides the gate's own summary sentence — not the export manifest, not a file list of the 199 exported files, not the checks performed.
+  - Evidence: `"[CLAIM_ASSERTED] counterfactual_export | [G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`
+- "导出清单无内部材料" (export manifest contains no internal material) is asserted with no manifest excerpt, no count of scanned markers, and no counterfactual showing a marker would be caught. This is the exact shape of a fake-green.
+
+**Finding C2 — MEDIUM | Area: boundary definition drift**
+- `packaging_boundary.enforcement` names the mechanisms as "Git export-ignore and H3.external-boundary gate", while the PASS in `recorded_gate_verdicts` for the build boundary is `G.open-source-build`. The relationship between `H3.external-boundary` (which passed with "外部边界干净") and `G.open-source-build` is never stated; both claim to cover the boundary but the material does not say whether they are the same surface or two surfaces with a gap.
+  - Evidence: `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded"` vs `"[H3.external-boundary] PASS 外部边界干净（检查通过）"` and `"[G.open-source-build] PASS ... 导出清单无内部材料"`.
+
+**Finding C3 — INFO | Area: no raw export artifact**
+- The pack provides no SHA of an actual produced archive/distribution, so the boundary cannot be independently re-derived by a reviewer. Only gate self-attestation exists.
+
+**Verdict for (c):** Boundary is **asserted PASS but not evidenced**. Cannot confirm no leak; cannot confirm a leak. Insufficient raw artifact.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**Finding D1 — HIGH | Area: "claims_asserted" == "claims" everywhere**
+- In every recorded verdict, `claims` and `claims_asserted` are identical and the excerpt literally contains `[CLAIM_ASSERTED] <claim>`. A gate that prints its own success token is not independent verification; it is self-declaration. Combined with uniformly zero stderr and zero non-PASS, this is the classic fake-green signature.
+  - Evidence (representative): `"claims": ["counterfactual_1","counterfactual_2"], "claims_asserted": ["counterfactual_1","counterfactual_2"], "output_excerpt": "[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS"`
+
+**Finding D2 — HIGH | Area: sub-second gate durations**
+- Several gates that claim nontrivial counterfactual verification completed in **under 100 ms**: `H3.runtime-autofix` (0.098 s), `H3.deep-ui-test` (0.086 s), `G.vendored-upstream-drift` (0.091 s). A deep UI test in 86 ms and a runtime-autofix counterfactual in 98 ms are implausible for real execution and consistent with assertion-only stubs.
+  - Evidence: `"gate_id": "H3.runtime-autofix", ..., "duration_seconds": 0.098`, `"gate_id": "H3.deep-ui-test", ..., "duration_seconds": 0.086`, `"gate_id": "G.vendored-upstream-drift", ..., "duration_seconds": 0.091`.
+
+**Finding D3 — MEDIUM | Area: H4 baseline debt silent**
+- `"0 baseline debt warnings emitted"` appears in the H4 PASS line. If baseline debt existed and produced no warning, that is a silent downgrade. The material does not state the baseline debt count, so "0 warnings" cannot be distinguished from "0 debt" or from "warnings suppressed".
+  - Evidence: `"... all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`
+
+**Finding D4 — MEDIUM | Area: no negative-control / no expected-FAIL**
+- As in A5: zero FAIL, zero non-zero exit in the whole pack. There is no counterfactual showing any gate returns RC=1 when it should. Without a demonstrated red path, a gate that always prints PASS is indistinguishable from a gate that works.
+  - Evidence: all `recorded_gate_verdicts[*].exit_code == 0` and `verdict == "PASS"`.
+
+**Verdict for (d):** Substantial fake-green risk. Self-asserted tokens, implausible sub-100 ms "deep" gates, and no red-path evidence.
+
+---
+
+## Areas with nothing wrong found
+
+- **Manifest ↔ verdict structural consistency:** no mismatch in gate set, required flag, or claim lists. (Area (a), structural sub-check — nothing wrong.)
+- **Waiver ledger arithmetic:** `total` 0 = with + without; `distinct_scopes` empty consistent with zero waivers. (Area (b), arithmetic — nothing wrong.)
+- **Hashing hygiene:** every verdict shows non-empty `stdout_sha256`, empty `stderr_sha256` = SHA-256 of empty string (`e3b0c442...` is the empty-string digest), `truncated:false`, and a `subject_sha256` matching the top-level subject. (Structural integrity of the pack — nothing wrong.)
+
+---
+
+## Consolidated findings table
+
+| # | Severity | Area | One-line |
+|---|----------|------|----------|
+| A2 | HIGH | H4 gate | Declared pattern `H4.DIRECT_DISK_WRITE` (high) has no scan line in the gate output; PASS asserted for an unshown pattern |
+| A3 | MEDIUM/HIGH | Drift gate | Drift check anchored to local `D:\_Progs\...` path, the same literal H4 flags as hardcoded-abs-path risk |
+| A4 | HIGH | Test gates | 20 vs 356 passing tests unreconciled between `H2.compile-tests` and `H2.unit-tests` |
+| B1 | MEDIUM | H4 waiver policy | Policy does not forbid `approved_by == submitted_by`; sole approver name is also in impersonation blacklist |
+| B3 | MEDIUM | H4 waiver policy | Fail-closed (RC=1) behavior claimed, never demonstrated |
+| C1 | HIGH | Export boundary | Boundary PASS is self-asserted; no manifest, no marker count, no counterfactual |
+| C2 | MEDIUM | Export boundary | `H3.external-boundary` vs `G.open-source-build` relationship to boundary undefined |
+| D1 | HIGH | All gates | `claims == claims_asserted` with `[CLAIM_ASSERTED]` self-printed tokens everywhere |
+| D2 | HIGH | H3.autofix / H3.deep-ui / drift | Implausible sub-100 ms "deep" verification durations |
+| D3 | MEDIUM | H4 | "0 baseline debt warnings emitted" cannot be distinguished from suppressed warnings |
+| D4 | MEDIUM | All gates | No FAIL, no non-zero exit, no negative control anywhere in the pack |
+| A1 | INFO | Manifest | Structurally clean — noted as no-finding |
+| C3 | INFO | Export | No raw distribution artifact / SHA provided for independent re-derivation |
+
+---
+
+VERDICT: not_ready

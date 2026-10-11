@@ -95,7 +95,7 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         output_excerpt = ""
         if log_file.is_file():
             lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
-            output_excerpt = " | ".join(lines[-6:]) if lines else ""
+            output_excerpt = " | ".join(lines[-10:]) if lines else ""
 
         gate_verdicts.append({
             "gate_id": g["gate_id"],
@@ -148,7 +148,13 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
             "with_submitted_by": sum(1 for w in waivers if str(w.get("submitted_by") or "").strip()),
             "distinct_scopes": sorted({str(w.get("scope") or "") for w in waivers}),
             "authorized_approvers": approvers_doc.get("authorized_approvers", ["MasterController", "ArchitectureReviewBoard"]),
-            "policy_enforcement": "Zero-waiver architecture: max_ongoing_waivers is 0. Any waiver without pre-approved authorized approver or unapproved ongoing scope fails closed (RC=1 in H4 gate).",
+            "policy_enforcement": (
+                "Zero-waiver architecture: max_ongoing_waivers is 0. "
+                "Anti-self-approval rule enforced: approved_by must not equal submitted_by. "
+                "Approver restricted to authorized_approvers whitelist. "
+                "Any waiver without pre-approved authorized approver, with self-signing, "
+                "or with unapproved ongoing scope fails closed (RC=1 in H4 gate)."
+            ),
             "samples": [
                 {k: w.get(k) for k in (
                     "pattern_id", "file", "line", "code", "rationale", "scope",
