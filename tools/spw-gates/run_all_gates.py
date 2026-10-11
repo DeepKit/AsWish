@@ -155,13 +155,13 @@ def run_gate(gate: dict, verbose: bool = False, manifest: dict = None) -> dict:
     # Parse asserted claims from execution output
     stdout_text = stdout_bytes.decode("utf-8", errors="replace")
     claims_asserted = re.findall(r"\[CLAIM_ASSERTED\]\s+([A-Za-z0-9_.-]+)", stdout_text)
-    if gid == "H2.unit-tests" and rc == 0:
-        if "TFogStateMachineTests" in stdout_text:
-            claims_asserted.append("state_machine_check")
-        if "Test01_P2_DifferentTriggerTree_DifferentBaselineHash" in stdout_text:
-            claims_asserted.append("active_detail_trigger")
-        if "ValidFogState_NoErrors" in stdout_text or "TValidationTreeFileTests" in stdout_text:
-            claims_asserted.append("required_fields_on_activation")
+    if gid == "H2.unit-tests":
+        # WO-0099: require genuine passing test execution before accepting claims
+        has_failed = bool(re.search(r"Tests Failed\s*:\s*[1-9]", stdout_text) or
+                          re.search(r"Tests Errored\s*:\s*[1-9]", stdout_text))
+        has_passed = ("Tests Passed" in stdout_text) and (not has_failed) and (rc == 0)
+        if not has_passed:
+            claims_asserted = []
     claims_asserted = sorted(set(claims_asserted))
 
     # Save stdout to log file for generate_evidence.py

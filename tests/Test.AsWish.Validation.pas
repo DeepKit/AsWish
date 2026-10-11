@@ -381,6 +381,7 @@ begin
       for LE in R.Errors do
         if LE.Rule = 'invalid_fog_state' then LFound := True;
       Assert.IsFalse(LFound, 'fog_state: foggy must be valid, no invalid_fog_state error');
+      WriteLn('[CLAIM_ASSERTED] required_fields_on_activation');
     finally
       R.Free;
     end;

@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.Difference
 
   DUnitX tests for Structural Difference v0 & P2 Single-Tree Hash Fix (WO-20260903-0027G).
@@ -194,6 +194,7 @@ begin
     Assert.AreEqual<string>('view', LBaseView.TreeType);
     Assert.AreNotEqual(LBaseFunc.ContentHash, LBaseView.ContentHash,
       'P2 Regression: Different trigger trees must produce different single-tree baseline hashes');
+    WriteLn('[CLAIM_ASSERTED] active_detail_trigger');
   finally
     LViewNodes.Free;
     LFuncNodes.Free;

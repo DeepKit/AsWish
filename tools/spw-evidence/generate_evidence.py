@@ -833,6 +833,22 @@ def main():
 
         for r in (data.get("degradation_reasons") or []):
             print(f"[spw-evidence] degraded: {r}")
+
+        # WO-0108 Phase 0 Step 2 & Acceptance Item 4:
+        # When required_observer_families is not satisfied, explicitly print next re-observation command
+        cov_valid = len(data.get("valid_observer_families", []))
+        cov_req = data.get("required_observer_families", 2)
+        if cert.get("status") == "withheld" or cov_valid < cov_req:
+            rel_path = out_path.name
+            try:
+                rel_path = out_path.relative_to(ROOT).as_posix()
+            except ValueError:
+                pass
+            print(f"\n[spw-evidence][ACTION_REQUIRED] H5 观察员覆盖率未达标 ({cov_valid}/{cov_req} 席，当前证书状态: withheld)。")
+            print(f"[spw-evidence] 下一步重排命令：")
+            print(f"  1. 生成无偏观测材料: python -X utf8 tools/spw-evidence/build_obs_material.py --evidence {rel_path}")
+            print(f"  2. 执行外部异构只读模型审查，将结果写入 spw-observations.json")
+            print(f"  3. 更新 spw-manifest.json 中的 observations_sha256 并重新生成证据包")
     except Exception as e:
         print(f"[spw-evidence][FAIL] {e}", file=sys.stderr)
         sys.exit(1)

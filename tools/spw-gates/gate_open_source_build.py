@@ -236,6 +236,10 @@ def check_manifest_gates(exported: set[str], manifest_bytes: bytes | None) -> li
         return findings
 
     wt_required = {g["gate_id"] for g in wt_manifest.get("gates", []) if g.get("required")}
+    if len(wt_required) < 12:
+        findings.append(
+            f"必需门禁数量不足 12 道（当前 {len(wt_required)} 道，按 WO-0108 必须为 12 道全量门禁）: {sorted(wt_required)}"
+        )
 
     try:
         head_raw = subprocess.check_output(
@@ -301,7 +305,12 @@ def check_manifest_gates(exported: set[str], manifest_bytes: bytes | None) -> li
                 else:
                     rel = norm
 
-                if rel not in exported:
+                script_path = ROOT / rel
+                if not script_path.is_file():
+                    findings.append(
+                        f"必需门禁 {gid} 的脚本 {rel} 在工作树中不存在（干净快照将无法执行该门禁）"
+                    )
+                elif rel not in exported:
                     findings.append(
                         f"必需门禁 {gid} 的脚本 {rel} 未包含在导出清单中（干净快照将无法执行该门禁）"
                     )

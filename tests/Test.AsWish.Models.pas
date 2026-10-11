@@ -99,6 +99,7 @@ begin
     'foggy->foggy no-op must be allowed');
   Assert.IsTrue(TSpecEnums.CanTransitionFog(fsUnknownUnknowns, fsUnknownUnknowns),
     'unknown_unknowns->unknown_unknowns no-op must be allowed');
+  WriteLn('[CLAIM_ASSERTED] state_machine_check');
 end;
 
 procedure TFogStateMachineTests.UnknownUnknowns_ToFoggy_Allowed;
