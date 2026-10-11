@@ -1,0 +1,95 @@
+# Independent Read-Only Review — obs_material.json
+
+Scope: audit of the supplied material only. All cited "evidence lines" are exact excerpts from the material. No files were modified; no gates were re-run.
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**Finding A1 — HIGH — Gate coverage / claim substantiation**
+- **Description:** Every required gate reports `PASS` with `exit_code: 0`, and every gate in `manifest_declared_gates` has a matching `recorded_gate_verdicts` entry (12/12, no missing, no extra). However, the H2 gates that perform the substantive compile/test work (`H2.compile-build`, `H2.compile-tests`) assert **zero claims** (`"claims": []`, `"claims_asserted": []`), so their PASS carries no counterfactual weight.
+- **Evidence line:** `"gate_id": "H2.compile-build", ... "claims": [], "claims_asserted": [], "output_excerpt": "cli/bin/AsWish.CLI.exe  = CLI  (headless command line) ..."` and `"gate_id": "H2.compile-tests", ... "claims": [], "claims_asserted": [], "output_excerpt": "Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used ..."`
+
+**Finding A2 — MEDIUM — Weak/false-green risk in H2.compile-tests**
+- **Description:** The compile-tests PASS excerpt shows a compiler **Hint** for an unused variable in a test that is explicitly about export/handoff (`Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline`). A Hint is not a failure, but it indicates the baseline test body may not be exercising the variable it declares — a plausible partial/fake-green path. No assertion count or pass/fail tally is present in this gate's excerpt (contrast with H2.unit-tests, which does report counts).
+- **Evidence line:** `"gate_id": "H2.compile-tests", ... "output_excerpt": "Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used in 'TTestAsWishController.Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline'"`
+
+**Finding A3 — INFO — Sub-gate excerpts are single-line and truncated to the "happy" tail**
+- **Description:** Several gates emit only the last `[CLAIM_ASSERTED]` line plus a PASS banner (H3.encoding-guard shows only `counterfactual_2`; H3.runtime-autofix only `counterfactual_5`; H3.deep-ui-test only `counterfactual_8`). The multi-claim assertions are attributed in `claims_asserted`, but the excerpt does not evidence the earlier counterfactuals. This is a presentation limitation, not a proven defect.
+- **Evidence line:** `"gate_id": "H3.encoding-guard", ... "output_excerpt": "[CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS"`
+
+**Explicit clearance:** No gate claims PASS while its own exit_code, stderr (all SHA-256 of empty string `e3b0c44…` = empty), or excerpt contradicts. `truncated: false` and `stderr_bytes: 0` on all 12. There is **no direct contradiction** between a gate's PASS verdict and its own recorded output.
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**Finding B1 — MEDIUM — Policy declares a control that the current material cannot exercise**
+- **Description:** The H4 policy is a pure zero-waiver architecture: `max_ongoing_waivers: 0`, and the ledger is empty (`"total": 0`). Therefore the anti-self-approval rules (self-signing check, pre-authorized approver check) are **never evaluated against real data** in this run — their correctness is asserted by policy text, not demonstrated by any waiver entry. The material cannot distinguish "control works" from "control never ran."
+- **Evidence line:** `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0, "distinct_scopes": [], "samples": []`
+
+**Finding B2 — LOW — Approver identity is a name string, not a cryptographic identity**
+- **Description:** Anti-self-approval hinges on `submitted_by != approved_by` as string equality against an allowlist of two names. There is no signature, key, or commit-graph binding shown; anyone able to write `approved_by: "ArchitectureReviewBoard"` in the ledger would satisfy the check unless the gate re-verifies provenance. (Not proven as a hole from this material alone; flagged as design risk.)
+- **Evidence line:** `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]` and `"Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure"`
+
+**Finding B3 — MEDIUM — Waiver-policy claim vs. gate excerpt is not self-consistent in wording**
+- **Description:** The H4 gate excerpt states "all 0 waivers governed and accounted for (0 baseline debt warnings emitted)" while the policy promises that adding *any* ongoing waiver fails closed. With zero waivers, the excerpt trivially passes; it does not exercise the fail-closed path. Treat the anti-self-approval guarantee as **untested**, not satisfied.
+- **Evidence line:** `"output_excerpt": "[CLAIM_ASSERTED] counterfactual_bypass | [H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`
+
+**Explicit clearance:** No **self-approval instance** is present (ledger empty, so `submitted_by == approved_by` cannot be observed). There is no evidence of an actual self-signing occurrence — only that the control is unexercised.
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**Finding C1 — INFO / potential LOW — Boundary PASS corroborates the distribution model, but the leak-check scope is not evidenced**
+- **Description:** `H3.external-boundary` and `G.open-source-build` both PASS, and the distribution model says `WO/`, `tools/spw-*`, and `_repro/` are excluded. The H3.external-boundary excerpt says the boundary is clean ("外部边界干净（检查通过）"), and G.open-source-build reports 199 files with no internal material and no runtime Python dependency. No internal-marker strings (e.g., `WO/`, `spw-`, `_repro/`) appear in any excerpt. **No leak is evidenced.**
+- **Evidence line:** `"[CLAIM_ASSERTED] counterfactual_boundary | [H3.external-boundary] PASS 外部边界干净（检查通过）"` and `"[CLAIM_ASSERTED] counterfactual_export | [G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`
+
+**Finding C2 — LOW — "Internal governance markers" gate checks export-ignore lists, but the material does not show the actual exported tree**
+- **Description:** The claim is that within-package markers are absent; the material supplies only a pass banner and a file count, not the export manifest or a scan result per marker. A reviewer cannot independently confirm exclusion of `tools/spw-*` or `_repro/` from this file alone.
+- **Evidence line:** `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions."`
+
+**Explicit clearance:** No **observed** governance-marker leak. `_note` and `packaging_boundary` are meta-fields of the audit material, not package contents.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**Finding D1 — HIGH — Zero-waiver + zero-claims gates can be a fake-green configuration**
+- **Description:** Two required gates (`H2.compile-build`, `H2.compile-tests`) assert no claims; H4 is vacuously PASS at zero waivers; H3 claim excerpts show only the final counterfactual. The combination means a wide portion of the "green" is generated by vacuous or non-falsifiable checks. This is the classic fake-green surface: gates report PASS, but nothing in the material would go RC≠0 if the underlying behavior regressed.
+- **Evidence line:** `"gate_id": "H2.compile-build", ... "claims": []` ; `"with_approver": 0, ... "samples": []` ; `"claims_asserted": ["counterfactual_2"]` (only one of two declared for H3.encoding-guard shown).
+
+**Finding D2 — MEDIUM — No evidence of a negative/failing control run**
+- **Description:** Every recorded gate is `PASS`. There is no failed run, no RC≠0 sample, and no deliberate counterfactual-negative record to prove the gates *can* fail. `_note` explicitly says external-observation/certification outcomes are withheld, so the harness cannot confirm the gates are not always-green by construction.
+- **Evidence line:** `"_note": "... It deliberately contains NO fields describing external-observation or certification outcomes of the audit run ..."` (all 12 verdicts `"verdict": "PASS", "exit_code": 0`).
+
+**Finding D3 — MEDIUM — Digest pinning is self-referential to the run, not to the artifact under test only**
+- **Description:** `gate_run_sha256` pins execution state and the policy claims "any ledger modification invalidates pinned digest," but nothing in the material shows the pin is recomputed/verified independently at read time. A silent ledger downgrade between run and reading would not be detectable from this file alone.
+- **Evidence line:** `"gate_run_sha256": "334ce5963036d69955e6f60f5cef0c6d6b877624c54f01b222e3f85135f4fa5f"` and `"Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest"`.
+
+**Explicit clearance:** No **proof** of a silent downgrade. All `stderr_bytes: 0`, all `stderr_sha256` = empty hash, all `truncated: false`, `subject_sha256` consistent across all 12 runs and equal to top-level `subject_sha256`. Consistency is clean; the concern is vacuity, not observed tampering.
+
+---
+
+## Summary table
+
+| ID | Severity | Area | One-line |
+|----|----------|------|----------|
+| A1 | HIGH | Gate substantiation | H2 build/test gates PASS with zero asserted claims |
+| A2 | MEDIUM | H2.compile-tests | Hint on unused var in export/handoff test; no pass-count in excerpt |
+| A3 | INFO | Evidence excerpts | Single-line excerpts don't evidence earlier counterfactuals |
+| B1 | MEDIUM | H4 waiver policy | Anti-self-approval never exercised (0 waivers) |
+| B2 | LOW | H4 approver identity | Approvers are name strings, not cryptographic identities |
+| B3 | MEDIUM | H4 gate excerpt | Fail-closed path promised but untested |
+| C1 | INFO | Packaging boundary | No leak observed; boundary PASS |
+| C2 | LOW | Packaging boundary | Export manifest / per-marker scan not shown |
+| D1 | HIGH | Fake-green | Vacuously-green gates + zero waivers = wide green surface |
+| D2 | MEDIUM | Fake-green | No negative/failing control run present |
+| D3 | MEDIUM | Digest pinning | Pin verification not independent of run state |
+
+**Areas with explicit "nothing wrong observed":** no direct PASS-vs-output contradiction (a); no actual self-signing instance (b); no observed governance-marker leak (c); no observed tampering/silent downgrade (d). Concerns in each are about *unexercised or unverifiable* controls, not demonstrated failures.
+
+---
+
+VERDICT: insufficient_data

@@ -1,0 +1,31 @@
+## Audit Findings
+
+### (a) Gates claiming PASS but material suggests otherwise
+- **INFO | H2.compile-tests** — Gate PASS includes a compiler hint, non-blocking but noted: `"Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used..."` Exit code 0; verdict consistent.
+- **MEDIUM | H4.bypass-patterns** — PASS with "0 hits" across all three defined H4 patterns is weakly corroborated. Evidence: `"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`. Three high/medium patterns (TFile writes, OutputDebugString, hardcoded `D:\_Progs`) returning exactly zero hits on a codebase of 199+ exported files is possible but warrants spot-check before release; the output alone is self-attested.
+- All 12 declared gates have matching recorded verdicts, `required: true`, exit_code 0, consistent `subject_sha256` (`ce2ef0e7...`), and all manifest `claims` appear in `claims_asserted`. No gate-count or subject-binding mismatch found.
+
+### (b) H4 waiver / approval policy self-approval hole
+- **No hole found.** The zero-waiver architecture is fail-closed: `"max_ongoing_waivers is 0 (adding any ongoing waiver causes immediate RC=1 gate failure in H4.bypass-patterns)"`, `"Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure"`, approvers restricted to `"MasterController", "ArchitectureReviewBoard"`. Ledger is empty (`"total": 0`), consistent with the H4 gate output.
+- **LOW | h4_policy** — Minor ambiguity: impersonation regex `^(MasterController|SPW|MainController)-.*$` only rejects synthetic names with a dash suffix, so a ledger entry with `approved_by: "MasterController"` relies solely on the h4_approvers.json allowlist to prevent impersonating the reserved name itself. Currently moot (empty ledger).
+
+### (c) Packaging/export boundary leak
+- **No leak found in the provided material.** Export boundary is enforced by policy: `"Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions."` and corroborated by `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料..."`. No internal marker appears in gate outputs or excerpts beyond reviewer-facing material, which is by design (`_note` states reviewer material deliberately excludes certification fields).
+
+### (d) Silent downgrade / fake-green risk
+- **MEDIUM | claims mechanism** — All counterfactual claims are self-asserted inside the gated process's own stdout (e.g., `"[CLAIM_ASSERTED] counterfactual_5 | [H3.runtime-autofix] PASS"`). There is no independent verifier in the material that the counterfactual conditions actually held, only that the gate printed assertion markers. This is the primary fake-green surface.
+- **MEDIUM | H3 gates** — Extremely short durations for substantive counterfactual gates (runtime-autofix `0.093s`, deep-ui-test `0.099s`) make a genuine re-execution of counterfactual scenarios implausible; likely registry/lookup-based checks. Not proof of fakery, but downgrade risk if the underlying registries are not themselves hash-pinned.
+- **LOW | digest trust** — `"Manifest gate_run_sha256 pins execution state"` is asserted as anti-tamper, but the material provides no independent anchor for the gate scripts themselves beyond `command_sha256` values recorded by the same harness (self-referential chain).
+
+### Summary
+| # | Severity | Area | Description |
+|---|----------|------|-------------|
+| 1 | MEDIUM | (a) H4.bypass-patterns | 0-hit scan across 3 defined patterns weakly corroborated |
+| 2 | LOW | (b) h4_policy | Impersonation regex doesn't block exact reserved names; relies on allowlist |
+| 3 | MEDIUM | (d) claims | Counterfactual claims self-asserted in gate stdout, no independent verification |
+| 4 | MEDIUM | (d) H3 gates | Sub-0.1s counterfactual gate durations suggest non-execution path |
+| 5 | LOW | (d) digests | command_sha256 trust chain is harness-self-referential |
+
+Areas (b) and (c) are otherwise clean; area (a) shows no concrete PASS contradiction, only corroboration gaps.
+
+**VERDICT: ready**
