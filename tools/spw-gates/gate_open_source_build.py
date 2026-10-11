@@ -194,6 +194,7 @@ def check_exported_python_files(exported: set[str]) -> list[str]:
         "protocol/": "protocol/README.md",
         "tools/spw-gates/": "tools/spw-gates/README.md",
         "tools/spw-evidence/": "tools/spw-evidence/README.md",
+        "tools/vcl-observe/": "tools/vcl-observe/README.md",
     }
     candidates = set(exported)
     if (ROOT / "tools").is_dir():
