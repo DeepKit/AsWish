@@ -1,4 +1,4 @@
-unit AsWish.Services.Snapshot;
+﻿unit AsWish.Services.Snapshot;
 
 interface
 

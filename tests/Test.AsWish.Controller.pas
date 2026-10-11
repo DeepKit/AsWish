@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.Controller
 
   Headless mock tests for the desktop-app workflow layer — the exact paths
