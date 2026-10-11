@@ -1,27 +1,27 @@
 {
   "schema": "spw-observations/v1",
   "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-  "material_digest": "24040229ec558d5bcdff9483a4f9f1404baaffe0baec23315f5f599d4909c2ff",
+  "material_digest": "f910fbcecdb0294dc605f693a84fbe77303bf0cdaada83a7059e40c2e698de13",
   "seats": [
     {
       "schema": "spw-observation-seat/v1",
       "family": "deepseek",
       "model": "deepseek-v4.1-flash",
       "resolved_model": "deepseek-v4.1-flash",
-      "response_id": "cmb-a97dc2c4c56d11f19708b64b9daefd0c",
-      "observed_at": "2026-10-11T12:13:59.471626+00:00",
+      "response_id": "cmb-322331f3c56e11f1b1ae2a32dddadd97",
+      "observed_at": "2026-10-11T12:17:52.974368+00:00",
       "round": 6,
       "observer_id": "deepseek-observer",
       "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-      "material_digest": "24040229ec558d5bcdff9483a4f9f1404baaffe0baec23315f5f599d4909c2ff",
-      "response_digest": "8285ac2b4aa07a57aa20772c19b69b8490c0ff1233809b643955010c534a2d9c",
-      "raw_file": "raw-deepseek-deepseek-v4.1-flash-r6-20261011-121344.txt",
-      "envelope_file": "env-deepseek-deepseek-v4.1-flash-r6-20261011-121344.json",
-      "envelope_sha256": "c1f703722b692769a54d831cb7f57add50fe559d4caf70cfe6b4873edcd26849",
+      "material_digest": "f910fbcecdb0294dc605f693a84fbe77303bf0cdaada83a7059e40c2e698de13",
+      "response_digest": "4557650a845967e9c678a8ef8fe4be893c8f56ba1b5afa3aecbedcb7f4d0257e",
+      "raw_file": "raw-deepseek-deepseek-v4.1-flash-r6-20261011-121733.txt",
+      "envelope_file": "env-deepseek-deepseek-v4.1-flash-r6-20261011-121733.json",
+      "envelope_sha256": "482887da990da688a5687c4a5fc396961e34f93980f724bf43f3125a058afbf1",
       "usage": {
-        "prompt_tokens": 6945,
-        "completion_tokens": 2656,
-        "total_tokens": 9601,
+        "prompt_tokens": 6942,
+        "completion_tokens": 3552,
+        "total_tokens": 10494,
         "completion_tokens_details": {
           "accepted_prediction_tokens": 0,
           "audio_tokens": 0,
@@ -37,130 +37,172 @@
           "cached_tokens": 128
         },
         "prompt_cache_hit_tokens": 128,
-        "prompt_cache_miss_tokens": 6817,
+        "prompt_cache_miss_tokens": 6814,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
         "prompt_cache_write_tokens": 0,
         "completion_thinking_tokens": 0,
-        "credit": 0.25,
+        "credit": 0.3,
         "cached_tokens": 0
       },
       "verdict": "not_ready",
       "verdict_reason": "independent read-only review of obs_material.json",
       "findings": [
         {
-          "severity": "INFO",
+          "severity": "LOW",
           "area": "general",
-          "description": "INFO — Governance gates are self-attested, not externally observed.** Every H3/H4/G gate PASS is derived from the gate script's own stdout (`[CLAIM_ASSERTED] … | [gate] PASS`) with `exit_code: 0`. The",
-          "evidence": "INFO — Governance gates are self-attested, not externally observed.** Every H3/H4/G gate PASS is derived from the gate script's own stdout (`[CLAIM_ASSERTED] … | [gate] PASS`) with `exit_code: 0`. The"
+          "description": "Scope note: I audited the material as-is. The material itself states it contains no external-observation or certification outcomes. Several findings below turn on what the material contains versus wha",
+          "evidence": "Scope note: I audited the material as-is. The material itself states it contains no external-observation or certification outcomes. Several findings below turn on what the material contains versus wha"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "LOW — Token-bucket output is suspiciously thin for high-assurance gates.** e.g. `stdout_bytes: 94` for `H3.gui-verify-smoke`, `96` for `H3.encoding-guard`, `132` for `H3.runtime-autofix`, `153` for `H",
-          "evidence": "LOW — Token-bucket output is suspiciously thin for high-assurance gates.** e.g. `stdout_bytes: 94` for `H3.gui-verify-smoke`, `96` for `H3.encoding-guard`, `132` for `H3.runtime-autofix`, `153` for `H"
-        },
-        {
-          "severity": "LOW",
-          "area": "general",
-          "description": "LOW — H2.compile-build PASS despite unaudited compiler Hints that touch an H4-adjacent concern.** The build log shows `Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expande",
-          "evidence": "LOW — H2.compile-build PASS despite unaudited compiler Hints that touch an H4-adjacent concern.** The build log shows `Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expande"
-        },
-        {
-          "severity": "INFO",
-          "area": "general",
-          "description": "INFO — Policy is declared but not demonstrated.** The ledger has `total: 0` and `samples: []`, so the anti-self-approval rule is never exercised by any real record in this pack. The rule exists in pro",
-          "evidence": "INFO — Policy is declared but not demonstrated.** The ledger has `total: 0` and `samples: []`, so the anti-self-approval rule is never exercised by any real record in this pack. The rule exists in pro"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "MEDIUM — `MasterController` is both an `authorized_approvers` member and matches the impersonation pattern set.** `impersonation_patterns: [\"^(MasterController|SPW|MainController)-.*$\"]` guards on a `",
-          "evidence": "MEDIUM — `MasterController` is both an `authorized_approvers` member and matches the impersonation pattern set.** `impersonation_patterns: [\"^(MasterController|SPW|MainController)-.*$\"]` guards on a `"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "MEDIUM — Zero-waiver + zero-sample means the \"anti-self-approval\" claim is unfalsifiable from this material.** A future waiver whose `submitted_by` equals its `approved_by` would only be caught if the",
-          "evidence": "MEDIUM — Zero-waiver + zero-sample means the \"anti-self-approval\" claim is unfalsifiable from this material.** A future waiver whose `submitted_by` equals its `approved_by` would only be caught if the"
+          "description": "Finding A1 — HIGH — H2.compile-tests — PASS claim asserted but `test_suite_compiled` never confirmed in output.**",
+          "evidence": "Finding A1 — HIGH — H2.compile-tests — PASS claim asserted but `test_suite_compiled` never confirmed in output.**"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "HIGH — The gate scripts driving the boundary check live at `tools/spw-gates/gate_*.py`, and `tools/spw-*` is itself declared as an excluded internal-governance directory.** If the same exclusion rules",
-          "evidence": "HIGH — The gate scripts driving the boundary check live at `tools/spw-gates/gate_*.py`, and `tools/spw-*` is itself declared as an excluded internal-governance directory.** If the same exclusion rules"
+          "description": "Finding A2 — HIGH — H2.compile-tests — self-describing mismatch: 20 tests found here vs 356 in H2.unit-tests.**",
+          "evidence": "Finding A2 — HIGH — H2.compile-tests — self-describing mismatch: 20 tests found here vs 356 in H2.unit-tests.**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "Finding A3 — HIGH — H3.gui-verify-smoke — PASS over an 819-byte stdout with a [PASS]=12 counter that does not match any prior gate's assertion count, and no counterfactual (negative-case) evidence.**",
+          "evidence": "Finding A3 — HIGH — H3.gui-verify-smoke — PASS over an 819-byte stdout with a [PASS]=12 counter that does not match any prior gate's assertion count, and no counterfactual (negative-case) evidence.**"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "MEDIUM — No hash / manifest of the exported package contents is present.** `G.open-source-build` reports `199 个文件` but neither lists paths nor provides an archive digest. Without a listing, `counterfa",
-          "evidence": "MEDIUM — No hash / manifest of the exported package contents is present.** `G.open-source-build` reports `199 个文件` but neither lists paths nor provides an archive digest. Without a listing, `counterfa"
-        },
-        {
-          "severity": "LOW",
-          "area": "general",
-          "description": "LOW — Chinese-language PASS strings are themselves internal markers.** `\"外部边界干净（检查通过）\"` and `\"上游与登记值一致…\"` are locale-specific governance markers that would be trivially greppable if the packaging boun",
-          "evidence": "LOW — Chinese-language PASS strings are themselves internal markers.** `\"外部边界干净（检查通过）\"` and `\"上游与登记值一致…\"` are locale-specific governance markers that would be trivially greppable if the packaging boun"
+          "description": "Finding A4 — MEDIUM — H3.deep-ui-test — the claimed counterfactuals 6/7/8 are asserted as strings but no failure-path evidence is shown.**",
+          "evidence": "Finding A4 — MEDIUM — H3.deep-ui-test — the claimed counterfactuals 6/7/8 are asserted as strings but no failure-path evidence is shown.**"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "MEDIUM — Several \"deep\" gates run in under 150 ms with single-digit KB (or less) output, which is inconsistent with the claim semantics.** A \"deep-ui-test\" asserting `rendered=14 handlers=14` completi",
-          "evidence": "MEDIUM — Several \"deep\" gates run in under 150 ms with single-digit KB (or less) output, which is inconsistent with the claim semantics.** A \"deep-ui-test\" asserting `rendered=14 handlers=14` completi"
+          "description": "Finding A5 — MEDIUM — H3.runtime-autofix and H3.encoding-guard — same pattern: counterfactuals asserted textually, zero perturbation evidence in excerpt.**",
+          "evidence": "Finding A5 — MEDIUM — H3.runtime-autofix and H3.encoding-guard — same pattern: counterfactuals asserted textually, zero perturbation evidence in excerpt.**"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "MEDIUM — The harness self-declares that external-observation fields are stripped.** `\"This ... deliberately contains NO fields describing external-observation or certification outcomes … ensuring revi",
-          "evidence": "MEDIUM — The harness self-declares that external-observation fields are stripped.** `\"This ... deliberately contains NO fields describing external-observation or certification outcomes … ensuring revi"
+          "description": "Finding A6 — MEDIUM — G.open-source-build — PASS claim is textually self-attesting, no manifest/export listing sampled in excerpt.**",
+          "evidence": "Finding A6 — MEDIUM — G.open-source-build — PASS claim is textually self-attesting, no manifest/export listing sampled in excerpt.**"
         },
         {
-          "severity": "LOW",
+          "severity": "HIGH",
           "area": "general",
-          "description": "LOW — `H2.unit-tests` reports `Tests Found: 356 / Passed: 356` while `H2.compile-tests` reports `Tests Found: 20`.** These are plausibly different suites (compile-test harness vs. main unit suite), bu",
-          "evidence": "LOW — `H2.unit-tests` reports `Tests Found: 356 / Passed: 356` while `H2.compile-tests` reports `Tests Found: 20`.** These are plausibly different suites (compile-test harness vs. main unit suite), bu"
-        },
-        {
-          "severity": "LOW",
-          "area": "general",
-          "description": "LOW — No `subject_sha256` field is bound into the gate command lines or outputs; binding is only at the record level.** A swapped subject after gate execution would not be detectable from the excerpt ",
-          "evidence": "LOW — No `subject_sha256` field is bound into the gate command lines or outputs; binding is only at the record level.** A swapped subject after gate execution would not be detectable from the excerpt "
+          "description": "Finding A7 — HIGH — H3.external-boundary — PASS asserted over a boundary claim, with no enumerated markers, no scanned path list, no hits reported.**",
+          "evidence": "Finding A7 — HIGH — H3.external-boundary — PASS asserted over a boundary claim, with no enumerated markers, no scanned path list, no hits reported.**"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "INFO — Zero \"Leaked\", \"Failed\", \"Errored\", \"Ignored\", \"baseline debt warnings\" across every suite.** Clean numbers across the board are possible, but combined with the token-emission pattern above, th",
-          "evidence": "INFO — Zero \"Leaked\", \"Failed\", \"Errored\", \"Ignored\", \"baseline debt warnings\" across every suite.** Clean numbers across the board are possible, but combined with the token-emission pattern above, th"
+          "description": "Finding A8 — INFO — H2.compile-build — `H2077` \"Value assigned to 'LFound' never used\" and `H2443` inline hint are non-fatal but present.**",
+          "evidence": "Finding A8 — INFO — H2.compile-build — `H2077` \"Value assigned to 'LFound' never used\" and `H2443` inline hint are non-fatal but present.**"
         },
         {
-          "severity": "LOW",
+          "severity": "HIGH",
           "area": "general",
-          "description": "(a) PASS-vs-material contradictions | **No hard contradictions found.** Two LOW/INFO soft concerns (unaudited compiler Hints; thin single-line evidence for hard gates). |",
-          "evidence": "(a) PASS-vs-material contradictions | **No hard contradictions found.** Two LOW/INFO soft concerns (unaudited compiler Hints; thin single-line evidence for hard gates). |"
+          "description": "Finding B1 — HIGH — H4.bypass-patterns / h4_waiver_ledger — approval policy is stated only as prose; no field-level enforcement is shown, and the anti-self-approval rule is load-bearing but unevidence",
+          "evidence": "Finding B1 — HIGH — H4.bypass-patterns / h4_waiver_ledger — approval policy is stated only as prose; no field-level enforcement is shown, and the anti-self-approval rule is load-bearing but unevidence"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "(b) Self-approval hole | **Two MEDIUM findings** (MasterController prefix impersonation vs whitelist; unexercised anti-self-approval rule) + INFO (policy declared, not demonstrated). |",
-          "evidence": "(b) Self-approval hole | **Two MEDIUM findings** (MasterController prefix impersonation vs whitelist; unexercised anti-self-approval rule) + INFO (policy declared, not demonstrated). |"
+          "description": "Finding B2 — MEDIUM — H4.bypass-patterns — the gate declares `zero_unapproved_waivers` as a claim but the excerpt never shows the approver-whitelist or self-signing check being evaluated (only hit cou",
+          "evidence": "Finding B2 — MEDIUM — H4.bypass-patterns — the gate declares `zero_unapproved_waivers` as a claim but the excerpt never shows the approver-whitelist or self-signing check being evaluated (only hit cou"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "Finding B3 — INFO — authorized_approvers includes `MasterController`, which is also listed under `impersonation_patterns` (`^(MasterController|SPW|MainController)-.*$`).**",
+          "evidence": "Finding B3 — INFO — authorized_approvers includes `MasterController`, which is also listed under `impersonation_patterns` (`^(MasterController|SPW|MainController)-.*$`).**"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "(c) Packaging boundary leak | **One HIGH** (author==subject enforcement of boundary) + MEDIUM (no export manifest/digest) + LOW (locale markers as canaries). No explicit leak path shown. |",
-          "evidence": "(c) Packaging boundary leak | **One HIGH** (author==subject enforcement of boundary) + MEDIUM (no export manifest/digest) + LOW (locale markers as canaries). No explicit leak path shown. |"
+          "description": "Finding C1 — HIGH — Packaging boundary — the boundary is asserted by two gates (G.open-source-build, H3.external-boundary) but the material contains no export manifest, no `git archive` file listing, ",
+          "evidence": "Finding C1 — HIGH — Packaging boundary — the boundary is asserted by two gates (G.open-source-build, H3.external-boundary) but the material contains no export manifest, no `git archive` file listing, "
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "(d) Silent downgrade / fake-green | **One HIGH** (token-emission PASS shape across 7 gates) + MEDIUM (sub-150 ms \"deep\" gates; stripped external-observation fields) + LOW (20 vs 356 test-count reconci",
-          "evidence": "(d) Silent downgrade / fake-green | **One HIGH** (token-emission PASS shape across 7 gates) + MEDIUM (sub-150 ms \"deep\" gates; stripped external-observation fields) + LOW (20 vs 356 test-count reconci"
+          "description": "Finding C2 — HIGH — Packaging boundary — circular dependency between the enforcement and the verified artifact.**",
+          "evidence": "Finding C2 — HIGH — Packaging boundary — circular dependency between the enforcement and the verified artifact.**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "Finding C3 — MEDIUM — Subject paths leak internal repo layout in stdout.**",
+          "evidence": "Finding C3 — MEDIUM — Subject paths leak internal repo layout in stdout.**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "Finding C4 — MEDIUM — Boundary scope under-specified.**",
+          "evidence": "Finding C4 — MEDIUM — Boundary scope under-specified.**"
+        },
+        {
+          "severity": "BLOCKER",
+          "area": "general",
+          "description": "Finding D1 — BLOCKER — Global fake-green risk: every gate in the run is self-attesting and self-reported.**",
+          "evidence": "Finding D1 — BLOCKER — Global fake-green risk: every gate in the run is self-attesting and self-reported.**"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "Verdict rationale:** The pack is internally consistent — every declared gate has a PASS and an exit code 0 — but the evidence is single-line, author-signed, and deliberately stripped of any external c",
-          "evidence": "Verdict rationale:** The pack is internally consistent — every declared gate has a PASS and an exit code 0 — but the evidence is single-line, author-signed, and deliberately stripped of any external c"
+          "description": "Finding D2 — HIGH — `claims` vs `claims_asserted` are independent fields but both are under the harness's control; they are not cross-checked by any oracle in this material.**",
+          "evidence": "Finding D2 — HIGH — `claims` vs `claims_asserted` are independent fields but both are under the harness's control; they are not cross-checked by any oracle in this material.**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "Finding D3 — HIGH — `definitely_not_present` field is declared in `_note` but absent from every gate.**",
+          "evidence": "Finding D3 — HIGH — `definitely_not_present` field is declared in `_note` but absent from every gate.**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "Finding D4 — MEDIUM — `H4.bypass-patterns` reports \"0 hits\" for all three patterns with no file-count / scanned-path disclosure.**",
+          "evidence": "Finding D4 — MEDIUM — `H4.bypass-patterns` reports \"0 hits\" for all three patterns with no file-count / scanned-path disclosure.**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "Finding D5 — MEDIUM — H2.compile-tests exit 0 with `Success.` and `Done testing.` but the same output shape as an already-built binary's run — possible silent skip of compilation.**",
+          "evidence": "Finding D5 — MEDIUM — H2.compile-tests exit 0 with `Success.` and `Done testing.` but the same output shape as an already-built binary's run — possible silent skip of compilation.**"
+        },
+        {
+          "severity": "BLOCKER",
+          "area": "general",
+          "description": "BLOCKER | 1 | D1 (global self-attestation) |",
+          "evidence": "BLOCKER | 1 | D1 (global self-attestation) |"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "HIGH | 7 | A1, A2, A3, A7, B1, C1, C2, D2, D3 |",
+          "evidence": "HIGH | 7 | A1, A2, A3, A7, B1, C1, C2, D2, D3 |"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "MEDIUM | 6 | A4, A5, A6, B2, C3, C4, D4, D5 |",
+          "evidence": "MEDIUM | 6 | A4, A5, A6, B2, C3, C4, D4, D5 |"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "LOW | 0 | — |",
+          "evidence": "LOW | 0 | — |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "INFO | 2 | A8, B3 |",
+          "evidence": "INFO | 2 | A8, B3 |"
         }
       ]
     },
@@ -169,24 +211,24 @@
       "family": "glm",
       "model": "glm-5.3-flash",
       "resolved_model": "glm-5.3-flash",
-      "response_id": "cmb-b23fd43cc56d11f191a776ac7a9dbf3e",
-      "observed_at": "2026-10-11T12:14:43.243659+00:00",
+      "response_id": "cmb-3d65103ac56e11f1ba1466c184b51554",
+      "observed_at": "2026-10-11T12:18:26.201954+00:00",
       "round": 6,
       "observer_id": "glm-observer",
       "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-      "material_digest": "24040229ec558d5bcdff9483a4f9f1404baaffe0baec23315f5f599d4909c2ff",
-      "response_digest": "984ee40b4ea3fe4fdf82d5518aa61ef3ccc3363b8b46493d522fb712bb1e2294",
-      "raw_file": "raw-glm-glm-5.3-flash-r6-20261011-121359.txt",
-      "envelope_file": "env-glm-glm-5.3-flash-r6-20261011-121359.json",
-      "envelope_sha256": "2720f7f637a236e888ce6020d870f94ec2e7a896f351dfc05edfca688ce57ecd",
+      "material_digest": "f910fbcecdb0294dc605f693a84fbe77303bf0cdaada83a7059e40c2e698de13",
+      "response_digest": "78ca4591391c42567367eb42cb72bf13ed44ead646225590014e09e1cd6055ef",
+      "raw_file": "raw-glm-glm-5.3-flash-r6-20261011-121752.txt",
+      "envelope_file": "env-glm-glm-5.3-flash-r6-20261011-121752.json",
+      "envelope_sha256": "018bdda6b15693ca4dbf74a92e89bbd2e3902a37abb43d6adaaf56d73f17b8d9",
       "usage": {
-        "prompt_tokens": 6933,
-        "completion_tokens": 1688,
-        "total_tokens": 8621,
+        "prompt_tokens": 6926,
+        "completion_tokens": 1587,
+        "total_tokens": 8513,
         "completion_tokens_details": {
           "accepted_prediction_tokens": 0,
           "audio_tokens": 0,
-          "reasoning_tokens": 690,
+          "reasoning_tokens": 455,
           "rejected_prediction_tokens": 0,
           "cached_tokens": 0
         },
@@ -198,58 +240,100 @@
           "cached_tokens": 0
         },
         "prompt_cache_hit_tokens": 0,
-        "prompt_cache_miss_tokens": 6933,
+        "prompt_cache_miss_tokens": 6926,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
         "prompt_cache_write_tokens": 0,
-        "completion_thinking_tokens": 690,
-        "credit": 0.15,
+        "completion_thinking_tokens": 455,
+        "credit": 0.14,
         "cached_tokens": 0
       },
-      "verdict": "not_ready",
+      "verdict": "release_ready",
       "verdict_reason": "independent read-only review of obs_material.json",
       "findings": [
         {
-          "severity": "MEDIUM",
+          "severity": "INFO",
           "area": "general",
-          "description": "F1 — MEDIUM | H2.compile-build | Possible fake-green on `compile_gui_binary` claim**",
-          "evidence": "F1 — MEDIUM | H2.compile-build | Possible fake-green on `compile_gui_binary` claim**"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "F2 — MEDIUM | G.vendored-upstream-drift | Gate PASS contradicts H4.HARDCODED_ABS_PATH context / machine-dependent upstream**",
-          "evidence": "F2 — MEDIUM | G.vendored-upstream-drift | Gate PASS contradicts H4.HARDCODED_ABS_PATH context / machine-dependent upstream**"
+          "description": "INFO / gates** — One record's `claims_asserted` is a reordered copy of `claims` (order-only, content identical): `\"claims_asserted\": [\"active_detail_trigger\", \"required_fields_on_activation\", \"state_m",
+          "evidence": "INFO / gates** — One record's `claims_asserted` is a reordered copy of `claims` (order-only, content identical): `\"claims_asserted\": [\"active_detail_trigger\", \"required_fields_on_activation\", \"state_m"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "F3 — INFO | all gates | Self-attested claims, no independent attestation**",
-          "evidence": "F3 — INFO | all gates | Self-attested claims, no independent attestation**"
+          "description": "INFO / gates** — H2.compile-build PASSes with compiler hints in output (`\"Hint: H2443 Inline function ... has not been expanded\"`, `\"Hint: H2077 Value assigned to 'LFound' never used\"`). Hints are not",
+          "evidence": "INFO / gates** — H2.compile-build PASSes with compiler hints in output (`\"Hint: H2443 Inline function ... has not been expanded\"`, `\"Hint: H2077 Value assigned to 'LFound' never used\"`). Hints are not"
         },
         {
           "severity": "LOW",
           "area": "general",
-          "description": "F4 — LOW | h4_policy | Anti-self-approval is a bare inequality check with unbound submitter namespace**",
-          "evidence": "F4 — LOW | h4_policy | Anti-self-approval is a bare inequality check with unbound submitter namespace**"
+          "description": "LOW / H4-governance** — Anti-self-approval and approver-whitelist enforcement is **untested by this run**: the waiver ledger is empty (`\"total\": 0, \"with_approver\": 0, \"samples\": []`), so the \"fails c",
+          "evidence": "LOW / H4-governance** — Anti-self-approval and approver-whitelist enforcement is **untested by this run**: the waiver ledger is empty (`\"total\": 0, \"with_approver\": 0, \"samples\": []`), so the \"fails c"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "LOW / H4-governance** — Only two authorized approvers exist (`\"authorized_approvers\": [\"MasterController\", \"ArchitectureReviewBoard\"]`); with `approved_by != submitted_by` as the only anti-self-approv",
+          "evidence": "LOW / H4-governance** — Only two authorized approvers exist (`\"authorized_approvers\": [\"MasterController\", \"ArchitectureReviewBoard\"]`); with `approved_by != submitted_by` as the only anti-self-approv"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "F5 — INFO | h4_waiver_ledger | No active exposure**",
-          "evidence": "F5 — INFO | h4_waiver_ledger | No active exposure**"
+          "description": "INFO / boundary** — The *evidence pack* (not the distribution) contains internal machine paths and governance output, e.g. `\"上游定位: D:\\\\_Progs\\\\02Business\\\\DeepBase\"` and build paths like `\"D:\\\\_Progs\\",
+          "evidence": "INFO / boundary** — The *evidence pack* (not the distribution) contains internal machine paths and governance output, e.g. `\"上游定位: D:\\\\_Progs\\\\02Business\\\\DeepBase\"` and build paths like `\"D:\\\\_Progs\\"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "F6 — MEDIUM | recorded_gate_verdicts | `claims_asserted` is self-reported and not cryptographically tied to stdout content**",
-          "evidence": "F6 — MEDIUM | recorded_gate_verdicts | `claims_asserted` is self-reported and not cryptographically tied to stdout content**"
+          "description": "MEDIUM / fake-green** — All gate claims are **self-asserted** by the gates under audit: every PASS is corroborated only by the gate's own stdout (`\"[CLAIM_ASSERTED] ...\"`, `\"[H3.encoding-guard] PASS\"`",
+          "evidence": "MEDIUM / fake-green** — All gate claims are **self-asserted** by the gates under audit: every PASS is corroborated only by the gate's own stdout (`\"[CLAIM_ASSERTED] ...\"`, `\"[H3.encoding-guard] PASS\"`"
         },
         {
           "severity": "LOW",
           "area": "general",
-          "description": "F7 — LOW | manifest vs. verdicts | Consistent, no missing/dropped gate**",
-          "evidence": "F7 — LOW | manifest vs. verdicts | Consistent, no missing/dropped gate**"
+          "description": "LOW / fake-green** — H4.bypass-patterns PASS is consistent (`0 hits`, `0 waived` for all three patterns), but note the pattern list is narrow (3 patterns); \"zero hits\" is only as strong as the pattern",
+          "evidence": "LOW / fake-green** — H4.bypass-patterns PASS is consistent (`0 hits`, `0 waived` for all three patterns), but note the pattern list is narrow (3 patterns); \"zero hits\" is only as strong as the pattern"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "1 | MEDIUM | fake-green | All gate PASS evidence is self-asserted by the gates; no independent corroboration channel in material |",
+          "evidence": "1 | MEDIUM | fake-green | All gate PASS evidence is self-asserted by the gates; no independent corroboration channel in material |"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "2 | LOW | H4-governance | Anti-self-approval / fail-closed enforcement untested (0 waivers exercised) |",
+          "evidence": "2 | LOW | H4-governance | Anti-self-approval / fail-closed enforcement untested (0 waivers exercised) |"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "3 | LOW | H4-governance | Two-approver whitelist + `approved_by != submitted_by` alone doesn't prevent identity impersonation of the co-signer |",
+          "evidence": "3 | LOW | H4-governance | Two-approver whitelist + `approved_by != submitted_by` alone doesn't prevent identity impersonation of the co-signer |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "4 | INFO | gates | Compiler hints present in H2.compile-build PASS output; benign |",
+          "evidence": "4 | INFO | gates | Compiler hints present in H2.compile-build PASS output; benign |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "5 | INFO | boundary | Internal paths appear in audit evidence records only, not in distribution |",
+          "evidence": "5 | INFO | boundary | Internal paths appear in audit evidence records only, not in distribution |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "6 | INFO | gates | `claims_asserted` ordering differs from `claims` in one record; content identical |",
+          "evidence": "6 | INFO | gates | `claims_asserted` ordering differs from `claims` in one record; content identical |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "Areas (a) and (c): nothing wrong found beyond INFO notes.",
+          "evidence": "Areas (a) and (c): nothing wrong found beyond INFO notes."
         }
       ]
     }

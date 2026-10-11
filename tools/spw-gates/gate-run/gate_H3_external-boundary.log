@@ -1,2 +1,2 @@
 [CLAIM_ASSERTED] counterfactual_boundary
-[H3.external-boundary] PASS 外部边界干净（检查通过）
+[H3.external-boundary] PASS 外部边界干净：已核查 199 个归档路径与 197 个源码文件，0 处内部泄露标记（比对 6 项治理标记）

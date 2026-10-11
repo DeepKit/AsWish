@@ -1,3 +1,4 @@
+[H4.bypass-patterns] Scanned 89 Pascal source files across repository
 [H4.bypass-patterns] Pattern H4.DIRECT_DISK_WRITE: 0 hits (0 waived)
 [H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived)
 [H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived)
