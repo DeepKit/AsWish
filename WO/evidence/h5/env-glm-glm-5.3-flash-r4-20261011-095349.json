@@ -1,0 +1,17 @@
+{
+  "requested_model": "glm-5.3-flash",
+  "resolved_model": "glm-5.3-flash",
+  "response_id": "cmb-05c20870c51711f18c1acee7b5db1755",
+  "created": 1791683629,
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 6722,
+    "completion_tokens": 1721,
+    "total_tokens": 8443
+  },
+  "finish_reason": "stop",
+  "raw_file": "raw-glm-glm-5.3-flash-r4-20261011-095349.txt",
+  "raw_sha256": "bdb4aecfa30b8b13845a228d7301e5fc56a3d91dd1fc920b002c44daa142d066",
+  "material_sha256": "8002aba696b51fd822a501adfd0cb045986529a522d938b6768300b002bee8ae",
+  "subject_sha256": "e5f485a0f5065a39a3e009d8dc8b98079ef75794f5948a3f00766730546250f6"
+}

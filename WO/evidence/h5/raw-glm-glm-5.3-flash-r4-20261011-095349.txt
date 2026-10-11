@@ -1,0 +1,48 @@
+{
+  "verdict": "not_ready",
+  "verdict_reason": "All twelve declared gates have matching PASS verdicts with consistent claim sets, but the waiver ledger's anti-self-approval controls contain a concrete bypass (non-ongoing scope evades max_ongoing_waivers=0, and 'ArchitectureReviewBoard' evades the impersonation regex), and the material provides no evidence that internal governance files are excluded from a clone rather than only from packaged archives.",
+  "findings": [
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "A developer can self-grant an exemption by appending one entry to tools/spw-gates/h4_waivers.json with approved_by='ArchitectureReviewBoard', submitted_by='dev' (any value differing from approved_by, defeating the self-signing rule), and expires_at set to a past or near-immediate date. A non-ongoing/expired scope escapes the max_ongoing_waivers=0 check (which is stated to only fire on ONGOING waivers), and 'ArchitectureReviewBoard' is an authorized approver that is NOT covered by the impersonation regex '^(MasterController|SPW|主控)-.*$' — only the 'MasterController' authorized approver is blocked by impersonation patterns. No second party's agreement is required by any field shown.",
+      "evidence": "h4_policy.anti_self_approval_rules[0]: 'max_ongoing_waivers is 0 (adding any ongoing waiver causes immediate RC=1)'; h4_waiver_ledger.authorized_approvers includes 'ArchitectureReviewBoard'; h4_policy.impersonation_patterns only matches MasterController/SPW/主控 prefixes; schema includes 'expires_at' enabling non-ongoing scope."
+    },
+    {
+      "severity": "high",
+      "area": "leak",
+      "description": "The packaging boundary covers only 'public distributions' produced via git archive / export-ignore. Nothing in the material asserts that a plain git clone excludes WO/, tools/spw-*/, _repro/, h4_waivers.json, or the h4_approvers.json approver roster. Cloning the repository would expose the full internal governance apparatus named in this state.",
+      "evidence": "packaging_boundary.enforcement: 'excluded from public distributions'; distribution_model: 'Release packages are produced exclusively via git archive / export-ignore'; h4_waiver_ledger.path: 'tools/spw-gates/h4_waivers.json'; h4_policy references 'h4_approvers.json' as a live repo file."
+    },
+    {
+      "severity": "medium",
+      "area": "evidence_integrity",
+      "description": "The H4 gate output claims 'all 0 waivers governed and accounted for' and 'verified 0 hits', which is consistent with an empty ledger only at scan time; it does not and cannot rule out that pattern-matching code was edited to remove hits, and the claimed pinning ('any ledger modification invalidates pinned digest') is unverifiable from the material because no mechanism binds gate_run_sha256 to a signed or externally stored value.",
+      "evidence": "H4.bypass-patterns output_excerpt: 'verified 0 hits; all 0 waivers governed and accounted for'; h4_policy.anti_self_approval_rules[4]: 'Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest' — with no verification procedure or external anchor present."
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "No evidence of any open-source release prerequisite beyond the build gate: no LICENSE, README, contribution policy, security-contact, or third-party license/attribution audit for the vendored upstream files referenced by G.vendored-upstream-drift. The vendored drift gate confirms integrity, not redistribution rights.",
+      "evidence": "manifest_declared_gates contains only build/test/boundary gates; G.vendored-upstream-drift output mentions '2 个文件' vendored files with no licensing evidence anywhere in the material."
+    },
+    {
+      "severity": "low",
+      "area": "evidence_integrity",
+      "description": "No linkage is provided between head_commit '7ce867e', subject_sha256, and the actual repository state; the reviewer cannot verify that the hashes correspond to the code being released, nor that gate command_sha256 values match real scripts.",
+      "evidence": "subject_sha256: 'e5f485a0...', head_commit: '7ce867e' — no attestation, signature, or CI log connecting them."
+    },
+    {
+      "severity": "info",
+      "area": "gate_alignment",
+      "description": "Positive check: all 12 manifest-declared gates have exactly one recorded verdict, every verdict is PASS with exit_code 0, and claims vs claims_asserted match on every gate (including reordered claim arrays in H2.unit-tests, which is semantically equivalent). No gate mismatch exists.",
+      "evidence": "manifest_declared_gates (12 entries) vs recorded_gate_verdicts (12 entries), all 'verdict': 'PASS', 'exit_code': 0."
+    },
+    {
+      "severity": "info",
+      "area": "evidence_integrity",
+      "description": "Minor internal inconsistency: h4_patterns lists three patterns with severity 'high'/'high'/'medium' rationale describing production-code violations (H4.HARDCODED_ABS_PATH baked into MainForm), yet the scan reports 0 hits and 0 baseline debt — implying either the code was fixed or the pattern no longer matches; the material does not say which.",
+      "evidence": "h4_patterns[2] rationale: 'Absolute machine path baked into production code (MainForm AutoFix open-project scenario)' vs H4 output: 'verified 0 hits'."
+    }
+  ]
+}
