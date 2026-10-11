@@ -1,0 +1,28 @@
+## Independent Reviewer Audit — obs_material.json (head 7cebca6)
+
+### (a) Gate PASS vs. material
+- **MEDIUM | G.open-source-build** — PASS asserted, but the gate's own output records 14 provenance references in *public* docs pointing to un-exported internal locations (dead links post-release); downgraded to non-blocking without a waiver entry. Evidence: `"[G.open-source-build] 注意: 公开文档有 14 处指向未导出出处（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）"`
+- All other PASS verdicts are internally consistent: exit_code 0, `claims_asserted` match declared `claims`, subject_sha256 uniform (`ce2ef0e7…`), no truncation, no stderr. No contradiction found for H1/H2/H3 gates.
+
+### (b) H4 waiver / approval policy self-approval hole
+- **HIGH | H4 policy** — Approver identity and self-signing checks are string comparisons only, with no cryptographic binding of the waiver JSON; the material itself concedes this. Evidence: `"Approver identity whitelist and self-signing checks rely on string comparison backed by git commit signatures and git blame in pre-commit hooks, not cryptographic signing in JSON itself."`
+- **MEDIUM | H4 policy** — The "Self-signing (submitted_by == approved_by) causes immediate RC=1" rule is unverifiable in this material: the ledger is empty (`"total": 0`), so the enforcement path has never been exercised in the recorded run. Evidence: `"total": 0, "with_approver": 0, "without_approver": 0`
+- **LOW | H4 policy** — Authorized approver `MasterController` is a prefix of the impersonation pattern family `^(MasterController|SPW|MainController)-.*$`; only the hyphenated-suffix form is rejected, so a near-miss identity (e.g., a modified `MasterController-…` actor string stripped to `MasterController`) passes. Evidence: `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]` alongside `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]`
+- Mitigating: zero-waiver baseline means no live bypass exists in this evidence pack; the digest pinning of gate_run_sha256 is a genuine tamper-evidence control.
+
+### (c) Packaging/export boundary leak of internal governance markers
+- **LOW | Packaging** — The public distribution's docs retain 14 references to internal governance locations (`WO/`, `docs/归档/`), leaking internal governance topology (directory names) into the public package even though the files themselves are excluded. Evidence: same line as above — `"docs/归档/ 与 WO/ 的溯源引用，发布后成死链"`
+- The exclusion mechanism itself is sound: `"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution"` and the export counterfactual gate passes with `"导出清单无内部材料"`. No governance marker files leak; only references.
+
+### (d) Silent downgrade / fake-green risk
+- **MEDIUM | G.open-source-build** — A finding (14 broken provenance links in shipped docs) is silently classified non-blocking ("不阻断") with no waiver ledger entry or severity rationale, bypassing the H4 governance path it otherwise enforces. Evidence: `"…发布后成死链，不阻断）"`
+- **LOW | G.vendored-upstream-drift** — Gate output records a local machine absolute path into the (exportable) evidence stream; notably `D:\_Progs` is itself an H4-banned hardcoded pattern in production code. Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase"` — benign in gate output, but the same class of path is banned at H4 severity "medium" in shipped code.
+- No fake-green indicators: all stderr hashes equal the empty-string digest (`e3b0c442…`), stdout hashes are individually pinned, and no gate skipped or re-ran.
+
+### Explicitly clean areas
+- (a) No gate claims PASS against contradicting evidence other than the G.open-source-build advisory noted above.
+- (c) No internal governance marker *files* leak into the export boundary.
+
+---
+
+**VERDICT: release_ready** (conditional: remediate the string-based self-approval control and the silently downgraded doc-provenance finding before or immediately after release; neither invalidates the recorded gate evidence itself)

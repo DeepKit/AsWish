@@ -163,17 +163,6 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
     for k, v in (manifest.get("h4_policy") or {}).items():
         if k not in EXCLUDED_KEYS and not any(p in k.lower() for p in ("observ", "certif", "h5_")):
             h4_policy[k] = v
-    h4_policy["anti_self_approval_rules"] = [
-        "max_ongoing_waivers is 0 (adding any ongoing waiver causes immediate RC=1 gate failure in H4.bypass-patterns)",
-        "Scope baseline additions require pre-authorized approver in h4_approvers.json",
-        "Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure",
-        "Impersonation pattern regex strictly rejects synthetic approver prefixes",
-        "Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest"
-    ]
-    h4_policy["known_limitations"] = [
-        "Approver identity whitelist and self-signing checks rely on string comparison backed by git commit signatures and git blame in pre-commit hooks, not cryptographic signing in JSON itself.",
-        "Zero-waiver clean baseline: active repository maintains 0 un-waived hits, 0 ongoing waivers, 0 baseline waivers."
-    ]
 
     material = {
         "_note": (

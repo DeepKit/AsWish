@@ -1,0 +1,110 @@
+# Independent Read-Only Review — obs_material.json
+
+Scope reviewed strictly as provided. No material was modified. Findings are limited to what the JSON itself asserts; no external observation/certification data was supplied (by design).
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**Finding A1 — INFO / area: H4.bypass-patterns**
+- Description: Gate claims PASS with `zero_hits`, but the H4 pattern catalog defines three patterns (DIRECT_DISK_WRITE, SILENT_INIT_FAILURE, HARDCODED_ABS_PATH); the output excerpt only reports the last two. `H4.DIRECT_DISK_WRITE` is never shown as evaluated.
+- Evidence: `"output_excerpt": "[H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived) | [H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived) | ... [H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed..."` (compare `h4_patterns` entry `"id": "H4.DIRECT_DISK_WRITE"`).
+- Note: excerpt is a 443-byte stdout and could legitimately be truncated by the journal renderer, but material does not show the pattern being evaluated, and `truncated: false` is declared. Flagged as INFO because the excerpt alone cannot prove H4.DIRECT_DISK_WRITE was skipped.
+
+**Finding A2 — INFO / area: G.open-source-build**
+- Description: PASS is claimed alongside a self-declared non-blocking defect: 14 public-doc references point to unexported internal sources (`docs/归档/` and `WO/`), which become dead links after release. The gate declares this "不阻断" (non-blocking).
+- Evidence: `"[G.open-source-build] 注意: 公开文档有 14 处指向未导出出处（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）"`.
+- Note: this is a known/acknowledged condition, not a fake green — but it intersects finding (c) below.
+
+**Finding A3 — LOW / area: cross-gate coverage**
+- Description: The manifest declares `H2.unit-tests` MUST assert `active_detail_trigger`, `state_machine_check`, `required_fields_on_activation`; `claims_asserted` lists them but the output excerpt shows only aggregate counts (356/356 passed), not per-claim verification. Same pattern for `H2.compile-tests` (`test_cases_discovered`, `test_suite_compiled`).
+- Evidence: `"claims_asserted": ["active_detail_trigger","required_fields_on_activation","state_machine_check"]` vs `"output_excerpt": "Tests Found : 356 | ... Tests Passed : 356 | ..."`.
+- Not a contradiction — the harness may assert claims independently of the excerpt — but the material provides no artifact showing each claim was actually exercised.
+
+**No gate has an explicit PASS verdict contradicted by its own output excerpt.** All 12 recorded gates show `exit_code: 0`, non-zero stdout, `stderr_bytes: 0`, and `subject_sha256` matching the top-level `subject_sha256`.
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**Finding B1 — HIGH / area: H4 policy / governance durability**
+- Description: The stated anti-self-signing enforcement ("`submitted_by == approved_by` causes immediate RC=1 gate failure") is declared as a rule but is not evidenced by any counterfactual, exit-code check, or negative test in the recorded material. The current ledger has `total: 0`, so the rule is **untested** in this run — the zero-waiver baseline means a self-approval hole cannot manifest now but also cannot be shown to be closed.
+- Evidence: `"anti_self_approval_rules": ["Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure", ...]` and `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]` are policy declarations; the H4 gate output only asserts `counterfactual_bypass`, `zero_hits`, `zero_unapproved_waivers` — none of which is a self-sign detection test.
+
+**Finding B2 — MEDIUM / area: H4 policy / authorization**
+- Description: `authorized_approvers` includes `"MasterController"`, which matches the impersonation regex prefix set. A real `MasterController` signer and a synthetic `MasterController-foo` signer both begin with the same prefix; the regex `^(MasterController|SPW|MainController)-.*$` blocks the *hyphenated* synthetic form, but `MasterController` alone is a permitted authorized approver **and** an impersonation-prefix root.
+- Evidence: `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]` and `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]`.
+- Impact: any future waiver approved by a submitter literally named `MasterController` (whitespace/case/encoding variants) would pass the whitelist string comparison. The material itself acknowledges this class of weakness.
+
+**Finding B3 — HIGH / area: H4 policy (self-declared limitation)**
+- Description: The pack admits identity checks are not cryptographic. The only backstop is git commit signatures + git blame via pre-commit hooks — none of which is evidenced in this material (no hook output, no signed-commit verification artifact).
+- Evidence: `"known_limitations": ["Approver identity whitelist and self-signing checks rely on string comparison backed by git commit signatures and git blame in pre-commit hooks, not cryptographic signing in JSON itself."]`.
+- Because signer identity in the waiver JSON is a plain string field, **a same-repo editor can forge `approved_by` and `submitted_by` together** and only the (unshown) pre-commit hook stands between that and a green H4 run.
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**Finding C1 — HIGH / area: packaging boundary vs. public docs**
+- Description: The `G.open-source-build` gate explicitly reports **14 public-doc references to unexported internal governance locations** (`docs/归档/`, `WO/`). Files are correctly excluded by export-ignore, but the *markers/links* remain in shipped documentation. This is a boundary content leak (dangling references to internal governance paths) even though the underlying directories are not shipped.
+- Evidence: `"[G.open-source-build] 注意: 公开文档有 14 处指向未导出出处（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）"`.
+- The gate self-classifies this as non-blocking. Independent assessment: it is a real, if minor, discrepancy between the stated "internal governance directories and markers are excluded" claim and the shipped artifact. `packaging_boundary.enforcement` claims markers are excluded — 14 markers remain referenced in public docs.
+
+**Finding C2 — LOW / area: H3.external-boundary**
+- Description: The `H3.external-boundary` gate PASSES ("外部边界干净") with a 108-byte output and no listing of what was scanned. The C1 finding (14 leaks recognized by `G.open-source-build`) is not surfaced by the boundary gate — suggesting the two gates operate on different scopes and could jointly report green while the leak persists.
+- Evidence: `"[H3.external-boundary] PASS 外部边界干净（检查通过）"` vs C1's 14-reference finding.
+
+**Finding C3 — LOW / area: governance directory list completeness**
+- Description: `packaging_boundary.enforcement` and `distribution_model` name `WO/`, `tools/spw-*`, `_repro/` as excluded. The H4 waiver ledger path `tools/spw-gates/h4_waivers.json` falls under the `tools/spw-*` pattern — inferred, not explicitly confirmed in the material. No manifest of excluded files is provided to verify.
+- Evidence: `"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution"` relative to `"path": "tools/spw-gates/h4_waivers.json"`.
+- Informational only; the glob appears to cover the ledger, but this is inferred.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**Finding D1 — MEDIUM / area: G.open-source-build**
+- Description: The gate emits a warning-class condition (14 dead-link references) yet returns `verdict: PASS, exit_code: 0`. This is an **explicit, acknowledged downgrade** ("不阻断") — effectively a policy carve-out decided inside the gate itself rather than via a waiver ledger entry. Because the H4 waiver ledger is zero and H4 policy forbids ongoing waivers, there is no governance record for this carve-out.
+- Evidence: `"...发布后成死链，不阻断"` plus `"verdict": "PASS", "exit_code": 0` on the same gate; compare H4 policy `"max_ongoing_waivers": 0` and `"policy_enforcement": "Any waiver without pre-approved authorized approver or unapproved ongoing scope fails closed (RC=1 in H4 gate)."`.
+- This is the clearest fake-green risk in the pack: a known defect is silently promoted to PASS without an approved waiver tying it to a governed scope.
+
+**Finding D2 — MEDIUM / area: G.vendored-upstream-drift**
+- Description: Gate reports drift equality against an absolute local path `D:\_Progs\02Business\DeepBase`. This same path is defined as `H4.HARDCODED_ABS_PATH` (medium severity, "Absolute machine path baked into production code"). The gate's own comparison anchor uses a machine-specific path — meaning the gate can only run on the same developer machine, and its PASS is not machine-independent.
+- Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase"` vs `h4_patterns` entry `"id": "H4.HARDCODED_ABS_PATH", "pattern": "D:\\\\_Progs"`.
+- Note: The H4 pattern is scoped to *production code*; the gate is tooling. Still, this weakens portability and reproducibility of the PASS.
+
+**Finding D3 — LOW / area: H3 runtime gates**
+- Description: `H3.runtime-autofix` completes in 0.085s and `H3.deep-ui-test` in 0.09s, each asserting 5 and 3 counterfactuals respectively. These durations are too short for genuine UI/exercise of a C# Windows desktop binary. Either the counterfactuals are static analyses (undisclosed) or the assertions are trivial.
+- Evidence: `"gate_id": "H3.deep-ui-test", "duration_seconds": 0.09` and `"gate_id": "H3.runtime-autofix", "duration_seconds": 0.085`.
+- Compare `H3.gui-verify-smoke` at 12.5s (plausible for a real GUI smoke). This suggests H3.deep-ui-test / runtime-autofix may not be runtime tests in the claimed sense. Not conclusive from material alone; flagged.
+
+**Finding D4 — LOW / area: claims_asserted vs. output excerpt**
+- Description: Multiple gates reorder the `claims_asserted` list relative to the manifest-declared `claims` (e.g. `H2.unit-tests`, `H4.bypass-patterns`) and the `output_excerpt` shows generic `[CLAIM_ASSERTED] counterfactual_N` markers rather than evidence the counterfactual actually ran. This pattern permits a "claims asserted" rubber-stamp style of fake-green.
+- Evidence: e.g. `"[CLAIM_ASSERTED] counterfactual_3 | [CLAIM_ASSERTED] counterfactual_4 | [CLAIM_ASSERTED] counterfactual_5 | [H3.runtime-autofix] PASS"` — the label being printed is not, by itself, proof the counterfactual fired.
+
+**Finding D5 — INFO / area: subject/run pinning**
+- Description: `subject_sha256` and `head_commit` (`7cebca6`) are consistent across all 12 gate records, and `gate_run_sha256` is pinned. No hash mismatch detected. The pinning claim in `h4_policy.anti_self_approval_rules` ("any ledger modification invalidates pinned digest") is consistent with observed values.
+- Evidence: all `"subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177"` and top-level `"gate_run_sha256": "66c95f85ac561da407b540629b61f40b23aa69944743f80f7189892cb3469ba1"`.
+- Positive observation, no issue found.
+
+---
+
+## Areas examined with no finding
+
+- **Manifest vs. recorded verdicts:** all 12 manifest gates have a matching recorded verdict, all `required: true`, all `PASS`. No missing, extra, or `required:false` gate hidden. OK.
+- **Exit codes / stderr:** every gate `exit_code: 0` with `stderr_bytes: 0`. No hidden error channel. OK.
+- **H4 waiver ledger integrity (current state):** `total: 0`, `with_approver: 0`, `without_approver: 0`, `with_submitted_by: 0`, `distinct_scopes: []`, `samples: []` — internally consistent with the zero-waiver baseline. No active waiver is ungoverned. OK (but see B1/B2 for what is untested).
+
+---
+
+## Verdict summary
+
+The pack contains no active, unresolved defect that contradicts a PASS verdict. It does contain:
+- one explicit non-blocking known defect that is silently passed (C1/D1),
+- one untested anti-self-signing control that only exists as policy text (B1/B3),
+- one tooling-level use of the same hardcoded absolute path H4 flags as a pattern (D2),
+- several claims whose evidence is a self-printed label rather than a demonstration (A3/D4).
+
+None of these is grounds for `BLOCKER`. The material is also by design silent on external observation/certification outcomes, which limits how far a read-only reviewer can go.
+
+VERDICT: not_ready

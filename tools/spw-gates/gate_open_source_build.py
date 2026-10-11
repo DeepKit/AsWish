@@ -501,7 +501,7 @@ def main() -> None:
         findings.extend(ref_findings)
         findings.extend(check_exported_python_files(exported))
         findings.extend(check_export_content_markers(exported))
-        if prose_hits:
+        if prose_hits and ("-v" in sys.argv or "--verbose" in sys.argv):
             print(f"[{GATE}] 注意: 公开文档有 {prose_hits} 处指向未导出出处"
                   f"（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）")
 
