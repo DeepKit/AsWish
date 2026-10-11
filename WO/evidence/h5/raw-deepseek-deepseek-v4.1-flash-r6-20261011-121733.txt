@@ -1,0 +1,125 @@
+# Independent Read-Only Review — obs_material.json
+
+Scope note: I audited the material as-is. The material itself states it contains no external-observation or certification outcomes. Several findings below turn on what the material contains versus what it claims, so the primary risk is evidentiary, not behavioral.
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**Finding A1 — HIGH — H2.compile-tests — PASS claim asserted but `test_suite_compiled` never confirmed in output.**
+The gate's `claims` list includes `test_suite_compiled`, and `claims_asserted` echoes it, but the `output_excerpt` only shows `[CLAIM_ASSERTED] test_cases_discovered`. There is no `[CLAIM_ASSERTED] test_suite_compiled` string, and no evidence the compilation claim was independently checked (output looks like it was produced by the *test runner* on an already-built exe, not a build step).
+Evidence: `"output_excerpt": "... [CLAIM_ASSERTED] test_cases_discovered"` and `"claims_asserted": ["test_cases_discovered","test_suite_compiled"]`.
+
+**Finding A2 — HIGH — H2.compile-tests — self-describing mismatch: 20 tests found here vs 356 in H2.unit-tests.**
+`H2.compile-tests` reports `Tests Found : 20` from `tests/_build_tests.bat`, while `H2.unit-tests` (running `tests/AsWish.Tests.exe`) reports `Tests Found : 356`. Same subject_sha256, same window. The discovery numbers cannot both describe the same suite; one gate is not exercising what its name implies.
+Evidence: `"Tests Found   : 20"` (H2.compile-tests) vs `"Tests Found   : 356"` (H2.unit-tests).
+
+**Finding A3 — HIGH — H3.gui-verify-smoke — PASS over an 819-byte stdout with a [PASS]=12 counter that does not match any prior gate's assertion count, and no counterfactual (negative-case) evidence.**
+The gate claims `counterfactual_smoke` asserted, but the excerpt shows only a positive smoke run (`RC=0 … [PASS]=12`). No counterfactual (deliberately-broken smoke) evidence is present in the excerpt, yet the claim id is `counterfactual_smoke`.
+Evidence: `"[CLAIM_ASSERTED] counterfactual_smoke | [H3.gui-verify-smoke] PASS RC=0 stdout=819B [PASS]=12"`.
+
+**Finding A4 — MEDIUM — H3.deep-ui-test — the claimed counterfactuals 6/7/8 are asserted as strings but no failure-path evidence is shown.**
+`rendered=14 handlers=14` is a parity check, not a counterfactual demonstration; the excerpt shows three `[CLAIM_ASSERTED]` lines and a parity count. If the gate is supposed to demonstrate robustness under perturbation, the excerpt does not show it.
+Evidence: `"[CLAIM_ASSERTED] counterfactual_6 | [CLAIM_ASSERTED] counterfactual_7 | [CLAIM_ASSERTED] counterfactual_8 | [H3.deep-ui-test] PASS rendered=14 handlers=14"`.
+
+**Finding A5 — MEDIUM — H3.runtime-autofix and H3.encoding-guard — same pattern: counterfactuals asserted textually, zero perturbation evidence in excerpt.**
+Evidence: `"[CLAIM_ASSERTED] counterfactual_3 | … [H3.runtime-autofix] PASS"` and `"[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS"`.
+
+**Finding A6 — MEDIUM — G.open-source-build — PASS claim is textually self-attesting, no manifest/export listing sampled in excerpt.**
+The gate asserts the export list is clean and that 199 files were produced, but the excerpt contains no file count breakdown, no diff against an expected list, and no proof the export actually excluded `WO/`, `tools/spw-*`, and `_repro/` (see also Finding C1).
+Evidence: `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`.
+
+**Finding A7 — HIGH — H3.external-boundary — PASS asserted over a boundary claim, with no enumerated markers, no scanned path list, no hits reported.**
+This is the gate that is supposed to *enforce* the packaging boundary. Its excerpt contains no list of markers searched for, no path set, and no file count — it is a single `PASS` string in Chinese plus the counterfactual flag.
+Evidence: `"[CLAIM_ASSERTED] counterfactual_boundary | [H3.external-boundary] PASS 外部边界干净（检查通过）"`.
+
+**Finding A8 — INFO — H2.compile-build — `H2077` "Value assigned to 'LFound' never used" and `H2443` inline hint are non-fatal but present.**
+Not a gate failure; noting because the material is otherwise silent on any compilation advisories.
+Evidence: `"Hint: H2443 … | … Hint: H2077 Value assigned to 'LFound' never used"`.
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**Finding B1 — HIGH — H4.bypass-patterns / h4_waiver_ledger — approval policy is stated only as prose; no field-level enforcement is shown, and the anti-self-approval rule is load-bearing but unevidenced.**
+`h4_waiver_ledger.total == 0`, so the anti-self-approval rule cannot have been exercised in this run. The material claims the rule is "enforced" but provides no witness (no fixture, no `counterfactual_waiver`, no rejected sample). A zero-ledger run cannot distinguish a working self-approval check from a missing one.
+Evidence: `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0` and `"policy_enforcement": "…Anti-self-approval rule enforced: approved_by must not equal submitted_by…"`.
+
+**Finding B2 — MEDIUM — H4.bypass-patterns — the gate declares `zero_unapproved_waivers` as a claim but the excerpt never shows the approver-whitelist or self-signing check being evaluated (only hit counts).**
+Evidence: `"[H4.bypass-patterns] Pattern H4.DIRECT_DISK_WRITE: 0 hits (0 waived) | … [CLAIM_ASSERTED] zero_unapproved_waivers | … all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`.
+
+**Finding B3 — INFO — authorized_approvers includes `MasterController`, which is also listed under `impersonation_patterns` (`^(MasterController|SPW|MainController)-.*$`).**
+These two lists are not contradictory (the impersonation regex is suffix-based, `-.*`), but they are adjacent in name and deserve an explicit note in the schema or a test that the two lists are disjoint under the enforced matching rule. Currently unverified.
+Evidence: `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]` and `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]`.
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**Finding C1 — HIGH — Packaging boundary — the boundary is asserted by two gates (G.open-source-build, H3.external-boundary) but the material contains no export manifest, no `git archive` file listing, and no diff of the archive against the tree.**
+The `distribution_model` says "Release packages are produced exclusively via git archive / export-ignore", yet no archive, no `.gitattributes` excerpt, and no exclusion list exists in the material. The claimed exclusion set `WO/, tools/spw-*/, _repro/` is not evidenced.
+Evidence: `"distribution_model": "Release packages are produced exclusively via git archive / export-ignore; all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution."` and `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded…"`.
+
+**Finding C2 — HIGH — Packaging boundary — circular dependency between the enforcement and the verified artifact.**
+`G.open-source-build` PASSes with 199 files, but the material does not enumerate what is *in* those 199 files. If the export boundary were broken (e.g., `tools/spw-gates/` included), the gate would need to catch it; the excerpt provides no such catch.
+Evidence: `"…导出清单无内部材料…（199 个文件）"`.
+
+**Finding C3 — MEDIUM — Subject paths leak internal repo layout in stdout.**
+`H2.compile-build` prints `D:\\_Progs\\02Business\\AsWish\\src\\...` and `G.vendored-upstream-drift` prints `D:\\_Progs\\02Business\\DeepBase`. These are absolute internal build paths on the author's machine; if any of this stdout is captured into distributed artifacts (release notes, SBOM, CI logs shipped with the package) it is a boundary leak. The material does not assert that gate stdout is excluded from distribution.
+Evidence: `"D:\\_Progs\\02Business\\AsWish\\src\\services\\AsWish.Services.Commons.pas(148)"` and `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase"`.
+
+**Finding C4 — MEDIUM — Boundary scope under-specified.**
+The claimed exclusion set is `WO/, tools/spw-*/, _repro/`. The manifest itself references `tools/spw-gates/*.py` as gate implementations; if those are excluded from distribution, the subject cannot be re-audited by third parties. If they are *not* excluded, the packaging_boundary statement is false. The material does not resolve this.
+Evidence: `"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution"` vs `"command": ["python","-X","utf8","tools/spw-gates/gate_external_boundary.py"]`.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**Finding D1 — BLOCKER — Global fake-green risk: every gate in the run is self-attesting and self-reported.**
+Every `recorded_gate_verdicts` entry has `exit_code: 0`, `stderr_bytes: 0`, and an output excerpt that contains exactly the `[CLAIM_ASSERTED]` tokens listed in `claims`. No gate produces an independent witness (signature, hash of an artifact produced by a *different* process, cross-gate hash agreement, or a tamper-evident log). An orchestrator that fabricates the entire `recorded_gate_verdicts` array would produce output indistinguishable from this material.
+Evidence (representative): `"verdict": "PASS", "exit_code": 0, "claims_asserted": ["controlled_entry_only"], "output_excerpt": "[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"`.
+
+**Finding D2 — HIGH — `claims` vs `claims_asserted` are independent fields but both are under the harness's control; they are not cross-checked by any oracle in this material.**
+For every gate, `claims_asserted == claims` (possibly reordered). No gate emits a claim that was *expected but not asserted*, and no gate emits a claim that was *asserted but not expected*. That perfect agreement is itself suspicious — a real gate runner would occasionally surface a missing or extra claim.
+Evidence: e.g. `"claims": ["compile_cli_binary","compile_gui_binary"], "claims_asserted": ["compile_cli_binary","compile_gui_binary"]`.
+
+**Finding D3 — HIGH — `definitely_not_present` field is declared in `_note` but absent from every gate.**
+The note says the material deliberately omits external-observation/certification outcomes. That is the correct design. However, the *inverse* is also true: the material equally omits any tamper-evidence that the gate implementations, the waiver ledger, or the export manifest were not mutated between the gate run and this review. `subject_sha256` and `gate_run_sha256` are present but never reconciled against each other or against a signing key.
+Evidence: `"_note": "…deliberately contains NO fields describing external-observation or certification outcomes…"` and top-level `"subject_sha256"`, `"gate_run_sha256"` with no signature field.
+
+**Finding D4 — MEDIUM — `H4.bypass-patterns` reports "0 hits" for all three patterns with no file-count / scanned-path disclosure.**
+Zero hits over an unknown scan universe is not the same as zero hits over the production tree. The gate could be scanning an empty directory.
+Evidence: `"Pattern H4.DIRECT_DISK_WRITE: 0 hits (0 waived) | … VERIFIED 0 hits"` (no `files_scanned` field).
+
+**Finding D5 — MEDIUM — H2.compile-tests exit 0 with `Success.` and `Done testing.` but the same output shape as an already-built binary's run — possible silent skip of compilation.**
+The gate name is `H2.compile-tests` but the observed output is a test-runner summary. If `_build_tests.bat` silently no-ops when the exe already exists, the gate green-lights a stale binary. Nothing in the material rules this out.
+Evidence: `"output_excerpt": "Success. | Running Fixture Teardown Method : Destroy | Done testing. | Tests Found   : 20 …"`.
+
+---
+
+## Explicit "nothing wrong" statements
+
+- **(a) cross-gate subject integrity:** all gates carry the same `subject_sha256` (`ce2ef0e7…`) and all `stderr_bytes` are 0 with the empty-string SHA256 (`e3b0c442…`). No gate's stderr content contradicts its PASS. Nothing wrong observed *there*; the concern is the absence of an external witness, recorded in D1/D3.
+- **(b) authorized_approvers whitelist content:** whitelist itself is non-empty and excludes the submitting-side tokens except `MasterController` (see B3); no explicit self-signing was observed because `total == 0`. Nothing wrong *observable* on this run, but see B1.
+- **(d) `H1.resource-locks` single-claim gate:** the single-claim structure is consistent and the excerpt matches. Nothing wrong observed on this gate in isolation.
+
+---
+
+## Risk summary
+
+| Severity | Count | Areas |
+|---|---|---|
+| BLOCKER | 1 | D1 (global self-attestation) |
+| HIGH | 7 | A1, A2, A3, A7, B1, C1, C2, D2, D3 |
+| MEDIUM | 6 | A4, A5, A6, B2, C3, C4, D4, D5 |
+| LOW | 0 | — |
+| INFO | 2 | A8, B3 |
+
+---
+
+## Verdict line
+
+VERDICT: not_ready
+
+Primary reason: gates are self-attesting with no independent witness (D1), multiple gates claim PASS while their excerpts show claim IDs asserted without the corresponding behavioral evidence (A1, A2, A3, A7), and the packaging/export boundary that is the load-bearing control for open-source distribution is asserted by two mutually-referential gates with no manifest, listing, or diff in the material (C1, C2). No gate passes the bar of "an independent reviewer, given only this material, can confirm what was checked and that it was checked against a defined universe."

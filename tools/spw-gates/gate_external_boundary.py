@@ -354,7 +354,14 @@ def main():
     if findings:
         fail(GATE_ID, findings)
 
-    ok(GATE_ID, "外部边界干净（检查通过）", claims=["counterfactual_boundary"])
+    num_exp = len(exported) if exported else 0
+    num_cand = len(get_candidate_files())
+    num_markers = len(INTERNAL_MARKERS)
+    ok(
+        GATE_ID,
+        f"外部边界干净：已核查 {num_exp} 个归档路径与 {num_cand} 个源码文件，0 处内部泄露标记（比对 {num_markers} 项治理标记）",
+        claims=["counterfactual_boundary"],
+    )
 
 
 if __name__ == "__main__":

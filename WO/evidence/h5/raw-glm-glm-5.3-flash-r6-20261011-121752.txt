@@ -1,0 +1,40 @@
+## Audit Findings — Observed Material Review
+
+### (a) Gates claiming PASS vs. material
+
+No contradictions found. All 12 declared gates appear in `recorded_gate_verdicts`, each with `verdict: PASS`, `exit_code: 0`, matching `claims` vs. `claims_asserted`, matching `subject_sha256` (`ce2ef0e7...`) across every record, and no truncation flags.
+
+- **INFO / gates** — One record's `claims_asserted` is a reordered copy of `claims` (order-only, content identical): `"claims_asserted": ["active_detail_trigger", "required_fields_on_activation", "state_machine_check"]` vs. declared order. No substantive mismatch.
+- **INFO / gates** — H2.compile-build PASSes with compiler hints in output (`"Hint: H2443 Inline function ... has not been expanded"`, `"Hint: H2077 Value assigned to 'LFound' never used"`). Hints are not errors; not a gate failure, but worth noting as unaddressed build noise.
+
+### (b) H4 waiver / approval policy self-approval hole
+
+- **LOW / H4-governance** — Anti-self-approval and approver-whitelist enforcement is **untested by this run**: the waiver ledger is empty (`"total": 0, "with_approver": 0, "samples": []`), so the "fails closed" claim (`"Any waiver without pre-approved authorized approver, with self-signing, ... fails closed (RC=1 in H4 gate)"`) is asserted by policy text only, with zero exercised waivers to demonstrate it. Not a hole per se, but the enforcement path is unvalidated in this evidence pack.
+- **LOW / H4-governance** — Only two authorized approvers exist (`"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]`); with `approved_by != submitted_by` as the only anti-self-approval rule, a submitter falsely claiming the *other* approver's identity (e.g., submitting as `MasterController`, approved as `ArchitectureReviewBoard`) is not distinguishable from genuine dual-party approval in this schema. The `impersonation_patterns` list (`"^(MasterController|SPW|MainController)-.*$"`) only covers suffixed name variants, not exact-name impersonation of the approver identity itself. Currently moot (0 waivers), latent if waivers are ever opened.
+
+### (c) Packaging / export boundary leak of internal governance markers
+
+No leak found in the material itself. The distribution model states internal governance paths (`WO/`, `tools/spw-*/`, `_repro/`) are excluded (`"all internal governance files ... are excluded from distribution"`), and G.open-source-build reports `"导出清单无内部材料"` (export manifest contains no internal material, 199 files).
+
+- **INFO / boundary** — The *evidence pack* (not the distribution) contains internal machine paths and governance output, e.g. `"上游定位: D:\\_Progs\\02Business\\DeepBase"` and build paths like `"D:\\_Progs\\02Business\\AsWish\\src\\services\\AsWish.Services.Commons.pas"`. This is audit material, not shipped artifact content, so no boundary violation — flagged for awareness only.
+
+### (d) Silent downgrade / fake-green risk
+
+- **MEDIUM / fake-green** — All gate claims are **self-asserted** by the gates under audit: every PASS is corroborated only by the gate's own stdout (`"[CLAIM_ASSERTED] ..."`, `"[H3.encoding-guard] PASS"`) with no independent/second-channel verification in the material (e.g., no independently recomputed hashes, no external observer signature). The `_note` explicitly states the material excludes harness/outcome fields. The hashes provided (stdout_sha256 etc.) are self-recorded and unverifiable within this material.
+- **LOW / fake-green** — H4.bypass-patterns PASS is consistent (`0 hits`, `0 waived` for all three patterns), but note the pattern list is narrow (3 patterns); "zero hits" is only as strong as the pattern coverage, which the material does not independently substantiate.
+- No silent downgrade observed: no gate is marked `required: false`, no verdict other than PASS appears, and no claims were silently dropped between manifest and recorded verdicts.
+
+### Summary
+
+| # | Severity | Area | Finding |
+|---|----------|------|---------|
+| 1 | MEDIUM | fake-green | All gate PASS evidence is self-asserted by the gates; no independent corroboration channel in material |
+| 2 | LOW | H4-governance | Anti-self-approval / fail-closed enforcement untested (0 waivers exercised) |
+| 3 | LOW | H4-governance | Two-approver whitelist + `approved_by != submitted_by` alone doesn't prevent identity impersonation of the co-signer |
+| 4 | INFO | gates | Compiler hints present in H2.compile-build PASS output; benign |
+| 5 | INFO | boundary | Internal paths appear in audit evidence records only, not in distribution |
+| 6 | INFO | gates | `claims_asserted` ordering differs from `claims` in one record; content identical |
+
+Areas (a) and (c): nothing wrong found beyond INFO notes.
+
+**VERDICT: release_ready**

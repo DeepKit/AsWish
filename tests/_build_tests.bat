@@ -21,14 +21,13 @@ if not exist "AsWish.Tests.exe" (
     exit /b 1
 )
 
-echo [CLAIM_ASSERTED] test_suite_compiled
-
-REM Fast smoke fixture execution to discover and verify runnable tests
-echo [Discovery Smoke] Verifying test discovery and harness (20 sample cases; full 356 unit tests verified in H2.unit-tests):
-.\AsWish.Tests.exe -b -r:Test.AsWish.Yaml.Parser.TYamlParserTests
+REM Run test suite to verify compilation and harness discovery (all 356 unit tests)
+.\AsWish.Tests.exe -b
 if errorlevel 1 (
-    echo [ERROR] Smoke test discovery run failed.
+    echo [ERROR] Tests execution failed.
     exit /b 1
 )
 
+echo [CLAIM_ASSERTED] test_suite_compiled
 echo [CLAIM_ASSERTED] test_cases_discovered
+

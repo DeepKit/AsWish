@@ -250,6 +250,7 @@ def main():
         waived_count = sum(1 for h in all_hits if h[0] == pid and h[3] == "WAIVED")
         summary_lines.append(f"Pattern {pid}: {len(pattern_hits)} hits ({waived_count} waived)")
 
+    print(f"[{GATE_ID}] Scanned {len(source_files)} Pascal source files across repository")
     for s in summary_lines:
         print(f"[{GATE_ID}] {s}")
 
