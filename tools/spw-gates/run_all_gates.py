@@ -162,6 +162,21 @@ def run_gate(gate: dict, verbose: bool = False, manifest: dict = None) -> dict:
         has_passed = ("Tests Passed" in stdout_text) and (not has_failed) and (rc == 0)
         if not has_passed:
             claims_asserted = []
+    elif gid == "H2.compile-build":
+        gui_p = ROOT / "bin" / "AsWish.exe"
+        cli_p = ROOT / "cli" / "bin" / "AsWish.CLI.exe"
+        gui_ok = gui_p.is_file() and gui_p.stat().st_size > 0
+        cli_ok = cli_p.is_file() and cli_p.stat().st_size > 0
+        has_err = bool(re.search(r"(\[ERROR\]|Fatal:|Error:\s*E)", stdout_text))
+        if not (gui_ok and cli_ok and not has_err and rc == 0):
+            claims_asserted = []
+    elif gid == "H2.compile-tests":
+        tests_p = ROOT / "tests" / "AsWish.Tests.exe"
+        tests_ok = tests_p.is_file() and tests_p.stat().st_size > 0
+        has_tests_found = bool(re.search(r"Tests Found\s*:\s*[1-9][0-9]*", stdout_text))
+        has_err = bool(re.search(r"(\[ERROR\]|Fatal:|Error:\s*E)", stdout_text))
+        if not (tests_ok and has_tests_found and not has_err and rc == 0):
+            claims_asserted = []
     claims_asserted = sorted(set(claims_asserted))
 
     # Save stdout to log file for generate_evidence.py

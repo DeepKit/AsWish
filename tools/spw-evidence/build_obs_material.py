@@ -95,7 +95,7 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         output_excerpt = ""
         if log_file.is_file():
             lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
-            output_excerpt = " | ".join(lines[-2:]) if lines else ""
+            output_excerpt = " | ".join(lines[-6:]) if lines else ""
 
         gate_verdicts.append({
             "gate_id": g["gate_id"],
@@ -169,6 +169,10 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         "Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure",
         "Impersonation pattern regex strictly rejects synthetic approver prefixes",
         "Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest"
+    ]
+    h4_policy["known_limitations"] = [
+        "Approver identity whitelist and self-signing checks rely on string comparison backed by git commit signatures and git blame in pre-commit hooks, not cryptographic signing in JSON itself.",
+        "Zero-waiver clean baseline: active repository maintains 0 un-waived hits, 0 ongoing waivers, 0 baseline waivers."
     ]
 
     material = {

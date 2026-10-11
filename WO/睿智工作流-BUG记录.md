@@ -559,3 +559,27 @@ WO-0106 完工报告称已"补全 UTF-8 BOM"。主控逐文件比对
   - 经过反证实跑，验证拦截器严密咬人。
 
 
+
+---
+
+## 2026-10-11 · 主控 H5 重排（deepseek+glm 两独立异构家族）查实新缺陷，同回合开 WO-20261011-0109
+
+### RZB-018 · H2 编译门 PASS 但零断言"空绿"，零豁免+零断言成假绿面（P0，已复现）
+
+主控亲跑 H5 重排（用 WiseGateway 网关调 `deepseek-v4.1-flash` + `glm-5.3-flash`
+两白名单异构家族审查 `_repro/obs_material.json`），coverage 回 2/2，
+但两观察员共报 **34 条 findings**（5 HIGH / 15 MEDIUM / 10 LOW / 4 INFO），
+证书 withheld、release_ready=false。最要命的 HIGH 是：
+
+- `run_all_gates.py:158-164` 只对 `H2.unit-tests` 做了真实断言（WO-0099），
+  **`H2.compile-build` / `H2.compile-tests` 两道门 `claims_asserted` 恒为空**——
+  只判 `rc==0` 就 PASS，没从编译输出解析任何真实结果（编译几单元、产物是否生成）。
+  观察员原话："H2 build/test gates PASS with zero asserted claims"。
+- `H4.bypass-patterns` "0 hits / 0 waived"（WO-0106 清账成果，本身对），
+  但配的 `claims` 也空——"零豁免"好状态**无任何被断言证据撑住**，
+  观察员原话："Vacuously-green gates + zero waivers = wide green surface"。
+
+**这是 RZB-009 / WO-0099 的同族病复发**：WO-0099 只修了 unit-tests 一门，
+没把"真实断言"推广到所有"PASS 但 claims 空"的门。WO-0108 阶段 4 因此被拦。
+
+**已开 WO-20261011-0109 返修**（P0，封版放行前置，派工具链维护AI）。

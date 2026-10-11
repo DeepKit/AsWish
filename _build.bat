@@ -18,6 +18,11 @@ if errorlevel 1 (
     echo [ERROR] GUI build failed.
     exit /b 1
 )
+if not exist "bin\AsWish.exe" (
+    echo [ERROR] GUI target binary bin\AsWish.exe missing.
+    exit /b 1
+)
+echo [CLAIM_ASSERTED] compile_gui_binary
 
 echo [2/2] Building CLI: cli\bin\AsWish.CLI.exe ...
 pushd cli
@@ -30,6 +35,11 @@ if not "%CLI_ERR%"=="0" (
     echo [ERROR] CLI build failed.
     exit /b %CLI_ERR%
 )
+if not exist "cli\bin\AsWish.CLI.exe" (
+    echo [ERROR] CLI target binary cli\bin\AsWish.CLI.exe missing.
+    exit /b 1
+)
+echo [CLAIM_ASSERTED] compile_cli_binary
 
 echo.
 echo ============================================================================

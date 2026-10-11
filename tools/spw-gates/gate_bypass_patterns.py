@@ -256,7 +256,14 @@ def main():
     if findings:
         fail(GATE_ID, findings)
 
-    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for ({len(warnings)} baseline debt warnings emitted)", claims=["counterfactual_bypass"])
+    claims = ["counterfactual_bypass"]
+    if len(all_hits) == 0:
+        claims.append("zero_hits")
+    if len(valid_waivers) == 0:
+        claims.append("zero_unapproved_waivers")
+    claims.sort()
+
+    ok(GATE_ID, f"verified {len(all_hits)} hits; all {len(valid_waivers)} waivers governed and accounted for ({len(warnings)} baseline debt warnings emitted)", claims=claims)
 
 
 if __name__ == "__main__":

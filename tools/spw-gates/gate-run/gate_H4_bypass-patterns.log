@@ -2,4 +2,6 @@
 [H4.bypass-patterns] Pattern H4.SILENT_INIT_FAILURE: 0 hits (0 waived)
 [H4.bypass-patterns] Pattern H4.HARDCODED_ABS_PATH: 0 hits (0 waived)
 [CLAIM_ASSERTED] counterfactual_bypass
+[CLAIM_ASSERTED] zero_hits
+[CLAIM_ASSERTED] zero_unapproved_waivers
 [H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for (0 baseline debt warnings emitted)

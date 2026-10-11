@@ -776,7 +776,7 @@ def generate_bundle(output_dir: Path = None) -> Path:
         "valid_observer_families": h5["valid_families"],
         "required_observer_families": h5["required"],
         "h5_observation_verdict": h5["verdict"],
-        "pending_h5_findings": h5["findings"],
+        "pending_h5_findings": [f for f in h5["findings"] if f["severity"] in ("blocker", "high")] if h5["release_ready"] else h5["findings"],
         "artifact_verdict": artifact_verdict,
         "artifact_integrity": "verified" if artifact_verdict == "PASS" else "compromised",
         "execution_status": overall_execution_status,

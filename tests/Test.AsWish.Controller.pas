@@ -887,7 +887,6 @@ begin
 
   // The dashboard prints one number: the scanned file count. Pin it against
   // the node total, which is what the CLI's own copy of this code used.
-  LNodeTotal := 0;
   LFunc := FStore.ReadTreeFile('trees/function-tree.yaml');
   LModule := FStore.ReadTreeFile('trees/module-tree.yaml');
   LView := FStore.ReadTreeFile('trees/view-tree.yaml');
@@ -1481,7 +1480,6 @@ end;
 procedure TTestAsWishController.Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline;
 var
   LFuncId, LCSId, LFile, LText: string;
-  LNewBaseline: TAsWishBaseline;
 begin
   // The CLI used to build five services to reach ExportAgentHandoff. What a
   // caller needs back is the path it must print -- and the package has to name

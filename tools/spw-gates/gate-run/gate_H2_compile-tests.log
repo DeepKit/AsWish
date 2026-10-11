@@ -2,6 +2,150 @@ Embarcadero Delphi for Win64 compiler version 37.0
 Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
 D:\_Progs\02Business\AsWish\src\services\AsWish.Services.Commons.pas(148) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list
 D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(1350) Hint: H2077 Value assigned to 'LFound' never used
-Test.AsWish.Controller.pas(890) Hint: H2077 Value assigned to 'LNodeTotal' never used
-Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used in 'TTestAsWishController.Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline'
-36356 lines, 3.09 seconds, 9842228 bytes code, 883968 bytes data.
+36354 lines, 2.88 seconds, 9842228 bytes code, 883968 bytes data.
+[CLAIM_ASSERTED] test_suite_compiled
+  Fixture : Test
+  -------------------------------------------------
+     Fixture : Test.AsWish
+     -------------------------------------------------
+        Fixture : Test.AsWish.Yaml
+        -------------------------------------------------
+           Fixture : Test.AsWish.Yaml.Parser
+           -------------------------------------------------
+              Fixture : Test.AsWish.Yaml.Parser.TYamlParserTests
+              -------------------------------------------------
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.EmptyInput_ReturnsEmptyMap
+                -------------------------------------------------
+                Executing Test : EmptyInput_ReturnsEmptyMap
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SimpleMap_TwoKeys
+                -------------------------------------------------
+                Executing Test : SimpleMap_TwoKeys
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.MapWithQuotedValue_DoubleQuotes
+                -------------------------------------------------
+                Executing Test : MapWithQuotedValue_DoubleQuotes
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.MapWithQuotedValue_SingleQuotes
+                -------------------------------------------------
+                Executing Test : MapWithQuotedValue_SingleQuotes
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.FlowSequence_Empty
+                -------------------------------------------------
+                Executing Test : FlowSequence_Empty
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.FlowSequence_WithItems
+                -------------------------------------------------
+                Executing Test : FlowSequence_WithItems
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.BooleanValues
+                -------------------------------------------------
+                Executing Test : BooleanValues
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.IntegerValue
+                -------------------------------------------------
+                Executing Test : IntegerValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.EmptyMap_FlowBraces
+                -------------------------------------------------
+                Executing Test : EmptyMap_FlowBraces
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.CommentStrippedFromValue
+                -------------------------------------------------
+                Executing Test : CommentStrippedFromValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.HasKey_ReturnsTrueForExisting
+                -------------------------------------------------
+                Executing Test : HasKey_ReturnsTrueForExisting
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.HasKey_ReturnsFalseForMissing
+                -------------------------------------------------
+                Executing Test : HasKey_ReturnsFalseForMissing
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetString_DefaultForMissing
+                -------------------------------------------------
+                Executing Test : GetString_DefaultForMissing
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetInteger_ParsesValue
+                -------------------------------------------------
+                Executing Test : GetInteger_ParsesValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.GetBoolean_ParsesTrueFalse
+                -------------------------------------------------
+                Executing Test : GetBoolean_ParsesTrueFalse
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.NullValue
+                -------------------------------------------------
+                Executing Test : NullValue
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.NestedMap_ProjectSection
+                -------------------------------------------------
+                Executing Test : NestedMap_ProjectSection
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SequenceOfMaps_Nodes
+                -------------------------------------------------
+                Executing Test : SequenceOfMaps_Nodes
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.SourceRefsRoundTrip
+                -------------------------------------------------
+                Executing Test : SourceRefsRoundTrip
+                
+                  Success.
+               
+                Test : Test.AsWish.Yaml.Parser.TYamlParserTests.OldFormat_NoGenStatus_Defaults
+                -------------------------------------------------
+                Executing Test : OldFormat_NoGenStatus_Defaults
+                
+                  Success.
+               
+               Running Fixture Teardown Method : Destroy
+               
+            
+         
+      
+   
+
+Done testing.
+Tests Found   : 20
+Tests Ignored : 0
+Tests Passed  : 20
+Tests Leaked  : 0
+Tests Failed  : 0
+Tests Errored : 0
+[CLAIM_ASSERTED] test_cases_discovered
