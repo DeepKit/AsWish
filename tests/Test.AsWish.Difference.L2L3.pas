@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.Difference.L2L3.pas - WO-0031 Platform Extension Seam Tests
   Covers all 7 mandatory test cases specified in WO-0031 Section XI.
   ============================================================================ }
@@ -37,6 +37,10 @@ type
     procedure Test06_NoComparatorRegistered_ServiceWorks;
     [Test]
     procedure Test07_DownstreamIntegration_RenderAndDecisions;
+    [Test]
+    procedure Test08_UnknownStyle_Tolerated_NoFalseRed;
+    [Test]
+    procedure Test09_DefaultIdentityResolution_NilResolver;
   end;
 
 implementation
@@ -224,6 +228,57 @@ begin
   finally
     if TDirectory.Exists(LTempDir) then TDirectory.Delete(LTempDir, True);
   end;
+end;
+
+procedure TTestAsWishDifferenceL2L3.Test08_UnknownStyle_Tolerated_NoFalseRed;
+var
+  LDiffs: TArray<TSpecDifferenceItem>;
+  LCtx: TPlatformComparisonContext;
+  LBase: TAsWishBaseline;
+begin
+  // When FontColor is null (unobservable from UIA), comparator must NOT
+  // emit false red difference against expected color clNavy.
+  LCtx := Default(TPlatformComparisonContext);
+  LCtx.TreeType := 'view';
+  LCtx.ObservationJson := '{"Observations":[{"Name":"BtnCancel","Bounds":{"Left":100,"Top":160,"Width":80,"Height":30},"FontColor":null}]}';
+  LCtx.ExpectedStylesJson := '{"view-ctrl-btncancel":{"FontColor":"clNavy"}}';
+  LCtx.IdentityResolver := nil; // Use default DFM convention
+  LBase := Default(TAsWishBaseline);
+  LBase.TreeType := 'view';
+
+  LDiffs := FComparator.CompareL2L3(LCtx, LBase);
+  Assert.AreEqual<Integer>(0, Length(LDiffs), 'Unobservable style must be tolerated without false red difference');
+end;
+
+procedure TTestAsWishDifferenceL2L3.Test09_DefaultIdentityResolution_NilResolver;
+var
+  LDiffs: TArray<TSpecDifferenceItem>;
+  LCtx: TPlatformComparisonContext;
+  LBase: TAsWishBaseline;
+begin
+  // Test both order match (0 diffs) and order inverted (1 diff) with nil IdentityResolver
+  LCtx := Default(TPlatformComparisonContext);
+  LCtx.TreeType := 'view';
+  LCtx.ObservationJson := '{"Observations":[' +
+    '{"Name":"BtnCancel","Bounds":{"Left":100,"Top":160,"Width":80,"Height":30},"FontColor":null},' +
+    '{"Name":"BtnConfirm","Bounds":{"Left":200,"Top":160,"Width":80,"Height":30},"FontColor":null}]}';
+  LCtx.ConstraintsJson := '{"view-ctrl-btncancel":{"relation":"left-of view-ctrl-btnconfirm"}}';
+  LCtx.IdentityResolver := nil;
+  LBase := Default(TAsWishBaseline);
+  LBase.TreeType := 'view';
+
+  LDiffs := FComparator.CompareL2L3(LCtx, LBase);
+  Assert.AreEqual<Integer>(0, Length(LDiffs), 'Default identity mapping must match expected order');
+
+  // Inverted order: Confirm at Left=50, Cancel at Left=200
+  LCtx.ObservationJson := '{"Observations":[' +
+    '{"Name":"BtnCancel","Bounds":{"Left":200,"Top":160,"Width":80,"Height":30},"FontColor":null},' +
+    '{"Name":"BtnConfirm","Bounds":{"Left":50,"Top":160,"Width":80,"Height":30},"FontColor":null}]}';
+  LDiffs := FComparator.CompareL2L3(LCtx, LBase);
+  Assert.AreEqual<Integer>(1, Length(LDiffs), 'Inverted order must detect L2 layout difference');
+  Assert.AreEqual('view-ctrl-btnconfirm', LDiffs[0].NodeId);
+  Assert.AreEqual(daRelation, LDiffs[0].ChangedAspect);
+  Assert.IsTrue(Pos('L2 Layout Difference', LDiffs[0].Note) > 0);
 end;
 
 initialization

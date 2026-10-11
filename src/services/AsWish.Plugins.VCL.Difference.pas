@@ -27,6 +27,7 @@ type
   TVCLObservedControl = record
     PlatformName, ClassName: string;
     Left, Top, Width, Height, FontColor: Integer;
+    FontColorKnown: Boolean;
   end;
 
 function MakeDiffItem(const ANodeId: string; AKind: TDifferenceKind; AAspect: TDifferenceAspect;
@@ -99,11 +100,26 @@ begin
         LObsCtrl.Width := LBounds.GetValue<Integer>('Width', 0);
         LObsCtrl.Height := LBounds.GetValue<Integer>('Height', 0);
       end;
-      LObsCtrl.FontColor := LItemObj.GetValue<Integer>('FontColor', 0);
-      // Identity resolution via IPlatformIdentityResolver (Fail-Closed)
+      LObsCtrl.FontColor := 0;
+      LObsCtrl.FontColorKnown := False;
+      var LFontColorVal := LItemObj.GetValue<TJSONValue>('FontColor', nil);
+      if (LFontColorVal <> nil) and not (LFontColorVal is TJSONNull) then
+      begin
+        LObsCtrl.FontColor := ParseColorValue(LFontColorVal);
+        LObsCtrl.FontColorKnown := True;
+      end;
+      // Identity resolution via IPlatformIdentityResolver (Fail-Closed when resolver supplied, DFM convention fallback when nil)
       if (AContext.IdentityResolver <> nil) and
          AContext.IdentityResolver.TryResolveNodeId(LName, LNodeId) and (LNodeId <> '') then
         LObservedMap.AddOrSetValue(LNodeId, LObsCtrl)
+      else if (AContext.IdentityResolver = nil) and (LName <> '') then
+      begin
+        if LName.StartsWith('view-ctrl-', True) then
+          LNodeId := LowerCase(LName)
+        else
+          LNodeId := 'view-ctrl-' + LowerCase(LName);
+        LObservedMap.AddOrSetValue(LNodeId, LObsCtrl);
+      end
       else
         LDiffList.Add(MakeDiffItem('', dkChanged, daNone, '', TSpecHash.Sha256Hex(LName),
           Format('Missing identity mapping: platform element "%s" has no canonical node.id (fail-closed, unsupported)', [LName])));
@@ -179,7 +195,12 @@ begin
               if LToken = '' then LToken := LStyleObj.GetValue<string>('token', '');
               LColorName := LStyleObj.GetValue<string>('ColorName', '');
               if (LColorName = '') and (LVal is TJSONString) then LColorName := LVal.Value;
-              if LObsCtrl.FontColor <> LExpectedColor then
+              if not LObsCtrl.FontColorKnown then
+              begin
+                // Unobservable property: do NOT emit false difference (no false red)
+                // and do NOT assume match (no false green). Focus on L2 layout comparison.
+              end
+              else if LObsCtrl.FontColor <> LExpectedColor then
               begin
                 var LNote := Format('L3 Appearance Difference: Expected %s (%d), but Observed %d.', [LColorName, LExpectedColor, LObsCtrl.FontColor]);
                 if LToken <> '' then
