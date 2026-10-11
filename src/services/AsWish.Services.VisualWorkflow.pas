@@ -34,6 +34,7 @@ type
     function EvolveBaseline(const ABaselineId, ADecisionId: string;
       out ANewBaseline: TAsWishBaseline): string;
     function ExportAgentHandoff(const AProjectDir, ABaselineId: string): string;
+    function ExportRevisionHandoff(const AProjectDir, ABaselineId, ADecisionId: string): string;
   end;
 
 implementation
@@ -399,11 +400,188 @@ begin
     LSb.AppendLine('## 4. Implementation Guidance for Agent');
     LSb.AppendLine('Implement the VCL UI controls to strictly satisfy the declared layout constraints above.');
     LSb.AppendLine('Do NOT reverse the relative ordering confirmed by Human.');
+    LSb.AppendLine('');
+    LSb.AppendLine('## 5. Execution Scope & Boundaries');
+    LSb.AppendLine('- Target Project Root: ' + AProjectDir);
+    var LAllowedList: TList<string>;
+    LAllowedList := TList<string>.Create;
+    try
+      var LSrcDir := TPath.Combine(AProjectDir, 'src');
+      if TDirectory.Exists(LSrcDir) then
+      begin
+        for var LF in TDirectory.GetFiles(LSrcDir, '*.*', TSearchOption.soAllDirectories) do
+        begin
+          var LRel := ExtractRelativePath(AProjectDir + PathDelim, LF).Replace('\', '/');
+          LAllowedList.Add('"' + LRel + '"');
+        end;
+      end;
+      if LAllowedList.Count = 0 then
+      begin
+        for var LF in TDirectory.GetFiles(AProjectDir, '*.pas') do
+        begin
+          var LRel := ExtractRelativePath(AProjectDir + PathDelim, LF).Replace('\', '/');
+          LAllowedList.Add('"' + LRel + '"');
+        end;
+        for var LF in TDirectory.GetFiles(AProjectDir, '*.dfm') do
+        begin
+          var LRel := ExtractRelativePath(AProjectDir + PathDelim, LF).Replace('\', '/');
+          LAllowedList.Add('"' + LRel + '"');
+        end;
+      end;
+      if LAllowedList.Count = 0 then
+      begin
+        LAllowedList.Add('"src/LoginForm.pas"');
+        LAllowedList.Add('"src/LoginForm.dfm"');
+      end;
+      LSb.AppendLine('- Allowed Modified Files: [' + string.Join(', ', LAllowedList.ToArray) + ']');
+    finally
+      LAllowedList.Free;
+    end;
+    LSb.AppendLine('- Strictly Forbidden Paths: [".AsWish/**"]');
+    var LDprCandidate := '';
+    for var LF in TDirectory.GetFiles(AProjectDir, '*.dpr') do
+    begin
+      LDprCandidate := ExtractFileName(LF);
+      Break;
+    end;
+    if LDprCandidate <> '' then
+      LSb.AppendLine('- Build & Verify Command: "dcc64 -B ' + LDprCandidate + '"')
+    else
+      LSb.AppendLine('- Build & Verify Command: "dcc64 -B TargetApp.dpr"');
 
     TAsWishStoreService.AtomicWriteTextFile(LHandoffFile, LSb.ToString);
     Result := LHandoffFile;
   finally
     if LViewNodes <> nil then LViewNodes.Free;
+    LSb.Free;
+  end;
+end;
+
+function TAsWishVisualWorkflowService.ExportRevisionHandoff(const AProjectDir,
+  ABaselineId, ADecisionId: string): string;
+var
+  LAsWishDir, LHandoffDir, LHandoffFile: string;
+  LBaseline: TAsWishBaseline;
+  LDec: TSpecDecision;
+  LDiffReport: TSpecDifferenceReport;
+  LSb: TStringBuilder;
+  LDiffFile: string;
+begin
+  LAsWishDir := TPath.Combine(AProjectDir, '.AsWish');
+  LHandoffDir := TPath.Combine(LAsWishDir, 'handoff');
+  if not TDirectory.Exists(LHandoffDir) then
+    TDirectory.CreateDirectory(LHandoffDir);
+
+  if not FSnapshot.LoadBaseline(ABaselineId, LBaseline) then
+    raise Exception.CreateFmt('Baseline "%s" not found for revision export', [ABaselineId]);
+
+  LDec := FDecisions.FindById(ADecisionId);
+  if LDec.Id = '' then
+    raise Exception.CreateFmt('Decision "%s" not found for revision export', [ADecisionId]);
+  if LDec.Status <> dsRejected then
+    raise Exception.CreateFmt('Decision "%s" must be rejected (status: %s) to export revision handoff',
+      [ADecisionId, TSpecEnums.DecisionStatusToStr(LDec.Status)]);
+
+  LHandoffFile := TPath.Combine(LHandoffDir, 'revision-handoff-' + ADecisionId + '.md');
+  LDiffFile := TPath.Combine(LAsWishDir, 'difference.yaml');
+
+  LSb := TStringBuilder.Create;
+  try
+    LSb.AppendLine('# Agent Revision & Correction Package');
+    LSb.AppendLine('> **PURPOSE**: Rectify unacceptable differences discovered in implementation.');
+    LSb.AppendLine('');
+    LSb.AppendLine('## 1. Target Baseline');
+    LSb.AppendLine('- Baseline ID: ' + LBaseline.BaselineId);
+    LSb.AppendLine('- Rejected Decision: ' + ADecisionId);
+    LSb.AppendLine('- Content Hash: ' + LBaseline.ContentHash);
+    LSb.AppendLine('- Relation Hash: ' + LBaseline.RelationHash);
+    LSb.AppendLine('');
+    LSb.AppendLine('## 2. Unacceptable Differences Observed');
+    if TFile.Exists(LDiffFile) then
+    begin
+      try
+        LDiffReport := FDifference.ReadDifferenceFile('difference.yaml');
+        if Length(LDiffReport.Items) > 0 then
+        begin
+          for var LItem in LDiffReport.Items do
+          begin
+            if LItem.Note <> '' then
+              LSb.AppendLine('- ' + LItem.Note)
+            else
+              LSb.AppendLine(Format('- [%s] Node `%s` (baseline: %s, live: %s)',
+                [TSpecEnums.DifferenceKindToStr(LItem.Kind), LItem.NodeId,
+                 Copy(LItem.BaselineHash, 1, 8), Copy(LItem.EvidenceHash, 1, 8)]));
+          end;
+        end
+        else
+          LSb.AppendLine('- Difference report indicates discrepancy against baseline expectations.');
+      except
+        LSb.AppendLine('- See .AsWish/difference.yaml for difference items.');
+      end;
+    end
+    else
+      LSb.AppendLine('- No difference.yaml file found; review decision rationale.');
+    LSb.AppendLine('');
+    LSb.AppendLine('## 3. Human Correction Directive');
+    if LDec.Rationale <> '' then
+      LSb.AppendLine('"' + LDec.Rationale + '"')
+    else
+      LSb.AppendLine('"Human rejected the observed difference. Correct implementation to match baseline."');
+    LSb.AppendLine('');
+    LSb.AppendLine('## 4. Execution Scope & Boundaries');
+    LSb.AppendLine('- Target Project Root: ' + AProjectDir);
+    var LAllowedList: TList<string>;
+    LAllowedList := TList<string>.Create;
+    try
+      var LSrcDir := TPath.Combine(AProjectDir, 'src');
+      if TDirectory.Exists(LSrcDir) then
+      begin
+        for var LF in TDirectory.GetFiles(LSrcDir, '*.*', TSearchOption.soAllDirectories) do
+        begin
+          var LRel := ExtractRelativePath(AProjectDir + PathDelim, LF).Replace('\', '/');
+          LAllowedList.Add('"' + LRel + '"');
+        end;
+      end;
+      if LAllowedList.Count = 0 then
+      begin
+        for var LF in TDirectory.GetFiles(AProjectDir, '*.pas') do
+        begin
+          var LRel := ExtractRelativePath(AProjectDir + PathDelim, LF).Replace('\', '/');
+          LAllowedList.Add('"' + LRel + '"');
+        end;
+        for var LF in TDirectory.GetFiles(AProjectDir, '*.dfm') do
+        begin
+          var LRel := ExtractRelativePath(AProjectDir + PathDelim, LF).Replace('\', '/');
+          LAllowedList.Add('"' + LRel + '"');
+        end;
+      end;
+      if LAllowedList.Count = 0 then
+      begin
+        LAllowedList.Add('"src/LoginForm.pas"');
+        LAllowedList.Add('"src/LoginForm.dfm"');
+      end;
+      LSb.AppendLine('- Allowed Modified Files: [' + string.Join(', ', LAllowedList.ToArray) + ']');
+    finally
+      LAllowedList.Free;
+    end;
+    LSb.AppendLine('- Strictly Forbidden Paths: [".AsWish/**"]');
+    var LDprCandidate := '';
+    for var LF in TDirectory.GetFiles(AProjectDir, '*.dpr') do
+    begin
+      LDprCandidate := ExtractFileName(LF);
+      Break;
+    end;
+    if LDprCandidate <> '' then
+      LSb.AppendLine('- Build & Verify Command: "dcc64 -B ' + LDprCandidate + '"')
+    else
+      LSb.AppendLine('- Build & Verify Command: "dcc64 -B TargetApp.dpr"');
+    LSb.AppendLine('');
+    LSb.AppendLine('## 5. Required Action');
+    LSb.AppendLine('Modify the source code to strictly resolve the observed differences and fulfill the human directive.');
+
+    TAsWishStoreService.AtomicWriteTextFile(LHandoffFile, LSb.ToString);
+    Result := LHandoffFile;
+  finally
     LSb.Free;
   end;
 end;

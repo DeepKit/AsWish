@@ -1,4 +1,4 @@
-﻿{ ============================================================================
+{ ============================================================================
   Test.AsWish.VisualWorkflow.pas
   WO-0032: Automated Tests for Visual Workflow Application Service (ADR-2).
   Covers AC1 (Headless), AC2 (Shared API), AC3 (Human Auth), AC4 (Traceability),
@@ -33,6 +33,10 @@ type
     [Test] procedure Test02_ConfirmVisualBaseline_ValidatesHumanDecision;
     [Test] procedure Test03_ConfirmVisualBaseline_Success_LinksDecisionAndSnapshot;
     [Test] procedure Test04_RecordDifferenceDecision_FourExits;
+    [Test] procedure Test05_ExportAgentHandoff_ContainsScopeBoundaries;
+    [Test] procedure Test06_ExportRevisionHandoff_GeneratesCorrectPackage;
+    [Test] procedure Test07_EvolveBaseline_RefusesUnacceptedDecision_FailClosed;
+    [Test] procedure Test08_ExportRevisionHandoff_RefusesNonRejectedDecision;
   end;
 
 implementation
@@ -186,6 +190,136 @@ begin
   LDecId := FWorkflow.RecordDifferenceDecision(LReport, djUnresolved, 'Needs review with design team');
   LDec := FDecisions.FindById(LDecId);
   Assert.AreEqual(Integer(dsProposed), Integer(LDec.Status), 'djUnresolved must be proposed');
+end;
+
+procedure TTestAsWishVisualWorkflow.Test05_ExportAgentHandoff_ContainsScopeBoundaries;
+var
+  LNodes: TList<TSpecNode>;
+  LDecId, LBaseId, LHandoffFile, LText: string;
+begin
+  LNodes := CreateSampleViewTree;
+  try
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LNodes);
+  finally
+    LNodes.Free;
+  end;
+  LDecId := FDecisions.AddDecision(dtConfirm, 'Confirm Visual Design', 'Approve wireframe', 'Intent aligned', ['view-main']);
+  FDecisions.AcceptDecision(LDecId);
+  LBaseId := FWorkflow.ConfirmVisualBaseline(LDecId);
+
+  LHandoffFile := FWorkflow.ExportAgentHandoff(FTestDir, LBaseId);
+  Assert.IsTrue(TFile.Exists(LHandoffFile), 'agent-handoff.md must exist');
+  LText := TFile.ReadAllText(LHandoffFile, TEncoding.UTF8);
+  Assert.IsTrue(Pos('## 5. Execution Scope & Boundaries', LText) > 0, 'Must contain scope boundaries');
+  Assert.IsTrue(Pos('Target Project Root:', LText) > 0, 'Must declare target project root');
+  Assert.IsTrue(Pos('Allowed Modified Files:', LText) > 0, 'Must declare allowed files');
+  Assert.IsTrue(Pos('Strictly Forbidden Paths:', LText) > 0, 'Must declare forbidden paths');
+end;
+
+procedure TTestAsWishVisualWorkflow.Test06_ExportRevisionHandoff_GeneratesCorrectPackage;
+var
+  LNodes: TList<TSpecNode>;
+  LDecId, LBaseId, LRejectDecId, LRevisionFile, LText: string;
+  LReport: TSpecDifferenceReport;
+  LItem: TSpecDifferenceItem;
+begin
+  LNodes := CreateSampleViewTree;
+  try
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LNodes);
+  finally
+    LNodes.Free;
+  end;
+  LDecId := FDecisions.AddDecision(dtConfirm, 'Confirm Visual Design', 'Approve wireframe', 'Intent aligned', ['view-main']);
+  FDecisions.AcceptDecision(LDecId);
+  LBaseId := FWorkflow.ConfirmVisualBaseline(LDecId);
+
+  // Record unacceptable difference
+  LReport := Default(TSpecDifferenceReport);
+  LReport.BaselineId := LBaseId;
+  LReport.TreeType := 'view';
+  SetLength(LReport.Items, 1);
+  LItem := Default(TSpecDifferenceItem);
+  LItem.NodeId := 'view-btn-ok';
+  LItem.Kind := dkChanged;
+  LItem.ChangedAspect := daRelation;
+  LItem.Note := 'L2 Layout Difference: Expected Cancel left-of Confirm';
+  LReport.Items[0] := LItem;
+  FDifference.WriteDifferenceFile('difference.yaml', LReport);
+
+  LRejectDecId := FWorkflow.RecordDifferenceDecision(LReport, djUnacceptable, 'Cancel button must be left-of Confirm');
+  LRevisionFile := FWorkflow.ExportRevisionHandoff(FTestDir, LBaseId, LRejectDecId);
+
+  Assert.IsTrue(TFile.Exists(LRevisionFile), 'revision-handoff file must exist');
+  LText := TFile.ReadAllText(LRevisionFile, TEncoding.UTF8);
+  Assert.IsTrue(Pos('# Agent Revision & Correction Package', LText) > 0);
+  Assert.IsTrue(Pos(LBaseId, LText) > 0);
+  Assert.IsTrue(Pos(LRejectDecId, LText) > 0);
+  Assert.IsTrue(Pos('Cancel button must be left-of Confirm', LText) > 0);
+  Assert.IsTrue(Pos('L2 Layout Difference', LText) > 0);
+  Assert.IsTrue(Pos('## 4. Execution Scope & Boundaries', LText) > 0);
+end;
+
+procedure TTestAsWishVisualWorkflow.Test07_EvolveBaseline_RefusesUnacceptedDecision_FailClosed;
+var
+  LNodes: TList<TSpecNode>;
+  LDecId, LBaseId, LRejectDecId: string;
+  LReport: TSpecDifferenceReport;
+  LNewBaseline: TAsWishBaseline;
+  LExceptThrown: Boolean;
+begin
+  LNodes := CreateSampleViewTree;
+  try
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LNodes);
+  finally
+    LNodes.Free;
+  end;
+  LDecId := FDecisions.AddDecision(dtConfirm, 'Confirm Visual Design', 'Approve wireframe', 'Intent aligned', ['view-main']);
+  FDecisions.AcceptDecision(LDecId);
+  LBaseId := FWorkflow.ConfirmVisualBaseline(LDecId);
+
+  LReport := Default(TSpecDifferenceReport);
+  LReport.BaselineId := LBaseId;
+  LReport.TreeType := 'view';
+  LRejectDecId := FWorkflow.RecordDifferenceDecision(LReport, djUnacceptable, 'Rejected layout deviation');
+
+  LExceptThrown := False;
+  try
+    FWorkflow.EvolveBaseline(LBaseId, LRejectDecId, LNewBaseline);
+  except
+    on E: Exception do
+    begin
+      LExceptThrown := True;
+      Assert.IsTrue(Pos('must be accepted to evolve baseline', E.Message) > 0,
+        'Exception must state decision must be accepted');
+    end;
+  end;
+  Assert.IsTrue(LExceptThrown, 'EvolveBaseline must fail-closed on rejected decision');
+end;
+
+procedure TTestAsWishVisualWorkflow.Test08_ExportRevisionHandoff_RefusesNonRejectedDecision;
+var
+  LNodes: TList<TSpecNode>;
+  LDecId, LBaseId: string;
+  LExceptThrown: Boolean;
+begin
+  LNodes := CreateSampleViewTree;
+  try
+    FStore.WriteTreeFile('trees/view-tree.yaml', ttView, LNodes);
+  finally
+    LNodes.Free;
+  end;
+  LDecId := FDecisions.AddDecision(dtConfirm, 'Confirm Visual Design', 'Approve wireframe', 'Intent aligned', ['view-main']);
+  FDecisions.AcceptDecision(LDecId);
+  LBaseId := FWorkflow.ConfirmVisualBaseline(LDecId);
+
+  LExceptThrown := False;
+  try
+    FWorkflow.ExportRevisionHandoff(FTestDir, LBaseId, LDecId);
+  except
+    on E: Exception do
+      LExceptThrown := True;
+  end;
+  Assert.IsTrue(LExceptThrown, 'ExportRevisionHandoff must throw exception when decision is not rejected');
 end;
 
 initialization

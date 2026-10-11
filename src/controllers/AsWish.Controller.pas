@@ -385,6 +385,7 @@ type
     ///  Controller already owns four of the five and builds the remaining two
     ///  for every other call in this same block.</summary>
     function ExportAgentHandoff(const ABaselineId: string = ''): string;
+    function ExportRevisionHandoff(const ABaselineId, ADecisionId: string): string;
     function ListDecisions: TArray<TSpecDecision>;
 
     // Difference Commons (WO-20260923-0041)
@@ -2517,11 +2518,33 @@ var
   LDifference: TAsWishDifferenceService;
   LReport: TSpecDifferenceReport;
   LDecId: string;
+  I: Integer;
+  LExistingDec: TSpecDecision;
 begin
   ANewBaseline := Default(TAsWishBaseline);
   ADecisionId := '';
   if not FProjectService.IsOpen then
     raise Exception.Create('No project open');
+
+  // Fail-closed defense: if the latest difference decision on this baseline was rejected by human,
+  // evolution is strictly blocked until human accepts or revision is verified.
+  if FDecisions <> nil then
+  begin
+    for I := FDecisions.Decisions.Count - 1 downto 0 do
+    begin
+      LExistingDec := FDecisions.Decisions[I];
+      if (Pos(ABaselineId, LExistingDec.Title) > 0) or
+         (Pos(ABaselineId, LExistingDec.DecisionText) > 0) or
+         (LExistingDec.ChangeSetId = 'cs-evolve-' + ABaselineId) then
+      begin
+        if LExistingDec.Status = dsRejected then
+          raise Exception.CreateFmt('Cannot evolve baseline "%s": latest difference decision "%s" was rejected by human (%s)',
+            [ABaselineId, LExistingDec.Id, LExistingDec.Rationale]);
+        Break;
+      end;
+    end;
+  end;
+
   LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
   try
     LWorkflow := TAsWishVisualWorkflowService.Create(FSpecStore, FSnapshot, FDecisions, LDifference);
@@ -2556,6 +2579,28 @@ begin
     try
       Result := LWorkflow.ExportAgentHandoff(FProjectService.ProjectPath, ABaselineId);
       FStatus.Info('AsWish.Handoff', 'Exported agent handoff package to ' + Result);
+    finally
+      LWorkflow.Free;
+    end;
+  finally
+    LDifference.Free;
+  end;
+end;
+
+function TAsWishController.ExportRevisionHandoff(const ABaselineId, ADecisionId: string): string;
+var
+  LWorkflow: TAsWishVisualWorkflowService;
+  LDifference: TAsWishDifferenceService;
+begin
+  Result := '';
+  if not FProjectService.IsOpen then
+    raise Exception.Create('No project open');
+  LDifference := TAsWishDifferenceService.Create(FSpecStore, FSnapshot);
+  try
+    LWorkflow := TAsWishVisualWorkflowService.Create(FSpecStore, FSnapshot, FDecisions, LDifference);
+    try
+      Result := LWorkflow.ExportRevisionHandoff(FProjectService.ProjectPath, ABaselineId, ADecisionId);
+      FStatus.Info('AsWish.Revision', 'Exported revision handoff package to ' + Result);
     finally
       LWorkflow.Free;
     end;

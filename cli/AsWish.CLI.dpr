@@ -24,6 +24,7 @@ program AsWish.CLI;
 {$APPTYPE CONSOLE}
 
 uses
+  Winapi.Windows,
   System.SysUtils,
   System.Classes,
   System.IOUtils,
@@ -1271,6 +1272,338 @@ begin
   end;
 end;
 
+procedure RunRevisionExport(const AProjectDir, ABaselineId, ADecisionId: string);
+var
+  LBundle: TControllerBundle;
+  LFile: string;
+begin
+  CheckPositionalDir(AProjectDir);
+  if not TDirectory.Exists(TPath.Combine(AProjectDir, '.AsWish')) then
+  begin
+    Writeln('[revision] error: no .AsWish directory');
+    Halt(1);
+  end;
+  if (ABaselineId = '') or (ADecisionId = '') then
+  begin
+    Writeln('Usage: AsWish.CLI revision export <project-dir> <baseline-id> <decision-id>');
+    Halt(2);
+  end;
+  LBundle := TControllerBundle.Create(True);
+  try
+    LBundle.Controller.OpenProject(AProjectDir);
+    LFile := LBundle.Controller.ExportRevisionHandoff(ABaselineId, ADecisionId);
+    Writeln('[revision] exported revision handoff package to ' + LFile);
+  finally
+    LBundle.Free;
+  end;
+end;
+
+procedure RunAgentExecute(const AProjectDir: string; const AParam4: string; AOptStart: Integer);
+var
+  LBundle: TControllerBundle;
+  LBaseId, LAdapter, LHandoffArg, LCustomCmd: string;
+  LHandoffPath, LRunId, LRunDir, LLogFile, LYamlFile, LGitStatusFile: string;
+  LCmdToRun, LClaudeExe, LFullCmd, LPath, LLine, LLower, LBreachedFile: string;
+  LStartInfo: TStartupInfoW;
+  LProcInfo: TProcessInformation;
+  LStartTick, LEndTick: UInt64;
+  LDwExit: DWORD;
+  LDurationMs, LExitCode: Integer;
+  LBreached: Boolean;
+  LModifiedFiles: TList<string>;
+  LGitLines, LGitBeforeLines: TStringList;
+  LGitBeforeFile: string;
+  LSb: TStringBuilder;
+  I: Integer;
+  LOpt: string;
+begin
+  CheckPositionalDir(AProjectDir);
+  var LProjDir := TPath.GetFullPath(AProjectDir);
+  if not TDirectory.Exists(TPath.Combine(LProjDir, '.AsWish')) then
+  begin
+    Writeln('[agent] error: no .AsWish directory');
+    Halt(1);
+  end;
+
+  LBaseId := AParam4;
+  if (LBaseId = '') or LBaseId.StartsWith('--') then
+    LBaseId := 'B-0001';
+
+  LAdapter := 'claude';
+  LHandoffArg := '';
+  LCustomCmd := '';
+
+  I := AOptStart;
+  if (AParam4 <> '') and AParam4.StartsWith('--') then
+    I := 4;
+
+  while I <= ParamCount do
+  begin
+    LOpt := LowerCase(ParamStr(I));
+    if (LOpt = '--adapter') and (I < ParamCount) then
+    begin
+      Inc(I);
+      LAdapter := ParamStr(I);
+    end
+    else if (LOpt = '--handoff') and (I < ParamCount) then
+    begin
+      Inc(I);
+      LHandoffArg := ParamStr(I);
+    end
+    else if (LOpt = '--cmd') and (I < ParamCount) then
+    begin
+      Inc(I);
+      LCustomCmd := ParamStr(I);
+    end;
+    Inc(I);
+  end;
+
+  if LHandoffArg <> '' then
+  begin
+    if TFile.Exists(LHandoffArg) then
+      LHandoffPath := LHandoffArg
+    else if TFile.Exists(TPath.Combine(LProjDir, LHandoffArg)) then
+      LHandoffPath := TPath.Combine(LProjDir, LHandoffArg)
+    else if TFile.Exists(TPath.Combine(LProjDir, '.AsWish\handoff\' + LHandoffArg)) then
+      LHandoffPath := TPath.Combine(LProjDir, '.AsWish\handoff\' + LHandoffArg)
+    else
+    begin
+      Writeln(Format('[agent] error: handoff file "%s" not found', [LHandoffArg]));
+      Halt(1);
+    end;
+  end
+  else
+  begin
+    LHandoffPath := TPath.Combine(LProjDir, '.AsWish\handoff\agent-handoff.md');
+    if not TFile.Exists(LHandoffPath) then
+    begin
+      LBundle := TControllerBundle.Create(True);
+      try
+        LBundle.Controller.OpenProject(LProjDir);
+        LHandoffPath := LBundle.Controller.ExportAgentHandoff(LBaseId);
+      finally
+        LBundle.Free;
+      end;
+    end;
+  end;
+
+  LRunId := 'run-' + FormatDateTime('yyyymmdd-hhnnss', Now);
+  LRunDir := TPath.Combine(LProjDir, '.AsWish\agent-runs\' + LRunId);
+  ForceDirectories(LRunDir);
+  LLogFile := TPath.Combine(LRunDir, 'agent.log');
+  LYamlFile := TPath.Combine(LRunDir, 'agent-execution.yaml');
+  LGitStatusFile := TPath.Combine(LRunDir, 'git-status.txt');
+
+  if LCustomCmd <> '' then
+    LCmdToRun := LCustomCmd
+  else if LowerCase(LAdapter) = 'mock' then
+    LCmdToRun := 'echo [mock-agent] Mock executed successfully'
+  else
+  begin
+    LClaudeExe := 'C:\Users\Administrator\.local\bin\claude.EXE';
+    if not TFile.Exists(LClaudeExe) then
+      LClaudeExe := TPath.Combine(GetEnvironmentVariable('USERPROFILE'), '.local\bin\claude.EXE');
+    if not TFile.Exists(LClaudeExe) then
+      LClaudeExe := 'claude';
+
+    LCmdToRun := Format('type "%s" | "%s" -p - --dangerously-skip-permissions', [LHandoffPath, LClaudeExe]);
+  end;
+
+  Writeln(Format('[agent] Launching Agent execution for baseline %s (run_id: %s, adapter: %s)...',
+    [LBaseId, LRunId, LAdapter]));
+
+  LGitBeforeFile := TPath.Combine(LRunDir, 'git-status-before.txt');
+  LGitBeforeLines := TStringList.Create;
+  try
+    FillChar(LStartInfo, SizeOf(LStartInfo), 0);
+    LStartInfo.cb := SizeOf(LStartInfo);
+    LStartInfo.dwFlags := STARTF_USESHOWWINDOW;
+    LStartInfo.wShowWindow := SW_HIDE;
+    FillChar(LProcInfo, SizeOf(LProcInfo), 0);
+
+    LFullCmd := Format('cmd.exe /c git -C "%s" status --porcelain > "%s" 2>&1',
+      [LProjDir, LGitBeforeFile]);
+
+    if CreateProcessW(nil, PChar(LFullCmd), nil, nil, False, 0, nil,
+      PChar(LProjDir), LStartInfo, LProcInfo) then
+    begin
+      try
+        WaitForSingleObject(LProcInfo.hProcess, INFINITE);
+      finally
+        CloseHandle(LProcInfo.hProcess);
+        CloseHandle(LProcInfo.hThread);
+      end;
+      if TFile.Exists(LGitBeforeFile) then
+        LGitBeforeLines.LoadFromFile(LGitBeforeFile, TEncoding.UTF8);
+    end;
+
+    FillChar(LStartInfo, SizeOf(LStartInfo), 0);
+    LStartInfo.cb := SizeOf(LStartInfo);
+    LStartInfo.dwFlags := STARTF_USESHOWWINDOW;
+    LStartInfo.wShowWindow := SW_HIDE;
+    LFullCmd := Format('cmd.exe /c "%s > %s 2>&1"', [LCmdToRun, LLogFile]);
+    LStartTick := TThread.GetTickCount64;
+
+    if not CreateProcessW(nil, PChar(LFullCmd), nil, nil, False, 0, nil,
+      PChar(LProjDir), LStartInfo, LProcInfo) then
+    begin
+      Writeln(Format('[agent] Failed to spawn agent process (SysError: %d)', [GetLastError]));
+      Halt(1);
+    end;
+
+    try
+      WaitForSingleObject(LProcInfo.hProcess, INFINITE);
+      GetExitCodeProcess(LProcInfo.hProcess, LDwExit);
+      LEndTick := TThread.GetTickCount64;
+      LDurationMs := Integer(LEndTick - LStartTick);
+      LExitCode := Integer(LDwExit);
+    finally
+      CloseHandle(LProcInfo.hProcess);
+      CloseHandle(LProcInfo.hThread);
+    end;
+
+    // Audit file modifications via git status --porcelain
+    LBreached := False;
+    LBreachedFile := '';
+    LModifiedFiles := TList<string>.Create;
+    try
+      FillChar(LStartInfo, SizeOf(LStartInfo), 0);
+      LStartInfo.cb := SizeOf(LStartInfo);
+      LStartInfo.dwFlags := STARTF_USESHOWWINDOW;
+      LStartInfo.wShowWindow := SW_HIDE;
+      FillChar(LProcInfo, SizeOf(LProcInfo), 0);
+
+      LFullCmd := Format('cmd.exe /c git -C "%s" status --porcelain > "%s" 2>&1',
+        [LProjDir, LGitStatusFile]);
+
+      if CreateProcessW(nil, PChar(LFullCmd), nil, nil, False, 0, nil,
+        PChar(LProjDir), LStartInfo, LProcInfo) then
+      begin
+        try
+          WaitForSingleObject(LProcInfo.hProcess, INFINITE);
+        finally
+          CloseHandle(LProcInfo.hProcess);
+          CloseHandle(LProcInfo.hThread);
+        end;
+      end;
+
+      if TFile.Exists(LGitStatusFile) then
+      begin
+        LGitLines := TStringList.Create;
+        try
+          LGitLines.LoadFromFile(LGitStatusFile, TEncoding.UTF8);
+          for I := 0 to LGitLines.Count - 1 do
+          begin
+            LLine := LGitLines[I].Trim;
+            if Length(LLine) < 3 then Continue;
+
+            // If this file change was already present before the agent launched, skip it
+            var LAlreadyPresent := False;
+            for var J := 0 to LGitBeforeLines.Count - 1 do
+              if LGitBeforeLines[J].Trim = LLine then
+              begin
+                LAlreadyPresent := True;
+                Break;
+              end;
+            if LAlreadyPresent then Continue;
+
+            LPath := LLine.Substring(2).Trim;
+            if (Length(LPath) > 1) and (LPath[1] = '"') and (LPath[Length(LPath)] = '"') then
+              LPath := LPath.Substring(1, Length(LPath) - 2);
+            LPath := LPath.Replace('/', '\');
+            LLower := LowerCase(LPath);
+
+            if LLower.StartsWith('.aswish\') or LLower.StartsWith('.aswish/') or (LLower = '.aswish') then
+            begin
+              if not (LLower.StartsWith('.aswish\agent-runs\') or LLower.StartsWith('.aswish/agent-runs/') or
+                      LLower.StartsWith('.aswish\handoff\') or LLower.StartsWith('.aswish/handoff/')) then
+              begin
+                LBreached := True;
+                LBreachedFile := LPath;
+                Break;
+              end;
+            end
+            else
+              LModifiedFiles.Add(LPath);
+          end;
+        finally
+          LGitLines.Free;
+        end;
+      end;
+
+    // Security check: strictly forbidden paths under .AsWish/
+    if LBreached then
+    begin
+      Writeln(Format('[agent] SECURITY BREACH: External Agent modified forbidden path "%s" (unauthorized breach)',
+        [LBreachedFile]));
+      LSb := TStringBuilder.Create;
+      try
+        LSb.AppendLine('run_id: "' + LRunId + '"');
+        LSb.AppendLine('baseline_id: "' + LBaseId + '"');
+        LSb.AppendLine('adapter: "' + LAdapter + '"');
+        LSb.AppendLine('exit_code: 1');
+        LSb.AppendLine('duration_ms: ' + IntToStr(LDurationMs));
+        LSb.AppendLine('modified_files:');
+        LSb.AppendLine('  - "' + LBreachedFile + '"');
+        LSb.AppendLine('status: "breached"');
+        TAsWishStoreService.AtomicWriteTextFile(LYamlFile, LSb.ToString);
+      finally
+        LSb.Free;
+      end;
+      Writeln('[agent] Execution rejected: Agent modified strictly forbidden .AsWish data.');
+      Halt(1);
+    end;
+
+    // Record agent-execution.yaml
+    LSb := TStringBuilder.Create;
+    try
+      LSb.AppendLine('run_id: "' + LRunId + '"');
+      LSb.AppendLine('baseline_id: "' + LBaseId + '"');
+      LSb.AppendLine('adapter: "' + LAdapter + '"');
+      LSb.AppendLine('exit_code: ' + IntToStr(LExitCode));
+      LSb.AppendLine('duration_ms: ' + IntToStr(LDurationMs));
+      if LModifiedFiles.Count = 0 then
+        LSb.AppendLine('modified_files: []')
+      else
+      begin
+        LSb.AppendLine('modified_files:');
+        for var LF in LModifiedFiles do
+          LSb.AppendLine('  - "' + LF + '"');
+      end;
+      if LExitCode = 0 then
+        LSb.AppendLine('status: "completed"')
+      else
+        LSb.AppendLine('status: "failed"');
+      TAsWishStoreService.AtomicWriteTextFile(LYamlFile, LSb.ToString);
+    finally
+      LSb.Free;
+    end;
+
+    if LExitCode = 0 then
+    begin
+      LBundle := TControllerBundle.Create(True);
+      try
+        LBundle.Controller.OpenProject(AProjectDir);
+        LBundle.Controller.CollectEvidence(LBaseId);
+      finally
+        LBundle.Free;
+      end;
+      Writeln(Format('[agent] Agent run %s completed. Implementation evidence refreshed.', [LRunId]));
+      Writeln('Recorded run metadata to ' + LYamlFile);
+    end
+    else
+    begin
+      Writeln(Format('[agent] Agent run %s failed with exit code %d.', [LRunId, LExitCode]));
+      Halt(LExitCode);
+    end;
+    finally
+      LModifiedFiles.Free;
+    end;
+  finally
+    LGitBeforeLines.Free;
+  end;
+end;
+
 var
   LCommand, LDir: string;
   I: Integer;
@@ -1316,6 +1649,8 @@ begin
     Writeln('  visual preview <dir>      render Visual Preview wireframe');
     Writeln('  visual confirm <dir> [txt] confirm Accepted Visual Baseline');
     Writeln('  handoff <dir> [baseline-id] export Agent Handoff package');
+    Writeln('  agent execute <dir> [id]  execute external Coding Agent with scope boundaries');
+    Writeln('  revision export <dir> <id> <dec-id> export Revision package for rejected difference');
     Halt(2);
   end;
 
@@ -1562,6 +1897,42 @@ begin
       Halt(2);
     end;
     RunHandoff(ParamStr(2), ParamStr(3));
+  end
+  else if LCommand = 'agent' then
+  begin
+    var LSub := LowerCase(ParamStr(2));
+    if LSub = 'execute' then
+    begin
+      if ParamCount < 3 then
+      begin
+        Writeln('AsWish.CLI agent execute <project-dir> [baseline-id] [--adapter claude] [--handoff <file>]');
+        Halt(2);
+      end;
+      RunAgentExecute(ParamStr(3), ParamStr(4), 5);
+    end
+    else
+    begin
+      Writeln('AsWish.CLI agent execute <project-dir> [baseline-id] [--adapter claude] [--handoff <file>]');
+      Halt(2);
+    end;
+  end
+  else if LCommand = 'revision' then
+  begin
+    var LSub := LowerCase(ParamStr(2));
+    if LSub = 'export' then
+    begin
+      if ParamCount < 5 then
+      begin
+        Writeln('AsWish.CLI revision export <project-dir> <baseline-id> <decision-id>');
+        Halt(2);
+      end;
+      RunRevisionExport(ParamStr(3), ParamStr(4), ParamStr(5));
+    end
+    else
+    begin
+      Writeln('AsWish.CLI revision export <project-dir> <baseline-id> <decision-id>');
+      Halt(2);
+    end;
   end
   else
   begin
