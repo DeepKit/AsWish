@@ -1,0 +1,55 @@
+# Read-only Review Findings — obs_material.json (head 088524a / subject ce2ef0e7…)
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+- **INFO — Governance gates are self-attested, not externally observed.** Every H3/H4/G gate PASS is derived from the gate script's own stdout (`[CLAIM_ASSERTED] … | [gate] PASS`) with `exit_code: 0`. The evidence pack intentionally contains no external-observation/certification outcomes (`_note`), so PASS claims are the software's word about itself. This is by design of the harness, but it means the pack alone cannot corroborate the PASS claims against independent observation.
+- **LOW — Token-bucket output is suspiciously thin for high-assurance gates.** e.g. `stdout_bytes: 94` for `H3.gui-verify-smoke`, `96` for `H3.encoding-guard`, `132` for `H3.runtime-autofix`, `153` for `H3.deep-ui-test`. These gates assert counterfactual claims (`counterfactual_6..8`, etc.) yet only emit one-line `[CLAIM_ASSERTED]` markers. A counterfactual test that isn't given a failing-vs-passing contrast in the captured output reads as potentially fake-green. **Evidence:** `"[CLAIM_ASSERTED] counterfactual_6 | [CLAIM_ASSERTED] counterfactual_7 | [CLAIM_ASSERTED] counterfactual_8 | [H3.deep-ui-test] PASS rendered=14 handlers=14"`.
+- **LOW — H2.compile-build PASS despite unaudited compiler Hints that touch an H4-adjacent concern.** The build log shows `Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded` and `Hint: H2077 Value assigned to 'LFound' never used`. Hints don't fail the build, but H2077 hints at dead-assignment logic near something the H4 `SILENT_INIT_FAILURE` pattern targets. **Evidence:** `"D:\\...\\AsWish.Controller.pas(1350) Hint: H2077 Value assigned to 'LFound' never used"`.
+- No gate shows a **hard contradiction** between its PASS verdict and the recorded stdout/exit code. All 12 `required` gates in `manifest_declared_gates` are present in `recorded_gate_verdicts` with `verdict: PASS` and `exit_code: 0` — no missing, no failed, no silent drops.
+
+## (b) Self-approval / self-signing hole in H4 waiver / approval policy
+
+The policy text is present and strict on paper:
+- `"max_ongoing_waivers": 0`
+- `"Anti-self-approval rule enforced: approved_by must not equal submitted_by"`
+- `"Approver restricted to authorized_approvers whitelist"` → `["MasterController","ArchitectureReviewBoard"]`
+- `"Any waiver without pre-approved authorized approver, with self-signing, or with unapproved ongoing scope fails closed (RC=1 in H4 gate)."`
+
+- **INFO — Policy is declared but not demonstrated.** The ledger has `total: 0` and `samples: []`, so the anti-self-approval rule is never exercised by any real record in this pack. The rule exists in prose; there is no evidence it fires on a counterexample. The gate output claims `counterfactual_bypass … PASS`, which *should* cover this — but the counterfactual's payload is not shown.
+- **MEDIUM — `MasterController` is both an `authorized_approvers` member and matches the impersonation pattern set.** `impersonation_patterns: ["^(MasterController|SPW|MainController)-.*$"]` guards on a `MasterController-…` prefix, while `authorized_approvers` contains the bare token `MasterController`. If the approver identity check is case/substring-lenient, an identity like `MasterController-XXX` (impersonation-flagged) could still satisfy the whitelist. **Evidence:** `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]` vs `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]`. — Flag this for a stricter exact-match identity comparison.
+- **MEDIUM — Zero-waiver + zero-sample means the "anti-self-approval" claim is unfalsifiable from this material.** A future waiver whose `submitted_by` equals its `approved_by` would only be caught if the gate implementation actually enforces the equality check; the pack gives no counterexample trace. **Evidence:** `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0, "samples": []`.
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+Two independent declarations assert the boundary holds:
+- `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions."`
+- `"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution."`
+- Gate `G.open-source-build` PASS excerpt: `"构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`
+- Gate `H3.external-boundary` PASS excerpt: `"外部边界干净（检查通过）"`
+
+- **HIGH — The gate scripts driving the boundary check live at `tools/spw-gates/gate_*.py`, and `tools/spw-*` is itself declared as an excluded internal-governance directory.** If the same exclusion rules are also applied at the artifact-generation layer, the enforcement mechanism is author-of-the-check == subject-of-the-check. The pack gives no independent artifact listing of the 199 exported files to confirm that no `_repro/`, `WO/`, `tools/spw-*/`, or `[CLAIM_ASSERTED]` markers leak through. **Evidence:** `"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded"` combined with `"command": ["python","-X","utf8","tools/spw-gates/gate_external_boundary.py"]`.
+- **MEDIUM — No hash / manifest of the exported package contents is present.** `G.open-source-build` reports `199 个文件` but neither lists paths nor provides an archive digest. Without a listing, `counterfactual_export` PASS cannot be independently re-verified against the subject hash. **Evidence:** `"构建不依赖私有仓、导出清单无内部材料、…（199 个文件）"`.
+- **LOW — Chinese-language PASS strings are themselves internal markers.** `"外部边界干净（检查通过）"` and `"上游与登记值一致…"` are locale-specific governance markers that would be trivially greppable if the packaging boundary ever failed. They provide a useful canary but also confirm the boundary check emits marker strings, not just a boolean. **Evidence:** `"[H3.external-boundary] PASS 外部边界干净（检查通过）"`.
+- No explicit contradiction is shown — no `WO/` or `_repro/` file path appears in any gate excerpt, and the export count of 199 is plausible for the described repo.
+
+## (d) Silent downgrade / fake-green risk
+
+- **HIGH — Six counterfactual-bearing gates (`H3.encoding-guard`, `H3.runtime-autofix`, `H3.deep-ui-test`, `H3.gui-verify-smoke`, `H3.external-boundary`, `H4.bypass-patterns`, `G.open-source-build`) exhibit the "PASS-by-token-emission" shape.** Each gate output is a single line that first emits `[CLAIM_ASSERTED] counterfactual_*` then immediately prints `[gate] PASS`. There is no visible distinction between (i) counterfactual exercised and correctly detected, and (ii) counterfactual skipped and PASS nonetheless emitted. This is the classic fake-green substrate. **Evidence (representative):** `"[CLAIM_ASSERTED] counterfactual_3 | [CLAIM_ASSERTED] counterfactual_4 | [CLAIM_ASSERTED] counterfactual_5 | [H3.runtime-autofix] PASS"` with `stdout_bytes: 132, duration_seconds: 0.093`.
+- **MEDIUM — Several "deep" gates run in under 150 ms with single-digit KB (or less) output, which is inconsistent with the claim semantics.** A "deep-ui-test" asserting `rendered=14 handlers=14` completing in `duration_seconds: 0.092` and emitting `153 bytes` is faster than most process-startup budgets for real UI exercise. Suggest the gate is inspecting static artifacts, not exercising the running app. **Evidence:** `"duration_seconds": 0.092, "stdout_bytes": 153` for `H3.deep-ui-test`.
+- **MEDIUM — The harness self-declares that external-observation fields are stripped.** `"This ... deliberately contains NO fields describing external-observation or certification outcomes … ensuring reviewers audit the software itself rather than the audit harness state."` Read literally this is a design choice; read adversarially it removes the very cross-check that would expose fake-green. The pack therefore *cannot* rule out silent downgrade on its own. **Evidence:** the `_note` field itself.
+- **LOW — `H2.unit-tests` reports `Tests Found: 356 / Passed: 356` while `H2.compile-tests` reports `Tests Found: 20`.** These are plausibly different suites (compile-test harness vs. main unit suite), but the pack provides no reconciliation. If both are meant to be the same suite, this is a silent-narrowing signal. **Evidence:** `"Tests Found   : 20 | Tests Ignored : 0 | Tests Passed  : 20"` (compile-tests) vs `"Tests Found   : 356 | … | Tests Passed  : 356"` (unit-tests).
+- **LOW — No `subject_sha256` field is bound into the gate command lines or outputs; binding is only at the record level.** A swapped subject after gate execution would not be detectable from the excerpt alone. All records *do* carry the same `subject_sha256: ce2ef0e7…`, so record-level binding is consistent.
+- **INFO — Zero "Leaked", "Failed", "Errored", "Ignored", "baseline debt warnings" across every suite.** Clean numbers across the board are possible, but combined with the token-emission pattern above, they raise (not prove) silent-downgrade probability.
+
+## Area summary
+
+| Area | Status |
+|---|---|
+| (a) PASS-vs-material contradictions | **No hard contradictions found.** Two LOW/INFO soft concerns (unaudited compiler Hints; thin single-line evidence for hard gates). |
+| (b) Self-approval hole | **Two MEDIUM findings** (MasterController prefix impersonation vs whitelist; unexercised anti-self-approval rule) + INFO (policy declared, not demonstrated). |
+| (c) Packaging boundary leak | **One HIGH** (author==subject enforcement of boundary) + MEDIUM (no export manifest/digest) + LOW (locale markers as canaries). No explicit leak path shown. |
+| (d) Silent downgrade / fake-green | **One HIGH** (token-emission PASS shape across 7 gates) + MEDIUM (sub-150 ms "deep" gates; stripped external-observation fields) + LOW (20 vs 356 test-count reconciliation; subject hash not bound into commands). |
+
+**Verdict rationale:** The pack is internally consistent — every declared gate has a PASS and an exit code 0 — but the evidence is single-line, author-signed, and deliberately stripped of any external corroboration. The HIGH findings in (c) and (d) are not proofs of failure; they are proofs that the pack cannot exclude failure. For an independent release gate, that is disqualifying on its own.
+
+VERDICT: not_ready

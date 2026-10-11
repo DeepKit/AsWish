@@ -22,7 +22,6 @@ if not exist "bin\AsWish.exe" (
     echo [ERROR] GUI target binary bin\AsWish.exe missing.
     exit /b 1
 )
-echo [CLAIM_ASSERTED] compile_gui_binary
 
 echo [2/2] Building CLI: cli\bin\AsWish.CLI.exe ...
 pushd cli
@@ -39,10 +38,11 @@ if not exist "cli\bin\AsWish.CLI.exe" (
     echo [ERROR] CLI target binary cli\bin\AsWish.CLI.exe missing.
     exit /b 1
 )
-echo [CLAIM_ASSERTED] compile_cli_binary
 
 echo.
 echo ============================================================================
 echo   bin/AsWish.exe          = GUI  (desktop; do NOT pass CLI arguments)
 echo   cli/bin/AsWish.CLI.exe  = CLI  (headless command line)
 echo ============================================================================
+echo [CLAIM_ASSERTED] compile_gui_binary
+echo [CLAIM_ASSERTED] compile_cli_binary

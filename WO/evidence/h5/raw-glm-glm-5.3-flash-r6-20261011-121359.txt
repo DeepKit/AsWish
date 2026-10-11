@@ -1,0 +1,36 @@
+## Audit Findings
+
+### (a) Gates claiming PASS vs. material
+
+**F1 — MEDIUM | H2.compile-build | Possible fake-green on `compile_gui_binary` claim**
+Evidence: `"output_excerpt": "... [CLAIM_ASSERTED] compile_cli_binary | ====... bin/AsWish.exe = GUI ... cli/bin/AsWish.CLI.exe = CLI ..."` — the excerpt (with `"truncated": false`, stdout 1425 bytes) contains a `CLAIM_ASSERTED` for `compile_cli_binary` only; no `[CLAIM_ASSERTED] compile_gui_binary` line appears, yet `"claims_asserted": ["compile_cli_binary", "compile_gui_binary"]` and verdict is PASS.
+
+**F2 — MEDIUM | G.vendored-upstream-drift | Gate PASS contradicts H4.HARDCODED_ABS_PATH context / machine-dependent upstream**
+Evidence: `"output_excerpt": "[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase | ... PASS 上游与登记值一致，本仓副本未被误改（2 个文件）"` — the gate depends on a hardcoded local path (`D:\_Progs`), the exact string the H4 pattern bans in production code, and the drift check covers only 2 files. "0 hits" for `H4.HARDCODED_ABS_PATH` should be verified against whether the vendor-path registry lives inside the scanned tree.
+
+**F3 — INFO | all gates | Self-attested claims, no independent attestation**
+Evidence: e.g. `"[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"` — every PASS is emitted by the same `tools/spw-gates/*` scripts whose claims they assert; no external-runner or co-signature evidence is present in the material.
+
+### (b) H4 waiver / approval policy self-approval holes
+
+**F4 — LOW | h4_policy | Anti-self-approval is a bare inequality check with unbound submitter namespace**
+Evidence: `"Anti-self-approval rule enforced: approved_by must not equal submitted_by. Approver restricted to authorized_approvers whitelist."` — a submitter adopting any second identity (or an approver submitting under a proxy name) defeats it; there is no evidence `submitted_by` is bound to a non-approver identity namespace. Also `authorized_approvers` includes `"MasterController"`, which appears in the impersonation blocklist context `"^(MasterController|SPW|MainController)-.*$"`.
+**F5 — INFO | h4_waiver_ledger | No active exposure**
+Evidence: `"total": 0, "with_approver": 0, "without_approver": 0, ... "samples": []` — ledger empty, so no exploitable waiver exists today; the hole in F4 is latent.
+
+### (c) Packaging/export boundary leaks
+
+No leak found in the material: exclusion list covers the governance directories (`"all internal governance files (WO/, tools/spw-*/, _repro/) are excluded"`), and `G.open-source-build` PASS reports `"导出清单无内部材料 ... （199 个文件）"`. Note this is asserted by the same self-attesting gate scripts (see F3), not independently verified here.
+
+### (d) Silent downgrade / fake-green risk
+
+**F6 — MEDIUM | recorded_gate_verdicts | `claims_asserted` is self-reported and not cryptographically tied to stdout content**
+Evidence: H2.compile-build `"claims_asserted": ["compile_cli_binary", "compile_gui_binary"]` vs. excerpt asserting only `compile_cli_binary` (see F1) — the reviewer must trust the runner's `claims_asserted` array even when the (untruncated) output does not corroborate it. This is the primary silent-downgrade vector.
+**F7 — LOW | manifest vs. verdicts | Consistent, no missing/dropped gate**
+All 12 declared gates appear in `recorded_gate_verdicts`, all `exit_code: 0`, `truncated: false`, `subject_sha256` uniformly matching `ce2ef0e7...` — no gate silently dropped or mismatched subject.
+
+---
+
+**Summary:** No BLOCKER/HIGH. Three MEDIUMs (F1, F2, F6) all reduce to the same root cause: gate PASS verdicts are self-attested by internal scripts with reviewer-unverifiable `claims_asserted` fields, one of which (H2.compile-build) is not corroborated by its own output excerpt. (b) has a latent policy hole with zero current exposure; (c) clean; no blocker-level fake-green confirmed but F1 cannot be cleared from the material alone.
+
+VERDICT: not_ready
