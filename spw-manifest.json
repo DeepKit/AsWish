@@ -326,7 +326,7 @@
   "h4_policy": {
     "max_ongoing_waivers": 0,
     "impersonation_patterns": [
-      "^(MasterController|SPW|\\u4e3b\\u63a7)-.*$"
+      "^(MasterController|SPW|MainController)-.*$"
     ]
   },
   "observer_models": [
@@ -344,7 +344,7 @@
     "minimax",
     "gemini"
   ],
-  "observations_sha256": "927dfac95c30945e0402483ffac6f670e9c34fda4348a13d9d16a52118336568",
+  "observations_sha256": "877c95593df7b7eeb09bebac321194dc21cd1e0e4beac2d59c90f4ab8220bb6d",
   "gate_run_sha256": "d83b92c5245be7155dba916d06c9c74ffb4c5c27500c1d7b92c13bb883309204",
   "forbidden_tracked_paths": [
     ".workbuddy/",
