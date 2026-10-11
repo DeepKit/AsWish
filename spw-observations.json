@@ -1,137 +1,184 @@
 {
   "schema": "spw/h5-observations/v1",
   "description": "Read-only heterogeneous observation seats for H5. Each seat is a different model family. Raw responses are kept in WO/evidence/h5/ and referenced by digest. Maintained by Master Controller.",
-  "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
-  "material_digest": "1b99c6bfefe4bc0a6135ad39d6b9abcdf91d36304d8d1928e4bb2fc70655c81f",
+  "subject_sha256": "e5f485a0f5065a39a3e009d8dc8b98079ef75794f5948a3f00766730546250f6",
+  "material_digest": "dbf9e23aef078ba0d50ba29508c96b686132f71828df78cab0f32d795a6cf582",
   "seats": [
     {
       "schema": "spw/h5-observer-seat/v1",
       "family": "deepseek",
-      "model": "claude-deepseek-v4-pro",
-      "resolved_model": "deepseek-v4-pro",
-      "response_id": "cmb-3da05d4fc0ad11f19dbbae03be3413a2",
-      "observed_at": "2026-10-05T19:06:39+08:00",
-      "round": 3,
+      "model": "deepseek-v4.1-flash-workbuddy",
+      "resolved_model": "deepseek-v4.1-flash",
+      "response_id": "cmb-e7f00ea6c51511f18b741e7de67436f1",
+      "observed_at": "2026-10-11T09:45:46+08:00",
+      "round": 4,
       "observer_id": "deepseek-observer",
-      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
-      "material_digest": "1b99c6bfefe4bc0a6135ad39d6b9abcdf91d36304d8d1928e4bb2fc70655c81f",
-      "response_digest": "6540aeaf2bc331357baf3f8b9756179800e44aee320d457db98236c93c43769d",
-      "raw_file": "raw-deepseek-claude-deepseek-v4-pro-r3-20261005-190639.txt",
-      "envelope_file": "env-deepseek-claude-deepseek-v4-pro-r3-20261005-190639.json",
-      "envelope_sha256": "e7b9bf30437bc85efdc2122824c5f7915af995e367a12bb210cf8d291318b5e4",
+      "subject_sha256": "e5f485a0f5065a39a3e009d8dc8b98079ef75794f5948a3f00766730546250f6",
+      "material_digest": "dbf9e23aef078ba0d50ba29508c96b686132f71828df78cab0f32d795a6cf582",
+      "response_digest": "aff6229e07d8ee7861b4ba1fcb92fccaff902497a0434017a2303669c931c239",
+      "raw_file": "raw-deepseek-deepseek-v4.1-flash-workbuddy-r4-20261011-094546.txt",
+      "envelope_file": "env-deepseek-deepseek-v4.1-flash-workbuddy-r4-20261011-094546.json",
+      "envelope_sha256": "15d7e0066b78a0a58e6326b0676bd47f5d335e36cf68881b1ab746f8ed6aef9d",
       "usage": {
-        "prompt_tokens": 2781,
-        "completion_tokens": 1198,
-        "total_tokens": 3979
+        "prompt_tokens": 6625,
+        "completion_tokens": 2074,
+        "total_tokens": 8699
       },
       "verdict": "not_ready",
-      "verdict_reason": "The manifest gates are all recorded as passing, but the waiver ledger shows 81 exemptions with no approver, and the H4 policy allows zero ongoing waivers, creating an internal contradiction. The material lacks any evidence trail linking the PASS verdicts to actual test execution, outputs, or hashes.",
+      "verdict_reason": "All 12 declared gates are recorded PASS with matching claims, and the ledger is empty, but the material is self-reported only: there is no independent verification of the passes, and the state makes a self-contradicting claim that 'any ledger modification invalidates the pinned digest' while never pinning the ledger file's own hash — so single-developer self-exemption control is asserted, not demonstrated.",
       "findings": [
         {
           "severity": "info",
           "area": "gate_alignment",
-          "description": "All 12 gates declared in manifest_declared_gates have matching PASS verdicts in recorded_gate_verdicts. No mismatch found.",
-          "evidence": "manifest_declared_gates length 12 matches recorded_gate_verdicts length 12, all verdicts PASS"
-        },
-        {
-          "severity": "blocker",
-          "area": "evidence_integrity",
-          "description": "H4 policy declares max_ongoing_waivers: 0, but h4_waiver_ledger.total is 81, all without approver. This means either the gate H4.bypass-patterns PASS verdict is false, or the ledger is not being enforced. The recorded state claims a stronger compliance state than the waiver data supports.",
-          "evidence": "h4_policy.max_ongoing_waivers = 0 vs h4_waiver_ledger.total = 81, with_approver = 0, without_approver = 81"
-        },
-        {
-          "severity": "blocker",
-          "area": "evidence_integrity",
-          "description": "All 81 waivers have approved_by empty string, approved_at null, and submitted_by null. The schema lists approved_by as a required field, yet no waiver has an approver. The H4 gate passes despite these unauthorized exemptions.",
-          "evidence": "h4_waiver_ledger.with_approver = 0, without_approver = 81, samples show approved_by: \"\""
-        },
-        {
-          "severity": "blocker",
-          "area": "self_approval",
-          "description": "The waiver ledger schema includes 'submitted_by' but no sample includes it. A developer could add a waiver entry with approved_by set to 'MasterController' or 'ArchitectureReviewBoard' (the only authorized approvers listed) without any independent verification, since the ledger is a flat JSON file at tools/spw-gates/h4_waivers.json and no cryptographic signature or separate approval channel is described.",
-          "evidence": "h4_waiver_ledger.authorized_approvers = ['MasterController', 'ArchitectureReviewBoard']; no approval workflow or signature field described in schema"
-        },
-        {
-          "severity": "high",
-          "area": "missing",
-          "description": "No test execution logs, output artifacts, timestamps, or evidence hashes are provided for any of the PASS verdicts. The recorded_gate_verdicts only contain id, verdict, and exit_code, with no link to the actual test run, log files, or commit hashes that produced those results.",
-          "evidence": "recorded_gate_verdicts entries contain only id, verdict, exit_code; no log references, timestamps, or artifact hashes"
-        },
-        {
-          "severity": "high",
-          "area": "missing",
-          "description": "No claims-to-evidence mapping is provided. The manifest declares specific claims for each gate (e.g., H2.unit-tests claims 'active_detail_trigger', 'state_machine_check', 'required_fields_on_activation'), but there is no per-claim evidence that these specific behaviors were actually tested and passed.",
-          "evidence": "manifest_declared_gates claims arrays have no corresponding evidence mapping in recorded_gate_verdicts"
-        },
-        {
-          "severity": "high",
-          "area": "missing",
-          "description": "The subject_sha256 is provided but there is no way to verify that the recorded PASS verdicts correspond to this specific subject hash. No build artifact hashes, source tree hashes at test time, or CI pipeline identifiers are provided.",
-          "evidence": "subject_sha256: '0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76' with no linkage to verdicts"
+          "description": "All 12 manifest-declared required gates have a recorded PASS verdict with matching gate_id, and every declared claim appears in claims_asserted. No gate is missing or mismatched.",
+          "evidence": "manifest_declared_gates lists H1.resource-locks, H2.compile-build, H2.compile-tests, H2.unit-tests, H3.encoding-guard, H3.runtime-autofix, H3.deep-ui-test, H3.gui-verify-smoke, H3.external-boundary, H4.bypass-patterns, G.open-source-build, G.vendored-upstream-drift; recorded_gate_verdicts contains one PASS entry per gate with verdict=PASS and exit_code=0"
         },
         {
           "severity": "medium",
-          "area": "missing",
-          "description": "The bypass-scan policy is declared but no evidence of the actual scan execution or its results is provided. The H4.bypass-patterns gate passes despite 81 unapproved waivers and max_ongoing_waivers set to 0.",
-          "evidence": "H4.bypass-patterns verdict PASS, but h4_waiver_ledger shows 81 unapproved entries"
+          "area": "evidence_integrity",
+          "description": "The material is entirely self-reported. The _note explicitly states it contains NO external-observation or certification outcomes. Gate verdicts, claim assertions, and hashes all originate from the same harness that is being audited, so 'PASS' cannot be corroborated by anything outside the run itself.",
+          "evidence": "\"_note\": \"...deliberately contains NO fields describing external-observation or certification outcomes of the audit run...\""
+        },
+        {
+          "severity": "medium",
+          "area": "evidence_integrity",
+          "description": "Claims are asserted and then cited as evidence of their own passing. output_excerpt for H3.encoding-guard shows only '[CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS' with no independent verification artifact separating 'the gate ran' from 'the claim was asserted'.",
+          "evidence": "output_excerpt \"[CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS\"; claims=[counterfactual_1, counterfactual_2] but excerpt references only counterfactual_2"
+        },
+        {
+          "severity": "high",
+          "area": "self_approval",
+          "description": "Policy asserts 'Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest', but the only pinned digests are gate_run_sha256 (over the run) and per-gate command_sha256. The waiver ledger file tools/spw-gates/h4_waivers.json has no recorded content hash, mode, or immutability mechanism in this material. Therefore modifying the ledger would not be detectable from the fields shown; the anti-tamper claim is unsupported.",
+          "evidence": "h4_policy.anti_self_approval_rules[4]: \"Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest\" vs h4_waiver_ledger which exposes only path/schema/total and no ledger file sha256"
+        },
+        {
+          "severity": "high",
+          "area": "self_approval",
+          "description": "Concrete self-exemption path: a developer can append a waiver object to tools/spw-gates/h4_waivers.json with pattern_id set to any H4 pattern, and set both submitted_by and approved_by to the same value. The policy says self-signing fails RC=1, so a single developer cannot both submit and approve — but the material does not show where the approver identity is enforced, nor that authorized_approvers (MasterController, ArchitectureReviewBoard) are impersonation-protected identities rather than free-text strings. Edit 1: tools/spw-gates/h4_waivers.json — append {\"pattern_id\":\"H4.DIRECT_DISK_WRITE\",\"file\":\"...\",\"line\":N,\"code\":\"...\",\"rationale\":\"...\",\"scope\":\"ongoing\",\"approved_by\":\"ArchitectureReviewBoard\",\"approved_at\":\"...\",\"expires_at\":null,\"submitted_by\":\"<self>\"}. If the gate only checks submitted_by != approved_by, the developer forges approved_by as a non-self string.",
+          "evidence": "h4_policy.anti_self_approval_rules[2]: \"Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure\"; h4_waiver_ledger.authorized_approvers=[\"MasterController\",\"ArchitectureReviewBoard\"] — no cryptographic binding to those identities is described"
+        },
+        {
+          "severity": "high",
+          "area": "self_approval",
+          "description": "A second concrete path: the 'scope baseline' mechanism is referenced but not defined in this material. anti_self_approval_rules[1] says 'Scope baseline additions require pre-authorized approver in h4_approvers.json', but h4_approvers.json is not shown, and no field in the ledger schema ties an approved waiver to a signed scope baseline. A developer can add an entry to the unshown h4_approvers.json (or to a scope-baseline file) as themselves.",
+          "evidence": "h4_policy.anti_self_approval_rules[1] references h4_approvers.json, which is absent from the material; only h4_waivers.json is provided"
+        },
+        {
+          "severity": "medium",
+          "area": "self_approval",
+          "description": "The ledger total is 0, yet the policy describes enforcement rules for waivers that must be governed and accounted for. With zero entries, none of the anti-self-approval rules are actually exercised by this run, so their effectiveness is asserted, not demonstrated.",
+          "evidence": "h4_waiver_ledger.total=0, without_approver=0, samples=[]; H4.bypass-patterns output_excerpt: \"all 0 waivers governed and accounted for\""
         },
         {
           "severity": "medium",
           "area": "leak",
-          "description": "The h4_waiver_ledger contains file paths and code snippets that may reference internal development paths (e.g., 'D:\\\\_Progs', 'Spikes/WO-0030-VCL-HighFidelity/'), potentially leaking internal directory structure and development project names if the repository is cloned.",
-          "evidence": "h4_patterns includes 'D:\\\\_Progs' and waiver samples reference 'Spikes/WO-0030-VCL-HighFidelity/TargetApp.dpr'"
+          "description": "The material itself names internal governance artifacts — WO/, tools/spw-*/, _repro/, h4_approvers.json, h4_waivers.json, gate_external_boundary.py — and states they are excluded from distribution only via git export-ignore. Because h4_approvers.json is referenced but not listed among the excluded directories, it is unverifiable that the approver registry is inside the export-ignore boundary.",
+          "evidence": "packaging_boundary.enforcement: \"Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded\"; distribution_model lists excluded items as WO/, tools/spw-*/, _repro/ — h4_approvers.json's location is not stated"
+        },
+        {
+          "severity": "medium",
+          "area": "leak",
+          "description": "The export-ignore boundary depends on a .gitattributes file, which is not included in the material. Whether every internal path (WO/, tools/spw-*/, _repro/, and the approver/waiver JSON files) is actually enumerated in export-ignore cannot be verified from this state.",
+          "evidence": "packaging_boundary.enforcement cites export-ignore but no .gitattributes content or hash is provided"
+        },
+        {
+          "severity": "low",
+          "area": "missing",
+          "description": "The bypass-scan policy is present as prose (h4_policy) but no field lists the actual scan policy version, its own hash, or the pattern set hash. Only three patterns and their rationales are given.",
+          "evidence": "h4_patterns has three entries; no policy_version, no patterns_sha256 field"
+        },
+        {
+          "severity": "low",
+          "area": "evidence_integrity",
+          "description": "H2.compile-tests output_excerpt contains a compiler hint ('Variable LNewBaseline is declared but never used') and is recorded as PASS. This is not a blocker but shows the excerpt is a fragment, not a full output; the excerpt cannot independently support the 'Test Completed' style claim for a compile gate.",
+          "evidence": "H2.compile-tests output_excerpt: \"Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used...\""
+        },
+        {
+          "severity": "medium",
+          "area": "missing",
+          "description": "No field records the subject repository, branch, tag, or release version. head_commit='89e50f1' and subject_sha256 are given, but there is no signed tag, no release-notes hash, and no mapping from the subject tree to the git archive output. Release readiness of a specific artifact cannot be tied to what was tested.",
+          "evidence": "head_commit=89e50f1; subject_sha256 present; no tag, release version, or signed-artifact field anywhere in the material"
         }
       ]
     },
     {
       "schema": "spw/h5-observer-seat/v1",
-      "family": "gemini",
-      "model": "gemini-3.8-flash-cli",
-      "resolved_model": "gemini-3.8-flash",
-      "response_id": "24rDarvhIIrJ-8YPnoyYmAk",
-      "observed_at": "2026-10-05T19:29:48+08:00",
-      "round": 3,
-      "observer_id": "gemini-observer",
-      "subject_sha256": "0f4bb07029dd1c3a2ae7dfc6fc969f746501beb82638cd9b7bfd62691842ee76",
-      "material_digest": "1b99c6bfefe4bc0a6135ad39d6b9abcdf91d36304d8d1928e4bb2fc70655c81f",
-      "response_digest": "d447e906c60cf5034d43694f19a03c7faf21c1b058cc6d23febba50dcf7d8db5",
-      "raw_file": "raw-gemini-gemini-3.8-flash-cli-r3-20261005-192948.txt",
-      "envelope_file": "env-gemini-gemini-3.8-flash-cli-r3-20261005-192948.json",
-      "envelope_sha256": "fd803e926438f60c53ef0724bc3451fd254ebd02a9bab0551f1e027de1df102a",
+      "family": "glm",
+      "model": "glm-5.3-flash",
+      "resolved_model": "glm-5.3-flash",
+      "response_id": "cmb-eed8677ec51511f1811d8ef67a903036",
+      "observed_at": "2026-10-11T09:46:24+08:00",
+      "round": 4,
+      "observer_id": "glm-observer",
+      "subject_sha256": "e5f485a0f5065a39a3e009d8dc8b98079ef75794f5948a3f00766730546250f6",
+      "material_digest": "dbf9e23aef078ba0d50ba29508c96b686132f71828df78cab0f32d795a6cf582",
+      "response_digest": "a8edd2153741e772c1b6c3c970c96e2e0719fe9ad5b3fe3721efef0c390f97f7",
+      "raw_file": "raw-glm-glm-5.3-flash-r4-20261011-094624.txt",
+      "envelope_file": "env-glm-glm-5.3-flash-r4-20261011-094624.json",
+      "envelope_sha256": "c85020ed7952a4de234e7f11a87b10818114d7d7c7cf43bfff6b91cf63afcf72",
       "usage": {
-        "completion_tokens": 611,
-        "prompt_tokens": 2837,
-        "total_tokens": 5636
+        "prompt_tokens": 6713,
+        "completion_tokens": 2132,
+        "total_tokens": 8845
       },
       "verdict": "not_ready",
-      "verdict_reason": "Gate H4 is marked as PASS despite 81 unapproved bypass waivers directly conflicting with the max_ongoing_waivers policy of 0. Furthermore, the waiver ledger allows unauthenticated self-exemption by committing unapproved entries directly to tools/spw-gates/h4_waivers.json.",
+      "verdict_reason": "All 12 declared gates are recorded as PASS with matching claim sets, but the state is self-reported and unsigned: the waiver self-approval check is defeatable by a developer who controls the ledger file and approver naming, and the export-ignore exclusion only protects packaged archives, not git clones. The material alone cannot substantiate the pinned hashes or the 0-bypass-hit result.",
       "findings": [
         {
-          "severity": "blocker",
-          "area": "evidence_integrity",
-          "description": "Policy contradiction: h4_policy defines max_ongoing_waivers as 0, yet the ledger contains 81 active waivers, and gate H4.bypass-patterns is recorded as PASS.",
-          "evidence": "h4_policy.max_ongoing_waivers: 0, h4_waiver_ledger.total: 81, recorded_gate_verdicts[id='H4.bypass-patterns'].verdict: 'PASS'"
-        },
-        {
-          "severity": "blocker",
-          "area": "self_approval",
-          "description": "Developers can grant themselves exemptions without third-party review. The ledger accepts entries with empty approvers under scope 'baseline', meaning a developer can simply append an entry to tools/spw-gates/h4_waivers.json with approved_by set to empty string or null.",
-          "evidence": "h4_waiver_ledger.without_approver: 81, h4_waiver_ledger.samples[0].approved_by: ''"
+          "severity": "info",
+          "area": "gate_alignment",
+          "description": "Q1: Every gate in manifest_declared_gates (12 gates) has exactly one corresponding entry in recorded_gate_verdicts with verdict PASS and exit_code 0, and every declared claim appears in claims_asserted (including H2.compile-build and H2.compile-tests, which declare no claims and assert none). No mismatch by gate name.",
+          "evidence": "manifest_declared_gates ids {H1.resource-locks, H2.compile-build, H2.compile-tests, H2.unit-tests, H3.encoding-guard, H3.runtime-autofix, H3.deep-ui-test, H3.gui-verify-smoke, H3.external-boundary, H4.bypass-patterns, G.open-source-build, G.vendored-upstream-drift} == recorded_gate_verdicts ids, all verdict=PASS"
         },
         {
           "severity": "high",
-          "area": "missing",
-          "description": "Test execution proof and claim verification outputs are missing. Gates declare specific claims (e.g., controlled_entry_only, counterfactual checks, upstream_vendor_drift), but verdicts only provide exit_code 0 with no supporting execution logs or claim verification artifacts.",
-          "evidence": "manifest_declared_gates[].claims vs recorded_gate_verdicts containing only verdict and exit_code"
+          "area": "evidence_integrity",
+          "description": "Q2: H4.bypass-patterns reports 'verified 0 hits; all 0 waivers governed', yet h4_patterns documents three patterns whose rationales describe concrete existing code: H4.DIRECT_DISK_WRITE says 'pending-decisions and bundles.html are written raw' (bugfix #5), H4.SILENT_INIT_FAILURE cites BUG-7, and H4.HARDCODED_ABS_PATH cites a production path in MainForm. If the rationales describe real occurrences, 0 hits is either false or the patterns are stale/over-narrow; the recorded state claims a cleaner tree than its own pattern documentation implies. No reconciliation between the two is provided.",
+          "evidence": "recorded_gate_verdicts[H4.bypass-patterns].output_excerpt 'verified 0 hits' vs h4_patterns[0].rationale 'pending-decisions and bundles.html are written raw' and h4_patterns[2].rationale 'Absolute machine path baked into production code'"
+        },
+        {
+          "severity": "info",
+          "area": "evidence_integrity",
+          "description": "Q2: All recorded verdicts carry subject_sha256 equal to the top-level subject_sha256 and the manifest pins gate_run_sha256, but the material provides no way for a reviewer to recompute or verify any of these digests (no recipe for gate_run_sha256 construction, no signature), so the pinning claimed by h4_policy.anti_self_approval_rules ('any ledger modification invalidates pinned digest') is unverifiable from this material.",
+          "evidence": "subject_sha256, gate_run_sha256, per-verdict stdout_sha256/command_sha256; h4_policy.anti_self_approval_rules[4]"
+        },
+        {
+          "severity": "high",
+          "area": "self_approval",
+          "description": "Q3: Yes, a self-approval path exists. The self-signing rule only rejects submitted_by == approved_by as literal strings; there is no authentication that approved_by corresponds to a real authorized party, and the ledger (tools/spw-gates/h4_waivers.json) plus the manifest digest are plain files editable by the same developer. Concrete edits: (1) in tools/spw-gates/h4_waivers.json, add an entry with pattern_id of choice, approved_by='ArchitectureReviewBoard', submitted_by=<any other string, e.g. own username>, expires_at set in the future; (2) since max_ongoing_waivers=0 would still fail the gate, either set the waiver scope to a non-ongoing/baseline scope exploiting the unseparated 'Scope baseline additions require pre-authorized approver' rule, or additionally edit the pinned gate_run_sha256 in the manifest (and re-run/re-record H4.bypass-patterns with a fresh digest) so the modified ledger matches the new pin. No second-party agreement is required at any step.",
+          "evidence": "h4_policy.anti_self_approval_rules[2] 'Self-signing (submitted_by == approved_by) causes immediate RC=1'; h4_waiver_ledger.path 'tools/spw-gates/h4_waivers.json'; anti_self_approval_rules[4] digest pin as the only tamper control"
+        },
+        {
+          "severity": "medium",
+          "area": "self_approval",
+          "description": "Q3: The referenced approver registry h4_approvers.json is not included in the material, so the claim that scope-baseline additions 'require pre-authorized approver in h4_approvers.json' cannot be verified, nor can it be confirmed that the registry itself is tamper-resistant.",
+          "evidence": "h4_policy.anti_self_approval_rules[1]; no h4_approvers.json content or hash anywhere in MATERIAL"
+        },
+        {
+          "severity": "high",
+          "area": "leak",
+          "description": "Q4: Yes. The exclusions (WO/, tools/spw-*/, _repro/, and internal governance markers) are enforced via git export-ignore, which affects only git archive/package output. The material itself states releases come 'exclusively via git archive / export-ignore'; a plain 'git clone' of the repository would deliver every internal governance file, including tools/spw-gates/h4_waivers.json, the gate scripts, and any WO/ or _repro/ content, with no stated protection.",
+          "evidence": "distribution_model 'Release packages are produced exclusively via git archive / export-ignore'; packaging_boundary.enforcement 'Git export-ignore ... excluded from public distributions' (clone not addressed)"
         },
         {
           "severity": "medium",
           "area": "leak",
-          "description": "Cloning the repository exposes internal governance trackers, internal work orders, and internal bug identifiers baked into paths and waiver rationales.",
-          "evidence": "h4_waiver_ledger.path: 'tools/spw-gates/h4_waivers.json', samples[0].file: 'Spikes/WO-0030-VCL-HighFidelity/TargetApp.dpr', samples[1].rationale: 'Fail-closed progress trace logging (WO-0075/WO-0080)'"
+          "description": "Q4: The waiver ledger path and schema, the impersonation regex, and approver identity list ('MasterController', 'ArchitectureReviewBoard') are internal governance material embedded in this manifest; if this manifest ships with the repository, a clone leaks them regardless of export-ignore on the named directories.",
+          "evidence": "h4_waiver_ledger.path, schema, authorized_approvers; h4_policy.impersonation_patterns"
+        },
+        {
+          "severity": "high",
+          "area": "missing",
+          "description": "Q5: Cannot certify. Missing or absent: any way to independently reproduce/verify subject_sha256, gate_run_sha256, or per-verdict stdout hashes; h4_approvers.json content; LICENSE and contribution/README evidence appropriate for an open-source release; any reconciliation of the 0-hits claim with the three pattern rationales; any clone-time (as opposed to archive-time) exclusion mechanism.",
+          "evidence": "absence of any verification recipe, signature, h4_approvers.json, or license field in MATERIAL"
+        },
+        {
+          "severity": "low",
+          "area": "missing",
+          "description": "All gate timestamps are 2026-10-11 and all verdicts share one subject_sha256; consistency is asserted but no run log or harness output beyond output_excerpt is provided to corroborate that a single contiguous gate run produced these entries.",
+          "evidence": "executed_at values 2026-10-11T01:06:28 through 01:07:18; gate_run_sha256 unpinned to any listed verifiable artifact"
         }
       ]
     }
-  ],
-  "material_round": 3
+  ]
 }

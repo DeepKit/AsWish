@@ -1,0 +1,17 @@
+{
+  "requested_model": "deepseek-v4.1-flash-workbuddy",
+  "resolved_model": "deepseek-v4.1-flash",
+  "response_id": "cmb-e7f00ea6c51511f18b741e7de67436f1",
+  "created": 1791683146,
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 6625,
+    "completion_tokens": 2074,
+    "total_tokens": 8699
+  },
+  "finish_reason": "stop",
+  "raw_file": "raw-deepseek-deepseek-v4.1-flash-workbuddy-r4-20261011-094546.txt",
+  "raw_sha256": "aff6229e07d8ee7861b4ba1fcb92fccaff902497a0434017a2303669c931c239",
+  "material_sha256": "dbf9e23aef078ba0d50ba29508c96b686132f71828df78cab0f32d795a6cf582",
+  "subject_sha256": "e5f485a0f5065a39a3e009d8dc8b98079ef75794f5948a3f00766730546250f6"
+}

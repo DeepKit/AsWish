@@ -1,0 +1,80 @@
+```json
+{
+  "verdict": "not_ready",
+  "verdict_reason": "All 12 declared gates are recorded PASS with matching claims, and the ledger is empty, but the material is self-reported only: there is no independent verification of the passes, and the state makes a self-contradicting claim that 'any ledger modification invalidates the pinned digest' while never pinning the ledger file's own hash — so single-developer self-exemption control is asserted, not demonstrated.",
+  "findings": [
+    {
+      "severity": "info",
+      "area": "gate_alignment",
+      "description": "All 12 manifest-declared required gates have a recorded PASS verdict with matching gate_id, and every declared claim appears in claims_asserted. No gate is missing or mismatched.",
+      "evidence": "manifest_declared_gates lists H1.resource-locks, H2.compile-build, H2.compile-tests, H2.unit-tests, H3.encoding-guard, H3.runtime-autofix, H3.deep-ui-test, H3.gui-verify-smoke, H3.external-boundary, H4.bypass-patterns, G.open-source-build, G.vendored-upstream-drift; recorded_gate_verdicts contains one PASS entry per gate with verdict=PASS and exit_code=0"
+    },
+    {
+      "severity": "medium",
+      "area": "evidence_integrity",
+      "description": "The material is entirely self-reported. The _note explicitly states it contains NO external-observation or certification outcomes. Gate verdicts, claim assertions, and hashes all originate from the same harness that is being audited, so 'PASS' cannot be corroborated by anything outside the run itself.",
+      "evidence": "\"_note\": \"...deliberately contains NO fields describing external-observation or certification outcomes of the audit run...\""
+    },
+    {
+      "severity": "medium",
+      "area": "evidence_integrity",
+      "description": "Claims are asserted and then cited as evidence of their own passing. output_excerpt for H3.encoding-guard shows only '[CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS' with no independent verification artifact separating 'the gate ran' from 'the claim was asserted'.",
+      "evidence": "output_excerpt \"[CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS\"; claims=[counterfactual_1, counterfactual_2] but excerpt references only counterfactual_2"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "Policy asserts 'Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest', but the only pinned digests are gate_run_sha256 (over the run) and per-gate command_sha256. The waiver ledger file tools/spw-gates/h4_waivers.json has no recorded content hash, mode, or immutability mechanism in this material. Therefore modifying the ledger would not be detectable from the fields shown; the anti-tamper claim is unsupported.",
+      "evidence": "h4_policy.anti_self_approval_rules[4]: \"Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest\" vs h4_waiver_ledger which exposes only path/schema/total and no ledger file sha256"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "Concrete self-exemption path: a developer can append a waiver object to tools/spw-gates/h4_waivers.json with pattern_id set to any H4 pattern, and set both submitted_by and approved_by to the same value. The policy says self-signing fails RC=1, so a single developer cannot both submit and approve — but the material does not show where the approver identity is enforced, nor that authorized_approvers (MasterController, ArchitectureReviewBoard) are impersonation-protected identities rather than free-text strings. Edit 1: tools/spw-gates/h4_waivers.json — append {\"pattern_id\":\"H4.DIRECT_DISK_WRITE\",\"file\":\"...\",\"line\":N,\"code\":\"...\",\"rationale\":\"...\",\"scope\":\"ongoing\",\"approved_by\":\"ArchitectureReviewBoard\",\"approved_at\":\"...\",\"expires_at\":null,\"submitted_by\":\"<self>\"}. If the gate only checks submitted_by != approved_by, the developer forges approved_by as a non-self string.",
+      "evidence": "h4_policy.anti_self_approval_rules[2]: \"Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure\"; h4_waiver_ledger.authorized_approvers=[\"MasterController\",\"ArchitectureReviewBoard\"] — no cryptographic binding to those identities is described"
+    },
+    {
+      "severity": "high",
+      "area": "self_approval",
+      "description": "A second concrete path: the 'scope baseline' mechanism is referenced but not defined in this material. anti_self_approval_rules[1] says 'Scope baseline additions require pre-authorized approver in h4_approvers.json', but h4_approvers.json is not shown, and no field in the ledger schema ties an approved waiver to a signed scope baseline. A developer can add an entry to the unshown h4_approvers.json (or to a scope-baseline file) as themselves.",
+      "evidence": "h4_policy.anti_self_approval_rules[1] references h4_approvers.json, which is absent from the material; only h4_waivers.json is provided"
+    },
+    {
+      "severity": "medium",
+      "area": "self_approval",
+      "description": "The ledger total is 0, yet the policy describes enforcement rules for waivers that must be governed and accounted for. With zero entries, none of the anti-self-approval rules are actually exercised by this run, so their effectiveness is asserted, not demonstrated.",
+      "evidence": "h4_waiver_ledger.total=0, without_approver=0, samples=[]; H4.bypass-patterns output_excerpt: \"all 0 waivers governed and accounted for\""
+    },
+    {
+      "severity": "medium",
+      "area": "leak",
+      "description": "The material itself names internal governance artifacts — WO/, tools/spw-*/, _repro/, h4_approvers.json, h4_waivers.json, gate_external_boundary.py — and states they are excluded from distribution only via git export-ignore. Because h4_approvers.json is referenced but not listed among the excluded directories, it is unverifiable that the approver registry is inside the export-ignore boundary.",
+      "evidence": "packaging_boundary.enforcement: \"Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded\"; distribution_model lists excluded items as WO/, tools/spw-*/, _repro/ — h4_approvers.json's location is not stated"
+    },
+    {
+      "severity": "medium",
+      "area": "leak",
+      "description": "The export-ignore boundary depends on a .gitattributes file, which is not included in the material. Whether every internal path (WO/, tools/spw-*/, _repro/, and the approver/waiver JSON files) is actually enumerated in export-ignore cannot be verified from this state.",
+      "evidence": "packaging_boundary.enforcement cites export-ignore but no .gitattributes content or hash is provided"
+    },
+    {
+      "severity": "low",
+      "area": "missing",
+      "description": "The bypass-scan policy is present as prose (h4_policy) but no field lists the actual scan policy version, its own hash, or the pattern set hash. Only three patterns and their rationales are given.",
+      "evidence": "h4_patterns has three entries; no policy_version, no patterns_sha256 field"
+    },
+    {
+      "severity": "low",
+      "area": "evidence_integrity",
+      "description": "H2.compile-tests output_excerpt contains a compiler hint ('Variable LNewBaseline is declared but never used') and is recorded as PASS. This is not a blocker but shows the excerpt is a fragment, not a full output; the excerpt cannot independently support the 'Test Completed' style claim for a compile gate.",
+      "evidence": "H2.compile-tests output_excerpt: \"Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used...\""
+    },
+    {
+      "severity": "medium",
+      "area": "missing",
+      "description": "No field records the subject repository, branch, tag, or release version. head_commit='89e50f1' and subject_sha256 are given, but there is no signed tag, no release-notes hash, and no mapping from the subject tree to the git archive output. Release readiness of a specific artifact cannot be tied to what was tested.",
+      "evidence": "head_commit=89e50f1; subject_sha256 present; no tag, release version, or signed-artifact field anywhere in the material"
+    }
+  ]
+}
+```

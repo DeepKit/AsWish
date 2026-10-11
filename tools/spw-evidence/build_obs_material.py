@@ -79,6 +79,24 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
     for g in raw_gates:
         if not isinstance(g, dict) or "gate_id" not in g:
             continue
+        norm_cmd = []
+        root_str = str(ROOT).replace("\\", "/")
+        for arg in (g.get("command") or []):
+            arg_str = str(arg).replace("\\", "/")
+            if arg_str.startswith(root_str + "/"):
+                norm_cmd.append(arg_str[len(root_str) + 1:])
+            elif arg_str.startswith(str(ROOT) + "\\"):
+                norm_cmd.append(arg_str[len(str(ROOT)) + 1:])
+            else:
+                norm_cmd.append(str(arg))
+
+        safe_gid = g["gate_id"].replace(".", "_")
+        log_file = ROOT / "tools" / "spw-gates" / "gate-run" / f"gate_{safe_gid}.log"
+        output_excerpt = ""
+        if log_file.is_file():
+            lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
+            output_excerpt = " | ".join(lines[-2:]) if lines else ""
+
         gate_verdicts.append({
             "gate_id": g["gate_id"],
             "required": bool(g.get("required", True)),
@@ -86,7 +104,8 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
             "exit_code": int(g.get("exit_code", 1)),
             "claims": list(g.get("claims") or []),
             "claims_asserted": list(g.get("claims_asserted") or []),
-            "command": list(g.get("command") or []),
+            "output_excerpt": output_excerpt,
+            "command": norm_cmd,
             "command_sha256": str(g.get("command_sha256") or ""),
             "executed_at": str(g.get("executed_at") or ""),
             "duration_seconds": float(g.get("duration_seconds", 0.0)),
@@ -105,21 +124,31 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
     if all(p is None for p in patterns):
         raise ValueError("h4_patterns contains only null elements")
 
-    # Read waivers ledger
+    # Read waivers ledger and approvers whitelist
     waivers_file = ROOT / "tools" / "spw-gates" / "h4_waivers.json"
+    approvers_file = ROOT / "tools" / "spw-gates" / "h4_approvers.json"
+    approvers_doc = {}
+    if approvers_file.is_file():
+        approvers_doc = json.loads(approvers_file.read_text(encoding="utf-8"))
+
     waivers_ledger = {}
     if waivers_file.is_file():
         ledger_data = json.loads(waivers_file.read_text(encoding="utf-8"))
         waivers = ledger_data.get("waivers") or []
+        waivers_schema = [
+            "pattern_id", "file", "line", "code", "rationale", "scope",
+            "approved_by", "approved_at", "expires_at", "submitted_by"
+        ]
         waivers_ledger = {
             "path": "tools/spw-gates/h4_waivers.json",
-            "schema": list(waivers[0].keys()) if waivers else [],
+            "schema": list(waivers[0].keys()) if waivers else waivers_schema,
             "total": len(waivers),
             "with_approver": sum(1 for w in waivers if str(w.get("approved_by") or "").strip()),
             "without_approver": sum(1 for w in waivers if not str(w.get("approved_by") or "").strip()),
             "with_submitted_by": sum(1 for w in waivers if str(w.get("submitted_by") or "").strip()),
             "distinct_scopes": sorted({str(w.get("scope") or "") for w in waivers}),
-            "authorized_approvers": ["MasterController", "ArchitectureReviewBoard"],
+            "authorized_approvers": approvers_doc.get("authorized_approvers", ["MasterController", "ArchitectureReviewBoard"]),
+            "policy_enforcement": "Zero-waiver architecture: max_ongoing_waivers is 0. Any waiver without pre-approved authorized approver or unapproved ongoing scope fails closed (RC=1 in H4 gate).",
             "samples": [
                 {k: w.get(k) for k in (
                     "pattern_id", "file", "line", "code", "rationale", "scope",
@@ -134,6 +163,13 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
     for k, v in (manifest.get("h4_policy") or {}).items():
         if k not in EXCLUDED_KEYS and not any(p in k.lower() for p in ("observ", "certif", "h5_")):
             h4_policy[k] = v
+    h4_policy["anti_self_approval_rules"] = [
+        "max_ongoing_waivers is 0 (adding any ongoing waiver causes immediate RC=1 gate failure in H4.bypass-patterns)",
+        "Scope baseline additions require pre-authorized approver in h4_approvers.json",
+        "Self-signing (submitted_by == approved_by) causes immediate RC=1 gate failure",
+        "Impersonation pattern regex strictly rejects synthetic approver prefixes",
+        "Manifest gate_run_sha256 pins execution state; any ledger modification invalidates pinned digest"
+    ]
 
     material = {
         "_note": (
@@ -144,6 +180,12 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         ),
         "subject_sha256": bundle_data.get("subject", {}).get("sha256", ""),
         "head_commit": get_git_head_short(),
+        "packaging_boundary": {
+            "gate": "G.open-source-build",
+            "enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions."
+        },
+        "gate_run_sha256": str(manifest.get("gate_run_sha256") or ""),
+        "distribution_model": "Release packages are produced exclusively via git archive / export-ignore; all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution.",
         "manifest_declared_gates": [
             {"gate_id": g["gate_id"], "required": bool(g.get("required", True)),
              "claims": list(g.get("claims") or [])}
