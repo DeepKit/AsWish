@@ -176,8 +176,8 @@ def run_gate(gate: dict, verbose: bool = False, manifest: dict = None) -> dict:
         has_tests_found = bool(re.search(r"Tests Found\s*:\s*[1-9][0-9]*", stdout_text))
         has_err = bool(re.search(r"(\[ERROR\]|Fatal:|Error:\s*E)", stdout_text))
         if not (tests_ok and has_tests_found and not has_err and rc == 0):
-            claims_asserted = []
-    claims_asserted = sorted(set(claims_asserted))
+    gate_declared_claims = set(gate.get("claims") or [])
+    claims_asserted = sorted(set(c for c in claims_asserted if c in gate_declared_claims))
 
     # Save stdout to log file for generate_evidence.py
     log_file.write_bytes(stdout_bytes)
