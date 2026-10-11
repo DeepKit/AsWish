@@ -1446,6 +1446,22 @@
                 
                   Success.
                
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test08_UnknownStyle_Tolerated_NoFalseRed
+                -------------------------------------------------
+                Running Setup for : Test08_UnknownStyle_Tolerated_NoFalseRed
+                
+                Executing Test : Test08_UnknownStyle_Tolerated_NoFalseRed
+                
+                  Success.
+               
+                Test : Test.AsWish.Difference.L2L3.TTestAsWishDifferenceL2L3.Test09_DefaultIdentityResolution_NilResolver
+                -------------------------------------------------
+                Running Setup for : Test09_DefaultIdentityResolution_NilResolver
+                
+                Executing Test : Test09_DefaultIdentityResolution_NilResolver
+                
+                  Success.
+               
                Running Fixture Teardown Method : Destroy
                
             
@@ -3299,6 +3315,50 @@
               
                Success.
             
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test05_ExportAgentHandoff_ContainsScopeBoundaries
+             -------------------------------------------------
+             Running Setup for : Test05_ExportAgentHandoff_ContainsScopeBoundaries
+             
+             Executing Test : Test05_ExportAgentHandoff_ContainsScopeBoundaries
+             
+             
+              Running Teardown for Test : Test05_ExportAgentHandoff_ContainsScopeBoundaries
+              
+               Success.
+            
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test06_ExportRevisionHandoff_GeneratesCorrectPackage
+             -------------------------------------------------
+             Running Setup for : Test06_ExportRevisionHandoff_GeneratesCorrectPackage
+             
+             Executing Test : Test06_ExportRevisionHandoff_GeneratesCorrectPackage
+             
+             
+              Running Teardown for Test : Test06_ExportRevisionHandoff_GeneratesCorrectPackage
+              
+               Success.
+            
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test07_EvolveBaseline_RefusesUnacceptedDecision_FailClosed
+             -------------------------------------------------
+             Running Setup for : Test07_EvolveBaseline_RefusesUnacceptedDecision_FailClosed
+             
+             Executing Test : Test07_EvolveBaseline_RefusesUnacceptedDecision_FailClosed
+             
+             
+              Running Teardown for Test : Test07_EvolveBaseline_RefusesUnacceptedDecision_FailClosed
+              
+               Success.
+            
+             Test : Test.AsWish.VisualWorkflow.TTestAsWishVisualWorkflow.Test08_ExportRevisionHandoff_RefusesNonRejectedDecision
+             -------------------------------------------------
+             Running Setup for : Test08_ExportRevisionHandoff_RefusesNonRejectedDecision
+             
+             Executing Test : Test08_ExportRevisionHandoff_RefusesNonRejectedDecision
+             
+             
+              Running Teardown for Test : Test08_ExportRevisionHandoff_RefusesNonRejectedDecision
+              
+               Success.
+            
             Running Fixture Teardown Method : Destroy
             
          
@@ -3437,9 +3497,9 @@
    
 
 Done testing.
-Tests Found   : 350
+Tests Found   : 356
 Tests Ignored : 0
-Tests Passed  : 350
+Tests Passed  : 356
 Tests Leaked  : 0
 Tests Failed  : 0
 Tests Errored : 0

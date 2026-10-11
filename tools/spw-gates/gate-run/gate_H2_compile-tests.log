@@ -1,7 +1,7 @@
 Embarcadero Delphi for Win64 compiler version 37.0
 Copyright (c) 1983,2026 Embarcadero Technologies, Inc.
 D:\_Progs\02Business\AsWish\src\services\AsWish.Services.Commons.pas(148) Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded because unit 'Winapi.Windows' is not specified in USES list
-D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(1349) Hint: H2077 Value assigned to 'LFound' never used
+D:\_Progs\02Business\AsWish\src\controllers\AsWish.Controller.pas(1350) Hint: H2077 Value assigned to 'LFound' never used
 Test.AsWish.Controller.pas(890) Hint: H2077 Value assigned to 'LNodeTotal' never used
 Test.AsWish.Controller.pas(1484) Hint: H2164 Variable 'LNewBaseline' is declared but never used in 'TTestAsWishController.Test_ExportAgentHandoff_ReturnsFileNamedForTheBaseline'
-35923 lines, 3.09 seconds, 9816980 bytes code, 882424 bytes data.
+36356 lines, 3.09 seconds, 9842228 bytes code, 883968 bytes data.

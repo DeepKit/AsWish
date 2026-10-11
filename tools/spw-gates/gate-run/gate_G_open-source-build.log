@@ -1,3 +1,3 @@
 [G.open-source-build] 注意: 公开文档有 14 处指向未导出出处（docs/归档/ 与 WO/ 的溯源引用，发布后成死链，不阻断）
 [CLAIM_ASSERTED] counterfactual_export
-[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（197 个文件）
+[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）
