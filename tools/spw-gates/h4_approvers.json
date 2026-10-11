@@ -2,7 +2,6 @@
   "schema": "spw/h4-approvers/v1",
   "description": "Authorized approver roles for H4 anti-bypass waivers. Maintained by Master Controller.",
   "authorized_approvers": [
-    "MasterController",
     "ArchitectureReviewBoard"
   ]
 }

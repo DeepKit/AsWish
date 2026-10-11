@@ -1,0 +1,48 @@
+# Independent Reviewer Seat — Release Gate Audit Report
+
+**Subject:** `ce2ef0e7…d7177` @ `18e54b6` | **Gate run:** `c1063965…89b3` | **Mode:** read-only
+
+---
+
+## (a) Gates claiming PASS vs. material — no direct contradiction found
+
+All 12 declared required gates appear in `recorded_gate_verdicts` (12/12), all `exit_code: 0`, all `claims_asserted` match declared `claims`, none `truncated`, all `subject_sha256` match the pack subject. No PASS verdict is contradicted by its own excerpt. Explicitly: **no finding of a gate claiming PASS against contrary evidence in-area.** Minor observations only:
+
+- **LOW / gate-outputs / Build hints present but not gated.** `H2.compile-build` excerpt: `"Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded..."` and `"Hint: H2077 Value assigned to 'LFound' never used"` — passed with warnings; acceptable if policy allows hints, but nothing in the material states the hint policy.
+- **INFO / gate-outputs / Claim markers duplicated across gates.** `H2.compile-tests` excerpt asserts the unit-test claims (`"[CLAIM_ASSERTED] active_detail_trigger | Success : ..."`), which are also asserted by `H2.unit-tests` — likely the test-build gate runs the suite; benign but weakens claim/gate separation.
+
+## (b) H4 waiver / approval policy — holes found
+
+- **HIGH / approval-policy / Impersonation guard does not cover the authorized approver itself.** `h4_policy.impersonation_patterns: "^(MasterController|SPW|MainController)-.*$"` only matches *prefixed* variants (e.g. `MasterController-xyz`), yet `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]` permits the bare name `MasterController` as approver. An automated actor named exactly `MasterController` could approve waivers while evading the impersonation check — a self-approval path.
+- **MEDIUM / approval-policy / Separation of duties is asserted, not evidenced.** `"Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1)"` — with `total: 0` waivers and `samples: []`, there is no execution evidence that the RC=1 fail-closed path was ever exercised (no counterfactual self-signed-waiver test is recorded).
+- **INFO / waiver-ledger / Current state clean.** `"total": 0, "with_approver": 0, "without_approver": 0` and gate output `"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for"` — no live waiver violations.
+
+## (c) Packaging / export boundary leak
+
+- **MEDIUM / packaging-boundary / Internal machine paths leaked into gate evidence.** `H2.compile-build` excerpt: `"D:\\_Progs\\02Business\\AsWish\\src\\services\\AsWish.Services.Commons.pas(148)"` and `G.vendored-upstream-drift`: `"上游定位: D:\\_Progs\\02Business\\DeepBase"`. These reveal the private local filesystem layout (and a private upstream repo location) inside governance artifacts that may ship with the evidence pack. The boundary gate scanned *archives and source files* (`"已核查 199 个归档路径与 197 个源码文件"`), not gate logs themselves.
+- **No direct finding against the distribution itself:** H3.external-boundary reports `"0 处内部泄露标记（比对 6 项治理标记）"` over 199 archive paths, and G.open-source-build reports `"导出清单无内部材料"`. No contradiction in-material. The leaked paths above are in evidence, not proven to be in the package.
+
+## (d) Silent downgrade / fake-green risk
+
+- **HIGH / fake-green / Gates are subject-owned code with self-printed success tokens.** Every gate is `tools/spw-gates/gate_*.py` inside the same `subject_sha256` being audited, and PASS is evidenced by self-emitted markers, e.g. `"[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"`. The audited software controls its own gate scripts; nothing in the material demonstrates the gate code was independently verified or run from outside the subject.
+- **MEDIUM / fake-green / H4 scan scope excludes the governance code itself.** Gate output: `"[H4.bypass-patterns] Scanned 89 Pascal source files (.pas/.dpr/.inc)"` — bypass patterns (e.g. `TFile.WriteAllText`) in the Python tooling under `tools/` are never scanned, so a violation could hide in non-Pascal files by policy construction.
+- **INFO / downgrade / Chinese-language PASS strings are opaque claims.** e.g. `"PASS 构建不依赖私有仓、导出清单无内部材料..."` — not independently re-derivable from the material alone; hashes of stdout are provided but no way for the reviewer to recompute them here.
+
+---
+
+## Summary
+
+| # | Severity | Area | Finding |
+|---|----------|------|---------|
+| 1 | HIGH | approval-policy | Bare `MasterController` approver escapes impersonation regex → self-approval path |
+| 2 | HIGH | fake-green | All gates are in-subject scripts self-asserting `[CLAIM_ASSERTED]` PASS tokens |
+| 3 | MEDIUM | packaging-boundary | `D:\_Progs\...` internal paths leak into gate evidence (build + vendor-drift logs) |
+| 4 | MEDIUM | approval-policy | SoD (submitted_by ≠ approved_by) asserted but never demonstrated by counterfactual |
+| 5 | MEDIUM | fake-green | H4 scans only .pas/.dpr/.inc; governance tooling unscanned by construction |
+| 6 | LOW | gate-outputs | Compiler hints (H2443, H2077) pass ungated |
+| 7 | INFO | gate-outputs | Claim markers duplicated between H2.compile-tests and H2.unit-tests |
+| 8 | INFO | waiver-ledger | Zero waivers currently; ledger clean |
+
+No gate verdict is contradicted by its evidence, no waiver exists, and the export boundary check reports clean over the archive itself — but the governance apparatus (gate code + approval identity) is inside the audited trust boundary, which is a structural fake-green and self-approval exposure, not a one-off defect.
+
+**VERDICT: not_ready**

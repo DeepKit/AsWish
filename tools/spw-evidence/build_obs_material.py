@@ -94,8 +94,8 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         log_file = ROOT / "tools" / "spw-gates" / "gate-run" / f"gate_{safe_gid}.log"
         output_excerpt = ""
         if log_file.is_file():
-            all_lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
-            claim_lines = [l for l in all_lines if "[CLAIM_ASSERTED]" in l]
+            gate_claims = set(g.get("claims") or [])
+            claim_lines = [l for l in all_lines if any(f"[CLAIM_ASSERTED] {c}" in l for c in gate_claims)]
             tail_lines = all_lines[-10:]
             combined = []
             for l in claim_lines + tail_lines:
@@ -153,7 +153,7 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
             "without_approver": sum(1 for w in waivers if not str(w.get("approved_by") or "").strip()),
             "with_submitted_by": sum(1 for w in waivers if str(w.get("submitted_by") or "").strip()),
             "distinct_scopes": sorted({str(w.get("scope") or "") for w in waivers}),
-            "authorized_approvers": approvers_doc.get("authorized_approvers", ["MasterController", "ArchitectureReviewBoard"]),
+            "authorized_approvers": approvers_doc.get("authorized_approvers", ["ArchitectureReviewBoard"]),
             "policy_enforcement": (
                 "Zero-waiver clean baseline: total active waivers is 0 (max_ongoing_waivers=0). "
                 "Gate H4 scans all repository Pascal source files (.pas/.dpr/.inc) and asserts zero_hits and zero_unapproved_waivers. "

@@ -1,27 +1,27 @@
 {
   "schema": "spw-observations/v1",
   "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-  "material_digest": "0de9a3430293c30b30fb91d72a983e6e692a56e4a74c1c925b25b86243f3cc2b",
+  "material_digest": "759817a9c7150bd93e6e53f31f5ea8973563b9d6a7c7adf2243549dc218c75b9",
   "seats": [
     {
       "schema": "spw-observation-seat/v1",
       "family": "deepseek",
       "model": "deepseek-v4.1-flash",
       "resolved_model": "deepseek-v4.1-flash",
-      "response_id": "cmb-ed4aa7f3c57011f1a60f6a8687e2b605",
-      "observed_at": "2026-10-11T12:37:21.007262+00:00",
-      "round": 7,
+      "response_id": "cmb-c19b0fdec57111f19e5f9ed03c372bc5",
+      "observed_at": "2026-10-11T12:43:21.861597+00:00",
+      "round": 8,
       "observer_id": "deepseek-observer",
       "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-      "material_digest": "0de9a3430293c30b30fb91d72a983e6e692a56e4a74c1c925b25b86243f3cc2b",
-      "response_digest": "addd754375c3aaee78f8087ac30a8c42308453d27094da991618b8c14d919dd7",
-      "raw_file": "raw-deepseek-deepseek-v4.1-flash-r7-20261011-123706.txt",
-      "envelope_file": "env-deepseek-deepseek-v4.1-flash-r7-20261011-123706.json",
-      "envelope_sha256": "b9a0ee47119af21672bd94d1b0f4d0754bc126072c646cccfdb08fb2ee52c062",
+      "material_digest": "759817a9c7150bd93e6e53f31f5ea8973563b9d6a7c7adf2243549dc218c75b9",
+      "response_digest": "3f450d7f86cd37e570ea558cfc8d5011af4e27fb44527d261bc82f8df2d19deb",
+      "raw_file": "raw-deepseek-deepseek-v4.1-flash-r8-20261011-124302.txt",
+      "envelope_file": "env-deepseek-deepseek-v4.1-flash-r8-20261011-124302.json",
+      "envelope_sha256": "9db535d57ceac6184df2c475d8b60107ac90721092244df438e01b1b355c2aa4",
       "usage": {
-        "prompt_tokens": 7223,
-        "completion_tokens": 2658,
-        "total_tokens": 9881,
+        "prompt_tokens": 7195,
+        "completion_tokens": 4000,
+        "total_tokens": 11195,
         "completion_tokens_details": {
           "accepted_prediction_tokens": 0,
           "audio_tokens": 0,
@@ -34,85 +34,163 @@
           "audio_tokens": 0,
           "reasoning_tokens": 0,
           "rejected_prediction_tokens": 0,
-          "cached_tokens": 7040
+          "cached_tokens": 128
         },
-        "prompt_cache_hit_tokens": 7040,
-        "prompt_cache_miss_tokens": 183,
+        "prompt_cache_hit_tokens": 128,
+        "prompt_cache_miss_tokens": 7067,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
         "prompt_cache_write_tokens": 0,
         "completion_thinking_tokens": 0,
-        "credit": 0.16,
+        "credit": 0.33,
         "cached_tokens": 0
       },
       "verdict": "insufficient_data",
       "verdict_reason": "independent read-only review of obs_material.json",
       "findings": [
         {
-          "severity": "LOW",
+          "severity": "HIGH",
           "area": "general",
-          "description": "H2.unit-tests** — PASS, exit 0. But its `output_excerpt` is functionally identical to `H2.compile-tests` (same 356/356 tally, same trailing \"Done testing\" block) and does **not** contain any marker th",
-          "evidence": "H2.unit-tests** — PASS, exit 0. But its `output_excerpt` is functionally identical to `H2.compile-tests` (same 356/356 tally, same trailing \"Done testing\" block) and does **not** contain any marker th"
+          "description": "FINDING A1 — HIGH — Gate/claim attribution mismatch (H2.compile-tests vs H2.unit-tests)**",
+          "evidence": "FINDING A1 — HIGH — Gate/claim attribution mismatch (H2.compile-tests vs H2.unit-tests)**"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "MEDIUM | H2.unit-tests | PASS verdict is unstaked: stdout is an undifferentiated duplicate of H2.compile-tests; claimed semantic assertions (`active_detail_trigger`, `state_machine_check`, `required_f",
-          "evidence": "MEDIUM | H2.unit-tests | PASS verdict is unstaked: stdout is an undifferentiated duplicate of H2.compile-tests; claimed semantic assertions (`active_detail_trigger`, `state_machine_check`, `required_f"
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "MEDIUM | H4.bypass-patterns | Scope mismatch: gate scans only 89 Pascal files while sibling boundary/open-source gates report 197 source files; no reconciliation, so H4 `zero_hits` may be computed ove",
-          "evidence": "MEDIUM | H4.bypass-patterns | Scope mismatch: gate scans only 89 Pascal files while sibling boundary/open-source gates report 197 source files; no reconciliation, so H4 `zero_hits` may be computed ove"
+          "description": "FINDING A2 — MEDIUM — H2.compile-tests and H2.unit-tests emit near-identical output_excerpt**",
+          "evidence": "FINDING A2 — MEDIUM — H2.compile-tests and H2.unit-tests emit near-identical output_excerpt**"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "HIGH | H4 waiver approval policy | Approver namespace overlaps the impersonation-token namespace, and no `submitted_by != approved_by` (separation-of-duties) rule is present; ledger is empty so the ho",
-          "evidence": "HIGH | H4 waiver approval policy | Approver namespace overlaps the impersonation-token namespace, and no `submitted_by != approved_by` (separation-of-duties) rule is present; ledger is empty so the ho"
+          "description": "FINDING A3 — HIGH — Internal governance marker `tools/spw-gates/...` invoked from every gate command, yet H3.external-boundary claims \"0 internal leak markers (compared against 6 governance markers)\"*",
+          "evidence": "FINDING A3 — HIGH — Internal governance marker `tools/spw-gates/...` invoked from every gate command, yet H3.external-boundary claims \"0 internal leak markers (compared against 6 governance markers)\"*"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING A4 — MEDIUM — H3.deep-ui-test asserts `counterfactual_6/7/8` but output only shows `rendered=14 handlers=14`**",
+          "evidence": "FINDING A4 — MEDIUM — H3.deep-ui-test asserts `counterfactual_6/7/8` but output only shows `rendered=14 handlers=14`**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING A5 — MEDIUM — H3.gui-verify-smoke claims `counterfactual_smoke` PASS without showing the counterfactual was injected/observed**",
+          "evidence": "FINDING A5 — MEDIUM — H3.gui-verify-smoke claims `counterfactual_smoke` PASS without showing the counterfactual was injected/observed**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING A6 — LOW/MEDIUM — H3.runtime-autofix and H3.encoding-guard emit only assertion tokens plus \"PASS\" with no substantive artifact output**",
+          "evidence": "FINDING A6 — LOW/MEDIUM — H3.runtime-autofix and H3.encoding-guard emit only assertion tokens plus \"PASS\" with no substantive artifact output**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "FINDING A7 — HIGH — Subject hash mismatch risk: `subject_sha256` constant, but H3.runtime-autofix and G.vendored-upstream-drift ran in <0.1s against `D:\\_Progs\\02Business\\DeepBase` under a different d",
+          "evidence": "FINDING A7 — HIGH — Subject hash mismatch risk: `subject_sha256` constant, but H3.runtime-autofix and G.vendored-upstream-drift ran in <0.1s against `D:\\_Progs\\02Business\\DeepBase` under a different d"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING A8 — MEDIUM — G.open-source-build PASS statement asserts \"no runtime Python dependency (199 files)\" while every gate in the pack is a Python script under `tools/spw-gates/`**",
+          "evidence": "FINDING A8 — MEDIUM — G.open-source-build PASS statement asserts \"no runtime Python dependency (199 files)\" while every gate in the pack is a Python script under `tools/spw-gates/`**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "FINDING B1 — HIGH — No separation-of-duties enforcement is *demonstrable* in the material; policy is asserted, not evidenced**",
+          "evidence": "FINDING B1 — HIGH — No separation-of-duties enforcement is *demonstrable* in the material; policy is asserted, not evidenced**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "FINDING B2 — HIGH — `authorized_approvers` includes `MasterController`, but `MasterController` is itself an impersonation pattern**",
+          "evidence": "FINDING B2 — HIGH — `authorized_approvers` includes `MasterController`, but `MasterController` is itself an impersonation pattern**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING B3 — MEDIUM — `max_ongoing_waivers: 0` combined with no expiry semantics exercised**",
+          "evidence": "FINDING B3 — MEDIUM — `max_ongoing_waivers: 0` combined with no expiry semantics exercised**"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "FINDING B4 — LOW — `H4.bypass-patterns` PASS asserts `zero_unapproved_waivers` while the ledger `with_approver/without_approver = 0/0`; the claim is vacuous**",
+          "evidence": "FINDING B4 — LOW — `H4.bypass-patterns` PASS asserts `zero_unapproved_waivers` while the ledger `with_approver/without_approver = 0/0`; the claim is vacuous**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "FINDING C1 — HIGH — Gate-run evidence itself carries internal governance markers not covered by the boundary gate's declared scope**",
+          "evidence": "FINDING C1 — HIGH — Gate-run evidence itself carries internal governance markers not covered by the boundary gate's declared scope**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING C2 — MEDIUM — G.open-source-build evidence does not show the export-ignore list, so the claim \"export manifest contains no internal material\" is not falsifiable from the material**",
+          "evidence": "FINDING C2 — MEDIUM — G.open-source-build evidence does not show the export-ignore list, so the claim \"export manifest contains no internal material\" is not falsifiable from the material**"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "INFO | Packaging boundary | Boundary claim is asserted clean by H3.external-boundary (`0 处内部泄露标记`); the \"6 项治理标记\" set is not enumerated in this material, so the check is trust-the-gate rather than ind",
-          "evidence": "INFO | Packaging boundary | Boundary claim is asserted clean by H3.external-boundary (`0 处内部泄露标记`); the \"6 项治理标记\" set is not enumerated in this material, so the check is trust-the-gate rather than ind"
+          "description": "FINDING C3 — INFO — Presence of `D:\\\\_Progs\\\\02Business\\\\DeepBase` in gate output**",
+          "evidence": "FINDING C3 — INFO — Presence of `D:\\\\_Progs\\\\02Business\\\\DeepBase` in gate output**"
         },
         {
-          "severity": "HIGH",
+          "severity": "BLOCKER",
           "area": "general",
-          "description": "HIGH | H2.unit-tests | Fake-green / silent-downgrade risk: claimed semantic assertions are not evidenced in stdout; the excerpt is indistinguishable from the compile-tests excerpt; a downgrade of the ",
-          "evidence": "HIGH | H2.unit-tests | Fake-green / silent-downgrade risk: claimed semantic assertions are not evidenced in stdout; the excerpt is indistinguishable from the compile-tests excerpt; a downgrade of the "
-        },
-        {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "MEDIUM | H4.bypass-patterns | Vacuous-pass risk: all three waiver counters are 0, so `zero_unapproved_waivers` is asserted without ever exercising the approver-validation code path. | `\"total\": 0, \"wi",
-          "evidence": "MEDIUM | H4.bypass-patterns | Vacuous-pass risk: all three waiver counters are 0, so `zero_unapproved_waivers` is asserted without ever exercising the approver-validation code path. | `\"total\": 0, \"wi"
+          "description": "FINDING D1 — BLOCKER — Claim-assertion tokens are self-declared and gate PASS is printed by the gate itself; there is no independent verification layer in the pack**",
+          "evidence": "FINDING D1 — BLOCKER — Claim-assertion tokens are self-declared and gate PASS is printed by the gate itself; there is no independent verification layer in the pack**"
         },
         {
           "severity": "LOW",
           "area": "general",
-          "description": "LOW | Reviewer material | Material omits external-observation / certification evidence by design, limiting independent detection of fake-green at the pack level. | `\"_note\": \"This is the material prov",
-          "evidence": "LOW | Reviewer material | Material omits external-observation / certification evidence by design, limiting independent detection of fake-green at the pack level. | `\"_note\": \"This is the material prov"
+          "description": "Every gate's `output_excerpt` follows the pattern `[CLAIM_ASSERTED] <name> | [<gate>] PASS`. Nothing in the material shows that the PASS string is derived from an external observation, nor that `claim",
+          "evidence": "Every gate's `output_excerpt` follows the pattern `[CLAIM_ASSERTED] <name> | [<gate>] PASS`. Nothing in the material shows that the PASS string is derived from an external observation, nor that `claim"
         },
         {
           "severity": "HIGH",
           "area": "general",
-          "description": "(b) H4 approval policy:** HIGH — approver identity namespace overlaps impersonation tokens and no `submitted_by != approved_by` separation-of-duties rule is present. Ledger is empty (dormant, not clos",
-          "evidence": "(b) H4 approval policy:** HIGH — approver identity namespace overlaps impersonation tokens and no `submitted_by != approved_by` separation-of-duties rule is present. Ledger is empty (dormant, not clos"
+          "description": "FINDING D2 — HIGH — `_note` explicitly denies presence of \"external-observation or certification outcomes\"**",
+          "evidence": "FINDING D2 — HIGH — `_note` explicitly denies presence of \"external-observation or certification outcomes\"**"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "FINDING D3 — HIGH — Very short durations for \"counterfactual\" gates**",
+          "evidence": "FINDING D3 — HIGH — Very short durations for \"counterfactual\" gates**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING D4 — MEDIUM — `truncated: false` but `stdout_bytes` large (168,416) and excerpt short**",
+          "evidence": "FINDING D4 — MEDIUM — `truncated: false` but `stdout_bytes` large (168,416) and excerpt short**"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "FINDING D5 — MEDIUM — H2.compile-build excerpt contains compiler Hints but no explicit success/failure line for both binaries**",
+          "evidence": "FINDING D5 — MEDIUM — H2.compile-build excerpt contains compiler Hints but no explicit success/failure line for both binaries**"
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "(c) Packaging/export boundary leak:** **No leak found.** H3.external-boundary attests 0 governance markers across 199 paths / 197 sources; the assertion set itself is not enumerated in the pack (INFO)",
-          "evidence": "(c) Packaging/export boundary leak:** **No leak found.** H3.external-boundary attests 0 governance markers across 199 paths / 197 sources; the assertion set itself is not enumerated in the pack (INFO)"
+          "description": "Gate coverage vs manifest:** all 12 `manifest_declared_gates` appear in `recorded_gate_verdicts`; no missing required gate. ✔ (INFO — coverage complete)",
+          "evidence": "Gate coverage vs manifest:** all 12 `manifest_declared_gates` appear in `recorded_gate_verdicts`; no missing required gate. ✔ (INFO — coverage complete)"
         },
         {
-          "severity": "HIGH",
+          "severity": "INFO",
           "area": "general",
-          "description": "(d) Silent downgrade / fake-green:** HIGH — H2.unit-tests is the strongest fake-green shape (assertions claim-only, output identical to compile-tests). MEDIUM — H4 waiver control passes vacuously.",
-          "evidence": "(d) Silent downgrade / fake-green:** HIGH — H2.unit-tests is the strongest fake-green shape (assertions claim-only, output identical to compile-tests). MEDIUM — H4 waiver control passes vacuously."
+          "description": "Exit codes / stderr:** all 12 records show `exit_code: 0` and `stderr_sha256 = e3b0c44…` (empty). Consistent with \"PASS,\" though see D1. ✔ (INFO)",
+          "evidence": "Exit codes / stderr:** all 12 records show `exit_code: 0` and `stderr_sha256 = e3b0c44…` (empty). Consistent with \"PASS,\" though see D1. ✔ (INFO)"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "Subject hash binding:** all 12 records carry the same `subject_sha256 = ce2ef0e7…` matching the top-level value. ✔ (INFO — but see A7 for upstream-drift caveat)",
+          "evidence": "Subject hash binding:** all 12 records carry the same `subject_sha256 = ce2ef0e7…` matching the top-level value. ✔ (INFO — but see A7 for upstream-drift caveat)"
         }
       ]
     },
@@ -121,24 +199,24 @@
       "family": "glm",
       "model": "glm-5.3-flash",
       "resolved_model": "glm-5.3-flash",
-      "response_id": "cmb-f5b2bdc7c57011f1991b860fc582b33d",
-      "observed_at": "2026-10-11T12:37:53.897853+00:00",
-      "round": 7,
+      "response_id": "cmb-ccd956bdc57111f186fb5674f512ab26",
+      "observed_at": "2026-10-11T12:44:09.694001+00:00",
+      "round": 8,
       "observer_id": "glm-observer",
       "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
-      "material_digest": "0de9a3430293c30b30fb91d72a983e6e692a56e4a74c1c925b25b86243f3cc2b",
-      "response_digest": "d7a007e08385083802a1c96cd3d3bcb2590e915d3a3fce4eee1468f62542de79",
-      "raw_file": "raw-glm-glm-5.3-flash-r7-20261011-123721.txt",
-      "envelope_file": "env-glm-glm-5.3-flash-r7-20261011-123721.json",
-      "envelope_sha256": "9b09842bc31fe23a4d440015c963fdb19a136358389d7874ccc4e8c7c5cc0f5c",
+      "material_digest": "759817a9c7150bd93e6e53f31f5ea8973563b9d6a7c7adf2243549dc218c75b9",
+      "response_digest": "b83d81fa138c7094de0da56bddfc08c5d893564bb5cfb2a801b30e22ff6ee965",
+      "raw_file": "raw-glm-glm-5.3-flash-r8-20261011-124321.txt",
+      "envelope_file": "env-glm-glm-5.3-flash-r8-20261011-124321.json",
+      "envelope_sha256": "1a484083a7836ccbf40a383e21beaf6f941bc69bfbaa8121facc374283cac16c",
       "usage": {
-        "prompt_tokens": 7197,
-        "completion_tokens": 1663,
-        "total_tokens": 8860,
+        "prompt_tokens": 7134,
+        "completion_tokens": 2428,
+        "total_tokens": 9562,
         "completion_tokens_details": {
           "accepted_prediction_tokens": 0,
           "audio_tokens": 0,
-          "reasoning_tokens": 555,
+          "reasoning_tokens": 1011,
           "rejected_prediction_tokens": 0,
           "cached_tokens": 0
         },
@@ -150,70 +228,118 @@
           "cached_tokens": 0
         },
         "prompt_cache_hit_tokens": 0,
-        "prompt_cache_miss_tokens": 7197,
+        "prompt_cache_miss_tokens": 7134,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
         "prompt_cache_write_tokens": 0,
-        "completion_thinking_tokens": 555,
-        "credit": 0.15,
+        "completion_thinking_tokens": 1011,
+        "credit": 0.18,
         "cached_tokens": 0
       },
-      "verdict": "release_ready",
+      "verdict": "not_ready",
       "verdict_reason": "independent read-only review of obs_material.json",
       "findings": [
         {
-          "severity": "MEDIUM",
-          "area": "general",
-          "description": "MEDIUM | fake-green | Gate pass verdicts for H3/G gates rest entirely on self-asserted claim strings, not independently verifiable artifacts.** Evidence: `\"[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_A",
-          "evidence": "MEDIUM | fake-green | Gate pass verdicts for H3/G gates rest entirely on self-asserted claim strings, not independently verifiable artifacts.** Evidence: `\"[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_A"
-        },
-        {
           "severity": "LOW",
           "area": "general",
-          "description": "LOW | fake-green | H2.compile-tests PASS excerpt embeds unit-test execution results, overlapping H2.unit-tests.** Evidence: `\"Tests Found   : 356 | Tests Passed  : 356\"` appears in the compile-tests o",
-          "evidence": "LOW | fake-green | H2.compile-tests PASS excerpt embeds unit-test execution results, overlapping H2.unit-tests.** Evidence: `\"Tests Found   : 356 | Tests Passed  : 356\"` appears in the compile-tests o"
+          "description": "LOW / gate-outputs / Build hints present but not gated.** `H2.compile-build` excerpt: `\"Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded...\"` and `\"Hint: H2077 Value ",
+          "evidence": "LOW / gate-outputs / Build hints present but not gated.** `H2.compile-build` excerpt: `\"Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded...\"` and `\"Hint: H2077 Value "
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "INFO | quality | Compiler hints present in build output.** Evidence: `\"Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded...\"`, `\"Hint: H2077 Value assigned to 'LFound'",
-          "evidence": "INFO | quality | Compiler hints present in build output.** Evidence: `\"Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded...\"`, `\"Hint: H2077 Value assigned to 'LFound'"
+          "description": "INFO / gate-outputs / Claim markers duplicated across gates.** `H2.compile-tests` excerpt asserts the unit-test claims (`\"[CLAIM_ASSERTED] active_detail_trigger | Success : ...\"`), which are also asse",
+          "evidence": "INFO / gate-outputs / Claim markers duplicated across gates.** `H2.compile-tests` excerpt asserts the unit-test claims (`\"[CLAIM_ASSERTED] active_detail_trigger | Success : ...\"`), which are also asse"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "HIGH / approval-policy / Impersonation guard does not cover the authorized approver itself.** `h4_policy.impersonation_patterns: \"^(MasterController|SPW|MainController)-.*$\"` only matches *prefixed* v",
+          "evidence": "HIGH / approval-policy / Impersonation guard does not cover the authorized approver itself.** `h4_policy.impersonation_patterns: \"^(MasterController|SPW|MainController)-.*$\"` only matches *prefixed* v"
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "MEDIUM | self-approval hole | The impersonation pattern does not block bare `MasterController`, which is simultaneously an authorized approver and (per the pattern's intent) a protected system identit",
-          "evidence": "MEDIUM | self-approval hole | The impersonation pattern does not block bare `MasterController`, which is simultaneously an authorized approver and (per the pattern's intent) a protected system identit"
-        },
-        {
-          "severity": "LOW",
-          "area": "general",
-          "description": "LOW | self-approval hole | No separation-of-duties field: `submitted_by` and `approved_by` can be the same actor; policy text asserts fail-closed but no approver≠submitter rule is stated.** Evidence: ",
-          "evidence": "LOW | self-approval hole | No separation-of-duties field: `submitted_by` and `approved_by` can be the same actor; policy text asserts fail-closed but no approver≠submitter rule is stated.** Evidence: "
+          "description": "MEDIUM / approval-policy / Separation of duties is asserted, not evidenced.** `\"Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1)\"` — with `total: 0` ",
+          "evidence": "MEDIUM / approval-policy / Separation of duties is asserted, not evidenced.** `\"Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1)\"` — with `total: 0` "
         },
         {
           "severity": "INFO",
           "area": "general",
-          "description": "INFO | mitigating | Currently no exposure: ledger is empty.** Evidence: `\"total\": 0, \"with_approver\": 0, \"without_approver\": 0` and `\"all 0 waivers governed and accounted for\"`.",
-          "evidence": "INFO | mitigating | Currently no exposure: ledger is empty.** Evidence: `\"total\": 0, \"with_approver\": 0, \"without_approver\": 0` and `\"all 0 waivers governed and accounted for\"`."
-        },
-        {
-          "severity": "INFO",
-          "area": "general",
-          "description": "INFO | boundary | Gate evidence output itself contains internal governance markers and machine-local paths (leaks into the audit record, not the package).** Evidence: `\"[G.vendored-upstream-drift] 上游定",
-          "evidence": "INFO | boundary | Gate evidence output itself contains internal governance markers and machine-local paths (leaks into the audit record, not the package).** Evidence: `\"[G.vendored-upstream-drift] 上游定"
-        },
-        {
-          "severity": "LOW",
-          "area": "general",
-          "description": "LOW | reproducibility | Vendor-drift gate depends on a machine-local upstream path outside the repo.** Evidence: `\"上游定位: D:\\_Progs\\02Business\\DeepBase\"` — the check cannot be reproduced on another mac",
-          "evidence": "LOW | reproducibility | Vendor-drift gate depends on a machine-local upstream path outside the repo.** Evidence: `\"上游定位: D:\\_Progs\\02Business\\DeepBase\"` — the check cannot be reproduced on another mac"
+          "description": "INFO / waiver-ledger / Current state clean.** `\"total\": 0, \"with_approver\": 0, \"without_approver\": 0` and gate output `\"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted ",
+          "evidence": "INFO / waiver-ledger / Current state clean.** `\"total\": 0, \"with_approver\": 0, \"without_approver\": 0` and gate output `\"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted "
         },
         {
           "severity": "MEDIUM",
           "area": "general",
-          "description": "VERDICT: release_ready** (conditional on treating findings (a)-MEDIUM and (b)-MEDIUM as known policy debt; neither is exploitable in the current zero-waiver, all-PASS state)",
-          "evidence": "VERDICT: release_ready** (conditional on treating findings (a)-MEDIUM and (b)-MEDIUM as known policy debt; neither is exploitable in the current zero-waiver, all-PASS state)"
+          "description": "MEDIUM / packaging-boundary / Internal machine paths leaked into gate evidence.** `H2.compile-build` excerpt: `\"D:\\\\_Progs\\\\02Business\\\\AsWish\\\\src\\\\services\\\\AsWish.Services.Commons.pas(148)\"` and `G",
+          "evidence": "MEDIUM / packaging-boundary / Internal machine paths leaked into gate evidence.** `H2.compile-build` excerpt: `\"D:\\\\_Progs\\\\02Business\\\\AsWish\\\\src\\\\services\\\\AsWish.Services.Commons.pas(148)\"` and `G"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "HIGH / fake-green / Gates are subject-owned code with self-printed success tokens.** Every gate is `tools/spw-gates/gate_*.py` inside the same `subject_sha256` being audited, and PASS is evidenced by ",
+          "evidence": "HIGH / fake-green / Gates are subject-owned code with self-printed success tokens.** Every gate is `tools/spw-gates/gate_*.py` inside the same `subject_sha256` being audited, and PASS is evidenced by "
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "MEDIUM / fake-green / H4 scan scope excludes the governance code itself.** Gate output: `\"[H4.bypass-patterns] Scanned 89 Pascal source files (.pas/.dpr/.inc)\"` — bypass patterns (e.g. `TFile.WriteAll",
+          "evidence": "MEDIUM / fake-green / H4 scan scope excludes the governance code itself.** Gate output: `\"[H4.bypass-patterns] Scanned 89 Pascal source files (.pas/.dpr/.inc)\"` — bypass patterns (e.g. `TFile.WriteAll"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "INFO / downgrade / Chinese-language PASS strings are opaque claims.** e.g. `\"PASS 构建不依赖私有仓、导出清单无内部材料...\"` — not independently re-derivable from the material alone; hashes of stdout are provided but no",
+          "evidence": "INFO / downgrade / Chinese-language PASS strings are opaque claims.** e.g. `\"PASS 构建不依赖私有仓、导出清单无内部材料...\"` — not independently re-derivable from the material alone; hashes of stdout are provided but no"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "1 | HIGH | approval-policy | Bare `MasterController` approver escapes impersonation regex → self-approval path |",
+          "evidence": "1 | HIGH | approval-policy | Bare `MasterController` approver escapes impersonation regex → self-approval path |"
+        },
+        {
+          "severity": "HIGH",
+          "area": "general",
+          "description": "2 | HIGH | fake-green | All gates are in-subject scripts self-asserting `[CLAIM_ASSERTED]` PASS tokens |",
+          "evidence": "2 | HIGH | fake-green | All gates are in-subject scripts self-asserting `[CLAIM_ASSERTED]` PASS tokens |"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "3 | MEDIUM | packaging-boundary | `D:\\_Progs\\...` internal paths leak into gate evidence (build + vendor-drift logs) |",
+          "evidence": "3 | MEDIUM | packaging-boundary | `D:\\_Progs\\...` internal paths leak into gate evidence (build + vendor-drift logs) |"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "4 | MEDIUM | approval-policy | SoD (submitted_by ≠ approved_by) asserted but never demonstrated by counterfactual |",
+          "evidence": "4 | MEDIUM | approval-policy | SoD (submitted_by ≠ approved_by) asserted but never demonstrated by counterfactual |"
+        },
+        {
+          "severity": "MEDIUM",
+          "area": "general",
+          "description": "5 | MEDIUM | fake-green | H4 scans only .pas/.dpr/.inc; governance tooling unscanned by construction |",
+          "evidence": "5 | MEDIUM | fake-green | H4 scans only .pas/.dpr/.inc; governance tooling unscanned by construction |"
+        },
+        {
+          "severity": "LOW",
+          "area": "general",
+          "description": "6 | LOW | gate-outputs | Compiler hints (H2443, H2077) pass ungated |",
+          "evidence": "6 | LOW | gate-outputs | Compiler hints (H2443, H2077) pass ungated |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "7 | INFO | gate-outputs | Claim markers duplicated between H2.compile-tests and H2.unit-tests |",
+          "evidence": "7 | INFO | gate-outputs | Claim markers duplicated between H2.compile-tests and H2.unit-tests |"
+        },
+        {
+          "severity": "INFO",
+          "area": "general",
+          "description": "8 | INFO | waiver-ledger | Zero waivers currently; ledger clean |",
+          "evidence": "8 | INFO | waiver-ledger | Zero waivers currently; ledger clean |"
         }
       ]
     }

@@ -1,0 +1,155 @@
+# Read-Only Release Gate Audit — Findings
+
+**Scope note:** I reviewed only the provided `obs_material.json`. I did not execute anything, and I did not cross-check the on-disk artifacts (e.g. the actual `_build.bat`, `tests/_build_tests.bat`, gate scripts, or `h4_waivers.json`). Several findings below are necessarily "material-internal inconsistency" observations rather than confirmed runtime bugs.
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**FINDING A1 — HIGH — Gate/claim attribution mismatch (H2.compile-tests vs H2.unit-tests)**
+The `H2.compile-tests` gate record asserts `active_detail_trigger`, `state_machine_check`, `required_fields_on_activation` — but those are the manifest-declared claims of `H2.unit-tests`, not `compile-tests` (which should only assert `test_cases_discovered`, `test_suite_compiled`). Its output also shows the full test-runner summary ("Tests Passed: 356"), i.e. an execution, not a compile.
+Evidence line:
+> `"gate_id": "H2.compile-tests", ... "claims_asserted": ["active_detail_trigger", "state_machine_check", "required_fields_on_activation"], "output_excerpt": "... Tests Passed : 356 ..."` — mixed with the compile-tests manifest entry `"gate_id": "H2.compile-tests", "claims": ["test_cases_discovered","test_suite_compiled"]`
+
+This indicates the recorded claim/assertion set is mis-attributed (copy/merge of the unit-test gate record, or the two gates' outputs are not independently derived). A PASS here is not trustworthy as evidence that the *compile* step alone compiled the suite.
+
+**FINDING A2 — MEDIUM — H2.compile-tests and H2.unit-tests emit near-identical output_excerpt**
+Both records show overlapping test-runner output with `Tests Found: 356 / Tests Passed: 356`. The only difference is ordering and the compile-tests record retains `"Running Fixture Teardown Method : Destroy"`. Since compile-tests is only supposed to compile, its "Done testing" summary is unexpected.
+Evidence line:
+> `"... | Running Fixture Teardown Method : Destroy | Done testing. | Tests Found   : 356 | ..."` appears verbatim in both `H2.compile-tests` and `H2.unit-tests` output_excerpts.
+
+**FINDING A3 — HIGH — Internal governance marker `tools/spw-gates/...` invoked from every gate command, yet H3.external-boundary claims "0 internal leak markers (compared against 6 governance markers)"**
+The gate runner commands (which would be part of any reproduction evidence shipped alongside a release) reference internal spw-* tooling; the boundary gate explicitly only checked *archive paths and source files*, not the gate-run evidence itself. That's a scope question, but the boundary PASS text ("compared against 6 governance markers") does not enumerate them, so a reviewer cannot verify the comparison set actually includes `tools/spw-*`, `WO/`, `_repro/` from the packaging_boundary.
+Evidence lines:
+> `"command": ["python","-X","utf8","tools/spw-gates/gate_external_boundary.py"]`
+> `"[H3.external-boundary] PASS 外部边界干净：已核查 199 个归档路径与 197 个源码文件，0 处内部泄露标记（比对 6 项治理标记）"`
+
+The claim is not falsified, but the evidentiary basis (the 6 markers) is opaque in the material.
+
+**FINDING A4 — MEDIUM — H3.deep-ui-test asserts `counterfactual_6/7/8` but output only shows `rendered=14 handlers=14`**
+The output excerpt does not actually demonstrate what counterfactuals 6, 7, 8 are, or that each was exercised. The `[CLAIM_ASSERTED]` markers are self-declared, not outcome-bearing.
+Evidence line:
+> `"[CLAIM_ASSERTED] counterfactual_6 | [CLAIM_ASSERTED] counterfactual_7 | [CLAIM_ASSERTED] counterfactual_8 | [H3.deep-ui-test] PASS rendered=14 handlers=14"`
+
+**FINDING A5 — MEDIUM — H3.gui-verify-smoke claims `counterfactual_smoke` PASS without showing the counterfactual was injected/observed**
+Output `RC=0 stdout=819B gui_verify_checks=12` is aggregate; nothing shows the smoke-test actually failed on a negative control.
+Evidence line:
+> `"[CLAIM_ASSERTED] counterfactual_smoke | [H3.gui-verify-smoke] PASS RC=0 stdout=819B gui_verify_checks=12"`
+
+**FINDING A6 — LOW/MEDIUM — H3.runtime-autofix and H3.encoding-guard emit only assertion tokens plus "PASS" with no substantive artifact output**
+Duration of 0.096s / 0.227s for a "counterfactual" set is consistent with token emission rather than real counterfactual execution.
+Evidence lines:
+> `"[CLAIM_ASSERTED] counterfactual_3 | counterfactual_4 | counterfactual_5 | [H3.runtime-autofix] PASS"` (duration 0.096)
+> `"[CLAIM_ASSERTED] counterfactual_1 | counterfactual_2 | [H3.encoding-guard] PASS"` (duration 0.227)
+
+**FINDING A7 — HIGH — Subject hash mismatch risk: `subject_sha256` constant, but H3.runtime-autofix and G.vendored-upstream-drift ran in <0.1s against `D:\_Progs\02Business\DeepBase` under a different drive root than the build source `D:\_Progs\02Business\AsWish`**
+Not a definitive gate failure, but the upstream-drift gate resolves an external path, not the subject tree; its PASS does not actually bind to `subject_sha256 = ce2ef0…`.
+Evidence lines:
+> `"command": [...,"tools/spw-gates/gate_ehai_vendor_drift.py"]`
+> `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase | PASS 上游与登记值一致"`
+
+**FINDING A8 — MEDIUM — G.open-source-build PASS statement asserts "no runtime Python dependency (199 files)" while every gate in the pack is a Python script under `tools/spw-gates/`**
+This is not contradictory for the *shipped* tree (the tools are export-ignored), but the material does not show that `tools/` is excluded from the 199-file count it referenced; the two numbers (199 archive paths in H3.external-boundary vs 199 files in G.open-source-build) are asserted equal but not proven to be the same set.
+Evidence lines:
+> `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`
+> `"已核查 199 个归档路径与 197 个源码文件"`
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**FINDING B1 — HIGH — No separation-of-duties enforcement is *demonstrable* in the material; policy is asserted, not evidenced**
+The `h4_waiver_ledger` states `total: 0` and `samples: []`, so the ledger cannot evidence that a self-signed waiver would actually be rejected. The `policy_enforcement` text claims `submitted_by != approved_by (self-signed waivers rejected with RC=1)` but there is:
+- no negative-control record,
+- no counterfactual that exercises a self-signed waiver,
+- no `counterfactual` entry in `H4.bypass-patterns` for the self-signing case.
+Evidence lines:
+> `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0, "distinct_scopes": [], "samples": []`
+> `"policy_enforcement": "... Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1). ..."`
+
+With `total = 0`, the mechanism is untested on this evidence pack.
+
+**FINDING B2 — HIGH — `authorized_approvers` includes `MasterController`, but `MasterController` is itself an impersonation pattern**
+`impersonation_patterns: ["^(MasterController|SPW|MainController)-.*$"]` treats `MasterController-*` as a forbidden impersonation identity, yet `MasterController` is a named authorized approver. A waiver self-approved under identity `MasterController` (bare, without `-suffix`) would not be caught by the impersonation regex and is explicitly whitelisted as an approver.
+Evidence lines:
+> `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]`
+> `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]`
+
+This is the concrete self-approval hole: an actor can present as `MasterController` (authorized approver) and there is no on-record submission identity check shown to be *distinct* from that role. The regex only blocks `MasterController-…`, not `MasterController`.
+
+**FINDING B3 — MEDIUM — `max_ongoing_waivers: 0` combined with no expiry semantics exercised**
+`expires_at` is in the schema but with `total: 0` no expiry logic is demonstrated. Combined with B1, the "zero active waivers" claim is trivially true and carries no enforcement evidence.
+Evidence line:
+> `"schema": [..., "approved_by","approved_at","expires_at","submitted_by"], "total": 0`
+
+**FINDING B4 — LOW — `H4.bypass-patterns` PASS asserts `zero_unapproved_waivers` while the ledger `with_approver/without_approver = 0/0`; the claim is vacuous**
+Evidence line:
+> `"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**FINDING C1 — HIGH — Gate-run evidence itself carries internal governance markers not covered by the boundary gate's declared scope**
+The `packaging_boundary` and `distribution_model` declare that `WO/`, `tools/spw-*/`, `_repro/` are excluded from public distribution, and `H3.external-boundary` PASS cites "0 internal leak markers (compared against 6 governance markers)" — but that check is stated to cover "archived paths and source files" (199 + 197). The gate *evidence pack* (this material, and any shipped `gate_run` JSON) contains:
+- `tools/spw-gates/gate_*.py` command paths,
+- `h4_waiver_ledger.path = tools/spw-gates/h4_waivers.json`,
+- `_repro/` referenced implicitly.
+No gate in the pack is declared to scan the gate-run JSON / evidence outputs against the 6 governance markers.
+Evidence lines:
+> `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions."`
+> `"[H3.external-boundary] PASS 外部边界干净：已核查 199 个归档路径与 197 个源码文件，0 处内部泄露标记（比对 6 项治理标记）"`
+> `"command": ["python","-X","utf8","tools/spw-gates/gate_bypass_patterns.py"]` (repeated across all 12 gate records)
+If gate-run JSON is shipped as evidence, it leaks `tools/spw-gates/…` markers. If it is not shipped, that is not stated.
+
+**FINDING C2 — MEDIUM — G.open-source-build evidence does not show the export-ignore list, so the claim "export manifest contains no internal material" is not falsifiable from the material**
+Evidence line:
+> `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`
+No dump of the export manifest is provided.
+
+**FINDING C3 — INFO — Presence of `D:\\_Progs\\02Business\\DeepBase` in gate output**
+The vendored-upstream-drift gate prints an absolute internal upstream path in its output. If this output is included in any public/exported evidence, it is itself a governance/path leak.
+Evidence line:
+> `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase | ..."`
+The `H4.HARDCODED_ABS_PATH` rule is scoped to *Pascal source* (`D:\\_Progs` pattern), not to gate stdout — so this does not fail H4 but is a real leak surface if evidence is published.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**FINDING D1 — BLOCKER — Claim-assertion tokens are self-declared and gate PASS is printed by the gate itself; there is no independent verification layer in the pack**
+Every gate's `output_excerpt` follows the pattern `[CLAIM_ASSERTED] <name> | [<gate>] PASS`. Nothing in the material shows that the PASS string is derived from an external observation, nor that `claims_asserted` matches the gate's *manifest* claims — and Finding A1 proves at least one record already diverges. This is a structural fake-green risk: a gate that prints `[CLAIM_ASSERTED] x | PASS` unconditionally will be recorded as PASS with the correct `claims_asserted` set in this schema.
+Evidence lines (representative):
+> `"[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS"`
+> `"[CLAIM_ASSERTED] counterfactual_3 | [CLAIM_ASSERTED] counterfactual_4 | [CLAIM_ASSERTED] counterfactual_5 | [H3.runtime-autofix] PASS"`
+
+**FINDING D2 — HIGH — `_note` explicitly denies presence of "external-observation or certification outcomes"**
+This is stated as a design intent (audit the software, not the harness), but it also means the pack is structurally incapable of distinguishing a real counterfactual from a printed token. Combined with D1, every PASS in `H3.*` is unfalsifiable from the material alone.
+Evidence line:
+> `"_note": "... It deliberately contains NO fields describing external-observation or certification outcomes of the audit run ..."`
+
+**FINDING D3 — HIGH — Very short durations for "counterfactual" gates**
+`H3.encoding-guard` 0.227s, `H3.runtime-autofix` 0.096s, `H3.deep-ui-test` 0.100s, `H4.bypass-patterns` 0.286s, `G.vendored-upstream-drift` 0.087s. These are consistent with static token emission, not with exercising a counterfactual failure/fix cycle.
+Evidence lines:
+> `"duration_seconds": 0.227` (H3.encoding-guard); `0.096` (H3.runtime-autofix); `0.100` (H3.deep-ui-test); `0.087` (G.vendored-upstream-drift)
+
+**FINDING D4 — MEDIUM — `truncated: false` but `stdout_bytes` large (168,416) and excerpt short**
+The compile-tests and unit-tests records claim `truncated: false` while the excerpt is a small tail. Not itself a downgrade, but it means the reviewer cannot confirm the mid-stream did not contain FAIL/warning lines that were elided.
+Evidence line:
+> `"stdout_bytes": 168416, ... "truncated": false` with a short `output_excerpt`.
+
+**FINDING D5 — MEDIUM — H2.compile-build excerpt contains compiler Hints but no explicit success/failure line for both binaries**
+It prints the build summary (`21931 lines, 2.00 seconds, 6080772 bytes code, ...`) and paths for `bin/AsWish.exe` and `cli/bin/AsWish.CLI.exe`, but no per-target success/fail codes. PASS rests on `exit_code: 0`, which is not independently corroborated.
+Evidence line:
+> `"... 21931 lines, 2.00 seconds, 6080772 bytes code, 629024 bytes data. | bin/AsWish.exe = GUI ... | cli/bin/AsWish.CLI.exe = CLI ..."`
+
+---
+
+## Areas where nothing is wrong (explicit)
+
+- **Gate coverage vs manifest:** all 12 `manifest_declared_gates` appear in `recorded_gate_verdicts`; no missing required gate. ✔ (INFO — coverage complete)
+- **Claim coverage count:** for most gates `claims` and `claims_asserted` are set-equal — the *only* observed divergence is A1. ✔ except as noted.
+- **Waiver ledger arithmetic:** `total = with_approver + without_approver = submitted_by count = 0`. Internally consistent. ✔
+- **Exit codes / stderr:** all 12 records show `exit_code: 0` and `stderr_sha256 = e3b0c44…` (empty). Consistent with "PASS," though see D1. ✔ (INFO)
+- **Subject hash binding:** all 12 records carry the same `subject_sha256 = ce2ef0e7…` matching the top-level value. ✔ (INFO — but see A7 for upstream-drift caveat)
+- **H4 pattern set:** three declared patterns, three reported pattern lines, all
