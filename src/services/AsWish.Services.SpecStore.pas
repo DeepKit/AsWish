@@ -1,4 +1,4 @@
-
+﻿
 { ============================================================================
   AsWish.Services.SpecStore
 
@@ -88,11 +88,14 @@ type
     function ListCommonsLessons: TArray<TSpecCommonsLesson>;
 
     /// <summary>Atomic text-file write (bugfix.md BUG-5): write to a .tmp
-    /// sibling, then TFile.Replace (atomic on NTFS) or TFile.Move on first
-    /// write. Shared by SpecStore itself and by callers that must not bypass
-    /// the crash-safe path (Decisions.Save, JS Bridge pending-decisions).
+    /// sibling, then Winapi.Windows.ReplaceFile (atomic on NTFS, preserves
+    /// destination file on failure) or RenameFile on first write.
+    /// Shared by SpecStore itself and by callers that must not bypass
+    /// the crash-safe path (Decisions.Save, JS Bridge pending-decisions, HTML rendering).
     /// Class method: works on any full path, no instance state needed.</summary>
     class procedure AtomicWriteTextFile(const AFullPath, AContent: string); static;
+    /// <summary>Back up an existing file before atomic write to snapshots/ directory.</summary>
+    class procedure BackupFileIfExisting(const AFullPath: string); static;
 
     property BasePath: string read FBasePath;
   end;
@@ -131,7 +134,7 @@ procedure TAsWishStoreService.WriteYamlFile(const ARelPath, AContent: string);
 begin
   // Atomic write: write to a temp file, then replace the target.
   // Prevents half-written files if the process crashes mid-write
-  // (bugfix.md BUG-5). TFile.Replace is atomic on NTFS and preserves
+  // (bugfix.md BUG-5). ReplaceFile is atomic on NTFS and preserves
   // the destination file's attributes; on first write (no destination)
   // we rename the temp file into place.
   var LFullPath := TPath.Combine(FBasePath, ARelPath);
@@ -139,6 +142,38 @@ begin
   if not TDirectory.Exists(LDir) then
     TDirectory.CreateDirectory(LDir);
   AtomicWriteTextFile(LFullPath, AContent);
+end;
+
+class procedure TAsWishStoreService.BackupFileIfExisting(const AFullPath: string);
+var
+  LFullPath, LBackupPath, LBaseName, LExt, LSnapshotDir, LDir: string;
+  LAsWishPos: Integer;
+begin
+  LFullPath := AFullPath;
+  if not TFile.Exists(LFullPath) then Exit;
+
+  try
+    LAsWishPos := LFullPath.IndexOf('.AsWish');
+    if LAsWishPos >= 0 then
+      LSnapshotDir := TPath.Combine(LFullPath.Substring(0, LAsWishPos + 7), 'snapshots')
+    else
+    begin
+      LDir := TPath.GetDirectoryName(LFullPath);
+      LSnapshotDir := TPath.Combine(LDir, 'snapshots');
+    end;
+
+    if not TDirectory.Exists(LSnapshotDir) then
+      TDirectory.CreateDirectory(LSnapshotDir);
+
+    LBaseName := TPath.GetFileNameWithoutExtension(LFullPath);
+    LExt := TPath.GetExtension(LFullPath);
+    if LExt = '' then
+      LExt := '.yaml';
+    LBackupPath := TPath.Combine(LSnapshotDir, LBaseName + '.bak' + LExt);
+    TFile.Copy(LFullPath, LBackupPath, True);
+  except
+    // Backup is best-effort; the caller's atomic write must still proceed.
+  end;
 end;
 
 class procedure TAsWishStoreService.AtomicWriteTextFile(
@@ -160,43 +195,33 @@ begin
   end;
 
   if TFile.Exists(AFullPath) then
-    TFile.Delete(AFullPath);
-  if not RenameFile(LTmpPath, AFullPath) then
   begin
-    if TFile.Exists(LTmpPath) then
+    BackupFileIfExisting(AFullPath);
+    // True atomic replacement on Windows via ReplaceFile:
+    // If ReplaceFile fails, original destination file is preserved intact (zero window of vulnerability).
+    // On success, ReplaceFile automatically deletes the temporary file.
+    {$IFDEF MSWINDOWS}
+    if not Winapi.Windows.ReplaceFile(PChar(AFullPath), PChar(LTmpPath), nil,
+      REPLACEFILE_IGNORE_MERGE_ERRORS, nil, nil) then
     begin
-      TFile.Copy(LTmpPath, AFullPath, True);
-      TFile.Delete(LTmpPath);
+      var LErr := Winapi.Windows.GetLastError;
+      raise EInOutError.CreateFmt('Atomic replace failed for "%s" (Windows error %d)', [AFullPath, LErr]);
     end;
+    {$ELSE}
+    TFile.Replace(LTmpPath, AFullPath, '');
+    {$ENDIF}
+  end
+  else
+  begin
+    // First write: rename temp file into place
+    if not RenameFile(LTmpPath, AFullPath) then
+      raise EInOutError.CreateFmt('Failed to move temp file "%s" to target "%s"', [LTmpPath, AFullPath]);
   end;
 end;
 
 procedure TAsWishStoreService.BackupTreeFileIfExisting(const ARelPath: string);
-var
-  LFullPath, LBackupPath, LBaseName: string;
 begin
-  // Keep the most recent prior version under snapshots/ so overwriting a
-  // tree never silently discards user edits or prior agent output.
-  LFullPath := TPath.Combine(FBasePath, ARelPath);
-  if not TFile.Exists(LFullPath) then Exit;
-
-  // Snapshots dir is normally created by CreateDirectoryStructure, but an
-  // existing .AsWish from an older version may lack it — never crash on
-  // a missing backup target (backup is best-effort).
-  try
-    var LSnapshotDir := TPath.Combine(FBasePath, 'snapshots');
-    if not TDirectory.Exists(LSnapshotDir) then
-      TDirectory.CreateDirectory(LSnapshotDir);
-
-    LBaseName := TPath.GetFileNameWithoutExtension(ARelPath);
-    LBackupPath := TPath.Combine(LSnapshotDir, LBaseName + '.bak.yaml');
-    // Copy (overwrite previous backup) — single rolling backup per tree.
-    // Isolated: a failing backup (disk full / ACL / locked) must NOT abort
-    // the real atomic write below (multi-LLM review finding).
-    TFile.Copy(LFullPath, LBackupPath, True);
-  except
-    // Backup is best-effort; the caller's write must still proceed.
-  end;
+  BackupFileIfExisting(TPath.Combine(FBasePath, ARelPath));
 end;
 
 procedure TAsWishStoreService.CreateDirectoryStructure;

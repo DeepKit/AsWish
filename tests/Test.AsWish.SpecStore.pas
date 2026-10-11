@@ -1,4 +1,4 @@
-{ ============================================================================
+﻿{ ============================================================================
   Test.AsWish.SpecStore
 
   DUnitX tests for AsWish.Services.SpecStore persistence — focused on the
@@ -34,12 +34,17 @@ type
     procedure Test_WriteGitIgnore_CoversRegenerableArtifacts;
     [Test]
     procedure Test_WriteGitIgnore_RefreshesStaleContent;
+    [Test]
+    procedure Test_AtomicWrite_HTML_Prompt_Decisions_ByteForByte;
+    [Test]
+    procedure Test_AtomicWrite_PreservesTargetFileOnFailure;
   end;
 
 implementation
 
 uses
   System.SysUtils,
+  System.Classes,
   System.IOUtils,
   System.Generics.Collections,
   Test.AsWish.FixtureHelper,
@@ -89,6 +94,10 @@ begin
       'overwrite should replace content atomically');
     Assert.IsFalse(TFile.Exists(LPath + '.tmp'),
       'temp file must not remain after atomic write');
+    Assert.IsTrue(TFile.Exists(TPath.Combine(LDir, 'snapshots\sample.bak.yaml')),
+      'overwrite must save prior version into snapshots directory');
+    Assert.AreEqual('v1', TFile.ReadAllText(TPath.Combine(LDir, 'snapshots\sample.bak.yaml'), TEncoding.UTF8),
+      'backup snapshot must preserve prior content');
   finally
     TDirectory.Delete(LDir, True);
   end;
@@ -289,6 +298,93 @@ begin
       'refreshing should replace the outdated content');
   finally
     LStore.Free;
+    TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTestAsWishSpecStore.Test_AtomicWrite_HTML_Prompt_Decisions_ByteForByte;
+var
+  LDir, LHtml1, LHtml2, LHtml3, LHtml4, LHtml5, LPrompt, LDecision: string;
+  CContentH1, CContentH2, CContentH3, CContentH4, CContentH5, CContentP, CContentD: string;
+begin
+  LDir := NewTempDir;
+  try
+    TDirectory.CreateDirectory(LDir);
+    CContentH1 := '<!DOCTYPE html><html><head><title>Bundles</title></head><body><h1>Bundles Review</h1><p>UTF-8 中文测试</p></body></html>';
+    CContentH2 := '<!DOCTYPE html><html><head><title>Index</title></head><body><h1>Dashboard</h1></body></html>';
+    CContentH3 := '<!DOCTYPE html><html><head><title>Node Detail</title></head><body>Node details</body></html>';
+    CContentH4 := '<!DOCTYPE html><html><head><title>Scan Report</title></head><body>Scan report</body></html>';
+    CContentH5 := '<!DOCTYPE html><html><head><title>Visual Preview</title></head><body>Preview</body></html>';
+    CContentP := '# Agent Handoff Prompt' + sLineBreak + 'Please review the specifications.';
+    CContentD := 'decision_id: "DEC-001"' + sLineBreak + 'title: "Accepted Decision"' + sLineBreak + 'status: accepted';
+
+    LHtml1 := TPath.Combine(LDir, 'bundles.html');
+    LHtml2 := TPath.Combine(LDir, 'index.html');
+    LHtml3 := TPath.Combine(LDir, 'node-detail.html');
+    LHtml4 := TPath.Combine(LDir, 'scan-report.html');
+    LHtml5 := TPath.Combine(LDir, 'visual-preview.html');
+    LPrompt := TPath.Combine(LDir, 'prompts\handoff.md');
+    LDecision := TPath.Combine(LDir, 'decisions\dec-1.yaml');
+
+    TAsWishStoreService.AtomicWriteTextFile(LHtml1, CContentH1);
+    TAsWishStoreService.AtomicWriteTextFile(LHtml2, CContentH2);
+    TAsWishStoreService.AtomicWriteTextFile(LHtml3, CContentH3);
+    TAsWishStoreService.AtomicWriteTextFile(LHtml4, CContentH4);
+    TAsWishStoreService.AtomicWriteTextFile(LHtml5, CContentH5);
+    TAsWishStoreService.AtomicWriteTextFile(LPrompt, CContentP);
+    TAsWishStoreService.AtomicWriteTextFile(LDecision, CContentD);
+
+    // Byte-for-byte exact equality assertions
+    Assert.AreEqual(CContentH1, TFile.ReadAllText(LHtml1, TEncoding.UTF8), 'bundles.html byte-for-byte');
+    Assert.AreEqual(CContentH2, TFile.ReadAllText(LHtml2, TEncoding.UTF8), 'index.html byte-for-byte');
+    Assert.AreEqual(CContentH3, TFile.ReadAllText(LHtml3, TEncoding.UTF8), 'node-detail.html byte-for-byte');
+    Assert.AreEqual(CContentH4, TFile.ReadAllText(LHtml4, TEncoding.UTF8), 'scan-report.html byte-for-byte');
+    Assert.AreEqual(CContentH5, TFile.ReadAllText(LHtml5, TEncoding.UTF8), 'visual-preview.html byte-for-byte');
+    Assert.AreEqual(CContentP, TFile.ReadAllText(LPrompt, TEncoding.UTF8), 'prompt byte-for-byte');
+    Assert.AreEqual(CContentD, TFile.ReadAllText(LDecision, TEncoding.UTF8), 'decision byte-for-byte');
+
+    // Overwrite bundles.html and verify backup in snapshots
+    TAsWishStoreService.AtomicWriteTextFile(LHtml1, CContentH1 + '<!-- v2 -->');
+    Assert.IsTrue(TFile.Exists(TPath.Combine(LDir, 'snapshots\bundles.bak.html')),
+      'snapshots must contain bundles.bak.html');
+    Assert.AreEqual(CContentH1,
+      TFile.ReadAllText(TPath.Combine(LDir, 'snapshots\bundles.bak.html'), TEncoding.UTF8),
+      'bundles backup content must match v1');
+  finally
+    TDirectory.Delete(LDir, True);
+  end;
+end;
+
+procedure TTestAsWishSpecStore.Test_AtomicWrite_PreservesTargetFileOnFailure;
+var
+  LDir, LPath: string;
+  LLockStream: TFileStream;
+begin
+  LDir := NewTempDir;
+  try
+    TDirectory.CreateDirectory(LDir);
+    LPath := TPath.Combine(LDir, 'critical-data.yaml');
+    TAsWishStoreService.AtomicWriteTextFile(LPath, 'original intact content');
+
+    // Acquire exclusive share lock on target to simulate contention or un-replaceable target
+    LLockStream := TFileStream.Create(LPath, fmOpenRead or fmShareExclusive);
+    try
+      // Attempting to replace locked target must raise EInOutError (fail-closed, not silent)
+      Assert.WillRaise(
+        procedure
+        begin
+          TAsWishStoreService.AtomicWriteTextFile(LPath, 'new corrupted content');
+        end,
+        EInOutError);
+    finally
+      LLockStream.Free;
+    end;
+
+    // Critical assertion: target file was NOT deleted, original content is preserved!
+    Assert.IsTrue(TFile.Exists(LPath), 'target file must still exist after failed atomic replace');
+    Assert.AreEqual('original intact content', TFile.ReadAllText(LPath, TEncoding.UTF8),
+      'target file content must remain completely intact on failure');
+  finally
     TDirectory.Delete(LDir, True);
   end;
 end;
