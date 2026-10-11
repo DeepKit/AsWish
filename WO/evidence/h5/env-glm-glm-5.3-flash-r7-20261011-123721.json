@@ -1,0 +1,10 @@
+{
+  "resolved_model": "glm-5.3-flash",
+  "response_id": "cmb-f5b2bdc7c57011f1991b860fc582b33d",
+  "raw_sha256": "d7a007e08385083802a1c96cd3d3bcb2590e915d3a3fce4eee1468f62542de79",
+  "subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177",
+  "material_sha256": "0de9a3430293c30b30fb91d72a983e6e692a56e4a74c1c925b25b86243f3cc2b",
+  "observed_at": "2026-10-11T12:37:53.897853+00:00",
+  "family": "glm",
+  "requested_model": "glm-5.3-flash"
+}

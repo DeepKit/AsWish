@@ -1,0 +1,35 @@
+# Independent Reviewer Audit Report
+
+## (a) Gate claims vs. material — one discrepancy class found
+
+All 12 gates claim PASS with exit_code 0; claim lists match `claims_asserted` in every verdict; subject_sha256 is consistent across all records; stderr hashes are all the empty-string hash (e3b0c44…) — internally consistent. One residual risk:
+
+- **MEDIUM | fake-green | Gate pass verdicts for H3/G gates rest entirely on self-asserted claim strings, not independently verifiable artifacts.** Evidence: `"[CLAIM_ASSERTED] counterfactual_1 | [CLAIM_ASSERTED] counterfactual_2 | [H3.encoding-guard] PASS"` (stdout_bytes: 96, duration 0.24s); similarly `"[CLAIM_ASSERTED] counterfactual_3 | ... | [H3.runtime-autofix] PASS"` (stdout_bytes: 132, duration 0.084s). The gate scripts print their own CLAIM_ASSERTED tokens; nothing in the material cross-checks the counterfactual work actually occurred.
+- **LOW | fake-green | H2.compile-tests PASS excerpt embeds unit-test execution results, overlapping H2.unit-tests.** Evidence: `"Tests Found   : 356 | Tests Passed  : 356"` appears in the compile-tests output_excerpt (168416 bytes). Not a failure, but the compile gate's pass is not independent of test execution.
+- **INFO | quality | Compiler hints present in build output.** Evidence: `"Hint: H2443 Inline function 'TDirectory.GetCurrentDirectory' has not been expanded..."`, `"Hint: H2077 Value assigned to 'LFound' never used"`.
+
+No gate shows a PASS contradicted by its own evidence.
+
+## (b) H4 waiver / approval policy — holes found (latent, not exploited)
+
+- **MEDIUM | self-approval hole | The impersonation pattern does not block bare `MasterController`, which is simultaneously an authorized approver and (per the pattern's intent) a protected system identity.** Evidence: `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]` vs `"authorized_approvers": ["MasterController", "ArchitectureReviewBoard"]`. The regex requires a trailing `-`, so a waiver with `approved_by: "MasterController"` (exact match) is both permitted and self-referential to the governing system.
+- **LOW | self-approval hole | No separation-of-duties field: `submitted_by` and `approved_by` can be the same actor; policy text asserts fail-closed but no approver≠submitter rule is stated.** Evidence: schema fields `"approved_by", ..., "submitted_by"` with no constraint stated beyond `"max_ongoing_waivers": 0`.
+- **INFO | mitigating | Currently no exposure: ledger is empty.** Evidence: `"total": 0, "with_approver": 0, "without_approver": 0` and `"all 0 waivers governed and accounted for"`.
+
+## (c) Packaging/export boundary — no leak in the distribution itself; two info-level notes
+
+- **No leak found in the package boundary.** Evidence: `"[H3.external-boundary] PASS 外部边界干净：已核查 199 个归档路径与 197 个源码文件，0 处内部泄露标记（比对 6 项治理标记）"`, corroborated by `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded"`.
+- **INFO | boundary | Gate evidence output itself contains internal governance markers and machine-local paths (leaks into the audit record, not the package).** Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\_Progs\02Business\DeepBase"` and gate commands referencing `"tools/spw-gates/gate_bypass_patterns.py"`. If gate logs are ever shipped, this leaks; recommend documenting logs as internal-only.
+- **LOW | reproducibility | Vendor-drift gate depends on a machine-local upstream path outside the repo.** Evidence: `"上游定位: D:\_Progs\02Business\DeepBase"` — the check cannot be reproduced on another machine.
+
+## (d) Silent downgrade / fake-green — no downgrade found; risks noted above
+
+- **No silent downgrade found.** All gates are `required: true`, none skipped, all executed with consistent subject_sha256; H4 asserts zero waivers against a zero-waiver policy: `"total active waivers is 0 (max_ongoing_waivers=0) ... fails closed (RC=1)"`.
+- Residual fake-green risk is the self-asserted counterfactual mechanism already flagged in (a).
+
+## Explicit "nothing wrong" statements
+- (a) No gate PASS is contradicted by its evidence (beyond the self-attestation weakness).
+- (c) No internal governance marker leak into the distribution packages.
+- (d) No gate downgrade, skip, or requirement relaxation observed.
+
+**VERDICT: release_ready** (conditional on treating findings (a)-MEDIUM and (b)-MEDIUM as known policy debt; neither is exploitable in the current zero-waiver, all-PASS state)

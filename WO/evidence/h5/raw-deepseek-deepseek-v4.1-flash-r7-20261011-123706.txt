@@ -1,0 +1,91 @@
+# Release Gate Audit — Independent Read-Only Review
+
+**Subject:** `ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177` @ `8a746f6` (run `d4526859…`)
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+I checked every `recorded_gate_verdicts` entry against its own `output_excerpt`, `exit_code`, and the accompanying `claims` / `claims_asserted` sets.
+
+- **H1.resource-locks** — PASS, exit 0, `controlled_entry_only` asserted in output. Consistent. No counter-evidence.
+- **H2.compile-build** — PASS, exit 0, both binaries claimed and asserted in output. Consistent.
+- **H2.compile-tests** — PASS, exit 0. Output reports `Tests Found: 356 | Passed: 356 | Failed: 0 | Errored: 0 | Ignored: 0`. Consistent.
+- **H2.unit-tests** — PASS, exit 0. But its `output_excerpt` is functionally identical to `H2.compile-tests` (same 356/356 tally, same trailing "Done testing" block) and does **not** contain any marker that the three claimed semantic assertions (`active_detail_trigger`, `state_machine_check`, `required_fields_on_activation`) were actually exercised. It only carries the aggregate Delphi test tally. **Suspicious but not conclusive** — see finding below.
+- **H3.\*** — All PASS with `[CLAIM_ASSERTED] counterfactual_N` markers. `H3.external-boundary` output explicitly reports `0 处内部泄露标记（比对 6 项治理标记）` over 199 archive paths + 197 source files. Consistent with its claim.
+- **H4.bypass-patterns** — PASS, exit 0, output reports `Pattern H4.DIRECT_DISK_WRITE: 0 hits (0 waived)` etc. But it also says `Scanned 89 Pascal source files` while H3.external-boundary / G.open-source-build report **199 archive paths / 197 source files**. That 89 vs 197 delta is unreconciled in the material.
+- **G.open-source-build** — PASS. Consistent.
+- **G.vendored-upstream-drift** — PASS. Reports upstream located at `D:\_Progs\02Business\DeBase` and only 2 files compared. Consistent with "2 个文件".
+
+**Findings (a):**
+
+| Severity | Area | Description | Evidence line |
+|---|---|---|---|
+| MEDIUM | H2.unit-tests | PASS verdict is unstaked: stdout is an undifferentiated duplicate of H2.compile-tests; claimed semantic assertions (`active_detail_trigger`, `state_machine_check`, `required_fields_on_activation`) are asserted only in the `claims_asserted` metadata field, never in the captured output. | `"output_excerpt": "... Tests Found   : 356 | Tests Ignored : 0 | Tests Passed  : 356 | Tests Leaked  : 0 | Tests Failed  : 0 | Tests Errored : 0"` and `"claims": ["active_detail_trigger","state_machine_check","required_fields_on_activation"]` |
+| MEDIUM | H4.bypass-patterns | Scope mismatch: gate scans only 89 Pascal files while sibling boundary/open-source gates report 197 source files; no reconciliation, so H4 `zero_hits` may be computed over a strictly smaller set than the release. | H4: `"Scanned 89 Pascal source files across repository"` vs H3.external-boundary: `"已核查 199 个归档路径与 197 个源码文件"` and G.open-source: `"（199 个文件）"` |
+
+Neither is a hard contradiction, but neither PASS is independently *evidenced* by its own output.
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver / approval policy
+
+The material exposes two separate concerns:
+
+1. **Waiver ledger is empty** (`"total": 0`), so no live waiver is self-signed. The stated max is `max_ongoing_waivers: 0`, and the gate claims to fail closed on any introduced violation.
+2. **But the authorized approver list itself contains an impersonation-pattern collision.** `authorized_approvers` is `["MasterController", "ArchitectureReviewBoard"]`, while `impersonation_patterns` is `["^(MasterController|SPW|MainController)-.*$"]`. `MasterController` is a *bare* identity here, not matching the pattern (patterns require a `-suffix`), so the pattern wouldn't catch it — but the approver identity is exactly one of the impersonated tokens the gate is designed to guard against. The schema lists both `submitted_by` and `approved_by`, and the material records `with_submitted_by: 0` — meaning **the governance control that would separate proposer from approver has never been exercised** on this run. A future waiver proposing `submitted_by: MasterController, approved_by: MasterController` would be admitted by the policy as written, because the material contains no rule forbidding `submitted_by == approved_by`.
+
+| Severity | Area | Description | Evidence line |
+|---|---|---|---|
+| HIGH | H4 waiver approval policy | Approver namespace overlaps the impersonation-token namespace, and no `submitted_by != approved_by` (separation-of-duties) rule is present; ledger is empty so the hole is dormant, not closed. Any future waiver can be mastered by the same identity that impersonates the approver. | `"authorized_approvers": ["MasterController","ArchitectureReviewBoard"]` alongside `"impersonation_patterns": ["^(MasterController|SPW|MainController)-.*$"]`; `"with_submitted_by": 0` |
+
+(Introduced markers in `_build.bat` output — `D:\_Progs\...` absolute paths — also match the `H4.HARDCODED_ABS_PATH` pattern target, but they appear in compiler *hint text*, not in scanned `.pas` source, so H4 correctly ignores them. Not a finding; noted.)
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+- `packaging_boundary.enforcement` claims `Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions.`
+- `distribution_model` claims internal governance dirs `WO/`, `tools/spw-*`, `_repro/` are excluded.
+- The H3.external-boundary output is the only evidence supporting this, and it reports `0 处内部泄露标记（比对 6 项治理标记）` over 199 archive paths + 197 source files.
+
+**However**, the material itself is the reviewer artifact — not the distribution artifact — so the *gate* is the only witness. The gate's own command path is `tools/spw-gates/gate_external_boundary.py`, i.e. an internal governance file path appears **inside the material**, and the material lists `tools/spw-*` as a directory that must be export-ignored. There is no contradiction between the stated boundary and the observed verdict, and the gate's own presence in the review pack is expected (it's the reviewer seat's input, not the export). I therefore find **no leak of internal governance markers into the distribution** on the evidence given.
+
+| Severity | Area | Description | Evidence line |
+|---|---|---|---|
+| INFO | Packaging boundary | Boundary claim is asserted clean by H3.external-boundary (`0 处内部泄露标记`); the "6 项治理标记" set is not enumerated in this material, so the check is trust-the-gate rather than independently verifiable from the pack. | `"[H3.external-boundary] PASS 外部边界干净：已核查 199 个归档路径与 197 个源码文件，0 处内部泄露标记（比对 6 项治理标记）"` |
+
+No packaging leak found.
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+Multiple independent signals:
+
+1. **`H2.unit-tests` output is byte-similar to `H2.compile-tests`** and carries no per-test evidence of the three claimed semantic assertions. If the harness fell back to "run the suite and inherit the tally", a genuine failure of `active_detail_trigger` / `state_machine_check` / `required_fields_on_activation` would not surface in the excerpt. That is the classic fake-green shape.
+2. **H4 claim `zero_unapproved_waivers` is asserted with `total: 0` waivers, `with_approver: 0`, `without_approver: 0`, `with_submitted_by: 0`.** A zero-waiver ledger lets the claim pass vacuously; the gate never actually exercises the approver-validation path in this run. `"0 baseline debt warnings emitted"` is consistent with a vacuous pass.
+3. **`_note` explicitly states the material omits external-observation / certification fields.** This is legitimate for a reviewer seat, but it also means any "fake green" that would be exposed by external observation (e.g. a stale claim in the manifest) cannot be detected from the material.
+4. **`truncated: false` on every gate** — good; excerpts are complete, so no truncation-based fake-green.
+5. **Manifest vs run reconciliation:** all 12 `manifest_declared_gates` appear in `recorded_gate_verdicts` with matching `gate_id` and `required: true`. No gate silently dropped or downgraded.
+
+| Severity | Area | Description | Evidence line |
+|---|---|---|---|
+| HIGH | H2.unit-tests | Fake-green / silent-downgrade risk: claimed semantic assertions are not evidenced in stdout; the excerpt is indistinguishable from the compile-tests excerpt; a downgrade of the unit-test gate to "re-run aggregate suite" would pass unnoticed. | `"claims": ["active_detail_trigger","state_machine_check","required_fields_on_activation"]` with `"output_excerpt"` containing only the 356-test aggregate tally |
+| MEDIUM | H4.bypass-patterns | Vacuous-pass risk: all three waiver counters are 0, so `zero_unapproved_waivers` is asserted without ever exercising the approver-validation code path. | `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0, "samples": []` |
+| LOW | Reviewer material | Material omits external-observation / certification evidence by design, limiting independent detection of fake-green at the pack level. | `"_note": "This is the material provided to independent read-only reviewer seats. It deliberately contains NO fields describing external-observation or certification outcomes of the audit run…"` |
+
+---
+
+## Summary of findings
+
+- **(a) Gate-claim integrity:** two unproven-referenced PASSes (H2.unit-tests semantic claims; H4 scan-scope mismatch vs siblings). No hard contradiction. Severity MEDIUM each.
+- **(b) H4 approval policy:** HIGH — approver identity namespace overlaps impersonation tokens and no `submitted_by != approved_by` separation-of-duties rule is present. Ledger is empty (dormant, not closed).
+- **(c) Packaging/export boundary leak:** **No leak found.** H3.external-boundary attests 0 governance markers across 199 paths / 197 sources; the assertion set itself is not enumerated in the pack (INFO).
+- **(d) Silent downgrade / fake-green:** HIGH — H2.unit-tests is the strongest fake-green shape (assertions claim-only, output identical to compile-tests). MEDIUM — H4 waiver control passes vacuously.
+
+No BLOCKER-class contradiction between a PASS verdict and the material was found, but two HIGH-severity integrity/policy weaknesses stand (H2.unit-tests evidence gap; H4 approver/impersonation namespace collision with no SoD rule).
+
+---
+
+**VERDICT: insufficient_data**

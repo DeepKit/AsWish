@@ -94,8 +94,14 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         log_file = ROOT / "tools" / "spw-gates" / "gate-run" / f"gate_{safe_gid}.log"
         output_excerpt = ""
         if log_file.is_file():
-            lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
-            output_excerpt = " | ".join(lines[-15:]) if lines else ""
+            all_lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
+            claim_lines = [l for l in all_lines if "[CLAIM_ASSERTED]" in l]
+            tail_lines = all_lines[-10:]
+            combined = []
+            for l in claim_lines + tail_lines:
+                if l not in combined:
+                    combined.append(l)
+            output_excerpt = " | ".join(combined) if combined else ""
 
         gate_verdicts.append({
             "gate_id": g["gate_id"],
@@ -150,7 +156,8 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
             "authorized_approvers": approvers_doc.get("authorized_approvers", ["MasterController", "ArchitectureReviewBoard"]),
             "policy_enforcement": (
                 "Zero-waiver clean baseline: total active waivers is 0 (max_ongoing_waivers=0). "
-                "Gate H4 scans all repository Pascal source files and asserts zero_hits and zero_unapproved_waivers. "
+                "Gate H4 scans all repository Pascal source files (.pas/.dpr/.inc) and asserts zero_hits and zero_unapproved_waivers. "
+                "Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1). "
                 "Any introduced violation or invalid/self-signed waiver fails closed (RC=1)."
             ),
             "samples": [
