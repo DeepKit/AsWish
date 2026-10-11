@@ -352,8 +352,8 @@
     "minimax",
     "gemini"
   ],
-  "observations_sha256": "8b9431cc518a55e2d6ad85e138bcaf0e5c37379effb37d0bb8a2dd60e2dde257",
-  "gate_run_sha256": "c106396575ccbd692cbe8646c9951ccf9addacdbf706b848d65d3b8a068389b3",
+  "observations_sha256": "939925736e04e4e68e805e834ed1a545120835e7f7c18792f9e67eb323105d00",
+  "gate_run_sha256": "db07e3349ef5570b8645ef42160ff8a01b3686a4b1bf3173a16bfb145e68c623",
   "forbidden_tracked_paths": [
     ".workbuddy/",
     ".AsWish/",

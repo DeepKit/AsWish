@@ -1,0 +1,90 @@
+# Independent Read-Only Review — obs_material.json
+
+Scope: the four requested review areas (a–d), plus an overall verdict. No modification made.
+
+---
+
+## (a) Gates claiming PASS where material suggests otherwise
+
+**INFO — All 12 required gates claim PASS and all asserts are internally consistent.**
+- Every `recorded_gate_verdicts` entry has `verdict: PASS`, `exit_code: 0`, and `claims_asserted` equal to `claims`.
+- No gate is `required: true` with a non-PASS verdict; no missing gate vs. `manifest_declared_gates`.
+- Evidence lines confirm matching claim/exit signals, e.g.:
+  - `"[CLAIM_ASSERTED] controlled_entry_only | [H1.resource-locks] PASS"`
+  - `"[H4.bypass-patterns] PASS verified 0 hits; all 0 waivers governed and accounted for"`
+  - `"[G.open-source-build] PASS 构建不依赖私有仓、导出清单无内部材料、无运行时Python依赖（199 个文件）"`
+
+Observation (INFO, not a finding): the `_note` field explicitly states the material carries **no external-observation or certification fields**. That is by design, but it means gate PASS is self-reported by the same run that produced the material — see (d).
+
+**No gate-level PASS/claim contradiction found in this area.**
+
+---
+
+## (b) Self-approval / self-signing hole in H4 waiver or approval policy
+
+**INFO — No active hole demonstrated, but the policy is only provable when waivers exist.**
+- Evidence: `"authorized_approvers": ["ArchitectureReviewBoard"]`, and
+  `"policy_enforcement": "... Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1)."`
+- Ledger counters: `"total": 0, "with_approver": 0, "without_approver": 0, "with_submitted_by": 0, "distinct_scopes": [], "samples": []`, and `"max_ongoing_waivers": 0`.
+
+Residual risk (LOW): the separation-of-duties rule (`submitted_by != approved_by`) is asserted in prose but has **zero rows** in the ledger to exhibit. With `max_ongoing_waivers: 0` and 0 total waivers, the rule is untested by construction — a future single-maintainer org could satisfy `submitted_by != approved_by` trivially by using two role labels from one person. This is a design-completeness note, not a demonstrated bypass.
+
+- Evidence line: `"authorized_approvers": ["ArchitectureReviewBoard"]` alongside `"total": 0` — no waiver row exists to show approver ≠ submitter in practice.
+
+**No active self-approval/self-signing hole observed.**
+
+---
+
+## (c) Packaging / export boundary leak of internal governance markers
+
+**INFO — Boundary gate claims clean; one assumption is unverifiable from this material.**
+- Declared: `"enforcement": "Git export-ignore and H3.external-boundary gate ensure internal governance directories and markers are excluded from public distributions."`
+- Model: `"distribution_model": "Release packages are produced exclusively via git archive / export-ignore; all internal governance files (WO/, tools/spw-*/, _repro/) are excluded from distribution."`
+- Gate output: `"[H3.external-boundary] PASS 外部边界干净：已核查 199 个归档路径与 197 个源码文件，0 处内部泄露标记（比对 6 项治理标记）"`
+
+Residual risk (LOW/INFO): the gate asserts "6 governance markers compared against 199 archive paths / 197 source files," but the material does **not** list those 6 markers, nor does it provide the archive manifest. A reviewer cannot independently confirm the marker set covers all internal markers (e.g., `WO/`, `_repro/`, `spw-*` namespace, H3/H4 gate names themselves). The count is consistent, but the coverage claim is not falsifiable from this pack alone.
+
+- Evidence line: `"0 处内部泄露标记（比对 6 项治理标记）"` — marker list not enumerated.
+
+**No demonstrated export-boundary leak; coverage evidence is incomplete.**
+
+---
+
+## (d) Silent downgrade / fake-green risk
+
+**HIGH — Single-harness self-report; no external observation field.**
+
+- Evidence: `"_note": "... deliberately contains NO fields describing external-observation or certification outcomes of the audit run ..."`
+- Evidence: every gate's verdict/exit_code/output_excerpt comes from the same subject SHA, same run, same harness. Example: `"subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177"` appears identically across all 12 gates, and there is no cross-run or independent-observer corroboration.
+
+Why this matters (downgrade / fake-green vectors plausible from this pack alone):
+1. **Fake-green by self-consistency.** `[CLAIM_ASSERTED] <name> | ... PASS` lines are emitted by the same gates whose PASS is being tested; a gate that asserts trivially without executing its counterfactual would still produce these exact bytes. No test-count / assertion-count / mutation outcome is provided for the H3 `counterfactual_*` claims beyond the marker string.
+2. **Silent downgrade — zero-everything is indistinguishable from "not exercised."** H4 reports `0 hits (0 waived)` for all three patterns and `0` waivers; that is consistent with a clean tree *or* with patterns that never matched because the scanner scope is wrong. `"Scanned 89 Pascal source files (.pas/.dpr/.inc) across repository"` is the only scope evidence; there is no negative-control (a planted violation) shown.
+3. **Boundary gate marker set not shown** (see (c)) — cannot distinguish "clean export" from "clean because we didn't check the right markers."
+4. **Vendored drift gate is partly environmental.** `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase"` — the check is anchored to a machine-local upstream path, and the `H4.HARDCODED_ABS_PATH` pattern is literally `"D:\\\\_Progs"`. The same absolute path family punished by H4 is used as the upstream anchor for G-drift. If the upstream directory is absent, PASS on "登记值一致" is compatible with a silently degraded comparison. Not proven, but a clean fake-green vector consistent with the material.
+   - Evidence: `"pattern": "D:\\\\_Progs"` (H4) vs `"上游定位: D:\\_Progs\\02Business\\DeepBase"` (G.vendored-upstream-drift).
+
+**Finding — HIGH** (area: silent downgrade / fake-green)
+Description: All PASS verdicts are produced and asserted by a single self-referential harness with no external observation, no negative controls, and no marker/scope enumeration, so PASS is not independently distinguishable from "check not exercised."
+Evidence: `"_note": "... deliberately contains NO fields describing external-observation or certification outcomes of the audit run ..."` combined with every gate sharing `"subject_sha256": "ce2ef0e714f6cfd1edeb3cffc6a2146832275c16c7c2bbd051694c72be5d7177"` and the H4 `"0 hits (0 waived)"` line.
+
+**Finding — MEDIUM** (area: fake-green via environmental coupling)
+Description: The vendored-upstream-drift PASS depends on a machine-local absolute upstream path in the same `D:\_Progs` family that H4 classifies as a hardcoded-abs-path smoking gun; absence/mismatch of that path is not surfaced.
+Evidence: `"[G.vendored-upstream-drift] 上游定位: D:\\_Progs\\02Business\\DeepBase | [G.vendored-upstream-drift] PASS 上游与登记值一致，本仓副本未被误改（2 个文件）"` vs `"pattern": "D:\\\\_Progs"`.
+
+**Finding — LOW** (area: boundary coverage)
+Description: External-boundary PASS cites "6 governance markers" without enumerating them, so marker coverage is unfalsifiable from this pack.
+Evidence: `"0 处内部泄露标记（比对 6 项治理标记）"`.
+
+---
+
+## Area-by-area summary
+
+- (a) Gate PASS vs material: **No contradiction found.** Explicitly clean.
+- (b) Self-approval/self-signing hole: **No active hole found.** Separation-of-duties rule asserted; unexercised (0 waivers) — LOW residual note only.
+- (c) Export-boundary governance-marker leak: **No leak demonstrated.** Marker-set coverage is unverifiable from this pack — LOW.
+- (d) Silent downgrade / fake-green: **HIGH risk present** — single-harness self-report, no external observation, no negative controls, environmental coupling in G-drift.
+
+---
+
+VERDICT: not_ready

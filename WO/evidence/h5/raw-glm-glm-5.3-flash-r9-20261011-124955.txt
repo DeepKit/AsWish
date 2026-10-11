@@ -1,0 +1,31 @@
+## Audit Findings — Independent Reviewer Seat (read-only)
+
+### (a) Gate claims PASS vs. material — checks performed
+All 12 manifest-declared gates have a matching recorded verdict, each `exit_code: 0`, with `claims_asserted` fully covering `claims`, `truncated: false`, consistent `subject_sha256` across every record, and empty stderr (empty-hash `e3b0c4…`). Test gates show "Tests Passed: 356 / Failed: 0 / Errored: 0". No gate contradicts its own PASS.
+
+- **F1 — MEDIUM | gate-claims | Reproducibility/environment coupling of the build:** the compile gate depends on machine-local paths and a proprietary toolchain; output excerpt: `"D:\\_Progs\\02Business\\AsWish\\src\\services\\AsWish.Services.Commons.pas(148) Hint: H2443 …"`. Not a false PASS, but the gate result is not reproducible on a clean machine.
+- **F2 — INFO | gate-claims | Build passes with compiler hints (downgraded cleanliness, not a fake-green):** `"Hint: H2077 Value assigned to 'LFound' never used"`. Hints tolerated but recorded — acceptable.
+- No gate claims PASS while the material suggests failure.
+
+### (b) H4 waiver / approval policy self-approval holes
+- Ledger is genuinely empty (`"total": 0, "with_approver": 0, "without_approver": 0`), so no self-signed waiver exists in this run. The stated SoD rule (`"submitted_by != approved_by (self-signed waivers rejected with RC=1)"`) is asserted in prose but **not demonstrable from evidence** — no waiver has ever exercised that code path.
+- **F3 — MEDIUM | approval-policy | Unverified separation-of-duties control:** `"Separation of duties enforced: submitted_by != approved_by (self-signed waivers rejected with RC=1)"` — policy claim only; no evidence record proving the RC=1 rejection actually functions (no counterfactual waiver test in the gate run).
+- **F4 — LOW | approval-policy | Single-approver bottleneck:** `"authorized_approvers": ["ArchitectureReviewBoard"]` — one entity controls all future approvals; combined with F3, a future waiver's integrity rests on unverified code.
+
+### (c) Packaging / export boundary leak of internal governance markers
+- **F5 — MEDIUM | export-boundary | Narrow governance-marker set for boundary scan:** `"0 处内部泄露标记（比对 6 项治理标记）"` — only 6 markers are compared; governance paths like `tools/spw-gates/` appear throughout gate outputs and the waiver ledger path `"tools/spw-gates/h4_waivers.json"`. The boundary gate covers archive paths and source files, but marker coverage is not evidenced as exhaustive.
+- **F6 — INFO | export-boundary | Internal absolute paths appear in gate evidence (not necessarily in distribution):** `"上游定位: D:\\_Progs\\02Business\\DeepBase"`. Gate outputs live in the audit pack, not the release archive per the distribution model; flagged for awareness only.
+- The H3.external-boundary and G.open-source-build gates themselves report clean export (199 files, 0 leaks) and the claims are internally consistent.
+
+### (d) Silent downgrade / fake-green risk
+- **F7 — MEDIUM | bypass-scan-scope | H4 scan restricted to Pascal files, excluding build/config surfaces:** `"[H4.bypass-patterns] Scanned 89 Pascal source files (.pas/.dpr/.inc) across repository"` — bypass patterns (e.g., direct disk writes, hardcoded paths) could exist in `.bat`, Python tooling, or JSON config and would not be counted; `zero_hits` is scoped, not universal.
+- **F8 — LOW | downgrade-risk | Waiver-per-pattern counting could mask partial waivers:** `"[H4.bypass-patterns] Pattern H4.DIRECT_DISK_WRITE: 0 hits (0 waived)"` — with 0 total waivers this run is clean, but per-pattern "0 waived" counters permit future silent rebaselining ("baseline debt warnings") as noted in `"all 0 waivers governed and accounted for (0 baseline debt warnings emitted)"`.
+- No exit-code remapping, no `truncated: true`, no missing required gate, no skipped counterfactual — no fake-green detected in the recorded run itself.
+
+### Explicit "nothing wrong" statements
+- Area (a): no gate with a PASS contradicted by evidence (F1/F2 are informational, not contradictions).
+- Area (b): no self-signed or unapproved waiver exists in the ledger (total = 0).
+- Area (c): no confirmed leak into the declared distribution boundary; findings are about evidence and marker coverage, not the shipped archive.
+- Area (d): no silent downgrade or fake-green detected within the recorded gate run.
+
+**VERDICT: release_ready** (conditional on paper — F3, F5, F7 are control-quality gaps to remediate, none invalidates the recorded evidence)

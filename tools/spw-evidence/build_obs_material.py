@@ -94,6 +94,7 @@ def build_material(evidence_path: Path, output_path: Path = None) -> Path:
         log_file = ROOT / "tools" / "spw-gates" / "gate-run" / f"gate_{safe_gid}.log"
         output_excerpt = ""
         if log_file.is_file():
+            all_lines = [l.strip() for l in log_file.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
             gate_claims = set(g.get("claims") or [])
             claim_lines = [l for l in all_lines if any(f"[CLAIM_ASSERTED] {c}" in l for c in gate_claims)]
             tail_lines = all_lines[-10:]
