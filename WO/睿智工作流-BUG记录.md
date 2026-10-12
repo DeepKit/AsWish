@@ -598,3 +598,19 @@ WO-0106 完工报告称已"补全 UTF-8 BOM"。主控逐文件比对
 - **token 落 PG**：workbench 的 `vault-store` 适配器未实现（BCW-A008 paused），
   主控建受控表 `secrets_vault`（artifactos_test 库）存 gh token（内存传入不打印、
   带 sha256 + scopes + note），下次免再登。源仍是 gh keyring，不另引入明文到 git。
+
+---
+
+## 2026-10-12 · 封版推错仓库纠正：DeepSpec(历史名) -> DeepKit/AsWish
+
+- **现象**：主控按 WO-0090/0094 登记的 origin `DeepKit/DeepSpec` 推送了封版
+  main + tag v0.2.1，但 DeepSpec 是**历史名字**，真正应推 `DeepKit/AsWish`（当时未建）。
+- **纠正（老板选"建新 AsWish + 清 DeepSpec"）**：
+  1. `gh repo create DeepKit/AsWish --public` 建新公共仓库；
+  2. 本地 `git remote set-url origin` 指向 AsWish，推 main + tag v0.2.1；
+  3. DeepSpec/main 用临时 no-verify remote 强退回原状 `d24985d`（2026-07-13 远古提交）；
+  4. 删 DeepSpec 误推 tag v0.2.1。
+- **复核**：AsWish/main=aa14272、AsWish/tag v0.2.1=d4c50c5 到位；
+  DeepSpec/main=d24985d 已还原、tag 已删（404）。
+- **教训**：origin 登记的历史名不能当现行名用，推送前先 `gh repo view` 核实
+  目标仓库是否就是现行仓库，别凭旧登记推。
