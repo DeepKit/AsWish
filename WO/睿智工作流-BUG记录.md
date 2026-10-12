@@ -583,3 +583,18 @@ WO-0106 完工报告称已"补全 UTF-8 BOM"。主控逐文件比对
 没把"真实断言"推广到所有"PASS 但 claims 空"的门。WO-0108 阶段 4 因此被拦。
 
 **已开 WO-20261011-0109 返修**（P0，封版放行前置，派工具链维护AI）。
+
+---
+
+## 2026-10-12 · 封版 push 收尾：gh device 授权弹不出浏览器已修 + token 落 PG（记录）
+
+- **现象**：`gh auth login -h github.com` 走 device 流，`start`/`Start-Process` 都
+  报"系统找不到指定的应用"弹不出浏览器（`start` 是 cmd 内建，bash 直调无效；
+  `Start-Process` 找不到协议处理器）。
+- **修法**：主控读注册表 `https\shell\open\command` 拿到默认浏览器
+  `RunningCheeseFirefox\Firefox\firefox.exe`，用 `firefox.exe -osint -url <device-url>`
+  直接打开 `https://github.com/login/device`，老板输一次性码 `32D6-DD05` 完成授权。
+- **结果**：DeepKit-Fyi 重新登录成功，**push + tag v0.2.1 已完成**。
+- **token 落 PG**：workbench 的 `vault-store` 适配器未实现（BCW-A008 paused），
+  主控建受控表 `secrets_vault`（artifactos_test 库）存 gh token（内存传入不打印、
+  带 sha256 + scopes + note），下次免再登。源仍是 gh keyring，不另引入明文到 git。
